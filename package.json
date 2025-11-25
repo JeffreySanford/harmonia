@@ -10,7 +10,7 @@
     "start:music-python": "cd libs/music-generation-service-python && uvicorn main:app --reload",
     "start:video-python": "cd libs/video-generation-service-python && uvicorn main:app --reload",
     "start:vocal-python": "cd libs/vocal-styles-service-python && uvicorn main:app --reload",
-    "start:all": "pnpm run start:docker && pnpm run start:api && pnpm run start:frontend && pnpm run start:music-python && pnpm run start:video-python && pnpm run start:vocal-python"
+    "start:all": "pnpm run start:docker && concurrently \"pnpm run start:api\" \"pnpm run start:frontend\" \"pnpm run start:music-python\" \"pnpm run start:video-python\" \"pnpm run start:vocal-python\""
   },
   "private": true,
   "devDependencies": {
@@ -44,6 +44,7 @@
     "@types/node": "20.19.9",
     "@typescript-eslint/utils": "^8.40.0",
     "angular-eslint": "^20.3.0",
+    "concurrently": "^9.2.1",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",
     "eslint-plugin-playwright": "^1.6.2",

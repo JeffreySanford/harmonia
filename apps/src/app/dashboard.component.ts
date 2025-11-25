@@ -107,4 +107,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
         }
       });
   }
-}
+
+  requestMusic(event: Event): void {
+    event.preventDefault();
+    const form = event.target as HTMLFormElement;
+    const params = (form.elements.namedItem('musicParams') as HTMLInputElement).value;
+    // For now, just call getMusicStatus to start
+    this.getMusicStatus();
+  }
+
+  requestVideo(event: Event): void {
+    event.preventDefault();
+    const form = event.target as HTMLFormElement;
+    const params = (form.elements.namedItem('videoParams') as HTMLInputElement).value;
+    this.getVideoStatus();
+  }
+
+  requestVocal(event: Event): void {
+    event.preventDefault();
+    const form = event.target as HTMLFormElement;
+    const params = (form.elements.namedItem('vocalParams') as HTMLInputElement).value;
+    this.getVocalStatus();
+  }
