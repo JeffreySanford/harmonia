@@ -1,0 +1,31 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": ["es2020", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@harmonia/music-engine-python": [
+        "libs/music-engine-python/src/index.ts"
+      ],
+      "@harmonia/libs": ["libs/src/index.ts"],
+      "@harmonia/video-generation-service": [
+        "libs/video-generation-service/src/index.ts"
+      ],
+      "@harmonia/vocal-styles-service": [
+        "libs/vocal-styles-service/src/index.ts"
+      ]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}

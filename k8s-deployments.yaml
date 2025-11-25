@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7
+        ports:
+        - containerPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: music-generation-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: music-generation-service
+  template:
+    metadata:
+      labels:
+        app: music-generation-service
+    spec:
+      containers:
+      - name: music-generation-service
+        image: music-generation-service:latest
+        ports:
+        - containerPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-generation-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: video-generation-service
+  template:
+    metadata:
+      labels:
+        app: video-generation-service
+    spec:
+      containers:
+      - name: video-generation-service
+        image: video-generation-service:latest
+        ports:
+        - containerPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vocal-styles-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vocal-styles-service
+  template:
+    metadata:
+      labels:
+        app: vocal-styles-service
+    spec:
+      containers:
+      - name: vocal-styles-service
+        image: vocal-styles-service:latest
+        ports:
+        - containerPort: 8000

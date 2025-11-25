@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+  music-generation-service:
+    build: ./libs/music-generation-service-python
+    ports:
+      - "8001:8000"
+    depends_on:
+      - redis
+  video-generation-service:
+    build: ./libs/video-generation-service-python
+    ports:
+      - "8002:8000"
+    depends_on:
+      - redis
+  vocal-styles-service:
+    build: ./libs/vocal-styles-service-python
+    ports:
+      - "8003:8000"
+    depends_on:
+      - redis

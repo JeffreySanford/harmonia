@@ -1,0 +1,9 @@
+{
+  "name": "video-generation-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/video-generation-service/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project video-generation-service --web",
+  "targets": {}
+}

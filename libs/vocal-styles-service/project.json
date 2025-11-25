@@ -1,0 +1,9 @@
+{
+  "name": "vocal-styles-service",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/vocal-styles-service/src",
+  "projectType": "library",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project vocal-styles-service --web",
+  "targets": {}
+}
