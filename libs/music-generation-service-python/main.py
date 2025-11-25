@@ -1,20 +1,27 @@
-# Music Generation Service (Python)
+"""
+Music Generation Service (Python)
 
 FastAPI app for LLM chat, parameter extraction, and music generation (MusicGen, Suno, Udio).
 Integrates with Ollama for LLM and Redis for session/job management.
+"""
 
-## Quickstart
-- Install dependencies: `pip install fastapi uvicorn redis`
-- Run: `uvicorn main:app --reload`
+# Quickstart
+# - Install dependencies: pip install fastapi uvicorn redis
+# - Run: uvicorn main:app --reload
 
-## main.py
-```python
+# main.py
 from fastapi import FastAPI
 import redis
 
 app = FastAPI()
+redis_client = redis.Redis(host='localhost', port=6379, db=0)
 
 @app.get("/")
 def read_root():
     return {"message": "Music Generation Service is running"}
+
+@app.get("/status")
+def get_status():
+    status = redis_client.get('music_status')
+    return {"music_status": status.decode() if status else "unknown"}
 ```

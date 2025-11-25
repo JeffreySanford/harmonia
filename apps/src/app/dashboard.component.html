@@ -1,0 +1,51 @@
+<div class="dashboard-wrapper">
+  <h1 class="main-title">Harmonia Dashboard</h1>
+  <div class="dashboard-cards">
+    <div class="card job-tracking">
+      <h2>Job Tracking</h2>
+      <button (click)="refreshJobStatus()">Refresh Job Status</button>
+      <table>
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Music</td>
+            <td>{{ jobStatus.music }}</td>
+          </tr>
+          <tr>
+            <td>Video</td>
+            <td>{{ jobStatus.video }}</td>
+          </tr>
+          <tr>
+            <td>Vocal</td>
+            <td>{{ jobStatus.vocal }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card generation-forms">
+      <form (submit)="requestMusic($event)">
+        <h2>Music Generation</h2>
+        <input type="text" name="musicParams" placeholder="Enter music parameters" required />
+        <button type="submit">Request Music</button>
+        <p>Music: {{ musicStatus }}</p>
+      </form>
+      <form (submit)="requestVideo($event)">
+        <h2>Video Generation</h2>
+        <input type="text" name="videoParams" placeholder="Enter video parameters" required />
+        <button type="submit">Request Video</button>
+        <p>Video: {{ videoStatus }}</p>
+      </form>
+      <form (submit)="requestVocal($event)">
+        <h2>Vocal Generation</h2>
+        <input type="text" name="vocalParams" placeholder="Enter vocal parameters" required />
+        <button type="submit">Request Vocal</button>
+        <p>Vocal: {{ vocalStatus }}</p>
+      </form>
+    </div>
+  </div>
+</div>
