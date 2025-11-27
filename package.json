@@ -63,7 +63,7 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "@angular/common": "~20.3.0",
+    "@angular/common": "~20.3.14",
     "@angular/compiler": "~20.3.0",
     "@angular/core": "~20.3.0",
     "@angular/forms": "~20.3.0",
