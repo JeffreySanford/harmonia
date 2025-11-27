@@ -37,21 +37,22 @@ export class MusicComponent implements OnDestroy {
 
   constructor() {
     console.log('MusicComponent constructed');
-    try {
-      // Compute a default socket URL:
-      // - In local development, the Nest server runs on port 3000 so default to that
-      // - Otherwise, rely on the current origin
-      const defaultSocketUrl = (typeof window !== 'undefined' && window?.location?.hostname === 'localhost') ? 'http://localhost:3000' : (typeof window !== 'undefined' ? window.location.origin : '');
-      this.socket = io(defaultSocketUrl);
-      this.socket?.on('connect', () => console.log('Socket connected from constructor', this.socket?.id));
-      this.socket?.on('status_update', (payload: StatusUpdatePayload) => this.handleStatusUpdate(payload));
-    } catch (err) {
-      console.warn('Socket init failed', err);
-    }
+    // Socket will be initialized on submit
   }
 
   sendRequest() {
     console.log('sendRequest called from frontend music component');
+    // Initialize socket on first submit
+    if (!this.socket) {
+      try {
+        const defaultSocketUrl = (typeof window !== 'undefined') ? window.location.origin : '';
+        this.socket = io(defaultSocketUrl);
+        this.socket?.on('connect', () => console.log('Socket connected on submit', this.socket?.id));
+        this.socket?.on('status_update', (payload: StatusUpdatePayload) => this.handleStatusUpdate(payload));
+      } catch (err) {
+        console.warn('Socket init failed', err);
+      }
+    }
     this.loading = true;
     this.status = 'loading';
     this.message = 'Request sent! Waiting for backend...';

@@ -34,7 +34,12 @@ export class AppController {
   ) {
     try {
       const userAgent = ua ?? (req as Record<string, unknown>)?.headers?.['user-agent'];
-      console.log(`[API] POST /api/music called - src=${ip || 'unknown'} ua=${userAgent || 'unknown'} body=${JSON.stringify(body)}`);
+      const rawBody = typeof (req as any)?.rawBody !== 'undefined' ? (req as any).rawBody : null;
+      if (rawBody) {
+        console.log(`[API] POST /api/music called - src=${ip || 'unknown'} ua=${userAgent || 'unknown'} body=${JSON.stringify(body)} rawBody=${rawBody}`);
+      } else {
+        console.log(`[API] POST /api/music called - src=${ip || 'unknown'} ua=${userAgent || 'unknown'} body=${JSON.stringify(body)}`);
+      }
     } catch (e: unknown) {
       console.warn('[API] Failed to parse request info in postMusic', e);
     }

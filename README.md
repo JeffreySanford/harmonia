@@ -110,3 +110,9 @@ pnpm run test:socket-redis
 ```
 
 The frontend `Music` page connects to the gateway and updates a Material progress bar as events are received.
+
+Development tips:
+- If the NestJS API is already running on port 3000 (or you see `EADDRINUSE`), make sure you don't have another instance of the server running (e.g., restarted by the shell or a previous run).
+- Use `pnpm run start:api` to start the API only if port 3000 is not in use (this script ignores starting if it finds a server listening on that port).
+- Use `pnpm run start:api:force` to always start the API (it will fail if the port is already in use).
+- To free ports before a run, use: `pnpm run clean:ports` (this runs `npx kill-port` for the common dev ports: 4200/3000/8001/8002/8003).
