@@ -1,0 +1,24 @@
+.sidenav {
+	width: 220px;
+	position: fixed;
+	top: 64px; /* header height */
+	left: 0;
+	bottom: 56px; /* footer height */
+	background: #2c2c54;
+	color: #fff;
+	padding-top: 1rem;
+}
+.sidenav a {
+	color: #fff;
+	text-decoration: none;
+	font-size: 1.1rem;
+	font-weight: 500;
+	padding: 0.5rem 1rem;
+	display: block;
+	border-radius: 4px;
+	transition: background 0.2s;
+}
+.sidenav a.active,
+.sidenav a:hover {
+	background: #474787;
+}

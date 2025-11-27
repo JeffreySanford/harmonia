@@ -24,6 +24,8 @@ export default [
           style: 'kebab-case',
         },
       ],
+      // Allow NgModule-declared components (do not require standalone: true)
+      '@angular-eslint/prefer-standalone': 'off',
     },
   },
   {

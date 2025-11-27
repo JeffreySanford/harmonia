@@ -94,3 +94,19 @@ And join the Nx community:
 - [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
 - [Our Youtube channel](https://www.youtube.com/@nxdevtools)
 - [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+
+## Real-time status updates (WebSockets + Redis PUB/SUB)
+
+This project uses a simple WebSocket gateway (Socket.IO) for realtime job progress updates. The backend (NestJS API) subscribes to a Redis `status_updates` channel and broadcasts `status_update` events to connected clients (frontend). The Python microservices publish messages to the `status_updates` channel to trigger UI updates.
+
+Quick steps to test locally:
+- Ensure `start:all` is running:
+```sh
+pnpm run start:all
+```
+- In another terminal, run the integration test (it will connect and publish a simulated sequence):
+```sh
+pnpm run test:socket-redis
+```
+
+The frontend `Music` page connects to the gateway and updates a Material progress bar as events are received.

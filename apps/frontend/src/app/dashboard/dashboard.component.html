@@ -1,0 +1,29 @@
+<section class="dashboard">
+	<h2>Harmonia Dashboard</h2>
+	<div class="dashboard-section">
+		<h3>Job Tracking</h3>
+		<button mat-button (click)="refreshJobStatus()">Refresh Job Status</button>
+		<table style="margin-top:1rem; width:100%; border-collapse:collapse;">
+			<thead>
+				<tr>
+					<th style="text-align:left; padding:0.5rem; border-bottom:1px solid #ccc;">Service</th>
+					<th style="text-align:left; padding:0.5rem; border-bottom:1px solid #ccc;">Status</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td style="padding:0.5rem;">Music</td>
+					<td style="padding:0.5rem;">{{ jobStatus.music }}</td>
+				</tr>
+				<tr>
+					<td style="padding:0.5rem;">Video</td>
+					<td style="padding:0.5rem;">{{ jobStatus.video }}</td>
+				</tr>
+				<tr>
+					<td style="padding:0.5rem;">Vocal</td>
+					<td style="padding:0.5rem;">{{ jobStatus.vocal }}</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+</section>

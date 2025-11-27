@@ -1,0 +1,13 @@
+.layout {
+	display: flex;
+	min-height: 100vh;
+	padding-top: 64px; /* header height */
+}
+
+.main-stage {
+	flex: 1;
+	margin-left: 220px; /* side nav width */
+	padding: 2rem;
+	background: #f5f6fa;
+	min-height: calc(100vh - 64px - 56px); /* header + footer height */
+}

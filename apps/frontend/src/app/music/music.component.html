@@ -1,0 +1,47 @@
+<div style="margin-top: 2em;">
+	<h3>Static Progress Bar Test</h3>
+	<mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+	<button mat-button (click)="progress = (progress + 10) % 110">Increase Progress</button>
+	<div>Current progress: {{ progress }}%</div>
+</div>
+<h2>Music Generation</h2>
+<div style="color: green; font-weight: bold;">TEST: MusicComponent is loaded!</div>
+
+<mat-form-field appearance="outline" style="width: 100%;">
+		<mat-label>Lyrics / Prompt</mat-label>
+		<!-- Disable Grammarly and other similar extensions by adding known attributes -->
+		<textarea matInput rows="6" [(ngModel)]="lyrics" placeholder="Enter lyrics or prompt for music generation"
+			data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" aria-label="lyrics-input"></textarea>
+	</mat-form-field>
+
+<button type="button" mat-flat-button color="primary" (click)="sendRequest()" [disabled]="loading || !lyrics">Send Music Generation Request</button>
+
+<div *ngIf="status === 'loading'">
+	<mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+	<span>{{ message }}</span>
+	<div>Estimated time left: {{ estimatedTime }}s</div>
+</div>
+<div *ngIf="status === 'success'">
+		<span>{{ message }}</span>
+		<div *ngIf="httpStatus">HTTP Status: {{ httpStatus }}</div>
+		<pre>{{ data | json }}</pre>
+		<div *ngIf="audioUrl" style="display:flex; align-items:center; gap: 8px; margin-top:8px;">
+			<button mat-icon-button (click)="togglePlayback()" aria-label="Play audio">
+				<mat-icon>{{ audioPlaying ? 'pause' : 'play_arrow' }}</mat-icon>
+			</button>
+			<a [href]="audioUrl" download target="_blank" rel="noopener">
+				<button mat-icon-button aria-label="Download audio">
+					<mat-icon>download</mat-icon>
+				</button>
+			</a>
+			<audio *ngIf="audioUrl" controls style="max-width: 300px;">
+				<source [src]="audioUrl" type="audio/wav">
+				Your browser does not support the audio element.
+			</audio>
+		</div>
+</div>
+<div *ngIf="status === 'error'">
+	<span style="color:red;">{{ message }}</span>
+	<div *ngIf="httpStatus">HTTP Status: {{ httpStatus }}</div>
+	<div *ngIf="errorDetails">Error Details: {{ errorDetails }}</div>
+</div>

@@ -1,0 +1,14 @@
+.app-header {
+	width: 100%;
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 1000;
+	background: #2c2c54;
+	color: #fff;
+	height: 64px;
+	display: flex;
+	align-items: center;
+	padding: 0 1rem;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
