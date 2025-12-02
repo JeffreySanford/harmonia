@@ -400,7 +400,7 @@ Growth Rate:               ~1-2GB/month
 
 ### Cloud Storage Needs (Future)
 
-**Scenario 1: Backup-Only (Recommended)**
+#### Scenario 1: Backup-Only (Recommended)
 
 ```plaintext
 Daily backups (7 days)     ~10GB    ($0.05-0.23/month)
@@ -410,7 +410,7 @@ Total:                     ~10GB
 Monthly Cost:              $0.05-2/month (Backblaze to AWS)
 ```
 
-**Scenario 2: Metadata Sync to jeffreysanford.us**
+#### Scenario 2: Metadata Sync to jeffreysanford.us
 
 ```plaintext
 Metadata database          ~100MB   (SQLite or JSON)
@@ -421,7 +421,7 @@ Total:                     ~200MB
 Monthly Cost:              $0 (fits on small server)
 ```
 
-**Scenario 3: Full Cloud Migration (Not Recommended Yet)**
+#### Scenario 3: Full Cloud Migration (Not Recommended Yet)
 
 ```plaintext
 MongoDB Atlas M30          ~150GB   ($305/month)
