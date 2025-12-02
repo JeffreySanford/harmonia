@@ -1,1 +1,176 @@
-/* You can add global styles to this file, and also import other style files */
+// Harmonia Global Styles
+// Material Design 3 "Legendary" Theme
+// Vibrant, clean, professional - inspired by North Dakota's aurora borealis
+
+// ============================================================================
+// CORE IMPORTS
+// Import order matters - colors first, then mixins, then components
+// ============================================================================
+@use 'styles/colors';
+@use 'styles/mixins';
+@use 'styles/typography';
+@use 'styles/layout';
+@use 'styles/cards';
+@use 'styles/animations';
+
+// ============================================================================
+// GLOBAL RESETS
+// Normalize and set sensible defaults
+// ============================================================================
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100%;
+  background-color: colors.$color-background;
+  color: colors.$color-text-primary;
+  font-family: typography.$font-family-sans;
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+// ============================================================================
+// FOCUS STYLES
+// Consistent focus indicators for accessibility
+// ============================================================================
+:focus-visible {
+  outline: 2px solid colors.$primary-500;
+  outline-offset: 2px;
+}
+
+// ============================================================================
+// SELECTION STYLES
+// Branded text selection color
+// ============================================================================
+::selection {
+  background-color: colors.$primary-200;
+  color: colors.$color-text-primary;
+}
+
+::-moz-selection {
+  background-color: colors.$primary-200;
+  color: colors.$color-text-primary;
+}
+
+// ============================================================================
+// SCROLLBAR CUSTOMIZATION
+// Subtle, branded scrollbars
+// ============================================================================
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: colors.$neutral-100;
+}
+
+::-webkit-scrollbar-thumb {
+  background: colors.$neutral-400;
+  border-radius: 6px;
+  border: 3px solid colors.$neutral-100;
+
+  &:hover {
+    background: colors.$neutral-500;
+  }
+}
+
+// Firefox scrollbar
+* {
+  scrollbar-width: thin;
+  scrollbar-color: colors.$neutral-400 colors.$neutral-100;
+}
+
+// ============================================================================
+// UTILITY CLASSES
+// ============================================================================
+.sr-only {
+  @include mixins.sr-only;
+}
+
+.no-scroll {
+  overflow: hidden;
+}
+
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+.text-gradient-aurora {
+  @include mixins.gradient-text(colors.$gradient-aurora);
+}
+
+.text-gradient-sunset {
+  @include mixins.gradient-text(colors.$gradient-sunset);
+}
+
+.text-gradient-prairie {
+  @include mixins.gradient-text(colors.$gradient-prairie);
+}
+
+// ============================================================================
+// PRINT STYLES
+// ============================================================================
+@media print {
+  *,
+  *::before,
+  *::after {
+    background: transparent !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  a,
+  a:visited {
+    text-decoration: underline;
+  }
+
+  a[href]::after {
+    content: " (" attr(href) ")";
+  }
+
+  pre {
+    white-space: pre-wrap !important;
+  }
+
+  pre,
+  blockquote {
+    border: 1px solid #999;
+    page-break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tr,
+  img {
+    page-break-inside: avoid;
+  }
+
+  p,
+  h2,
+  h3 {
+    orphans: 3;
+    widows: 3;
+  }
+
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
+}

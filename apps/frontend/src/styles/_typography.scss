@@ -1,0 +1,405 @@
+// Harmonia Typography System
+// Material Design 3 type scale with Roboto and Inter fonts
+
+@use 'colors' as c;
+@use 'mixins' as m;
+
+// ============================================================================
+// FONT FAMILIES
+// ============================================================================
+$font-family-sans: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+$font-family-mono: 'Fira Code', 'Source Code Pro', 'Courier New', monospace;
+$font-family-display: 'Inter', 'Roboto', sans-serif;
+
+// ============================================================================
+// FONT WEIGHTS
+// ============================================================================
+$font-weight-thin: 100;
+$font-weight-light: 300;
+$font-weight-regular: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+$font-weight-black: 900;
+
+// ============================================================================
+// BASE TYPOGRAPHY
+// ============================================================================
+body {
+  font-family: $font-family-sans;
+  font-size: 16px;
+  font-weight: $font-weight-regular;
+  line-height: 1.5;
+  color: c.$color-text-primary;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// ============================================================================
+// HEADINGS
+// Semantic HTML heading styles
+// ============================================================================
+h1, .h1 {
+  @include m.heading-1;
+  margin: 0 0 24px 0;
+  color: c.$color-text-primary;
+}
+
+h2, .h2 {
+  @include m.heading-2;
+  margin: 0 0 20px 0;
+  color: c.$color-text-primary;
+}
+
+h3, .h3 {
+  @include m.heading-3;
+  margin: 0 0 16px 0;
+  color: c.$color-text-primary;
+}
+
+h4, .h4 {
+  @include m.heading-4;
+  margin: 0 0 16px 0;
+  color: c.$color-text-primary;
+}
+
+h5, .h5 {
+  @include m.heading-5;
+  margin: 0 0 12px 0;
+  color: c.$color-text-primary;
+}
+
+h6, .h6 {
+  @include m.heading-6;
+  margin: 0 0 12px 0;
+  color: c.$color-text-primary;
+}
+
+// ============================================================================
+// BODY TEXT
+// ============================================================================
+p {
+  @include m.body-1;
+  margin: 0 0 16px 0;
+  color: c.$color-text-primary;
+}
+
+.text-body-1 {
+  @include m.body-1;
+}
+
+.text-body-2 {
+  @include m.body-2;
+  color: c.$color-text-secondary;
+}
+
+// ============================================================================
+// UTILITY TEXT STYLES
+// ============================================================================
+.text-caption {
+  @include m.caption;
+  color: c.$color-text-secondary;
+}
+
+.text-overline {
+  @include m.overline;
+  color: c.$color-text-secondary;
+}
+
+.text-label {
+  font-size: 0.875rem;
+  font-weight: $font-weight-medium;
+  line-height: 1.43;
+  letter-spacing: 0.01071em;
+}
+
+// ============================================================================
+// TEXT COLORS
+// ============================================================================
+.text-primary {
+  color: c.$color-text-primary;
+}
+
+.text-secondary {
+  color: c.$color-text-secondary;
+}
+
+.text-disabled {
+  color: c.$color-text-disabled;
+}
+
+.text-accent {
+  color: c.$accent-500;
+}
+
+.text-warn {
+  color: c.$warn-500;
+}
+
+.text-success {
+  color: c.$success-500;
+}
+
+// ============================================================================
+// TEXT ALIGNMENT
+// ============================================================================
+.text-left {
+  text-align: left;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-justify {
+  text-align: justify;
+}
+
+// ============================================================================
+// TEXT TRANSFORMS
+// ============================================================================
+.text-uppercase {
+  text-transform: uppercase;
+}
+
+.text-lowercase {
+  text-transform: lowercase;
+}
+
+.text-capitalize {
+  text-transform: capitalize;
+}
+
+.text-no-transform {
+  text-transform: none;
+}
+
+// ============================================================================
+// TEXT DECORATIONS
+// ============================================================================
+.text-underline {
+  text-decoration: underline;
+}
+
+.text-line-through {
+  text-decoration: line-through;
+}
+
+.text-no-decoration {
+  text-decoration: none;
+}
+
+// ============================================================================
+// FONT WEIGHTS
+// ============================================================================
+.font-thin {
+  font-weight: $font-weight-thin;
+}
+
+.font-light {
+  font-weight: $font-weight-light;
+}
+
+.font-regular {
+  font-weight: $font-weight-regular;
+}
+
+.font-medium {
+  font-weight: $font-weight-medium;
+}
+
+.font-semibold {
+  font-weight: $font-weight-semibold;
+}
+
+.font-bold {
+  font-weight: $font-weight-bold;
+}
+
+.font-black {
+  font-weight: $font-weight-black;
+}
+
+// ============================================================================
+// FONT FAMILIES
+// ============================================================================
+.font-sans {
+  font-family: $font-family-sans;
+}
+
+.font-mono {
+  font-family: $font-family-mono;
+}
+
+.font-display {
+  font-family: $font-family-display;
+}
+
+// ============================================================================
+// LINKS
+// ============================================================================
+a {
+  color: c.$color-link;
+  text-decoration: none;
+  transition: color 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+
+  &:hover {
+    color: c.$color-link-hover;
+    text-decoration: underline;
+  }
+
+  &:visited {
+    color: c.$color-link-visited;
+  }
+
+  &:focus-visible {
+    outline: 2px solid c.$primary-500;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+// ============================================================================
+// CODE & PRE
+// ============================================================================
+code {
+  font-family: $font-family-mono;
+  font-size: 0.875em;
+  background-color: c.$color-code-bg;
+  color: c.$color-code-text;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+pre {
+  font-family: $font-family-mono;
+  font-size: 0.875rem;
+  background-color: c.$neutral-900;
+  color: c.$neutral-50;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0 0 16px 0;
+
+  code {
+    background-color: transparent;
+    color: inherit;
+    padding: 0;
+  }
+}
+
+// ============================================================================
+// LISTS
+// ============================================================================
+ul, ol {
+  margin: 0 0 16px 0;
+  padding-left: 24px;
+
+  li {
+    margin-bottom: 8px;
+    line-height: 1.6;
+  }
+}
+
+// ============================================================================
+// BLOCKQUOTE
+// ============================================================================
+blockquote {
+  margin: 0 0 16px 0;
+  padding: 12px 16px 12px 20px;
+  border-left: 4px solid c.$primary-500;
+  background-color: c.$color-surface-variant;
+  font-style: italic;
+  color: c.$color-text-secondary;
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// ============================================================================
+// SPECIAL TEXT STYLES
+// "Legendary" branded typography
+// ============================================================================
+.text-legendary {
+  @include m.heading-1;
+  @include m.gradient-text(c.$gradient-aurora);
+  font-weight: $font-weight-bold;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.text-hero {
+  font-size: 3rem;
+  font-weight: $font-weight-light;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
+
+  @include m.mobile-only {
+    font-size: 2rem;
+  }
+}
+
+.text-display {
+  font-size: 2.5rem;
+  font-weight: $font-weight-regular;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+
+  @include m.mobile-only {
+    font-size: 1.75rem;
+  }
+}
+
+// ============================================================================
+// DARK MODE OVERRIDES
+// ============================================================================
+.dark-theme {
+  body {
+    color: c.$color-text-primary-dark;
+  }
+
+  h1, h2, h3, h4, h5, h6,
+  .h1, .h2, .h3, .h4, .h5, .h6 {
+    color: c.$color-text-primary-dark;
+  }
+
+  p {
+    color: c.$color-text-primary-dark;
+  }
+
+  .text-primary {
+    color: c.$color-text-primary-dark;
+  }
+
+  .text-secondary,
+  .text-body-2,
+  .text-caption,
+  .text-overline {
+    color: c.$color-text-secondary-dark;
+  }
+
+  .text-disabled {
+    color: c.$color-text-disabled-dark;
+  }
+
+  code {
+    background-color: c.$neutral-800;
+    color: c.$accent-300;
+  }
+
+  pre {
+    background-color: c.$neutral-1000;
+  }
+
+  blockquote {
+    background-color: c.$color-surface-variant-dark;
+    border-left-color: c.$primary-400;
+    color: c.$color-text-secondary-dark;
+  }
+}
