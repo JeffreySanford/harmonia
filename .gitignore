@@ -6,3 +6,16 @@ dist/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Ignore large model/dataset downloads and caches
+models/
+datasets/
+checkpoints/
+
+# Hugging Face cache
+.cache/huggingface/
+.cache/huggingface/hub/
+
+# local HF token/config (avoid committing secrets)
+.huggingface/
+

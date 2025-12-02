@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Load environment variables from .env if present and export them
+if [ -f "$(pwd)/.env" ]; then
+  # Export all variables defined in .env for child processes
+  set -a
+  # shellcheck disable=SC1091
+  . "$(pwd)/.env"
+  set +a
+fi
+
 usage() {
   cat <<EOF
 Usage: $0 -n MODEL_NAME [-w WEIGHTS_URL] [-d]
@@ -8,6 +17,7 @@ Usage: $0 -n MODEL_NAME [-w WEIGHTS_URL] [-d]
 Options:
   -n MODEL_NAME   Name to store under models/ (required)
   -w WEIGHTS_URL  Optional direct URL to download weights (optional)
+  -t HF_TOKEN     Hugging Face token to avoid rate-limits (optional)
   -d              Also download weights if WEIGHTS_URL provided
   -h              Show this help
 
@@ -25,11 +35,13 @@ EOF
 MODEL_NAME=""
 WEIGHTS_URL=""
 DO_DOWNLOAD=0
+HF_TOKEN=""
 
 while getopts ":n:w:dh" opt; do
   case ${opt} in
     n) MODEL_NAME="$OPTARG" ;;
     w) WEIGHTS_URL="$OPTARG" ;;
+    t) HF_TOKEN="$OPTARG" ;;
     d) DO_DOWNLOAD=1 ;;
     h) usage; exit 0 ;;
     :) echo "Error: -$OPTARG requires an argument" >&2; usage; exit 2 ;;
@@ -45,6 +57,12 @@ fi
 
 DEST_DIR="$(pwd)/models/${MODEL_NAME}"
 mkdir -p "$DEST_DIR"
+
+# Export HF token if supplied (so python/hf tools can use it)
+if [ -n "$HF_TOKEN" ]; then
+  export HUGGINGFACE_HUB_TOKEN="$HF_TOKEN"
+  echo "Using provided Hugging Face token for downloads (HUGGINGFACE_HUB_TOKEN set)."
+fi
 
 # Attempt to fetch a plausible metadata location — this is a heuristic placeholder.
 # Prefer explicit metadata URLs in the future; many projects publish a config.json
