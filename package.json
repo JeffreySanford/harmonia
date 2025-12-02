@@ -1,0 +1,24 @@
+{
+  "name": "harmonia",
+  "version": "0.1.0",
+  "description": "Harmonia — repository scaffold",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p .",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "echo \"No tests configured\" && exit 0",
+    "lint": "eslint . --ext .ts",
+    "docker:build": "bash scripts/build_image.sh",
+    "docker:run": "bash scripts/run_dev.sh"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.1.6",
+    "ts-node": "^10.9.1",
+    "eslint": "^8.0.0"
+  }
+}
