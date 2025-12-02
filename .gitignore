@@ -19,3 +19,7 @@ checkpoints/
 # local HF token/config (avoid committing secrets)
 .huggingface/
 
+# MongoDB backups and auto-generated seeds
+backups/
+seeds/dr-seed-*.json
+seeds/*-backup-*.json

@@ -1,0 +1,31 @@
+FROM python:3.11-slim
+
+LABEL org.opencontainers.image.title="harmonia-worker"
+LABEL org.opencontainers.image.description="Worker image for Harmonia model inference (dev-friendly)."
+
+ENV PYTHONUNBUFFERED=1
+WORKDIR /workspace
+
+# Install minimal system deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy a lightweight requirements file; heavy ML deps should be installed manually
+COPY requirements.txt /workspace/requirements.txt
+RUN pip install --upgrade pip && pip install --no-deps -r /workspace/requirements.txt || true
+
+# Add entrypoint and scripts
+COPY scripts /workspace/scripts
+RUN chmod +x /workspace/scripts/*.py || true
+COPY entrypoint.sh /workspace/entrypoint.sh
+RUN chmod +x /workspace/entrypoint.sh || true
+
+ENTRYPOINT ["/workspace/entrypoint.sh"]
+
+ENV HARMONIA_MODELS_ROOT=/workspace/models
+VOLUME ["/workspace/models", "/workspace/artifacts"]
+
+CMD ["/bin/bash"]

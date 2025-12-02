@@ -1,31 +1,92 @@
-name: Smoke Checks
+name: "Smoke Checks"
 
-on:
+"on":
   push:
-    branches: [ master ]
+    branches:
+      - "master"
   pull_request:
-    branches: [ master ]
+    branches:
+      - "master"
+  schedule:
+    - cron: '0 6 * * 1' # weekly on Monday 06:00 UTC - adjust as needed
 
 jobs:
   smoke:
-    name: Run environment smoke checks
+    name: "Run environment smoke checks"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
+      - name: "Checkout"
+        uses: actions/checkout@v4
+      - name: "Set up Python"
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
-      - name: Install minimal deps
+          python-version: "3.11"
+      - name: "Restore manifests cache"
+        uses: actions/cache@v4
+        with:
+          path: |
+            inventory/combined_inventory.json
+            models/checksums.sha256
+          key: ${{ runner.os }}-harmonia-manifests-v1
+          restore-keys: |
+            ${{ runner.os }}-harmonia-manifests-
+      - name: "Validate inventory manifest (optional)"
         run: |
           python -m pip install --upgrade pip
-          pip install --no-deps -r requirements.txt || true
-      - name: Run smoke check
+          pip install jsonschema || true
+          if [ -f inventory/manifest_schema.json ] && [ -f inventory/combined_inventory.json ]; then
+            python scripts/validate_manifest.py
+          else
+            echo "No manifest or schema found; skipping manifest validation"
+          fi
+      - name: "Install minimal deps"
         run: |
+          python -m pip install --upgrade pip
+          pip install --no-deps -r requirements-light.txt || true
+      - name: "Run smoke check"
+        run: |
+          set -o pipefail
+          # Run the smoke check (it returns specific non-zero codes):
+          # 3 = recorded checksums present but mismatched (we want to fail CI)
+          # 4 = missing files and no recorded checksums (do not fail CI; likely run without large artifacts)
           python tests/env_tests/smoke_check.py || true
-      - name: Upload smoke report
+          rc=$?
+          echo "Smoke check exit code: $rc"
+          # Fail the workflow explicitly when recorded checksums mismatch (rc==3)
+          if [ "$rc" -eq 3 ]; then
+            echo "Recorded checksum mismatch detected. Failing job."
+            exit 1
+          fi
+          # rc==4 -> missing files without recorded checksums: treat as non-fatal (developer/local)
+          if [ "$rc" -eq 4 ]; then
+            echo "Missing files and no recorded checksums (non-fatal)."
+          fi
+
+      - name: "Upload smoke report"
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-reports
-          path: tests/env_tests/smoke_report_*.json
+          name: "smoke-reports"
+          path: "tests/env_tests/smoke_report_*.json"
+
+      - name: "Create issue on checksum mismatch"
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const glob = require('glob');
+            const files = glob.sync('tests/env_tests/smoke_report_*.json');
+            let body = 'Smoke check failed: recorded checksum mismatch or missing artifacts. Please review the attached smoke report artifacts.';
+            if (files.length) {
+              body += '\n\nRecent smoke reports:\n';
+              for (const f of files.slice(-3)) {
+                body += `- ${f}\n`;
+              }
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Smoke check failure: model checksum mismatch',
+              body: body
+            });

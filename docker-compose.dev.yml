@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: harmonia/worker:dev
+    runtime: "nvidia"
+    environment:
+      - HUGGINGFACE_HUB_TOKEN=${HUGGINGFACE_HUB_TOKEN}
+      - HARMONIA_MODELS_ROOT=/workspace/models
+    volumes:
+      - ./models:/workspace/models:ro
+      - ./artifacts:/workspace/artifacts
+      - ./scripts:/workspace/scripts:ro
+    command: ["/bin/bash", "-lc", "ls -la /workspace/models || true; bash"]
+    deploy:
+      resources:
+        limits:
+          memory: 32G

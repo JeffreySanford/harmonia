@@ -1,0 +1,108 @@
+{
+  "$schema": "./seed_schema.json",
+  "version": "1.0.0",
+  "generated_at": "2025-12-02T00:00:00Z",
+  "description": "Disaster recovery seed data for Harmonia MongoDB collections",
+  "collections": {
+    "model_artifacts": [
+      {
+        "_id": "seed_facebook_musicgen",
+        "name": "facebook",
+        "version": "v0",
+        "path": "C:/repos/harmonia/models/facebook",
+        "size_bytes": 107272174296,
+        "hashes": {
+          "sha256": "pending_calculation"
+        },
+        "license_id": null,
+        "tags": ["musicgen", "facebook", "audio-generation"],
+        "repo_id": "facebook",
+        "local_path": "C:/repos/harmonia/models/facebook",
+        "createdAt": "2025-12-02T00:00:00Z",
+        "updatedAt": "2025-12-02T00:00:00Z"
+      },
+      {
+        "_id": "seed_foo_test",
+        "name": "foo",
+        "version": "v0",
+        "path": "C:/repos/harmonia/models/foo",
+        "size_bytes": 699,
+        "hashes": {
+          "sha256": "pending_calculation"
+        },
+        "license_id": null,
+        "tags": ["test", "example"],
+        "repo_id": "foo",
+        "local_path": "C:/repos/harmonia/models/foo",
+        "createdAt": "2025-12-02T00:00:00Z",
+        "updatedAt": "2025-12-02T00:00:00Z"
+      }
+    ],
+    "licenses": [
+      {
+        "_id": "seed_cc_by_nc_4_0",
+        "spdx_id": "CC-BY-NC-4.0",
+        "text_path": "legal/licenses/CC-BY-NC-4.0.txt",
+        "commercial_use": false,
+        "notes": "Creative Commons Attribution-NonCommercial 4.0 International - commonly used for MusicGen models",
+        "createdAt": "2025-12-02T00:00:00Z",
+        "updatedAt": "2025-12-02T00:00:00Z"
+      },
+      {
+        "_id": "seed_mit",
+        "spdx_id": "MIT",
+        "text_path": "legal/licenses/MIT.txt",
+        "commercial_use": true,
+        "notes": "MIT License - permissive open source",
+        "createdAt": "2025-12-02T00:00:00Z",
+        "updatedAt": "2025-12-02T00:00:00Z"
+      }
+    ],
+    "inventory_versions": [
+      {
+        "_id": "seed_version_initial",
+        "version_tag": "v0.1.0-seed",
+        "artifact_ids": ["seed_facebook_musicgen", "seed_foo_test"],
+        "datasets": [],
+        "published_by": "system",
+        "published_at": "2025-12-02T00:00:00Z",
+        "createdAt": "2025-12-02T00:00:00Z",
+        "updatedAt": "2025-12-02T00:00:00Z"
+      }
+    ],
+    "jobs": [
+      {
+        "_id": "seed_job_initial_download",
+        "type": "download",
+        "status": "success",
+        "worker_id": "manual",
+        "params": {
+          "repo_ids": ["facebook", "foo"],
+          "target_dir": "models"
+        },
+        "started_at": "2025-12-02T00:00:00Z",
+        "finished_at": "2025-12-02T01:00:00Z",
+        "createdAt": "2025-12-02T00:00:00Z",
+        "updatedAt": "2025-12-02T01:00:00Z"
+      }
+    ],
+    "events": [
+      {
+        "_id": "seed_event_db_initialized",
+        "event_type": "database_initialized",
+        "payload": {
+          "version": "1.0.0",
+          "collections": ["model_artifacts", "licenses", "inventory_versions", "jobs", "events"],
+          "seed_data": true
+        },
+        "created_at": "2025-12-02T00:00:00Z"
+      }
+    ]
+  },
+  "metadata": {
+    "total_documents": 8,
+    "collections_count": 5,
+    "seed_purpose": "disaster_recovery",
+    "restore_instructions": "Use scripts/restore-from-seed.js to restore this data"
+  }
+}

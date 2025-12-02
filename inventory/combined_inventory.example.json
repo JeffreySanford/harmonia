@@ -1,0 +1,24 @@
+{
+  "version": "0.0.1",
+  "generated_at": "2025-12-02T00:00:00Z",
+  "models": [
+    {
+      "name": "musicgen-medium",
+      "path": "models/musicgen-medium",
+      "sha256": "<sha256-of-top-shard>",
+      "size_bytes": 3500000000,
+      "source_url": "https://huggingface.co/facebook/musicgen-medium",
+      "variant": "medium",
+      "notes": "Example entry",
+      "license": {
+        "name": "MIT",
+        "url": "https://example.org/license/MIT",
+        "file_path": "legal/licenses/musicgen-medium-LICENSE.txt",
+        "commercial_use": "allowed",
+        "redistribution": "restricted",
+        "notes": "Example license entry; replace with actual license text and summary"
+      }
+    }
+  ],
+  "datasets": []
+}

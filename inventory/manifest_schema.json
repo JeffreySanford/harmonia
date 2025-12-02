@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Harmonia Inventory Manifest",
+  "type": "object",
+  "properties": {
+    "version": {"type":"string"},
+    "generated_at": {"type":"string","format":"date-time"},
+    "models": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type":"string"},
+          "path": {"type":"string"},
+          "sha256": {"type":"string"},
+          "size_bytes": {"type":"integer"},
+          "source_url": {"type":"string"},
+          "variant": {"type":"string"},
+          "notes": {"type":"string"},
+          "license": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string"},
+              "url": {"type": "string"},
+              "file_path": {"type": "string"},
+              "commercial_use": {"type": "string", "enum": ["allowed","restricted","prohibited","unknown"]},
+              "redistribution": {"type": "string", "enum": ["allowed","restricted","prohibited","unknown"]},
+              "notes": {"type": "string"}
+            }
+          }
+        },
+        "required": ["name","path"]
+      }
+    },
+    "datasets": {
+      "type": "array",
+      "items": {"type":"object"}
+    }
+  },
+  "required": ["version","generated_at"]
+}

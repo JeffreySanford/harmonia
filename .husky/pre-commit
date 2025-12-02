@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+# Pre-commit hook to enforce coding standards
+# Installed by: pnpm run prepare
+
+echo "🔍 Running pre-commit checks..."
+
+# Run ESLint on staged TypeScript files
+echo "  - Checking TypeScript files for lint errors..."
+pnpm lint --quiet || {
+  echo "❌ ESLint failed. Fix errors and commit again."
+  exit 1
+}
+
+# Check file sizes (max 500 lines)
+echo "  - Checking file sizes (max 500 lines)..."
+for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|js)$'); do
+  if [ -f "$file" ]; then
+    lines=$(wc -l < "$file")
+    if [ "$lines" -gt 500 ]; then
+      echo "❌ $file has $lines lines (max 500). Refactor before committing."
+      exit 1
+    fi
+  fi
+done
+
+# Check for sensitive data in .env
+if git diff --cached --name-only | grep -q "^\.env$"; then
+  echo "❌ Attempting to commit .env file. This is blocked for security."
+  echo "   Only commit .env.example with placeholder values."
+  exit 1
+fi
+
+echo "✅ Pre-commit checks passed!"
+exit 0

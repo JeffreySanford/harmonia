@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: harmonia-mongo-i9
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"  # Bind to localhost only for security
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: harmonia
+    volumes:
+      - mongo-data:/data/db
+      - mongo-config:/data/configdb
+      - ./backups/mongo:/backups
+      - ./scripts/mongo-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - harmonia-net
+    command: >
+      --auth
+      --wiredTigerCacheSizeGB 8
+      --maxConns 1000
+      --bind_ip_all
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo-express:
+    image: mongo-express:1.0-20
+    container_name: harmonia-mongo-ui
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:8081"  # Bind to localhost only
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://admin:${MONGO_ROOT_PASSWORD}@mongo:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: harmonia
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_HARMONIA_PASSWORD}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - harmonia-net
+
+networks:
+  harmonia-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  mongo-data:
+    driver: local
+  mongo-config:
+    driver: local

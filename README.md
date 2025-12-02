@@ -40,15 +40,99 @@ This project includes a `Dockerfile` and `docker-compose.yml` to create a reprod
 ````markdown
 # Harmonia
 
-A minimal scaffold for the `harmonia` repository with utilities to download and manage MusicGen models and related datasets.
+**AI-powered music generation platform built on Meta's MusicGen, with enterprise-grade data management, persistent storage, and reproducible workflows.**
 
-## What’s included
+---
 
-- `package.json` with basic scripts (`build`, `start`, `dev`, `test`).
-- TypeScript configuration (`tsconfig.json`).
-- A minimal `src/index.ts` exporting `greet()`.
-- `.gitignore` and `LICENSE` (MIT).
-- A GitHub Actions CI workflow for building the project.
+## Quick Start
+
+**New to Harmonia? Start here:**
+
+1. **Set up MongoDB on i9:** [QUICKSTART_MONGODB.md](docs/QUICKSTART_MONGODB.md) (~10 minutes)
+2. **Install dependencies:** `pnpm install`
+3. **Run tests:** `pnpm test:mongo`
+4. **Review Phase 0 checklist:** [PHASE_0_CHECKLIST.md](docs/PHASE_0_CHECKLIST.md)
+
+---
+
+## What's Included
+
+### Infrastructure
+- 🐳 Docker-based MongoDB with Mongo Express UI
+- 📦 PNPM workspace with security-first package management
+- 🔐 Secure authentication and firewall configuration
+- 💾 Automated backup scripts
+
+### Models & Data
+- 🎵 MusicGen, EnCodec, and Demucs models (~100GB)
+- 📊 Curated datasets (GTZAN, MusicCaps, etc.)
+- ✅ SHA256 checksums and smoke-check validation
+- 📋 Structured inventories (JSON manifests)
+
+### Persistent Storage
+- 🗄️ MongoDB 7.0 with Mongoose schemas
+- 📝 TypeScript DTOs with validation
+- 🔗 Strongly-typed collection relationships
+- ⚡ Indexed queries and TTL expiration
+
+### CI/CD
+- ✅ Smoke checks (scheduled + PR-triggered)
+- 📜 License validation (soft/strict modes)
+- 🧪 Memory-server unit tests
+- 🚀 Release workflows with strict checks
+
+### Documentation
+- 📘 [Architecture](docs/ARCHITECTURE.md)
+- 🛡️ [Coding Standards](docs/CODING_STANDARDS.md) (file size limits, refactoring patterns)
+- 🔒 [PNPM Benefits & Security](docs/PNPM.md)
+- 🗄️ [MongoDB Setup](docs/I9_MONGODB_INSTALL.md)
+- ⚖️ [Legal/License Audit](docs/LICENSING_CI.md)
+- 💰 [Cost Planning](docs/RESOURCE_COST_PLANNING.md)
+- 🧭 [Developer Onboarding](docs/DEV_ONBOARDING.md)
+
+---
+
+## Project Structure
+
+```
+harmonia/
+├── docs/                          # Comprehensive documentation
+│   ├── QUICKSTART_MONGODB.md      # 10-minute MongoDB setup
+│   ├── PHASE_0_CHECKLIST.md       # Current phase progress
+│   ├── I9_MONGODB_INSTALL.md      # Detailed i9 installation guide
+│   ├── PNPM.md                    # Package manager benefits & security
+│   └── ...                        # Architecture, standards, guides
+├── src/
+│   ├── models/                    # TypeScript Mongoose schemas
+│   ├── models-js/                 # JavaScript models (for migration)
+│   └── dto/                       # Data transfer objects with validation
+├── scripts/
+│   ├── download_model_*.sh        # Model downloader scripts
+│   ├── migrate_inventory_to_db.js # Seed MongoDB from inventory
+│   ├── backup-mongo.sh            # Automated backup script
+│   ├── audit_file_sizes.py        # Enforce 500-line limit
+│   └── mongo-init/                # Database initialization scripts
+├── tests/
+│   └── env_tests/
+│       └── smoke_check.py         # Checksum validation
+├── .github/workflows/             # CI/CD pipelines
+├── docker-compose.mongo.yml       # MongoDB + Mongo Express
+├── pnpm-workspace.yaml            # Workspace configuration
+└── models/                        # Downloaded model artifacts (gitignored)
+```
+
+---
+
+## Core Technologies
+
+- **Runtime:** Node.js 18+ with pnpm 8
+- **Languages:** TypeScript (strict mode), Python 3.11
+- **Database:** MongoDB 7.0 with Mongoose ODM
+- **Containerization:** Docker + Docker Compose
+- **CI/CD:** GitHub Actions
+- **Testing:** Jest (TS), pytest (Python), mongodb-memory-server
+
+---
 - Scripts to download MusicGen models and curated datasets from Hugging Face (`scripts/download_musicgen_full.sh`, `scripts/download_model_facebook.sh`).
 
 ## Quick start

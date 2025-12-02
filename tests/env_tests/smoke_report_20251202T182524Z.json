@@ -1,0 +1,59 @@
+{
+  "summary": {
+    "generated_at": "2025-12-02T18:25:24.805820Z",
+    "total_files": 6,
+    "matched": 6,
+    "missing": 0,
+    "has_recorded_checksums": true
+  },
+  "results": [
+    {
+      "path": "C:\\repos\\harmonia\\models\\facebook\\facebook_musicgen-large\\models--facebook--musicgen-large\\snapshots\\15ccdc92099879e47b6da12c350cdb71d4eab3ca\\pytorch_model-00001-of-00002.bin",
+      "exists": true,
+      "size_bytes": 9987827539,
+      "sha256": "a7ed8a0d95eff206263d1ae62955a7b8a7dab11a6b55e953887aea6ed54f85bd",
+      "expected": "a7ed8a0d95eff206263d1ae62955a7b8a7dab11a6b55e953887aea6ed54f85bd",
+      "match": true
+    },
+    {
+      "path": "C:\\repos\\harmonia\\models\\facebook\\facebook_musicgen-medium\\models--facebook--musicgen-medium\\snapshots\\d3bd7b00761b78ad7a8a05145ee31e7832e9916c\\pytorch_model.bin",
+      "exists": true,
+      "size_bytes": 8042351585,
+      "sha256": "b51b0ec25096748bb9a86bf37e41b487024ab2b7077d26cc9e007525f47cd189",
+      "expected": "b51b0ec25096748bb9a86bf37e41b487024ab2b7077d26cc9e007525f47cd189",
+      "match": true
+    },
+    {
+      "path": "C:\\repos\\harmonia\\models\\facebook\\facebook_musicgen-stereo-melody\\models--facebook--musicgen-stereo-melody\\snapshots\\022c3bd20a7d77e7c014082f0391bcbcd3940a7a\\model-00001-of-00002.safetensors",
+      "exists": true,
+      "size_bytes": 4997739040,
+      "sha256": "64bb17eb17182b17ba19dec21d794229c955d39cb5610a21da75ed2397da750d",
+      "expected": "64bb17eb17182b17ba19dec21d794229c955d39cb5610a21da75ed2397da750d",
+      "match": true
+    },
+    {
+      "path": "C:\\repos\\harmonia\\models\\facebook\\facebook_musicgen-stereo-large\\models--facebook--musicgen-stereo-large\\snapshots\\bda8ec330c9c17e09728589eaf678f58f7d2d932\\pytorch_model-00001-of-00002.bin",
+      "exists": true,
+      "size_bytes": 4994057360,
+      "sha256": "72667896082e87c4332b01e55cf696bfc0cfb249c91f617443f3e340a2ddfa7a",
+      "expected": "72667896082e87c4332b01e55cf696bfc0cfb249c91f617443f3e340a2ddfa7a",
+      "match": true
+    },
+    {
+      "path": "C:\\repos\\harmonia\\models\\facebook\\facebook_musicgen-stereo-large\\models--facebook--musicgen-stereo-large\\snapshots\\bda8ec330c9c17e09728589eaf678f58f7d2d932\\model-00001-of-00002.safetensors",
+      "exists": true,
+      "size_bytes": 4993882540,
+      "sha256": "2cdfc42b238184fe9b0d9690cc9681e5f4b06826c90ff533ba6e7031fb7cb25d",
+      "expected": "2cdfc42b238184fe9b0d9690cc9681e5f4b06826c90ff533ba6e7031fb7cb25d",
+      "match": true
+    },
+    {
+      "path": "C:\\repos\\harmonia\\models\\facebook\\facebook_musicgen-stereo-melody-large\\models--facebook--musicgen-stereo-melody-large\\snapshots\\eea14861e6c29c47aea1055982a217468cd1634d\\model-00001-of-00003.safetensors",
+      "exists": true,
+      "size_bytes": 4987010864,
+      "sha256": "de1f894560846ddcaa2c8a2259229e135bcab586ec5002145869777ce0a15a5a",
+      "expected": "de1f894560846ddcaa2c8a2259229e135bcab586ec5002145869777ce0a15a5a",
+      "match": true
+    }
+  ]
+}

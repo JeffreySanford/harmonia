@@ -2,6 +2,7 @@
   "name": "harmonia",
   "version": "0.1.0",
   "description": "Harmonia — repository scaffold",
+  "private": true,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -9,7 +10,10 @@
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
     "test": "echo \"No tests configured\" && exit 0",
+    "test:mongo": "node scripts/test_mongoose_memory.js",
     "lint": "eslint . --ext .ts",
+    "seed:generate": "node scripts/generate-seed.js",
+    "seed:restore": "node scripts/restore-from-seed.js",
     "download:model": "bash scripts/download_model_facebook.sh",
     "docker:build": "bash scripts/build_image.sh",
     "docker:run": "bash scripts/run_dev.sh"
@@ -17,9 +21,27 @@
   "keywords": [],
   "author": "",
   "license": "MIT",
+  "dependencies": {
+    "mongodb-memory-server": "^8.11.0",
+    "mongoose": "^7.3.0"
+  },
   "devDependencies": {
-    "typescript": "^5.1.6",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.0.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.5.2",
     "ts-node": "^10.9.1",
-    "eslint": "^8.0.0"
+    "typescript": "^5.1.6"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "git add"
+    ],
+    "*.{json,md}": [
+      "prettier --write",
+      "git add"
+    ]
   }
 }

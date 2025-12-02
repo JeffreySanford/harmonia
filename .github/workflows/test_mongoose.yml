@@ -1,0 +1,41 @@
+name: Test Mongoose Models
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test-mongoose:
+    name: Run memory-server test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Enable corepack
+        run: corepack enable
+      
+      - name: Install pnpm
+        run: corepack prepare pnpm@8 --activate
+      
+      - name: Install dependencies
+        run: pnpm install
+      
+      - name: Run memory-server test
+        run: pnpm test:mongo
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: mongoose-test-results
+          path: scripts/test_mongoose_memory.js

@@ -1,0 +1,19 @@
+{
+  "generated_at": "2025-12-02T19:37:53.314409Z",
+  "entries": [
+    {
+      "name": "facebook",
+      "repo_id": "facebook",
+      "local_path": "C:/repos/harmonia/models/facebook",
+      "license_file": null,
+      "license_summary": null
+    },
+    {
+      "name": "foo",
+      "repo_id": "foo",
+      "local_path": "C:/repos/harmonia/models/foo",
+      "license_file": null,
+      "license_summary": null
+    }
+  ]
+}

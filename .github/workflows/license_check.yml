@@ -1,0 +1,32 @@
+name: License Check
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  license-check:
+    name: Ensure model licenses present
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install minimal deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install --no-deps -r requirements-light.txt || true
+      - name: Run license check
+        run: |
+          python scripts/check_licenses_ci.py
+      
+      - name: Annotate warnings
+        if: always()
+        run: |
+          # Parse output and create annotations for missing license files
+          # This is a placeholder - actual implementation would parse the script output
+          echo "::notice file=scripts/check_licenses_ci.py,line=1,title=License Check::Review license coverage in the output above"
