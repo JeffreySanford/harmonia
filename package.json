@@ -10,6 +10,7 @@
     "dev": "ts-node src/index.ts",
     "test": "echo \"No tests configured\" && exit 0",
     "lint": "eslint . --ext .ts",
+    "download:model": "bash scripts/download_model_facebook.sh",
     "docker:build": "bash scripts/build_image.sh",
     "docker:run": "bash scripts/run_dev.sh"
   },
