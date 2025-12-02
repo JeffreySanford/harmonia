@@ -3,50 +3,51 @@
 This file contains step-by-step instructions to close VS Code, move into the repository directory, and run the initial setup. Keep this file if Copilot or VS Code restarts.
 
 ## Quick overview
+````markdown
+# Harmonia — Setup & Workflow (updated)
 
-- Close VS Code (so you can reopen the folder cleanly).
-- Open a Bash terminal (WSL or Git Bash depending on your setup).
-- Change directory into the repository (`c:\repos\harmonia`).
-- Make helper scripts executable and perform initial install/build steps.
-- Optional: initialize git and create the initial commit.
-- Optional: build and run the Docker environment.
+This file contains step-by-step instructions to set up the repo, run download tooling, and work with the MusicGen models and datasets that have been added since the initial scaffold.
 
----
+## Quick overview
 
-## 1) Close VS Code
-
-- Use the UI: `File` → `Exit` (or close the window).
-- Or press `Alt+F4` on the VS Code window.
-
-When VS Code is closed you can run commands in a separate terminal without file locks.
+- Close VS Code (if you need to reopen without file locks).
+- Open a Bash terminal (WSL or Git Bash).
+- Change directory into the repository (`c:\repos\harmonia` or `/c/repos/harmonia`).
+- Make helper scripts executable and run the download tooling (if you need the models locally).
+- Initialize git (if you haven't already) and push to your remote — this repo was pushed to GitHub during setup.
 
 ---
 
-## 2) Open a Bash terminal and move into the repo
+## 0) Important notes (downloads & tokens)
 
-Depending on which Bash you use on Windows 11, choose one of the following commands.
+- The repository now includes download tooling for MusicGen models and curated datasets. These downloads are large (the current run used ~100GB for models + ~1.2GB datasets).
+- Create a local `.env` file in the repo root to store `HUGGINGFACE_HUB_TOKEN`. Example (DO NOT COMMIT):
 
-- WSL (recommended when using Docker Desktop WSL backend):
+```ini
+# .env
+HUGGINGFACE_HUB_TOKEN=hf_xxx...
+```
+
+- The scripts auto-source `.env` and export variables for child processes, so the Python `huggingface_hub` calls will use the token.
+
+---
+
+## 1) Open a Bash terminal and move into the repo (WSL or Git Bash)
+
+WSL (recommended when using Docker Desktop WSL backend):
 
 ```bash
 # inside WSL
 cd /mnt/c/repos/harmonia
 ```
 
-- Git for Windows / Git Bash (msys):
-
-```bash
-# inside Git Bash
-cd /c/repos/harmonia
-```
-
-- If you're running `bash.exe` from Windows directly (Git Bash or other), the same `/c/` path usually works:
+Git Bash / msys:
 
 ```bash
 cd /c/repos/harmonia
 ```
 
-If you want to use PowerShell instead, run:
+PowerShell:
 
 ```powershell
 cd C:\repos\harmonia
@@ -54,36 +55,58 @@ cd C:\repos\harmonia
 
 ---
 
-## 3) Make scripts executable (if using Bash/WSL)
+## 2) Make scripts executable (if using Bash/WSL)
 
 ```bash
 chmod +x scripts/*.sh
 ```
 
-(This step is not required on Windows if you run scripts via `bash scripts/...`.)
-
 ---
 
-## 4) Initialize git (recommended)
+## 3) Downloading models and datasets
+
+Use the curated downloader to fetch official MusicGen repos and curated datasets from Hugging Face.
+
+Dry-run (recommended first):
 
 ```bash
-git init
-git add .
-git commit -m "chore: initial scaffold for harmonia"
+./scripts/download_musicgen_full.sh
 ```
 
-If you intend to push to a remote repository, add the remote and push.
+Run (actually download):
+
+```bash
+# ensure .env contains HUGGINGFACE_HUB_TOKEN or export it in your environment
+./scripts/download_musicgen_full.sh --models --datasets --run
+```
+
+Notes:
+
+- Download destinations: `models/facebook/*` and `datasets/*`.
+- Expect many multi-GB files (safetensors / pytorch shards). Prefer WSL/Linux for more stable downloads.
+- The first download run in this workspace completed (models ~100GB, datasets ~1.2GB) and files are available under `models/` and `datasets/`.
 
 ---
 
-## 5) Install dependencies and run TypeScript build
+## 4) Git and remote
 
-If you're using Node in the container or locally, run:
+- The local repo was committed and force-pushed to the GitHub repo `https://github.com/jeffreysanford/harmonia.git` during setup. If you need to push further changes, add the remote or use the existing `origin`.
+
+Add remote (if missing):
+
+```bash
+git remote add origin https://github.com/<your-username>/harmonia.git
+git push -u origin master
+```
+
+---
+
+## 5) Install dependencies and build
 
 ```bash
 npm install
 npm run build
-npm start    # runs the compiled dist/index.js
+npm start
 ```
 
 For development with TypeScript runtime:
@@ -96,21 +119,14 @@ npm run dev
 
 ## 6) Docker (build and run dev container)
 
-Use the scripts included in `scripts/` for convenience or run Docker Compose.
-
-- Build image via npm script:
+Use the included Dockerfiles and npm scripts for reproducible environments.
 
 ```bash
 npm run docker:build
-```
-
-- Run interactive dev container:
-
-```bash
 npm run docker:run
 ```
 
-- Or use Docker Compose:
+Or:
 
 ```bash
 docker compose up --build
@@ -119,48 +135,42 @@ docker compose up --build
 Notes for Docker on Windows:
 
 - Use Docker Desktop with WSL2 backend enabled for best filesystem performance.
-- If you need GPU access, install the NVIDIA Container Toolkit on the host and run containers with GPU support. I can add a GPU example if needed.
+- GPU access requires the NVIDIA Container Toolkit on the host.
 
 ---
 
 ## 7) Reopen the repo in VS Code
 
-- From WSL terminal (if using WSL):
-
-```bash
-# opens VS Code connected to WSL (requires 'Remote - WSL' extension)
-code .
-```
-
-- From Git Bash or CMD (opens normal VS Code window):
-
 ```bash
 code .
 ```
-
-If VS Code prompts to "Install recommended extensions" for the workspace, you can accept or skip.
 
 ---
 
-## 8) Model files guidance
+## 8) Model files guidance & verification
 
-- Model artifacts should be placed in `models/`. Do not commit large weights into Git—use cloud storage or `git-lfs` if required.
-- Use `models/README.md` for model layout and fetch scripts.
+- Downloaded models live under `models/` and datasets under `datasets/`.
+- Check file sizes and sample files with `du -sh models datasets` and `find models -type f | xargs ls -lh`.
+- To verify integrity, compute SHA256 for the largest files:
+
+```bash
+sha256sum models/facebook/*/models--*/* | head -n 20
+```
 
 ---
 
 ## Troubleshooting & tips
 
-- If `code .` fails inside WSL, ensure VS Code is installed on Windows and the Remote - WSL extension is installed.
-- If Docker cannot access the filesystem properly, ensure Docker Desktop integration for WSL is enabled and that your distro is listed under Docker settings.
-- For long-running downloads, run them from inside the container or WSL for best stability.
+- If `code .` fails inside WSL, ensure VS Code is installed and the Remote - WSL extension is present.
+- For large downloads, run them in WSL or in a container for better stability.
+- If `huggingface_hub` warns about `hf_xet` or symlinks on Windows, consider installing `hf_xet` (for Xet storage) or run in WSL where symlinks work better.
 
 ---
 
 If you'd like, I can:
 
-- Initialize the git repo and commit these files for you.
-- Add a `scripts/download_model_facebook.sh` that will download Facebook Research model packages into `models/` (without committing weights).
-- Add a GPU-enabled compose example and docs for NVIDIA setup.
+- Create a `models/README.md` summarizing which model repos and dataset snapshots were downloaded (I will add this file).
+- Run checksum verification on the largest files.
+- Add a small runtime smoke-test script that attempts to load a model using `huggingface_hub`.
 
-This file is intentionally comprehensive so you can reopen it after Copilot/VS Code restarts.
+````
