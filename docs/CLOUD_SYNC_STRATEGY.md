@@ -23,7 +23,7 @@
    - All CRUD operations, indexes, aggregations
    - Replica sets support (for HA later)
    - Change streams (for sync triggers)
-   
+
 2. **Production-Grade Reliability**
    - ACID transactions
    - Point-in-time backups via mongodump
@@ -70,7 +70,7 @@
 
 ### Infrastructure Components
 
-```
+```plaintext
 ┌─────────────────────────────────────────┐
 │          i9 Development Machine         │
 │                                         │
@@ -97,6 +97,7 @@
 ```
 
 **Current State:**
+
 - ✅ MongoDB with persistent volumes
 - ✅ Daily backups with mongodump
 - ✅ JSON seed files for DR
@@ -110,7 +111,8 @@
 ### Option A: jeffreysanford.us Lightweight API
 
 **Architecture:**
-```
+
+```plaintext
 i9 MongoDB ──(API calls)──▶ jeffreysanford.us
     │                           │
     │                      ┌────▼─────┐
@@ -126,12 +128,14 @@ i9 MongoDB ──(API calls)──▶ jeffreysanford.us
 ```
 
 **jeffreysanford.us Components:**
+
 - **Lightweight Node.js API** (Express.js, <50MB RAM)
 - **SQLite database** (metadata only, <100MB)
 - **Static file server** (documentation, inventories)
 - **No MongoDB** (avoids 500MB+ RAM overhead)
 
 **What Gets Synced:**
+
 - ✅ Model metadata (name, size, license, source URL)
 - ✅ Inventory summaries (JSON files)
 - ✅ License manifests
@@ -140,6 +144,7 @@ i9 MongoDB ──(API calls)──▶ jeffreysanford.us
 - ❌ **NOT** datasets (too large, stored locally)
 
 **Implementation Steps (Future):**
+
 1. Create NestJS endpoint: `POST /api/sync/metadata`
 2. Deploy Express.js API to jeffreysanford.us
 3. Set up cron job on i9 to push metadata daily
@@ -150,7 +155,8 @@ i9 MongoDB ──(API calls)──▶ jeffreysanford.us
 ### Option B: Cloud Object Storage Only
 
 **Architecture:**
-```
+
+```plaintext
 i9 MongoDB ──(Daily backup)──▶ S3/GCS/Azure Blob
     │                               │
     └────────────────────────────────┘
@@ -158,6 +164,7 @@ i9 MongoDB ──(Daily backup)──▶ S3/GCS/Azure Blob
 ```
 
 **Cloud Storage Options:**
+
 1. **AWS S3** ($0.023/GB/month)
    - ~$3/month for backups (100GB compressed ~10GB)
    - Lifecycle policies (delete old backups)
@@ -176,12 +183,14 @@ i9 MongoDB ──(Daily backup)──▶ S3/GCS/Azure Blob
    - Good if already in Azure ecosystem
 
 **What Gets Synced:**
+
 - ✅ Daily mongodump archives (.archive.gz)
 - ✅ Seed files (JSON)
 - ✅ Checksums and inventories
 - ✅ Encrypted backups (GPG or AES-256)
 
 **Implementation Steps (Future):**
+
 1. Install AWS CLI / gsutil / rclone
 2. Configure encrypted backup script
 3. Set up daily upload cron job
@@ -194,6 +203,7 @@ i9 MongoDB ──(Daily backup)──▶ S3/GCS/Azure Blob
 ### Option C: MongoDB Atlas (When Scale Demands It)
 
 **When to Migrate:**
+
 - Multiple users accessing remotely
 - Need for high availability (99.9%+ uptime)
 - Cross-region replication required
@@ -201,11 +211,13 @@ i9 MongoDB ──(Daily backup)──▶ S3/GCS/Azure Blob
 - Team collaboration needs cloud access
 
 **MongoDB Atlas Pricing (Estimate):**
+
 - **M10 Shared Cluster:** $57/month (10GB storage, 2GB RAM)
 - **M30 Dedicated:** $305/month (40GB storage, 8GB RAM, backups)
 - **M40 Dedicated:** $580/month (80GB storage, 16GB RAM)
 
 **Migration Path:**
+
 1. Export via mongodump from i9
 2. Create Atlas cluster (M10 to start)
 3. Import via mongorestore to Atlas
@@ -219,6 +231,7 @@ i9 MongoDB ──(Daily backup)──▶ S3/GCS/Azure Blob
 ### Immediate (Phase 0): Local-First, Cloud-Ready
 
 **Implementation:**
+
 - ✅ Use MongoDB Community Edition on i9
 - ✅ Daily backups with mongodump (already implemented)
 - ✅ JSON seed files for quick restores
@@ -232,6 +245,7 @@ i9 MongoDB ──(Daily backup)──▶ S3/GCS/Azure Blob
 ### Short-Term (Phase 1-2): Lightweight Cloud Backup
 
 **Implementation:**
+
 - Create encrypted backup sync to Backblaze B2 ($1-2/month)
 - Deploy lightweight metadata API to jeffreysanford.us (read-only)
 - Keep all models and heavy data local
@@ -240,7 +254,8 @@ i9 MongoDB ──(Daily backup)──▶ S3/GCS/Azure Blob
 **Cloud Costs:** $1-5/month
 
 **Files to Create (Future):**
-```
+
+```plaintext
 scripts/
   sync-to-cloud.sh          # Upload backups to B2/S3
   restore-from-cloud.sh     # Download and restore from cloud
@@ -256,6 +271,7 @@ docs/
 ### Long-Term (Phase 3+): Cloud-Native
 
 **Implementation:**
+
 - Migrate to MongoDB Atlas when team grows
 - Or: Self-host MongoDB on AWS/GCP/Azure
 - Full cloud infrastructure (Kubernetes, load balancers)
@@ -354,6 +370,7 @@ export class CloudSyncService {
 ```
 
 **Environment Variables (Add to `.env.example`):**
+
 ```bash
 # Cloud Sync Configuration (Future)
 CLOUD_SYNC_ENABLED=false
@@ -369,7 +386,7 @@ CLOUD_SYNC_PROVIDER=none
 
 ### Current Storage Needs (i9)
 
-```
+```plaintext
 models/                    ~100GB   (static, rarely changes)
 datasets/                  ~50GB    (static, rarely changes)
 MongoDB data/              ~1GB     (grows ~100MB/month)
@@ -384,7 +401,8 @@ Growth Rate:               ~1-2GB/month
 ### Cloud Storage Needs (Future)
 
 **Scenario 1: Backup-Only (Recommended)**
-```
+
+```plaintext
 Daily backups (7 days)     ~10GB    ($0.05-0.23/month)
 Seed files                 ~10MB    (negligible)
 ─────────────────────────────────────
@@ -393,6 +411,7 @@ Monthly Cost:              $0.05-2/month (Backblaze to AWS)
 ```
 
 **Scenario 2: Metadata Sync to jeffreysanford.us**
+
 ```
 Metadata database          ~100MB   (SQLite or JSON)
 Static files               ~50MB    (docs, inventories)
@@ -403,6 +422,7 @@ Monthly Cost:              $0 (fits on small server)
 ```
 
 **Scenario 3: Full Cloud Migration (Not Recommended Yet)**
+
 ```
 MongoDB Atlas M30          ~150GB   ($305/month)
 Object storage             ~10GB    ($0.20/month)
@@ -416,6 +436,7 @@ Monthly Cost:              ~$306/month
 ## Implementation Checklist
 
 ### ✅ Already Implemented (Phase 0)
+
 - [x] MongoDB Community Edition with Docker
 - [x] Persistent volumes for data
 - [x] Daily backup script (mongodump)
@@ -423,12 +444,14 @@ Monthly Cost:              ~$306/month
 - [x] Backup retention (7 days)
 
 ### ⏳ Cloud-Ready Preparation (Phase 1)
+
 - [ ] Add backup encryption (GPG)
 - [ ] Create cloud sync service stub (NestJS)
 - [ ] Document cloud sync interfaces
 - [ ] Add `CLOUD_SYNC_ENABLED=false` to .env
 
 ### 🔮 Future Implementation (Phase 2+)
+
 - [ ] Set up Backblaze B2 or S3 account
 - [ ] Implement automated cloud backup upload
 - [ ] Deploy lightweight metadata API to jeffreysanford.us
@@ -442,6 +465,7 @@ Monthly Cost:              ~$306/month
 **Answer: Yes, MongoDB Community Edition is perfect for long-term storage.**
 
 **Recommended Strategy:**
+
 1. **Now:** Keep everything local on i9 with daily backups (Phase 0)
 2. **3-6 months:** Add encrypted cloud backups to Backblaze B2 ($1-2/month)
 3. **6-12 months:** Deploy lightweight metadata API to jeffreysanford.us (read-only)
@@ -450,6 +474,7 @@ Monthly Cost:              ~$306/month
 **Key Insight:** Your models are static (100GB) and rarely change. MongoDB is overkill for cloud sync—just sync metadata (1MB) and keep models local. Use object storage (S3/B2) for disaster recovery backups only.
 
 **Next Steps:**
+
 1. Complete MongoDB installation on i9 (10 min)
 2. Test backup/restore workflow (5 min)
 3. Document cloud sync interfaces (no implementation)
@@ -459,7 +484,7 @@ Monthly Cost:              ~$306/month
 
 ## References
 
-- MongoDB Community vs Enterprise: https://www.mongodb.com/community/licensing
-- MongoDB Atlas Pricing: https://www.mongodb.com/pricing
-- Backblaze B2 Pricing: https://www.backblaze.com/b2/cloud-storage-pricing.html
-- AWS S3 Pricing: https://aws.amazon.com/s3/pricing/
+- MongoDB Community vs Enterprise: <https://www.mongodb.com/community/licensing>
+- MongoDB Atlas Pricing: <https://www.mongodb.com/pricing>
+- Backblaze B2 Pricing: <https://www.backblaze.com/b2/cloud-storage-pricing.html>
+- AWS S3 Pricing: <https://aws.amazon.com/s3/pricing/>
