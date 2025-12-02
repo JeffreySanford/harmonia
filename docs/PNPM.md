@@ -1,4 +1,4 @@
-**PNPM: Modern, Secure, and Efficient Package Management**
+# PNPM: Modern, Secure, and Efficient Package Management
 
 This project uses `pnpm` as the exclusive package manager. `pnpm` provides significant advantages over `npm` and `yarn` in performance, security, and disk efficiency.
 
@@ -6,51 +6,59 @@ This project uses `pnpm` as the exclusive package manager. `pnpm` provides signi
 
 ### 1. Security Benefits
 
-**Strict Dependency Isolation**
+#### Strict Dependency Isolation
+
 - Unlike `npm`, pnpm uses a content-addressable store and symlinks, preventing phantom dependencies
 - Packages can only access dependencies explicitly declared in `package.json` — no implicit access to hoisted modules
 - Eliminates an entire class of supply chain attacks where malicious packages access undeclared dependencies
 - Prevents "works on my machine" bugs caused by accidentally using hoisted dependencies
 
-**Lockfile Integrity**
+#### Lockfile Integrity
+
 - `pnpm-lock.yaml` includes checksums for all packages
 - Reproducible builds across all environments (dev, CI, production)
 - Detects tampering or registry corruption immediately
 - Git-friendly lockfile format (minimal diffs, easy to review)
 
 **No Privilege Escalation**
+
 - Installation scripts run in isolated contexts
 - Reduced risk from compromised packages during `postinstall` hooks
 
 ### 2. Performance Advantages
 
 **Disk Space Efficiency**
+
 - Global content-addressable store: one copy of each package version system-wide
 - Typical projects save 50-75% disk space compared to `npm`
 - Perfect for monorepos and multiple projects on one machine
 - Your i9 can host dozens of projects without duplicate `node_modules` bloat
 
 **Installation Speed**
+
 - 2-3x faster than `npm install` on cache hits
 - Parallel installation with intelligent dependency resolution
 - Cached packages are instantly available (no network hit)
 - CI builds complete faster (critical for large monorepos)
 
 **Benchmarks (typical React project):**
-```
+
+```plaintext
 npm install:    45-60 seconds (cold), 25-35 seconds (warm)
 pnpm install:   15-20 seconds (cold), 3-5 seconds (warm)
 ```
 
 ### 3. Correctness & Reliability
 
-**Non-Flat node_modules**
+#### Non-Flat node_modules
+
 - Pnpm's structure mirrors actual dependency graph
 - No hidden hoisting surprises
 - Enforces proper peer dependency declarations
 - Catches bugs npm would silently ignore
 
 **Reproducible Everywhere**
+
 - Identical `node_modules` structure on all platforms (Windows, Linux, macOS)
 - No platform-specific quirks or symlink issues
 - CI matches local dev exactly
@@ -58,12 +66,14 @@ pnpm install:   15-20 seconds (cold), 3-5 seconds (warm)
 ### 4. Developer Experience
 
 **Monorepo Support**
+
 - First-class workspace support with `pnpm-workspace.yaml`
 - Efficient linking between workspace packages
 - Shared dependency deduplication across all packages
 - Built-in filtering (`pnpm --filter <pkg>`)
 
 **Drop-in Replacement**
+
 - Reads existing `package.json` (no migration needed)
 - Commands mirror npm: `pnpm add`, `pnpm test`, `pnpm run`
 - Easy adoption for existing projects
@@ -73,7 +83,8 @@ pnpm install:   15-20 seconds (cold), 3-5 seconds (warm)
 ### Phantom Dependency Prevention
 
 **Problem with npm:**
-```
+
+```plaintext
 your-app/
 ├── package.json (depends on: express)
 └── node_modules/
@@ -84,7 +95,8 @@ your-app/
 Your code can `require('body-parser')` even though it's not in `package.json`. If `express` drops `body-parser`, your app breaks.
 
 **With pnpm:**
-```
+
+```plaintext
 your-app/
 ├── package.json (depends on: express)
 └── node_modules/
@@ -101,12 +113,14 @@ your-app/
 ### Supply Chain Attack Mitigation
 
 **Attack vector npm allows:**
+
 1. Malicious package `evil-pkg` gets published
 2. Popular package `good-pkg` depends on `evil-pkg`
 3. `npm install good-pkg` hoists `evil-pkg` to top-level
 4. ANY package in your tree can now `require('evil-pkg')` and execute its code
 
 **With pnpm:**
+
 - `evil-pkg` is isolated to `good-pkg`'s dependency subtree
 - Other packages cannot access it
 - Attack surface reduced to only `good-pkg` (which you can audit)
@@ -122,13 +136,13 @@ corepack enable
 corepack prepare pnpm@8 --activate
 ```
 
-2. Install dependencies with `pnpm` from repo root:
+1. Install dependencies with `pnpm` from repo root:
 
 ```bash
 pnpm install
 ```
 
-3. Run the memory-server test we added:
+1. Run the memory-server test we added:
 
 ```bash
 pnpm test:mongo
@@ -137,6 +151,7 @@ pnpm test:mongo
 ## Migration Tips for Existing Projects
 
 **First-time setup:**
+
 ```bash
 # Remove old npm artifacts
 rm -rf node_modules package-lock.json
@@ -150,6 +165,7 @@ git commit -m "chore: migrate to pnpm"
 ```
 
 **For CI/CD (GitHub Actions example):**
+
 ```yaml
 - name: Setup Node
   uses: actions/setup-node@v4
@@ -208,11 +224,13 @@ packages:
 ```
 
 This allows future expansion into a monorepo structure where:
+
 - Root contains shared configs and scripts
 - `packages/*` can contain frontend, backend, shared libs, etc.
 
 **Example future structure:**
-```
+
+```plaintext
 harmonia/
 ├── package.json (workspace root)
 ├── pnpm-workspace.yaml
@@ -226,20 +244,24 @@ harmonia/
 ## Troubleshooting
 
 **"Cannot find module" errors after migration:**
+
 - Your code likely used phantom dependencies
 - Add missing packages explicitly: `pnpm add <missing-pkg>`
 - This is a FEATURE — exposes hidden dependencies
 
 **Symlink issues on Windows:**
+
 - Run terminal as Administrator (first install only)
 - Or enable Developer Mode in Windows Settings
 - Pnpm will fall back to junctions if symlinks unavailable
 
 **CI failing with lockfile mismatch:**
+
 - Run `pnpm install` locally and commit updated `pnpm-lock.yaml`
 - Never manually edit lockfile
 
 **Disk space concerns:**
+
 - Check store: `pnpm store status`
 - Prune unused: `pnpm store prune`
 - Global store typically uses ~2-3GB for dozens of projects
@@ -249,12 +271,14 @@ harmonia/
 **Parallel installations (faster on multi-core machines like your i9):**
 
 Add to `.npmrc`:
-```
+
+```plaintext
 network-concurrency=16
 child-concurrency=8
 ```
 
 **Use local cache mirror (optional for air-gapped environments):**
+
 ```
 store-dir=/path/to/custom/store
 ```
@@ -267,12 +291,14 @@ store-dir=/path/to/custom/store
    - Required for security audits
 
 2. **Run audits regularly**
+
    ```bash
    pnpm audit
    pnpm audit --fix  # Auto-fix vulnerabilities
    ```
 
 3. **Verify lockfile integrity**
+
    ```bash
    pnpm install --frozen-lockfile  # In CI
    ```
@@ -282,7 +308,8 @@ store-dir=/path/to/custom/store
    - Easy to spot unexpected additions
 
 5. **Use `.npmrc` for registry config**
-   ```
+
+   ```plaintext
    registry=https://registry.npmjs.org/
    # Optional: use private registry for enterprise
    # @mycompany:registry=https://npm.mycompany.com/
@@ -309,6 +336,7 @@ store-dir=/path/to/custom/store
    - `package.json` has scripts
 
 2. **Daily development:**
+
    ```bash
    pnpm install              # After pulling changes
    pnpm test:mongo           # Run tests

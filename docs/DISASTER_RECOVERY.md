@@ -9,6 +9,7 @@
 ### Scenario 1: Complete Data Loss (Catastrophic Failure)
 
 **Symptoms:**
+
 - MongoDB container corrupted or deleted
 - Volumes deleted accidentally
 - Disk failure
@@ -16,6 +17,7 @@
 **Recovery Steps:**
 
 1. **Recreate MongoDB infrastructure** (5 minutes)
+
    ```bash
    cd /mnt/c/repos/harmonia
    
@@ -30,6 +32,7 @@
    ```
 
 2. **Restore from seed file** (2 minutes)
+
    ```bash
    # Set connection
    export MONGO_URI="mongodb://harmonia_app:$(grep MONGO_HARMONIA_PASSWORD .env | cut -d '=' -f2)@localhost:27017/harmonia?authSource=harmonia"
@@ -42,6 +45,7 @@
    ```
 
 3. **Restore from latest backup** (if available, 5 minutes)
+
    ```bash
    # Find latest backup
    ls -lh backups/mongo/*.archive.gz
@@ -61,12 +65,14 @@
    ```
 
 4. **Sync with current inventory** (2 minutes)
+
    ```bash
    # Update from filesystem
    node scripts/migrate_inventory_to_db.js
    ```
 
 5. **Verify recovery** (1 minute)
+
    ```bash
    docker exec -it harmonia-mongo-i9 mongosh \
      -u harmonia_app \
@@ -86,6 +92,7 @@
 ### Scenario 2: Partial Data Corruption
 
 **Symptoms:**
+
 - Some collections corrupted
 - Data inconsistencies
 - Failed migrations
@@ -93,11 +100,13 @@
 **Recovery Steps:**
 
 1. **Backup current state** (even if corrupted)
+
    ```bash
    pnpm seed:generate --output "seeds/pre-recovery-$(date +%Y%m%d_%H%M%S).json"
    ```
 
 2. **Restore specific collections**
+
    ```bash
    # Option 1: Drop and restore all
    pnpm seed:restore --drop --force
@@ -115,6 +124,7 @@
    ```
 
 3. **Rebuild indexes**
+
    ```bash
    docker exec -it harmonia-mongo-i9 mongosh \
      -u admin \
@@ -129,6 +139,7 @@
 ### Scenario 3: Accidental Data Deletion
 
 **Symptoms:**
+
 - Models deleted by mistake
 - Jobs cleared unintentionally
 - Inventory versions lost
@@ -136,22 +147,26 @@
 **Recovery Steps:**
 
 1. **Stop all writes immediately**
+
    ```bash
    # Pause application services
    docker compose -f docker-compose.dev.yml down
    ```
 
 2. **Check latest backup age**
+
    ```bash
    ls -lht backups/mongo/*.archive.gz | head -1
    ```
 
 3. **Restore from backup**
+
    ```bash
    # See Scenario 1, Step 3
    ```
 
 4. **Compare with seed file**
+
    ```bash
    # Generate current state
    pnpm seed:generate --output seeds/current-state.json
@@ -167,12 +182,14 @@
 ### Daily Automated Backups
 
 **Already configured in `scripts/backup-mongo.sh`:**
+
 - Runs at 2:00 AM via Task Scheduler/cron
 - Creates mongodump archive
 - Generates JSON seed file
 - Retains 7 days of backups
 
 **Verify backup job:**
+
 ```bash
 # Check last backup
 ls -lh backups/mongo/ | tail -5
@@ -198,6 +215,7 @@ pnpm seed:generate --output "seeds/pre-migration-$(date +%Y%m%d).json"
 **Run quarterly to ensure DR plan works:**
 
 1. **Create test database:**
+
    ```bash
    docker run -d --name harmonia-mongo-test \
      -p 27018:27017 \
@@ -207,12 +225,14 @@ pnpm seed:generate --output "seeds/pre-migration-$(date +%Y%m%d).json"
    ```
 
 2. **Restore seed to test DB:**
+
    ```bash
    MONGO_URI="mongodb://admin:testpass@localhost:27018/harmonia?authSource=admin" \
    node scripts/restore-from-seed.js --force
    ```
 
 3. **Verify data integrity:**
+
    ```bash
    docker exec harmonia-mongo-test mongosh \
      -u admin -p testpass \
@@ -222,6 +242,7 @@ pnpm seed:generate --output "seeds/pre-migration-$(date +%Y%m%d).json"
    ```
 
 4. **Cleanup:**
+
    ```bash
    docker stop harmonia-mongo-test
    docker rm harmonia-mongo-test

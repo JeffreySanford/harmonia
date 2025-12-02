@@ -1,8 +1,9 @@
-**Mongo Schema Guide**
+# Mongo Schema Guide
 
-- **Purpose:**: Provide concrete Mongoose schema patterns, recommended collection layout, and examples for `harmonia`.
+**Purpose:** Provide concrete Mongoose schema patterns, recommended collection layout, and examples for `harmonia`.
 
 **Schema Principles:**
+
 - **Aggregate roots:**: Model collections around aggregate roots (e.g., `model_artifacts`, `inventory_versions`, `jobs`) — keep each aggregate's invariants in a single place.
 - **Normalized references:**: Use `ObjectId` references for shared resources, avoid duplicating large binary payloads.
 - **Small embedded documents:**: Embed small immutable snapshots inside parent documents when it improves read performance and the embedded data is immutable.
@@ -71,16 +72,20 @@ export const ModelArtifact = model<IModelArtifact>('ModelArtifact', ModelArtifac
 ```
 
 **Transactions & multi-collection updates:**
+
 - Use Mongo sessions for atomic multi-collection updates (e.g., publishing an `inventory_version` and marking artifacts as `published=true`). Wrap business operations in a service layer that starts/commits a session.
 
 **Index examples:**
+
 - `ModelArtifactSchema.index({ name: 1, version: 1 }, { unique: true });`
 - `JobsSchema.index({ status: 1, worker_id: 1 });`
 
 **Migration & backward-compatibility:**
+
 - Keep transforms inside migration scripts. Add `schema_version` on collections when introducing breaking changes.
 
 **Testing the schema:**
+
 - Use an in-memory Mongo (e.g., `mongodb-memory-server`) for unit and CI tests to validate schema constraints and business logic.
 
 If you'd like, I can scaffold `src/models/*.ts` files for these entities and a small migration that imports `inventory/combined_inventory.json` into `model_artifacts` and `inventory_versions`.

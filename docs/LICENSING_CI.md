@@ -1,8 +1,9 @@
-**License CI & Manifest Policy**
+# License CI & Manifest Policy
 
 This document explains how the repo's license validation behaves in CI and locally.
 
 Summary
+
 - The generator `scripts/generate_licenses_manifest.py` writes `legal/licenses_manifest.json` by scanning `inventory/combined_inventory.json` and attempting to fetch upstream license files when missing.
 - The CI helper `scripts/check_licenses_ci.py` will, by default (soft mode), accept either:
   - a saved license file at `legal/licenses/<model>-LICENSE.txt`, or
@@ -31,8 +32,10 @@ python scripts/check_licenses_ci.py --strict
 ```
 
 CI configuration
-- The GitHub Actions workflow ` .github/workflows/license_check.yml` runs the check in default (soft) mode so PRs will not be blocked simply because a license file isn't stored in the repo; maintainers can request `--strict` runs during release or legal sign-off.
+
+- The GitHub Actions workflow `.github/workflows/license_check.yml` runs the check in default (soft) mode so PRs will not be blocked simply because a license file isn't stored in the repo; maintainers can request `--strict` runs during release or legal sign-off.
 
 Policy recommendations
+
 - Prefer storing a copy of the license text in `legal/licenses/` if you expect downstream redistribution or to provide provenance for auditors.
 - If using `license_summary` in the manifest, include at least `spdx_id` and `source_url` and, if possible, a short `commercial_use` boolean.

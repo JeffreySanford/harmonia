@@ -1,8 +1,9 @@
-**DTOs and Example Models**
+# DTOs and Example Models
 
-- **Purpose:**: Show TypeScript DTO patterns, validation, and example Mongoose model wiring for the `harmonia` API.
+**Purpose:** Show TypeScript DTO patterns, validation, and example Mongoose model wiring for the `harmonia` API.
 
 **API Boundary (DTO) Guidance:**
+
 - **Validation stack:**: Prefer `class-validator` + `class-transformer` or `zod`. Validate at the controller boundary and reject malformed requests early.
 - **Mapping:**: Use lightweight mappers to convert validated DTOs into domain objects that the repository layer persists.
 
@@ -32,6 +33,7 @@ export class CreateModelArtifactDto {
 ```
 
 **Example service flow:**
+
 - Controller receives `CreateModelArtifactDto` → validated → `ModelArtifactService.create(dto)` → service maps DTO to Mongoose model and saves → returns `ModelArtifact` document.
 
 **Example Mongoose + DTO wiring:**

@@ -5,7 +5,9 @@ This document explains when to use in-memory MongoDB vs. a real MongoDB instance
 ## When to Use Each
 
 ### In-Memory MongoDB (mongodb-memory-server)
+
 **Best for:**
+
 - Unit tests
 - CI/CD pipelines
 - Quick prototyping
@@ -13,6 +15,7 @@ This document explains when to use in-memory MongoDB vs. a real MongoDB instance
 - Ephemeral data scenarios
 
 **Advantages:**
+
 - No installation required
 - Fast startup/teardown
 - Isolated test environment
@@ -20,12 +23,15 @@ This document explains when to use in-memory MongoDB vs. a real MongoDB instance
 - Perfect for CI
 
 **Limitations:**
+
 - Data doesn't persist
 - Single-instance only (no replication)
 - Limited to test scenarios
 
 ### Real MongoDB Instance
+
 **Best for:**
+
 - Local development
 - Staging environments
 - Persistent data needs
@@ -34,6 +40,7 @@ This document explains when to use in-memory MongoDB vs. a real MongoDB instance
 - Integration with other services
 
 **Advantages:**
+
 - Full MongoDB features
 - Persistent storage
 - Replica set support
@@ -101,6 +108,7 @@ docker logs harmonia-mongo
 ```
 
 Connection string for local development:
+
 ```bash
 export MONGO_URI="mongodb://harmonia:your_secure_password_here@localhost:27017/harmonia?authSource=admin"
 ```
@@ -125,6 +133,7 @@ export MONGO_URI="mongodb://harmonia:your_secure_password_here@localhost:27017/h
 ```
 
 4. Install MongoDB Shell (mongosh):
+
 ```powershell
 # Download from mongodb.com/try/download/shell
 # Add to PATH
@@ -156,11 +165,13 @@ sudo systemctl status mongod
 ### Local i9 Setup Strategy
 
 1. **Run MongoDB in Docker** (easiest, most portable):
+
    ```bash
    docker compose -f docker-compose.mongo.yml up -d
    ```
 
 2. **Configure connection in `.env`**:
+
    ```bash
    MONGO_URI=mongodb://harmonia:your_password@localhost:27017/harmonia?authSource=admin
    ```
@@ -171,6 +182,7 @@ sudo systemctl status mongod
    - Tests run isolated from dev DB
 
 4. **Migration workflow**:
+
    ```bash
    # Run migration to populate local MongoDB
    MONGO_URI="mongodb://harmonia:password@localhost:27017/harmonia?authSource=admin" node scripts/migrate_inventory_to_db.js
@@ -205,7 +217,7 @@ net:
 
 ## Connecting from Your Code
 
-### TypeScript/Node (using Mongoose):
+### TypeScript/Node (using Mongoose)
 
 ```typescript
 import mongoose from 'mongoose';
@@ -218,7 +230,7 @@ await mongoose.connect(mongoUri, {
 });
 ```
 
-### Python (using pymongo):
+### Python (using pymongo)
 
 ```python
 from pymongo import MongoClient
@@ -230,7 +242,7 @@ db = client['harmonia']
 
 ## Backup Strategy
 
-### Docker volumes backup:
+### Docker volumes backup
 
 ```bash
 # Backup
@@ -243,6 +255,7 @@ docker run --rm -v harmonia_mongo-data:/data -v $(pwd)/backups:/backup ubuntu ta
 ## Summary Recommendation
 
 **For your i9 setup:**
+
 - ✅ Use Docker MongoDB for local development (persistent data)
 - ✅ Keep `mongodb-memory-server` for unit tests and CI
 - ✅ Run `migrate_inventory_to_db.js` to seed local MongoDB from inventory files

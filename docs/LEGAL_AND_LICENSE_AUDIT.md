@@ -4,11 +4,13 @@ Purpose
 This document provides a step-by-step checklist and templates to audit licenses and legal constraints for models, datasets, and derived artifacts used by Harmonia. Before packaging or distributing any model/dataset or building a product that uses them, complete this audit and attach results to the PR.
 
 High-level principles
+
 - Do not assume permissive rights. Each repository or dataset must be checked for an explicit license file and terms of service.
 - Pay special attention to: commercial use restrictions, redistribution (rehosting), derivative work definitions, attribution, and export controls.
 - If a license is ambiguous, treat as restricted until legal advice or explicit permission is obtained.
 
 Checklist (per model / dataset)
+
 1. Identification
    - Source URL (e.g., Hugging Face repo or dataset page)
    - Model/dataset name and version/commit
@@ -48,9 +50,11 @@ Checklist (per model / dataset)
    - If datasets include human voice or personal data, obtain guidance on consent and retention policies.
 
 10. Export controls and sanctions
-   - Verify that the model creators or hosting locations are not restricted by sanctions that would prevent distribution or use in target markets.
+
+- Verify that the model creators or hosting locations are not restricted by sanctions that would prevent distribution or use in target markets.
 
 Sample PR checklist (add to PR description)
+
 - [ ] Source URL(s):
 - [ ] License file(s) attached in `legal/licenses/`
 - [ ] Commercial use: allowed / restricted / denied
@@ -60,14 +64,17 @@ Sample PR checklist (add to PR description)
 - [ ] Approval: legal reviewer sign-off (if required)
 
 Automated aids
+
 - Add `scripts/license_audit_stub.py` to pull `model` entries from `inventory/combined_inventory.json` and create a checklist file for manual completion. This is NOT a substitute for legal review.
 
 When to escalate to legal
+
 - Any ambiguity in license text.
 - Any model/dataset with commercial-use restrictions where commercial deployment is planned.
 - Any dataset with human voice, identifiable individuals, or PII.
 
 Retention & archival
+
 - Keep original source URLs, license snapshots, and the smoke report for the model update in a PR artifact archive.
 
 ---
@@ -77,4 +84,3 @@ End of Legal & License Audit guidance.
 
 - **Licensing caution:** Many Hugging Face–hosted models and other community checkpoints restrict redistribution or commercial use. Do not bundle such models into public images or releases. Always store the license text (snapshot) in `legal/licenses/` and require legal sign-off before using a model in any commercial product.
 - **Distribution practice:** If redistribution is restricted, provide a downloader script (that references the original source URL) rather than including the model binary in any image or release.
-

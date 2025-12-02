@@ -10,6 +10,7 @@ This directory contains JSON seed files for MongoDB disaster recovery.
 ## Purpose
 
 Seed files allow you to:
+
 1. **Quick recovery** after database corruption or loss
 2. **Environment setup** - seed new dev/staging databases
 3. **Testing** - consistent test data across environments
@@ -78,22 +79,26 @@ find seeds -name "dr-seed-*.json" -mtime +7 -delete
 ## Disaster Recovery Procedure
 
 1. **Fresh MongoDB installation:**
+
    ```bash
    docker compose -f docker-compose.mongo.yml up -d
    ```
 
 2. **Wait for healthy status:**
+
    ```bash
    docker ps | grep harmonia-mongo
    ```
 
 3. **Restore from seed:**
+
    ```bash
    MONGO_URI="mongodb://harmonia_app:password@localhost:27017/harmonia" \
    node scripts/restore-from-seed.js --force
    ```
 
 4. **Verify data:**
+
    ```bash
    docker exec -it harmonia-mongo-i9 mongosh -u harmonia_app -p password harmonia
    # In mongosh:
@@ -102,6 +107,7 @@ find seeds -name "dr-seed-*.json" -mtime +7 -delete
    ```
 
 5. **Run migration for latest inventory:**
+
    ```bash
    MONGO_URI="..." node scripts/migrate_inventory_to_db.js
    ```

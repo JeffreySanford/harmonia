@@ -54,7 +54,8 @@ docker ps | grep harmonia-mongo
 ```
 
 **Expected output:**
-```
+
+```plaintext
 harmonia-mongo-i9   healthy   0.0.0.0:27017->27017/tcp
 harmonia-mongo-ui   Up        0.0.0.0:8081->8081/tcp
 ```
@@ -72,6 +73,7 @@ docker exec -it harmonia-mongo-i9 mongosh -u admin -p "${MONGO_ROOT_PASSWORD}" -
 ```
 
 **In mongosh terminal:**
+
 ```javascript
 // Switch to harmonia database
 use harmonia
@@ -92,7 +94,7 @@ exit
 
 ## Step 4: Access Web UI (1 minute)
 
-1. Open browser: http://localhost:8081
+1. Open browser: <http://localhost:8081>
 2. Login credentials:
    - **Username:** `harmonia`
    - **Password:** (your `MONGO_HARMONIA_PASSWORD` from `.env`)
@@ -117,12 +119,14 @@ node scripts/migrate_inventory_to_db.js
 ```
 
 **Expected output:**
-```
+
+```plaintext
 Upserted facebook v0
 Upserted foo v0
 ```
 
 **Verify data:**
+
 ```bash
 docker exec -it harmonia-mongo-i9 mongosh \
   -u harmonia_app \
@@ -140,22 +144,26 @@ docker exec -it harmonia-mongo-i9 mongosh \
 ### Container Won't Start
 
 **Check logs:**
+
 ```bash
 docker logs harmonia-mongo-i9
 ```
 
 **Common issues:**
+
 - Port 27017 already in use → Stop other MongoDB instances
 - Permission error → Run Docker as admin (Windows) or add user to docker group (Linux)
 
 ### Can't Connect
 
 **Verify container is healthy:**
+
 ```bash
 docker inspect harmonia-mongo-i9 | grep -A 10 Health
 ```
 
 **Test network:**
+
 ```bash
 docker exec harmonia-mongo-i9 ping -c 1 localhost
 ```
@@ -163,6 +171,7 @@ docker exec harmonia-mongo-i9 ping -c 1 localhost
 ### Wrong Password
 
 **Reset passwords:**
+
 ```bash
 # Remove containers (keeps volumes)
 docker compose -f docker-compose.mongo.yml down
@@ -182,11 +191,13 @@ docker compose -f docker-compose.mongo.yml up -d
 ### Mongo Express Not Loading
 
 **Check logs:**
+
 ```bash
 docker logs harmonia-mongo-ui
 ```
 
 **Common fix - restart after MongoDB is healthy:**
+
 ```bash
 docker restart harmonia-mongo-ui
 ```
@@ -204,6 +215,7 @@ After setup, verify these security measures are in place:
 - [ ] Firewall blocks external access to port 27017 (Windows Defender)
 
 **Set firewall rules (Windows PowerShell as Admin):**
+
 ```powershell
 New-NetFirewallRule -DisplayName "Block MongoDB External" -Direction Inbound -LocalPort 27017 -Protocol TCP -Action Block -RemoteAddress Internet
 New-NetFirewallRule -DisplayName "Allow MongoDB Localhost" -Direction Inbound -LocalPort 27017 -Protocol TCP -Action Allow -RemoteAddress 127.0.0.1
@@ -214,22 +226,26 @@ New-NetFirewallRule -DisplayName "Allow MongoDB Localhost" -Direction Inbound -L
 ## Daily Operations
 
 **Start MongoDB:**
+
 ```bash
 docker compose -f docker-compose.mongo.yml up -d
 ```
 
 **Stop MongoDB:**
+
 ```bash
 docker compose -f docker-compose.mongo.yml down
 ```
 
 **Backup:**
+
 ```bash
 ./scripts/backup-mongo.sh
 ```
 
 **View data:**
-- Web UI: http://localhost:8081
+
+- Web UI: <http://localhost:8081>
 - CLI: `docker exec -it harmonia-mongo-i9 mongosh -u harmonia_app -p <password> harmonia`
 
 ---
@@ -247,6 +263,7 @@ MONGO_URI=mongodb://harmonia_app:${MONGO_HARMONIA_PASSWORD}@localhost:27017/harm
 ```
 
 **Test in Node.js:**
+
 ```javascript
 const mongoose = require('mongoose');
 await mongoose.connect(process.env.MONGO_URI);
@@ -254,6 +271,7 @@ console.log('Connected!');
 ```
 
 **Test in Python:**
+
 ```python
 from pymongo import MongoClient
 import os
@@ -280,9 +298,10 @@ Once MongoDB is running and seeded:
 ## Summary
 
 You now have:
+
 - ✅ MongoDB 7.0 running in Docker on your i9
 - ✅ Secure authentication configured
-- ✅ Web UI at http://localhost:8081
+- ✅ Web UI at <http://localhost:8081>
 - ✅ Database seeded with model inventory
 - ✅ Automated backup script ready
 - ✅ Network security (localhost only)

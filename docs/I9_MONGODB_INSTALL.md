@@ -196,6 +196,7 @@ New-NetFirewallRule -DisplayName "Allow MongoDB Localhost" -Direction Inbound -L
 ```
 
 **Docker Compose Security:**
+
 - Ports bound to `127.0.0.1` only (no external access)
 - Custom bridge network with subnet isolation
 - Read-only mount for init scripts
@@ -203,6 +204,7 @@ New-NetFirewallRule -DisplayName "Allow MongoDB Localhost" -Direction Inbound -L
 ### Authentication & Authorization
 
 **User Roles:**
+
 - `admin` (root): Full administrative access
 - `harmonia_app`: Read/write access to `harmonia` database only
 
@@ -410,16 +412,19 @@ docker exec harmonia-mongo-i9 mongosh \
 ### Can't Connect
 
 **Check container is running:**
+
 ```bash
 docker ps | grep harmonia-mongo
 ```
 
 **Check firewall:**
+
 ```powershell
 Get-NetFirewallRule -DisplayName "*MongoDB*"
 ```
 
 **Check credentials:**
+
 ```bash
 cat .env | grep MONGO
 ```
@@ -427,11 +432,13 @@ cat .env | grep MONGO
 ### Mongo Express Not Loading
 
 **Check container logs:**
+
 ```bash
 docker logs harmonia-mongo-ui
 ```
 
 **Verify network connectivity:**
+
 ```bash
 docker network inspect harmonia-net
 ```
@@ -439,6 +446,7 @@ docker network inspect harmonia-net
 ### Performance Issues
 
 **Check cache hit ratio:**
+
 ```bash
 docker exec harmonia-mongo-i9 mongosh \
   -u admin -p "${MONGO_ROOT_PASSWORD}" \
@@ -464,6 +472,7 @@ docker exec harmonia-mongo-i9 mongosh \
 ## Quick Reference
 
 **Start/Stop:**
+
 ```bash
 docker compose -f docker-compose.mongo.yml up -d     # Start
 docker compose -f docker-compose.mongo.yml down      # Stop (keeps data)
@@ -471,6 +480,7 @@ docker compose -f docker-compose.mongo.yml down -v   # Stop and delete data
 ```
 
 **Connect:**
+
 ```bash
 # Via mongosh
 docker exec -it harmonia-mongo-i9 mongosh -u harmonia_app -p <password> harmonia
@@ -482,11 +492,13 @@ docker exec -it harmonia-mongo-i9 mongosh -u harmonia_app -p <password> harmonia
 ```
 
 **Backup:**
+
 ```bash
 ./scripts/backup-mongo.sh
 ```
 
 **Monitor:**
+
 ```bash
 docker stats harmonia-mongo-i9
 docker logs -f harmonia-mongo-i9
