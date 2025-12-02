@@ -157,6 +157,28 @@ If VS Code prompts to "Install recommended extensions" for the workspace, you ca
 
 ---
 
+## Publishing Docker images (GHCR)
+
+- **CI publishing (recommended):** The repository's `GITHUB_TOKEN` can be used by GitHub Actions to publish images to GitHub Container Registry (GHCR) for the repository owner. The CI job in `.github/workflows/nodejs.yml` demonstrates login and push using `docker/build-push-action`.
+
+- **What the workflow needs:** The job requires `packages: write` permission (the example workflow sets permissions appropriately). No additional secrets are required for pushing to GHCR for the same repo owner when using `GITHUB_TOKEN`.
+
+- **Local publish example:** To build and push locally to GHCR you can run (you must be authenticated to `ghcr.io`):
+
+```bash
+# Authenticate (one-time, interactive):
+echo $CR_PAT | docker login ghcr.io -u <your-gh-username> --password-stdin
+
+# Build and push:
+docker build -t ghcr.io/<your-username>/harmonia:latest .
+docker push ghcr.io/<your-username>/harmonia:latest
+```
+
+- **Using other registries (Docker Hub, etc.):** If you prefer Docker Hub or another registry, store credentials as repository secrets (for CI) such as `DOCKER_USERNAME` / `DOCKER_PASSWORD`, and use `docker/login-action` in the workflow. Update the workflow tag names to target the desired registry (e.g., `docker.io/<user>/harmonia:latest`).
+
+- **Permissions and visibility:** GHCR packages can be public or private. For organization repositories you may need to set package visibility or organization policies to allow publishing. See GitHub Packages documentation for details.
+
+
 If you'd like, I can:
 
 - Initialize the git repo and commit these files for you.
