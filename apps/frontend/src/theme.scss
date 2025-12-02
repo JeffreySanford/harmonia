@@ -1,0 +1,221 @@
+/**
+ * Harmonia "Legendary" Material Design 3 Theme
+ * Custom Angular Material theme with vibrant aurora-inspired colors
+ */
+
+// Include Material theming functions
+@use '@angular/material' as mat;
+
+// Import our custom color palette
+@use '../styles/colors' as colors;
+
+// Include core Material styles (required once)
+@include mat.core();
+
+// ============================================================================
+// DEFINE CUSTOM PALETTES
+// Convert our SCSS color values to Material palette format
+// ============================================================================
+
+// Primary Palette - Aurora Blue
+$harmonia-primary: mat.define-palette((
+  50: colors.$primary-50,
+  100: colors.$primary-100,
+  200: colors.$primary-200,
+  300: colors.$primary-300,
+  400: colors.$primary-400,
+  500: colors.$primary-500,
+  600: colors.$primary-600,
+  700: colors.$primary-700,
+  800: colors.$primary-800,
+  900: colors.$primary-900,
+  contrast: (
+    50: colors.$primary-contrast-50,
+    100: colors.$primary-contrast-100,
+    200: colors.$primary-contrast-200,
+    300: colors.$primary-contrast-300,
+    400: colors.$primary-contrast-400,
+    500: colors.$primary-contrast-500,
+    600: colors.$primary-contrast-600,
+    700: colors.$primary-contrast-700,
+    800: colors.$primary-contrast-800,
+    900: colors.$primary-contrast-900,
+  )
+));
+
+// Accent Palette - Sunset Orange
+$harmonia-accent: mat.define-palette((
+  50: colors.$accent-50,
+  100: colors.$accent-100,
+  200: colors.$accent-200,
+  300: colors.$accent-300,
+  400: colors.$accent-400,
+  500: colors.$accent-500,
+  600: colors.$accent-600,
+  700: colors.$accent-700,
+  800: colors.$accent-800,
+  900: colors.$accent-900,
+  contrast: (
+    50: colors.$accent-contrast-50,
+    100: colors.$accent-contrast-100,
+    200: colors.$accent-contrast-200,
+    300: colors.$accent-contrast-300,
+    400: colors.$accent-contrast-400,
+    500: colors.$accent-contrast-500,
+    600: colors.$accent-contrast-600,
+    700: colors.$accent-contrast-700,
+    800: colors.$accent-contrast-800,
+    900: colors.$accent-contrast-900,
+  )
+));
+
+// Warn Palette - Alert Red
+$harmonia-warn: mat.define-palette((
+  50: colors.$warn-50,
+  100: colors.$warn-100,
+  200: colors.$warn-200,
+  300: colors.$warn-300,
+  400: colors.$warn-400,
+  500: colors.$warn-500,
+  600: colors.$warn-600,
+  700: colors.$warn-700,
+  800: colors.$warn-800,
+  900: colors.$warn-900,
+  contrast: (
+    50: colors.$warn-contrast-50,
+    100: colors.$warn-contrast-100,
+    200: colors.$warn-contrast-200,
+    300: colors.$warn-contrast-300,
+    400: colors.$warn-contrast-400,
+    500: colors.$warn-contrast-500,
+    600: colors.$warn-contrast-600,
+    700: colors.$warn-contrast-700,
+    800: colors.$warn-contrast-800,
+    900: colors.$warn-contrast-900,
+  )
+));
+
+// ============================================================================
+// DEFINE LIGHT THEME
+// ============================================================================
+$harmonia-light-theme: mat.define-light-theme((
+  color: (
+    primary: $harmonia-primary,
+    accent: $harmonia-accent,
+    warn: $harmonia-warn,
+  ),
+  typography: mat.define-typography-config(
+    $font-family: 'Inter, Roboto, "Helvetica Neue", sans-serif',
+  ),
+  density: 0,
+));
+
+// ============================================================================
+// DEFINE DARK THEME
+// ============================================================================
+$harmonia-dark-theme: mat.define-dark-theme((
+  color: (
+    primary: $harmonia-primary,
+    accent: $harmonia-accent,
+    warn: $harmonia-warn,
+  ),
+  typography: mat.define-typography-config(
+    $font-family: 'Inter, Roboto, "Helvetica Neue", sans-serif',
+  ),
+  density: 0,
+));
+
+// ============================================================================
+// APPLY THEMES
+// ============================================================================
+
+// Apply the light theme by default
+@include mat.all-component-themes($harmonia-light-theme);
+
+// Apply dark theme when .dark-theme class is present
+.dark-theme {
+  @include mat.all-component-colors($harmonia-dark-theme);
+}
+
+// ============================================================================
+// MATERIAL COMPONENT CUSTOMIZATIONS
+// Custom overrides for Material components to match Legendary theme
+// ============================================================================
+
+// Card customizations
+.mat-mdc-card {
+  border-radius: 12px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+// Button customizations
+.mat-mdc-button,
+.mat-mdc-raised-button,
+.mat-mdc-outlined-button {
+  border-radius: 8px !important;
+  text-transform: none;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+// Input customizations
+.mat-mdc-form-field {
+  .mat-mdc-text-field-wrapper {
+    border-radius: 8px !important;
+  }
+}
+
+// Chip customizations
+.mat-mdc-chip {
+  border-radius: 16px !important;
+}
+
+// Dialog customizations
+.mat-mdc-dialog-container {
+  border-radius: 16px !important;
+}
+
+// Snackbar customizations
+.mat-mdc-snack-bar-container {
+  border-radius: 8px !important;
+}
+
+// Tab customizations
+.mat-mdc-tab-labels {
+  border-bottom: 1px solid colors.$color-divider;
+}
+
+// Toolbar customizations
+.mat-toolbar {
+  &.mat-primary {
+    background: colors.$gradient-aurora !important;
+  }
+}
+
+// ============================================================================
+// ELEVATION OVERRIDES
+// Use our custom shadow system
+// ============================================================================
+.mat-elevation-z1 {
+  box-shadow: colors.$shadow-1 !important;
+}
+
+.mat-elevation-z2 {
+  box-shadow: colors.$shadow-2 !important;
+}
+
+.mat-elevation-z3 {
+  box-shadow: colors.$shadow-3 !important;
+}
+
+.mat-elevation-z4 {
+  box-shadow: colors.$shadow-4 !important;
+}
+
+.mat-elevation-z5 {
+  box-shadow: colors.$shadow-5 !important;
+}

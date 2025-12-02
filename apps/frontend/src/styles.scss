@@ -3,6 +3,12 @@
 // Vibrant, clean, professional - inspired by North Dakota's aurora borealis
 
 // ============================================================================
+// MATERIAL THEME IMPORT
+// Import Angular Material theme first
+// ============================================================================
+@use 'theme.scss' as theme;
+
+// ============================================================================
 // CORE IMPORTS
 // Import order matters - colors first, then mixins, then components
 // ============================================================================
