@@ -92,6 +92,20 @@ To actually perform downloads (recommended to use in WSL or Linux):
 
 The project keeps large artifacts out of Git. Downloaded models live under `models/` and datasets under `datasets/`.
 
+Artifacts and reports
+
+- Downloaded model and dataset artifacts are stored under `models/` and `datasets/` in this workspace. These are large and intentionally not committed.
+- Machine-readable inventories are committed to the repo:
+	- `models/inventory.json` — per-model folder metadata (size, file count, snapshot id)
+	- `datasets/inventory.json` — per-dataset metadata and README excerpts
+	- `inventory/combined_inventory.json` — aggregated summary with totals
+- Verification artifacts and reports:
+	- `models/checksums.sha256` — SHA256 for the largest model shards (generated locally)
+	- `tests/env_tests/smoke_report_*.json` — reports produced by the smoke check script
+	- CI also uploads smoke check reports as workflow artifacts (see `.github/workflows/smoke.yml`).
+
+These artifacts make it easy to run quick validation and to audit whether model/dataset files have changed without checking large binaries into Git.
+
 ## Environment and token handling
 
 - Create a local `.env` in the repo root with your `HUGGINGFACE_HUB_TOKEN` to avoid rate-limits when downloading. Example:

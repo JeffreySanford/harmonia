@@ -22,6 +22,12 @@ downloaded into this workspace (`models/` and `datasets/`).
 python tests/env_tests/smoke_check.py
 ```
 
+6) Retrieve CI-generated smoke reports
+
+If you run the GitHub Actions workflow `Smoke Checks` (which runs on push), the generated
+report artifacts are attached to the workflow run. In the Actions UI select the run and
+download `smoke-reports` to inspect `smoke_report_<timestamp>.json` files.
+
 4) Re-run the downloader (if needed)
 
 ```bash

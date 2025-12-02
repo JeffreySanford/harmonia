@@ -72,6 +72,20 @@ python tests/env_tests/smoke_check.py
 The inventories are intended to be descriptive and read-only — they help collaborators
 confirm which artifacts are present without shipping large binaries in Git.
 
+Quick references (paths)
+
+- `models/inventory.json` — per-model metadata (committed)
+- `datasets/inventory.json` — per-dataset metadata (committed)
+- `inventory/combined_inventory.json` — aggregated summary (committed)
+- `models/checksums.sha256` — locally generated checksums for the largest shards (committed when generated)
+- `tests/env_tests/smoke_report_*.json` — smoke-check reports (created by running smoke check; CI uploads them as workflow artifacts)
+
+Interpreting smoke reports
+
+- The smoke report JSON contains a `summary` object and a `results` array. `summary.matched` indicates how many files matched recorded checksums; `missing` shows files that weren't present. Use the report to quickly triage missing or changed artifacts before running heavy experiments.
+
+If you want, I can add a small script to pretty-print the latest smoke report for easier reading.
+
 # models/
 
 This folder should contain model artifacts and model-specific config directories.

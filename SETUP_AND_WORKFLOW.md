@@ -86,6 +86,28 @@ Notes:
 - Expect many multi-GB files (safetensors / pytorch shards). Prefer WSL/Linux for more stable downloads.
 - The first download run in this workspace completed (models ~100GB, datasets ~1.2GB) and files are available under `models/` and `datasets/`.
 
+## Artifacts, verification, and smoke checks
+
+- The repository includes machine-readable inventories that describe the downloaded artifacts:
+	- `models/inventory.json`, `datasets/inventory.json` and `inventory/combined_inventory.json`.
+- To quickly validate the environment, run the smoke-check which computes or compares SHA256 values and writes a report:
+
+```bash
+python tests/env_tests/smoke_check.py
+# report written to tests/env_tests/smoke_report_<timestamp>.json
+```
+
+- If you want to re-generate local checksums for the largest model files, run the small helper in the repo root (this is done automatically during repository setup in this workspace):
+
+```bash
+# generate top-file checksums (writes models/checksums.sha256)
+python -c "from pathlib import Path; print('see README for commands')"
+```
+
+CI integration:
+
+- A lightweight GitHub Actions job (`.github/workflows/smoke.yml`) runs the smoke check on pushes and uploads the generated report as an artifact. This avoids downloading large files in CI and focuses on validating metadata/checksums.
+
 ---
 
 ## 4) Git and remote
