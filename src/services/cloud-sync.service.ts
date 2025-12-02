@@ -95,7 +95,7 @@ export class CloudSyncService {
    * Get current sync configuration (sanitized)
    */
   getConfig(): Omit<SyncConfig, 'apiKey'> {
-    const { apiKey, ...sanitized } = this.config;
+    const { apiKey: _apiKey, ...sanitized } = this.config;
     return sanitized;
   }
 
@@ -386,7 +386,7 @@ export class CloudSyncService {
    * Upload file to AWS S3
    * TODO: Implement using @aws-sdk/client-s3
    */
-  private async uploadToS3(filePath: string): Promise<boolean> {
+  private async uploadToS3(_filePath: string): Promise<boolean> {
     this.logger.warn('S3 upload not yet implemented');
     return false;
   }
@@ -395,7 +395,7 @@ export class CloudSyncService {
    * Upload file to Google Cloud Storage
    * TODO: Implement using @google-cloud/storage
    */
-  private async uploadToGCS(filePath: string): Promise<boolean> {
+  private async uploadToGCS(_filePath: string): Promise<boolean> {
     this.logger.warn('GCS upload not yet implemented');
     return false;
   }
@@ -404,7 +404,7 @@ export class CloudSyncService {
    * Upload file to Backblaze B2
    * TODO: Implement using backblaze-b2 or S3-compatible API
    */
-  private async uploadToBackblaze(filePath: string): Promise<boolean> {
+  private async uploadToBackblaze(_filePath: string): Promise<boolean> {
     this.logger.warn('Backblaze B2 upload not yet implemented');
     return false;
   }
@@ -414,8 +414,8 @@ export class CloudSyncService {
    * TODO: Implement using @aws-sdk/client-s3
    */
   private async downloadFromS3(
-    backupName: string,
-    destPath: string,
+    _backupName: string,
+    _destPath: string,
   ): Promise<boolean> {
     this.logger.warn('S3 download not yet implemented');
     return false;
@@ -426,8 +426,8 @@ export class CloudSyncService {
    * TODO: Implement using @google-cloud/storage
    */
   private async downloadFromGCS(
-    backupName: string,
-    destPath: string,
+    _backupName: string,
+    _destPath: string,
   ): Promise<boolean> {
     this.logger.warn('GCS download not yet implemented');
     return false;
@@ -438,8 +438,8 @@ export class CloudSyncService {
    * TODO: Implement using backblaze-b2 or S3-compatible API
    */
   private async downloadFromBackblaze(
-    backupName: string,
-    destPath: string,
+    _backupName: string,
+    _destPath: string,
   ): Promise<boolean> {
     this.logger.warn('Backblaze B2 download not yet implemented');
     return false;
