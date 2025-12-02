@@ -94,7 +94,7 @@ Write-Host ""
 
 # Test connection
 $env:MONGO_URI = "mongodb://harmonia_app:vcd7VKCS3I+8jEC4EhdPKNKyowh0ikAE5GK5Jarn7yA=@localhost:27017/harmonia?authSource=harmonia"
-$testResult = & mongosh $env:MONGO_URI --quiet --eval "db.runCommand({ping: 1})" 2>&1
+$null = & mongosh $env:MONGO_URI --quiet --eval "db.runCommand({ping: 1})" 2>&1
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Authentication test PASSED!" -ForegroundColor Green
