@@ -127,7 +127,7 @@ New-NetFirewallRule -DisplayName "Allow MongoDB Localhost" -Direction Inbound -L
 
 ### Step 4: Set Up Automated Backups (3 minutes)
 
-**Option A: Windows Task Scheduler**
+#### Option A: Windows Task Scheduler
 
 1. Open Task Scheduler
 2. Create Basic Task
@@ -138,7 +138,7 @@ New-NetFirewallRule -DisplayName "Allow MongoDB Localhost" -Direction Inbound -L
    - Arguments: `-c "cd /mnt/c/repos/harmonia && ./scripts/backup-mongo.sh"`
 6. Finish
 
-**Option B: WSL Cron (if using WSL2)**
+#### Option B: WSL Cron (if using WSL2)
 
 ```bash
 crontab -e

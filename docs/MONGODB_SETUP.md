@@ -132,7 +132,7 @@ export MONGO_URI="mongodb://harmonia:your_secure_password_here@localhost:27017/h
 "C:\Program Files\MongoDB\Server\7.0\bin\mongod.exe" --install --serviceName MongoDB --dbpath C:\data\db --logpath C:\data\log\mongod.log
 ```
 
-4. Install MongoDB Shell (mongosh):
+1. Install MongoDB Shell (mongosh):
 
 ```powershell
 # Download from mongodb.com/try/download/shell

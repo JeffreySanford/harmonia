@@ -1,6 +1,7 @@
 # Persistent Storage Design
 
 **Scope:** Describe the UI → API → Library (inflight) data flow, persistent storage collections, DTO enforcement, and Mongoose schema guidance for the `harmonia` project.
+
 - **Goal:**: Provide a strongly-typed, maintainable data model that avoids a single collection anti-pattern and enables clear ORM interactions and indexes for production workloads.
 
 **Overview:**

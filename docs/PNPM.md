@@ -20,21 +20,21 @@ This project uses `pnpm` as the exclusive package manager. `pnpm` provides signi
 - Detects tampering or registry corruption immediately
 - Git-friendly lockfile format (minimal diffs, easy to review)
 
-**No Privilege Escalation**
+#### No Privilege Escalation
 
 - Installation scripts run in isolated contexts
 - Reduced risk from compromised packages during `postinstall` hooks
 
 ### 2. Performance Advantages
 
-**Disk Space Efficiency**
+#### Disk Space Efficiency
 
 - Global content-addressable store: one copy of each package version system-wide
 - Typical projects save 50-75% disk space compared to `npm`
 - Perfect for monorepos and multiple projects on one machine
 - Your i9 can host dozens of projects without duplicate `node_modules` bloat
 
-**Installation Speed**
+#### Installation Speed
 
 - 2-3x faster than `npm install` on cache hits
 - Parallel installation with intelligent dependency resolution
@@ -57,7 +57,7 @@ pnpm install:   15-20 seconds (cold), 3-5 seconds (warm)
 - Enforces proper peer dependency declarations
 - Catches bugs npm would silently ignore
 
-**Reproducible Everywhere**
+#### Reproducible Everywhere
 
 - Identical `node_modules` structure on all platforms (Windows, Linux, macOS)
 - No platform-specific quirks or symlink issues
@@ -65,14 +65,14 @@ pnpm install:   15-20 seconds (cold), 3-5 seconds (warm)
 
 ### 4. Developer Experience
 
-**Monorepo Support**
+#### Monorepo Support
 
 - First-class workspace support with `pnpm-workspace.yaml`
 - Efficient linking between workspace packages
 - Shared dependency deduplication across all packages
 - Built-in filtering (`pnpm --filter <pkg>`)
 
-**Drop-in Replacement**
+#### Drop-in Replacement
 
 - Reads existing `package.json` (no migration needed)
 - Commands mirror npm: `pnpm add`, `pnpm test`, `pnpm run`
@@ -279,7 +279,7 @@ child-concurrency=8
 
 **Use local cache mirror (optional for air-gapped environments):**
 
-```
+```plaintext
 store-dir=/path/to/custom/store
 ```
 

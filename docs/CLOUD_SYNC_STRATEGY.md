@@ -412,7 +412,7 @@ Monthly Cost:              $0.05-2/month (Backblaze to AWS)
 
 **Scenario 2: Metadata Sync to jeffreysanford.us**
 
-```
+```plaintext
 Metadata database          ~100MB   (SQLite or JSON)
 Static files               ~50MB    (docs, inventories)
 API server RAM             ~50MB    (Node.js Express)
@@ -423,7 +423,7 @@ Monthly Cost:              $0 (fits on small server)
 
 **Scenario 3: Full Cloud Migration (Not Recommended Yet)**
 
-```
+```plaintext
 MongoDB Atlas M30          ~150GB   ($305/month)
 Object storage             ~10GB    ($0.20/month)
 Egress fees                ~10GB    ($1/month)
