@@ -1,0 +1,16 @@
+# Core runtime (pick a compatible torch build for your platform/GPU)
+torch>=2.0.0
+# HuggingFace utilities for model repo interactions (optional if using local files only)
+huggingface_hub>=0.16.0
+# Audio libraries
+soundfile>=0.12.1
+torchaudio>=2.1.0
+# Audiocraft (Facebook/Audiocraft toolkit). Install only if you plan to run MusicGen code.
+# If unavailable on your platform, skip and use low-level torch loading instead.
+audiocraft>=0.2.0
+# Utilities
+numpy>=1.24
+
+# Notes:
+# - On Windows prefer installing a pre-built torch wheel for your CUDA/toolkit.
+# - Use a virtualenv or Docker container (WSL2 recommended) for reproducible setups.

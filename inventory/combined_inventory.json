@@ -1,0 +1,137 @@
+{
+  "generated_at": "2025-12-02T18:23:08.394927Z",
+  "models": [
+    {
+      "folder_name": "facebook",
+      "repo_id": "facebook",
+      "local_path": "C:/repos/harmonia/models/facebook",
+      "size_bytes": 107272174296,
+      "files_count": 129,
+      "snapshot": null
+    },
+    {
+      "folder_name": "foo",
+      "repo_id": "foo",
+      "local_path": "C:/repos/harmonia/models/foo",
+      "size_bytes": 699,
+      "files_count": 2,
+      "snapshot": null
+    }
+  ],
+  "datasets": [
+    {
+      "folder_name": "freesound_audio-tagging",
+      "repo_id": "freesound/audio-tagging",
+      "local_path": "C:/repos/harmonia/datasets/freesound_audio-tagging",
+      "size_bytes": 0,
+      "files_count": 0,
+      "snapshot": null,
+      "readme_excerpt": null,
+      "top_files": []
+    },
+    {
+      "folder_name": "google_musiccaps",
+      "repo_id": "google/musiccaps",
+      "local_path": "C:/repos/harmonia/datasets/google_musiccaps",
+      "size_bytes": 2946796,
+      "files_count": 4,
+      "snapshot": null,
+      "readme_excerpt": null,
+      "top_files": [
+        {
+          "path": "datasets--google--musiccaps\\snapshots\\0a51889b340037bb75a9a0858af2e4ece21f7f89\\musiccaps-public.csv",
+          "size_bytes": 2939484
+        },
+        {
+          "path": "datasets--google--musiccaps\\snapshots\\0a51889b340037bb75a9a0858af2e4ece21f7f89\\README.md",
+          "size_bytes": 5062
+        },
+        {
+          "path": "datasets--google--musiccaps\\snapshots\\0a51889b340037bb75a9a0858af2e4ece21f7f89\\.gitattributes",
+          "size_bytes": 2210
+        },
+        {
+          "path": "datasets--google--musiccaps\\refs\\main",
+          "size_bytes": 40
+        }
+      ]
+    },
+    {
+      "folder_name": "ionosphere_maestro",
+      "repo_id": "ionosphere/maestro",
+      "local_path": "C:/repos/harmonia/datasets/ionosphere_maestro",
+      "size_bytes": 0,
+      "files_count": 0,
+      "snapshot": null,
+      "readme_excerpt": null,
+      "top_files": []
+    },
+    {
+      "folder_name": "magenta_nsynth",
+      "repo_id": "magenta/nsynth",
+      "local_path": "C:/repos/harmonia/datasets/magenta_nsynth",
+      "size_bytes": 0,
+      "files_count": 0,
+      "snapshot": null,
+      "readme_excerpt": null,
+      "top_files": []
+    },
+    {
+      "folder_name": "marsyas_gtzan",
+      "repo_id": "marsyas/gtzan",
+      "local_path": "C:/repos/harmonia/datasets/marsyas_gtzan",
+      "size_bytes": 1226201477,
+      "files_count": 5,
+      "snapshot": null,
+      "readme_excerpt": null,
+      "top_files": [
+        {
+          "path": "datasets--marsyas--gtzan\\snapshots\\d2146561ecc7df707d9e6b8318885fe6a39668a2\\data\\genres.tar.gz",
+          "size_bytes": 1226192050
+        },
+        {
+          "path": "datasets--marsyas--gtzan\\snapshots\\d2146561ecc7df707d9e6b8318885fe6a39668a2\\README.md",
+          "size_bytes": 4424
+        },
+        {
+          "path": "datasets--marsyas--gtzan\\snapshots\\d2146561ecc7df707d9e6b8318885fe6a39668a2\\gtzan.py",
+          "size_bytes": 3355
+        },
+        {
+          "path": "datasets--marsyas--gtzan\\snapshots\\d2146561ecc7df707d9e6b8318885fe6a39668a2\\.gitattributes",
+          "size_bytes": 1608
+        },
+        {
+          "path": "datasets--marsyas--gtzan\\refs\\main",
+          "size_bytes": 40
+        }
+      ]
+    },
+    {
+      "folder_name": "muso-ai_musicnet",
+      "repo_id": "muso-ai/musicnet",
+      "local_path": "C:/repos/harmonia/datasets/muso-ai_musicnet",
+      "size_bytes": 0,
+      "files_count": 0,
+      "snapshot": null,
+      "readme_excerpt": null,
+      "top_files": []
+    },
+    {
+      "folder_name": "polyfloyd_fma",
+      "repo_id": "polyfloyd/fma",
+      "local_path": "C:/repos/harmonia/datasets/polyfloyd_fma",
+      "size_bytes": 0,
+      "files_count": 0,
+      "snapshot": null,
+      "readme_excerpt": null,
+      "top_files": []
+    }
+  ],
+  "totals": {
+    "models_bytes": 107272174995,
+    "models_files": 131,
+    "datasets_bytes": 1229148273,
+    "datasets_files": 9
+  }
+}
