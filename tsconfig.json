@@ -46,7 +46,6 @@
     
     // Decorators
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     
     // Output
     "outDir": "dist",
