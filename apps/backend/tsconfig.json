@@ -1,5 +1,46 @@
 {
   "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    // NestJS-specific settings
+    "module": "commonjs",
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "moduleResolution": "node",
+    
+    // Node.js compatibility
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    
+    // Decorators for NestJS
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    
+    // Strict type checking
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": false,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    
+    // Emit settings
+    "sourceMap": true,
+    "declaration": true,
+    "removeComments": false,
+    "incremental": true,
+    
+    // Path mapping for clean imports
+    "baseUrl": ".",
+    "paths": {
+      "@app/*": ["src/app/*"],
+      "@config/*": ["src/config/*"],
+      "@common/*": ["src/common/*"]
+    }
+  },
   "files": [],
   "include": [],
   "references": [
@@ -9,8 +50,5 @@
     {
       "path": "./tsconfig.spec.json"
     }
-  ],
-  "compilerOptions": {
-    "esModuleInterop": true
-  }
+  ]
 }

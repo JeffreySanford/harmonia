@@ -8,7 +8,7 @@ import { EffectsModule } from '@ngrx/effects';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { App } from './app';
 import { appRoutes } from './app.routes';
-import { NxWelcome } from './nx-welcome';
+import { AppMaterialModule } from './app-material.module';
 
 // Reducers
 import { authReducer } from './store/auth/auth.reducer';
@@ -23,11 +23,12 @@ import { DatasetsEffects } from './store/datasets/datasets.effects';
 import { JobsEffects } from './store/jobs/jobs.effects';
 
 @NgModule({
-  declarations: [App, NxWelcome],
+  declarations: [App],
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
     HttpClientModule,
+    AppMaterialModule,
     RouterModule.forRoot(appRoutes),
     StoreModule.forRoot(
       {
@@ -62,6 +63,7 @@ import { JobsEffects } from './store/jobs/jobs.effects';
     }),
   ],
   providers: [provideBrowserGlobalErrorListeners()],
+  exports: [RouterModule],
   bootstrap: [App],
 })
 export class AppModule {}

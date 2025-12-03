@@ -1,0 +1,106 @@
+@use '../../../styles/colors';
+@use '../../../styles/mixins';
+@use '../../../styles/typography';
+
+.video-editing-page {
+  padding: mixins.spacing(3);
+  max-width: 1400px;
+  margin: 0 auto;
+
+  .page-card {
+    @include mixins.card-elevated;
+
+    mat-card-header {
+      margin-bottom: mixins.spacing(2);
+
+      mat-card-title {
+        @include typography.heading-4;
+        display: flex;
+        align-items: center;
+        gap: mixins.spacing(1);
+        color: colors.$primary-700;
+
+        mat-icon {
+          font-size: 2rem;
+          width: 2rem;
+          height: 2rem;
+        }
+      }
+    }
+
+    mat-card-content {
+      .placeholder-text {
+        @include typography.body-large;
+        color: colors.$on-surface-variant;
+        margin-bottom: mixins.spacing(3);
+      }
+
+      .editor-layout {
+        display: flex;
+        flex-direction: column;
+        gap: mixins.spacing(3);
+
+        h3 {
+          @include typography.heading-6;
+          color: colors.$primary-600;
+          margin: 0 0 mixins.spacing(1) 0;
+        }
+
+        .storyboard-section,
+        .timeline-section,
+        .controls-section {
+          .empty-state {
+            @include typography.body-medium;
+            color: colors.$on-surface-variant;
+            text-align: center;
+            padding: mixins.spacing(4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: mixins.spacing(1);
+
+            mat-icon {
+              font-size: 3rem;
+              width: 3rem;
+              height: 3rem;
+              opacity: 0.5;
+            }
+          }
+        }
+
+        .timeline-toolbar {
+          height: 48px;
+          padding: 0 mixins.spacing(1);
+
+          .spacer {
+            flex: 1;
+          }
+
+          .timecode {
+            @include typography.body-medium;
+            font-variant-numeric: tabular-nums;
+          }
+        }
+
+        .storyboard-card,
+        .timeline-card,
+        .scenes-card {
+          background-color: colors.$surface-variant;
+        }
+      }
+    }
+
+    mat-card-actions {
+      padding: mixins.spacing(2);
+      display: flex;
+      justify-content: flex-end;
+      gap: mixins.spacing(1);
+
+      button {
+        display: flex;
+        align-items: center;
+        gap: mixins.spacing(0.5);
+      }
+    }
+  }
+}

@@ -1,0 +1,80 @@
+<div class="video-editing-page">
+  <mat-card class="page-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>movie_edit</mat-icon>
+        {{ title }}
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <p class="placeholder-text">
+        Edit videos with storyboard timeline and scene arrangement tools.
+      </p>
+      
+      <div class="editor-layout">
+        <div class="storyboard-section">
+          <h3>Storyboard</h3>
+          <mat-card class="storyboard-card">
+            <mat-card-content>
+              <p class="empty-state">
+                <mat-icon>movie_creation</mat-icon>
+                No scenes added yet. Upload a video or generate scenes to start editing.
+              </p>
+            </mat-card-content>
+          </mat-card>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <div class="timeline-section">
+          <h3>Timeline</h3>
+          <mat-card class="timeline-card">
+            <mat-toolbar class="timeline-toolbar" color="primary">
+              <button mat-icon-button>
+                <mat-icon>play_arrow</mat-icon>
+              </button>
+              <button mat-icon-button>
+                <mat-icon>pause</mat-icon>
+              </button>
+              <button mat-icon-button>
+                <mat-icon>stop</mat-icon>
+              </button>
+              <span class="spacer"></span>
+              <span class="timecode">00:00 / 00:00</span>
+            </mat-toolbar>
+            <mat-card-content>
+              <p class="empty-state">
+                <mat-icon>timeline</mat-icon>
+                Timeline will appear here
+              </p>
+            </mat-card-content>
+          </mat-card>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <div class="controls-section">
+          <h3>Scene List</h3>
+          <mat-card class="scenes-card">
+            <mat-list>
+              <mat-list-item>
+                <mat-icon matListItemIcon>add_circle_outline</mat-icon>
+                <span matListItemTitle>Add Scene</span>
+              </mat-list-item>
+            </mat-list>
+          </mat-card>
+        </div>
+      </div>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-raised-button>
+        <mat-icon>upload_file</mat-icon>
+        Upload Video
+      </button>
+      <button mat-raised-button color="primary">
+        <mat-icon>save</mat-icon>
+        Export
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>

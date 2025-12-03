@@ -21,7 +21,7 @@ export interface AppState {
 
 Each feature follows a strict file structure:
 
-```
+```text
 store/
 ├── app.state.ts                # Root state interface
 └── <feature>/
@@ -84,11 +84,12 @@ export interface ModelsState extends EntityState<ModelArtifact> {
 
 ### Action Naming Convention
 
-```
+```text
 [Feature] Action Name
 ```
 
 Examples:
+
 - `[Auth] Login`
 - `[Models] Load Models Success`
 - `[Jobs] Job Progress Updated`
@@ -670,6 +671,7 @@ export const setFilter = createAction('[Models] Set Filter', props<{ modelType: 
 Install [Redux DevTools](https://github.com/reduxjs/redux-devtools) browser extension.
 
 Features:
+
 - **Action Inspector**: See all dispatched actions
 - **State Diff**: View state changes
 - **Time Travel**: Jump to any previous state

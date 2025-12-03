@@ -1,2 +1,39 @@
-<harmonia-nx-welcome></harmonia-nx-welcome>
-<router-outlet></router-outlet>
+<div class="app-container">
+  <header class="app-header">
+    <h1 class="app-title">Harmonia</h1>
+    <nav class="app-nav">
+      <!-- User menu, notifications, etc. -->
+    </nav>
+  </header>
+
+  <div class="app-content">
+    <aside class="app-sidebar">
+      <nav class="sidebar-nav">
+        <a routerLink="/generate/song" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">🎵</span>
+          <span class="nav-label">Song Generation</span>
+        </a>
+        <a routerLink="/generate/music" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">🎼</span>
+          <span class="nav-label">Music Generation</span>
+        </a>
+        <a routerLink="/generate/video" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">🎬</span>
+          <span class="nav-label">Video Generation</span>
+        </a>
+        <a routerLink="/edit/video" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">✂️</span>
+          <span class="nav-label">Video Editing</span>
+        </a>
+      </nav>
+    </aside>
+
+    <main class="main-stage">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+
+  <footer class="app-footer">
+    <p class="footer-text">© 2025 Harmonia - Phase 1</p>
+  </footer>
+</div>

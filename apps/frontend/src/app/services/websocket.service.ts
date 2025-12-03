@@ -7,7 +7,7 @@ import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { io, Socket } from 'socket.io-client';
 import { Observable, fromEvent, Subject } from 'rxjs';
-import { map, takeUntil } from 'rxjs/operators';
+import { takeUntil } from 'rxjs/operators';
 import { AppState } from '../store/app.state';
 import { Job, JobStatus, JobProgress } from '../store/jobs/jobs.state';
 import * as JobsActions from '../store/jobs/jobs.actions';

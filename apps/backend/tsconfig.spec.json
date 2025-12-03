@@ -3,8 +3,20 @@
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
     "module": "commonjs",
-    "moduleResolution": "node10",
-    "types": ["jest", "node"]
+    "target": "ES2022",
+    "moduleResolution": "node",
+    "types": ["jest", "node"],
+    
+    // Test-specific settings
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": false,
+    
+    // Relaxed for tests
+    "strictPropertyInitialization": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
   },
   "include": [
     "jest.config.ts",

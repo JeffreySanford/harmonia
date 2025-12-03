@@ -1,0 +1,77 @@
+<div class="video-generation-page">
+  <mat-card class="page-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>videocam</mat-icon>
+        {{ title }}
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <p class="placeholder-text">
+        Generate videos from text descriptions with scene composition and style transfer.
+      </p>
+      
+      <form class="generation-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Video Title</mat-label>
+          <input matInput placeholder="Enter video title">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Scene Description</mat-label>
+          <textarea matInput placeholder="Describe the scenes you want to generate" rows="6"></textarea>
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Style</mat-label>
+            <mat-select>
+              <mat-option value="realistic">Realistic</mat-option>
+              <mat-option value="cartoon">Cartoon</mat-option>
+              <mat-option value="anime">Anime</mat-option>
+              <mat-option value="abstract">Abstract</mat-option>
+              <mat-option value="cinematic">Cinematic</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Resolution</mat-label>
+            <mat-select [(value)]="selectedResolution" (selectionChange)="onResolutionChange($event.value)">
+              <mat-option value="720p">720p (HD)</mat-option>
+              <mat-option value="1080p">1080p (Full HD)</mat-option>
+              <mat-option value="4k">4K (Ultra HD)</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="duration-control">
+            <label class="duration-label">Duration (seconds)</label>
+            <mat-slider min="5" max="60" step="5" showTickMarks discrete [displayWith]="formatDurationLabel">
+              <input matSliderThumb [(value)]="duration" (valueChange)="onDurationChange($event)">
+            </mat-slider>
+            <div class="duration-info">
+              <span class="current-duration">{{ duration }}s</span>
+              <span class="estimated-time" *ngIf="estimatedCompletionTime">
+                <mat-icon>schedule</mat-icon>
+                Est. completion: {{ estimatedCompletionTime }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="generation-estimate" *ngIf="showEstimate">
+          <mat-icon>info_outline</mat-icon>
+          <span>
+            Generating a {{ duration }}-second {{ selectedResolution }} video will take approximately 
+            <strong>{{ estimatedCompletionTime }}</strong> based on current system resources.
+          </span>
+        </div>
+      </form>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-raised-button color="primary">
+        <mat-icon>play_arrow</mat-icon>
+        Generate Video
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>

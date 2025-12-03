@@ -6,7 +6,7 @@ Harmonia uses **Nx 22.1.3** as a monorepo orchestration tool with pnpm workspace
 
 ## Workspace Structure
 
-```
+```text
 harmonia/
 ├── apps/                          # Application projects
 │   ├── frontend/                  # Angular 21 application

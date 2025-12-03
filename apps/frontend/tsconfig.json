@@ -1,23 +1,59 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    // Angular-specific overrides
+    "target": "ES2022",
+    "lib": ["ES2022", "dom"],
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "useDefineForClassFields": false,
+    
+    // Strict Type Checking (inherited and enhanced)
     "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true,
+    "noPropertyAccessFromIndexSignature": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    
+    // Decorators for Angular
     "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    
+    // Angular optimizations
     "importHelpers": true,
-    "target": "es2022",
-    "moduleResolution": "bundler",
     "isolatedModules": true,
-    "module": "preserve"
+    "resolveJsonModule": true,
+    
+    // Paths for module resolution
+    "baseUrl": ".",
+    "paths": {
+      "@app/*": ["src/app/*"],
+      "@environments/*": ["src/environments/*"],
+      "@styles/*": ["src/styles/*"]
+    }
   },
   "angularCompilerOptions": {
+    // Strict Angular template checking
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
+    "strictAttributeTypes": true,
+    "strictNullInputTypes": true,
+    "strictSafeNavigationTypes": true,
+    "strictDomLocalRefTypes": true,
+    "strictOutputEventTypes": true,
+    "strictDomEventTypes": true,
+    "strictContextGenerics": true,
+    "strictLiteralTypes": true,
+    "enableBlockSyntax": true,
+    "enableLetSyntax": true,
     "typeCheckHostBindings": true,
-    "strictTemplates": true
+    "strictTemplates": true,
+    
+    // Optimization flags
+    "enableIvy": true,
+    "fullTemplateTypeCheck": true,
+    "strictPropertyInitialization": true
   },
   "files": [],
   "include": [],

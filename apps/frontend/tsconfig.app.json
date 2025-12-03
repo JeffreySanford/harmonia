@@ -2,14 +2,41 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
-    "types": []
+    "types": [],
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["ES2022", "dom", "dom.iterable"]
   },
-  "include": ["src/**/*.ts"],
+  "files": [
+    "src/main.ts"
+  ],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.html"
+  ],
   "exclude": [
     "jest.config.ts",
+    "jest.config.cts",
     "src/test-setup.ts",
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
-    "jest.config.cts"
-  ]
+    "**/*.stories.ts"
+  ],
+  "angularCompilerOptions": {
+    "strictTemplates": true,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictAttributeTypes": true,
+    "strictNullInputTypes": true,
+    "strictSafeNavigationTypes": true,
+    "strictDomLocalRefTypes": true,
+    "strictOutputEventTypes": true,
+    "strictDomEventTypes": true,
+    "strictContextGenerics": true,
+    "strictLiteralTypes": true,
+    "enableBlockSyntax": true,
+    "enableLetSyntax": true,
+    "extendedDiagnostics": true,
+    "disableTypeScriptVersionCheck": false
+  }
 }

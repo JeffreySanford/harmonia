@@ -7,11 +7,13 @@ Harmonia uses **Socket.IO 4.8.1** for real-time bidirectional communication betw
 ## Architecture
 
 ### Frontend (Angular)
+
 - **Socket.IO Client**: Connects to backend WebSocket server
 - **WebSocketService**: Manages connection lifecycle and event streams
 - **NGRX Integration**: Dispatches actions from WebSocket events
 
 ### Backend (NestJS)
+
 - **@nestjs/websockets**: WebSocket gateway decorator support
 - **JobsGateway**: Handles job status broadcasts and subscriptions
 - **Room-Based Subscriptions**: Per-user and per-job event routing

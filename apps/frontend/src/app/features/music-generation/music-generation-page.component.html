@@ -1,0 +1,58 @@
+<div class="music-generation-page">
+  <mat-card class="page-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>library_music</mat-icon>
+        {{ title }}
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <p class="placeholder-text">
+        Generate instrumental music with customizable genre, tempo, and duration.
+      </p>
+      
+      <form class="generation-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Music Title</mat-label>
+          <input matInput placeholder="Enter music title">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Description</mat-label>
+          <textarea matInput placeholder="Describe the music you want to generate" rows="4"></textarea>
+        </mat-form-field>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Genre</mat-label>
+            <mat-select>
+              <mat-option value="classical">Classical</mat-option>
+              <mat-option value="jazz">Jazz</mat-option>
+              <mat-option value="ambient">Ambient</mat-option>
+              <mat-option value="electronic">Electronic</mat-option>
+              <mat-option value="orchestral">Orchestral</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Duration (seconds)</mat-label>
+            <input matInput type="number" value="30" min="10" max="300">
+          </mat-form-field>
+        </div>
+
+        <div class="slider-field">
+          <label>Tempo (BPM): 120</label>
+          <mat-slider min="60" max="180" step="5" showTickMarks discrete>
+            <input matSliderThumb value="120">
+          </mat-slider>
+        </div>
+      </form>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-raised-button color="primary">
+        <mat-icon>play_arrow</mat-icon>
+        Generate Music
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>

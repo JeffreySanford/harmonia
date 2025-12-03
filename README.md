@@ -1,244 +1,195 @@
 # Harmonia
 
-A minimal scaffold for the `harmonia` repository.
+**Enterprise-grade AI music and video generation platform with full-stack architecture, real-time collaboration, and persistent data management.**
 
-## What’s included
-
-- `package.json` with basic scripts (`build`, `start`, `dev`, `test`).
-- TypeScript configuration (`tsconfig.json`).
-- A minimal `src/index.ts` exporting `greet()`.
-- `.gitignore` and `LICENSE` (MIT).
-- A GitHub Actions CI workflow for building the project.
-
-## Quick start
-
-Run these commands locally to initialize and install:
-
-```bash
-cd c:/repos/harmonia
-git init
-npm install
-npm run build
-npm start
-```
-
-For development with live TypeScript execution:
-
-```bash
-npm run dev
-```
-
-## Next steps
-
-- Add project description, author, and dependencies as needed.
-- Add tests and linting configuration if desired.
-
-## Docker usage (recommended for reproducible environment)
-
-This project includes a `Dockerfile` and `docker-compose.yml` to create a reproducible Debian/Ubuntu-based environment on Windows (WSL2 recommended).
-
-````markdown
-# Harmonia
-
-**AI-powered music generation platform built on Meta's MusicGen, with enterprise-grade data management, persistent storage, and reproducible workflows.**
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Nx](https://img.shields.io/badge/Nx-22.1.3-blue)](https://nx.dev)
+[![Angular](https://img.shields.io/badge/Angular-21.0.2-red)](https://angular.io)
+[![NestJS](https://img.shields.io/badge/NestJS-11.1.9-e0234e)](https://nestjs.com)
+[![MongoDB](https://img.shields.io/badge/MongoDB-8.0.6-green)](https://www.mongodb.com)
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
-**New to Harmonia? Start here:**
+### New Developers
 
-1. **Set up MongoDB on i9:** [QUICKSTART_MONGODB.md](docs/QUICKSTART_MONGODB.md) (~10 minutes)
-2. **Install dependencies:** `pnpm install`
-3. **Run tests:** `pnpm test:mongo`
-4. **Review Phase 0 checklist:** [PHASE_0_CHECKLIST.md](docs/PHASE_0_CHECKLIST.md)
+```bash
+# 1. Clone repository
+git clone https://github.com/jeffreysanford/harmonia.git
+cd harmonia
+
+# 2. Install dependencies
+pnpm install
+
+# 3. Start MongoDB
+docker compose -f docker-compose.mongo.yml up -d
+
+# 4. Run development servers (frontend + backend)
+pnpm dev
+```
+
+**Access Points:**
+
+- **Frontend:** <http://localhost:4200>
+- **Backend API:** <http://localhost:3333/api>
+- **Mongo Express UI:** <http://localhost:8081>
+
+### Prerequisites
+
+- **Node.js 20+** (LTS)
+- **pnpm 10.23.0+** (`npm install -g pnpm`)
+- **Docker Desktop** (for MongoDB)
+- **Git** for version control
+- **16GB+ RAM** recommended for AI model inference
 
 ---
 
-## What's Included
+## 📦 What's Included
 
-### Infrastructure
-- 🐳 Docker-based MongoDB with Mongo Express UI
-- 📦 PNPM workspace with security-first package management
-- 🔐 Secure authentication and firewall configuration
-- 💾 Automated backup scripts
+### 🎨 Frontend (Angular 21)
 
-### Models & Data
-- 🎵 MusicGen, EnCodec, and Demucs models (~100GB)
-- 📊 Curated datasets (GTZAN, MusicCaps, etc.)
-- ✅ SHA256 checksums and smoke-check validation
-- 📋 Structured inventories (JSON manifests)
+- **Legendary SCSS Theme** - 2,344 lines of aurora/sunset/prairie color system
+- **Material Design 3** - Custom palettes with elevation, typography, animations
+- **NGRX State Management** - 4 feature stores (auth, models, datasets, jobs)
+- **WebSocket Integration** - Socket.IO client for real-time job updates
+- **Responsive Layout** - Flexbox-based with sidebar navigation (4 routes)
+- **Custom ESLint Rules** - Enforces NgModule pattern (no standalone components)
 
-### Persistent Storage
-- 🗄️ MongoDB 7.0 with Mongoose schemas
-- 📝 TypeScript DTOs with validation
-- 🔗 Strongly-typed collection relationships
-- ⚡ Indexed queries and TTL expiration
+### ⚙️ Backend (NestJS 11)
 
-### CI/CD
-- ✅ Smoke checks (scheduled + PR-triggered)
-- 📜 License validation (soft/strict modes)
-- 🧪 Memory-server unit tests
-- 🚀 Release workflows with strict checks
+- **JWT Authentication** - bcrypt password hashing, token-based auth
+- **RESTful API** - Comprehensive endpoints with validation
+- **WebSocket Gateway** - Socket.IO server for job status broadcasting
+- **MongoDB Integration** - Mongoose schemas with TypeScript types
+- **Job Queue System** - Async task processing for AI generation
+- **Security Hardening** - Firewall configuration, user permissions
 
-### Documentation
-- 📘 [Architecture](docs/ARCHITECTURE.md)
-- 🛡️ [Coding Standards](docs/CODING_STANDARDS.md) (file size limits, refactoring patterns)
-- 🔒 [PNPM Benefits & Security](docs/PNPM.md)
-- 🗄️ [MongoDB Setup](docs/I9_MONGODB_INSTALL.md)
-- ⚖️ [Legal/License Audit](docs/LICENSING_CI.md)
-- 💰 [Cost Planning](docs/RESOURCE_COST_PLANNING.md)
-- 🧭 [Developer Onboarding](docs/DEV_ONBOARDING.md)
+### 🏗️ Infrastructure
 
----
+- **Nx 22.1.3 Monorepo** - Build caching, parallel execution, dependency graph
+- **pnpm Workspace** - Fast installs (3x faster than npm), disk space efficiency
+- **Docker Compose** - MongoDB 8.0.6 + Mongo Express UI
+- **Automated Backups** - MongoDB dump scripts with cron/Task Scheduler
+- **CI/CD Pipelines** - GitHub Actions with smoke tests and license validation
 
-## Project Structure
+### 🎵 AI Models & Data
 
-```
-harmonia/
-├── docs/                          # Comprehensive documentation
-│   ├── QUICKSTART_MONGODB.md      # 10-minute MongoDB setup
-│   ├── PHASE_0_CHECKLIST.md       # Current phase progress
-│   ├── I9_MONGODB_INSTALL.md      # Detailed i9 installation guide
-│   ├── PNPM.md                    # Package manager benefits & security
-│   └── ...                        # Architecture, standards, guides
-├── src/
-│   ├── models/                    # TypeScript Mongoose schemas
-│   ├── models-js/                 # JavaScript models (for migration)
-│   └── dto/                       # Data transfer objects with validation
-├── scripts/
-│   ├── download_model_*.sh        # Model downloader scripts
-│   ├── migrate_inventory_to_db.js # Seed MongoDB from inventory
-│   ├── backup-mongo.sh            # Automated backup script
-│   ├── audit_file_sizes.py        # Enforce 500-line limit
-│   └── mongo-init/                # Database initialization scripts
-├── tests/
-│   └── env_tests/
-│       └── smoke_check.py         # Checksum validation
-├── .github/workflows/             # CI/CD pipelines
-├── docker-compose.mongo.yml       # MongoDB + Mongo Express
-├── pnpm-workspace.yaml            # Workspace configuration
-└── models/                        # Downloaded model artifacts (gitignored)
-```
+- **MusicGen Models** - facebook/musicgen-small/medium/large (~100GB)
+- **Audio Datasets** - GTZAN, MusicCaps, NSynth, FMA, AudioTagging
+- **Checksum Validation** - SHA256 verification for all model files
+- **Structured Inventories** - JSON manifests with metadata and checksums
 
 ---
 
-## Core Technologies
+## 🛠️ Development Commands
 
-- **Runtime:** Node.js 18+ with pnpm 8
-- **Languages:** TypeScript (strict mode), Python 3.11
-- **Database:** MongoDB 7.0 with Mongoose ODM
-- **Containerization:** Docker + Docker Compose
-- **CI/CD:** GitHub Actions
-- **Testing:** Jest (TS), pytest (Python), mongodb-memory-server
+### Quick Commands
+
+```bash
+# Start both frontend + backend (parallel)
+pnpm dev
+
+# Start frontend only
+pnpm dev:frontend
+
+# Start backend only
+pnpm dev:backend
+
+# Build all applications
+pnpm build:all
+
+# Run all tests
+pnpm test
+
+# Lint all projects
+pnpm lint
+
+# Auto-fix linting errors
+pnpm lint:fix
+```
+
+### Full Command Reference
+
+See [DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) for comprehensive dev guide.
 
 ---
-- Scripts to download MusicGen models and curated datasets from Hugging Face (`scripts/download_musicgen_full.sh`, `scripts/download_model_facebook.sh`).
 
-## Quick start
+## 🎯 Application Features
 
-Run these commands locally to initialize and install:
+### Current Navigation Routes
 
-```bash
-cd c:/repos/harmonia
-# (optional) initialize git if needed
-# git init
-npm install
-npm run build
-npm start
-```
+1. **Song Generation** (`/generate/song`) 🎵
+2. **Music Generation** (`/generate/music`) 🎼
+3. **Video Generation** (`/generate/video`) 🎬
+4. **Video Editing** (`/edit/video`) ✂️
 
-For development with live TypeScript execution:
+### Planned Features (Phase 1)
 
-```bash
-npm run dev
-```
+- [ ] User authentication UI
+- [ ] Song generation feature module
+- [ ] Music generation feature module
+- [ ] Video generation feature module
+- [ ] Video editing with storyboard
+- [ ] Job history and management
 
-## Model downloads and tooling
+---
 
-This repository now includes automated download tooling for MusicGen and related artifacts:
+## 📚 Documentation
 
-- `scripts/download_musicgen_full.sh` — a curated downloader that fetches official `facebook/*` MusicGen model repos and a selection of music datasets from Hugging Face. Dry-run by default; pass `--run` to execute.
-- `scripts/download_model_facebook.sh` — a lightweight metadata fetcher and optional weights downloader (accepts `-n MODEL_NAME` and `-w WEIGHTS_URL`).
+### Getting Started
 
-Usage (dry-run):
+- [**DEVELOPMENT_WORKFLOW.md**](docs/DEVELOPMENT_WORKFLOW.md) - Complete dev guide
+- [**QUICKSTART_MONGODB.md**](docs/QUICKSTART_MONGODB.md) - MongoDB setup (10 min)
 
-```bash
-./scripts/download_musicgen_full.sh        # shows what would be downloaded
-```
+### Architecture
 
-To actually perform downloads (recommended to use in WSL or Linux):
+- [**COMPONENT_ARCHITECTURE.md**](docs/COMPONENT_ARCHITECTURE.md) - Angular patterns
+- [**NX_WORKSPACE_GUIDE.md**](docs/NX_WORKSPACE_GUIDE.md) - Nx configuration
+- [**NGRX_PATTERNS.md**](docs/NGRX_PATTERNS.md) - State management
+- [**WEBSOCKET_INTEGRATION.md**](docs/WEBSOCKET_INTEGRATION.md) - Real-time updates
 
-```bash
-# ensure a Hugging Face token is available (see .env guidance below)
-./scripts/download_musicgen_full.sh --models --datasets --run
-```
+### Standards
 
-The project keeps large artifacts out of Git. Downloaded models live under `models/` and datasets under `datasets/`.
+- [**CODING_STANDARDS.md**](docs/CODING_STANDARDS.md) - Draconian rules
+- [**DTO_AND_EXAMPLES.md**](docs/DTO_AND_EXAMPLES.md) - Data transfer objects
 
-Artifacts and reports
+---
 
-- Downloaded model and dataset artifacts are stored under `models/` and `datasets/` in this workspace. These are large and intentionally not committed.
-- Machine-readable inventories are committed to the repo:
-	- `models/inventory.json` — per-model folder metadata (size, file count, snapshot id)
-	- `datasets/inventory.json` — per-dataset metadata and README excerpts
-	- `inventory/combined_inventory.json` — aggregated summary with totals
-- Verification artifacts and reports:
-	- `models/checksums.sha256` — SHA256 for the largest model shards (generated locally)
-	- `tests/env_tests/smoke_report_*.json` — reports produced by the smoke check script
-	- CI also uploads smoke check reports as workflow artifacts (see `.github/workflows/smoke.yml`).
+## 📊 Technology Stack
 
-These artifacts make it easy to run quick validation and to audit whether model/dataset files have changed without checking large binaries into Git.
+- **Angular 21.0.2** + **NGRX 20.1.0** + **Material Design 3**
+- **NestJS 11.1.9** + **Socket.IO 4.8.1** + **Mongoose 8.9**
+- **Nx 22.1.3** + **pnpm 10.23.0** + **TypeScript 5.9.3**
+- **MongoDB 8.0.6** + **Docker** + **Jest/Playwright**
 
-## Environment and token handling
+---
 
-- Create a local `.env` in the repo root with your `HUGGINGFACE_HUB_TOKEN` to avoid rate-limits when downloading. Example:
+## 🎯 Project Status
 
-```ini
-# .env (DO NOT COMMIT)
-HUGGINGFACE_HUB_TOKEN=hf_xxx...
-```
+### Phase 0: Foundation (✅ Complete)
 
-- `.env` is already included in `.gitignore` and the downloader scripts auto-source it (so you can just run the scripts after adding your token).
+- MongoDB 8.0.6 hardened
+- PNPM 10.23.0 workspace
+- 27 documentation files
 
-## Next steps
+### Phase 1: Full-Stack (🔄 In Progress)
 
-- Add project description, author, and dependencies as needed.
-- Add tests and linting configuration if desired.
-- For reproducible environments, use the included Docker setup (see below).
+- ✅ Nx monorepo + Angular 21 + NestJS 11
+- ✅ Legendary SCSS theme (2,344 lines)
+- ✅ NGRX state (4 stores)
+- ✅ WebSocket integration
+- ✅ Custom ESLint rules
+- ✅ Flexbox layout
+- ⏳ Feature modules
+- ⏳ Authentication UI
 
-## Docker usage (recommended for reproducible environment)
+---
 
-This project includes a `Dockerfile` and `docker-compose.yml` to create a reproducible Debian/Ubuntu-based environment on Windows (WSL2 recommended).
+## 📝 License
 
-Prerequisites:
+MIT License - see [LICENSE](LICENSE) file for details.
 
-- Docker Desktop for Windows with WSL2 backend enabled (recommended).
-- If you need GPU support, install the NVIDIA Container Toolkit and configure Docker/WSL accordingly.
+---
 
-Build the image:
-
-```bash
-cd c:/repos/harmonia
-npm run docker:build
-```
-
-Run a dev container (interactive):
-
-```bash
-npm run docker:run
-```
-
-Or use Docker Compose:
-
-```bash
-docker compose up --build
-```
-
-Notes:
-
-- Model weights should live under `models/`. Do not commit large binaries — use cloud storage or Git LFS.
-- On Windows, prefer using WSL2 for better filesystem and permission handling.
-- For GPU workloads, run the container with GPU access (NVIDIA runtime) and ensure host drivers are installed.
-
-````
+Built with ❤️ using Angular, NestJS, and MongoDB

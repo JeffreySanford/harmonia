@@ -1,0 +1,66 @@
+@use '../../../styles/colors';
+@use '../../../styles/mixins';
+@use '../../../styles/typography';
+
+.song-generation-page {
+  padding: mixins.spacing(3);
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .page-card {
+    @include mixins.card-elevated;
+
+    mat-card-header {
+      margin-bottom: mixins.spacing(2);
+
+      mat-card-title {
+        @include typography.heading-4;
+        display: flex;
+        align-items: center;
+        gap: mixins.spacing(1);
+        color: colors.$primary-700;
+
+        mat-icon {
+          font-size: 2rem;
+          width: 2rem;
+          height: 2rem;
+        }
+      }
+    }
+
+    mat-card-content {
+      .placeholder-text {
+        @include typography.body-large;
+        color: colors.$on-surface-variant;
+        margin-bottom: mixins.spacing(3);
+      }
+
+      .generation-form {
+        display: flex;
+        flex-direction: column;
+        gap: mixins.spacing(2);
+
+        .full-width {
+          width: 100%;
+        }
+
+        mat-form-field {
+          flex: 1;
+        }
+      }
+    }
+
+    mat-card-actions {
+      padding: mixins.spacing(2);
+      display: flex;
+      justify-content: flex-end;
+
+      button {
+        @include mixins.button-primary;
+        display: flex;
+        align-items: center;
+        gap: mixins.spacing(0.5);
+      }
+    }
+  }
+}

@@ -1,0 +1,55 @@
+<div class="song-generation-page">
+  <mat-card class="page-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>music_note</mat-icon>
+        {{ title }}
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <p class="placeholder-text">
+        Generate songs from text narratives with customizable style and mood.
+      </p>
+      
+      <form class="generation-form">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Song Title</mat-label>
+          <input matInput placeholder="Enter song title">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Narrative / Lyrics</mat-label>
+          <textarea matInput placeholder="Describe your song or enter lyrics" rows="5"></textarea>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Style</mat-label>
+          <mat-select>
+            <mat-option value="pop">Pop</mat-option>
+            <mat-option value="rock">Rock</mat-option>
+            <mat-option value="jazz">Jazz</mat-option>
+            <mat-option value="classical">Classical</mat-option>
+            <mat-option value="electronic">Electronic</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Mood</mat-label>
+          <mat-select>
+            <mat-option value="happy">Happy</mat-option>
+            <mat-option value="sad">Sad</mat-option>
+            <mat-option value="energetic">Energetic</mat-option>
+            <mat-option value="calm">Calm</mat-option>
+            <mat-option value="dramatic">Dramatic</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </form>
+    </mat-card-content>
+    <mat-card-actions>
+      <button mat-raised-button color="primary">
+        <mat-icon>play_arrow</mat-icon>
+        Generate Song
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>
