@@ -1,6 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { AuthUiService } from './services/auth-ui.service';
 import * as AuthSelectors from './store/auth/auth.selectors';
 import * as AuthActions from './store/auth/auth.actions';
@@ -30,8 +31,14 @@ export class App implements OnInit {
   }
 
   ngOnInit(): void {
-    // Check for existing session on app load
-    this.store.dispatch(AuthActions.checkSession());
+    // Only check for existing session if we have a token
+    this.store.select(AuthSelectors.selectAuthToken).pipe(
+      take(1)
+    ).subscribe(token => {
+      if (token) {
+        this.store.dispatch(AuthActions.checkSession());
+      }
+    });
   }
 
   /**

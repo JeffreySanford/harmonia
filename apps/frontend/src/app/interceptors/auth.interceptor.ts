@@ -66,7 +66,8 @@ export class AuthInterceptor implements HttpInterceptor {
         // Send request and handle errors
         return next.handle(authRequest).pipe(
           catchError((error: HttpErrorResponse) => {
-            if (error.status === 401) {
+            // Only logout on 401 if we had a token (user was authenticated)
+            if (error.status === 401 && token) {
               // Token expired or invalid - logout and redirect
               this.store.dispatch(AuthActions.logout());
               this.router.navigate(['/']);
