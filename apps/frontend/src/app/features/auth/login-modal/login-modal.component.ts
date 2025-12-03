@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, NgZone } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
 import { Store } from '@ngrx/store';
@@ -38,6 +38,7 @@ export class LoginModalComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private store = inject(Store);
   private dialogRef = inject(MatDialogRef<LoginModalComponent>);
+  private ngZone = inject(NgZone);
 
   loginForm!: FormGroup;
   registerForm!: FormGroup;
@@ -87,9 +88,11 @@ export class LoginModalComponent implements OnInit, OnDestroy {
    */
   toggleMode(): void {
     this.mode = this.mode === 'login' ? 'register' : 'login';
-    // Clear errors when switching modes
-    this.loginForm.reset();
-    this.registerForm.reset();
+    // Clear form values and errors when switching modes
+    this.ngZone.run(() => {
+      this.loginForm.reset();
+      this.registerForm.reset();
+    });
   }
 
   /**
@@ -98,7 +101,10 @@ export class LoginModalComponent implements OnInit, OnDestroy {
   onLogin(): void {
     if (this.loginForm.valid) {
       const { emailOrUsername, password } = this.loginForm.value;
-      this.store.dispatch(AuthActions.login({ emailOrUsername, password }));
+      // Ensure dispatch happens inside NgZone
+      this.ngZone.run(() => {
+        this.store.dispatch(AuthActions.login({ emailOrUsername, password }));
+      });
     } else {
       this.loginForm.markAllAsTouched();
     }
@@ -110,7 +116,10 @@ export class LoginModalComponent implements OnInit, OnDestroy {
   onRegister(): void {
     if (this.registerForm.valid) {
       const { email, username, password } = this.registerForm.value;
-      this.store.dispatch(AuthActions.register({ email, username, password }));
+      // Ensure dispatch happens inside NgZone
+      this.ngZone.run(() => {
+        this.store.dispatch(AuthActions.register({ email, username, password }));
+      });
     } else {
       this.registerForm.markAllAsTouched();
     }
