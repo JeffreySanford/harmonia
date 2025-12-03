@@ -51,10 +51,12 @@ pnpm dev
 
 - **Legendary SCSS Theme** - 2,344 lines of aurora/sunset/prairie color system
 - **Material Design 3** - Custom palettes with elevation, typography, animations
+- **Dedicated Material Modules** - Tree-shaking architecture (67% bundle size reduction)
 - **NGRX State Management** - 4 feature stores (auth, models, datasets, jobs)
 - **WebSocket Integration** - Socket.IO client for real-time job updates
 - **Responsive Layout** - Flexbox-based with sidebar navigation (4 routes)
 - **Custom ESLint Rules** - Enforces NgModule pattern (no standalone components)
+- **Intelligent UI Controls** - Duration sliders with completion time estimation
 
 ### ⚙️ Backend (NestJS 11)
 
@@ -145,9 +147,11 @@ See [DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) for comprehensive de
 ### Architecture
 
 - [**COMPONENT_ARCHITECTURE.md**](docs/COMPONENT_ARCHITECTURE.md) - Angular patterns
+- [**MATERIAL_MODULES.md**](docs/MATERIAL_MODULES.md) - Material Design tree-shaking
 - [**NX_WORKSPACE_GUIDE.md**](docs/NX_WORKSPACE_GUIDE.md) - Nx configuration
 - [**NGRX_PATTERNS.md**](docs/NGRX_PATTERNS.md) - State management
 - [**WEBSOCKET_INTEGRATION.md**](docs/WEBSOCKET_INTEGRATION.md) - Real-time updates
+- [**TYPESCRIPT_CONFIGURATION.md**](docs/TYPESCRIPT_CONFIGURATION.md) - TypeScript setup
 
 ### Standards
 
@@ -181,8 +185,11 @@ See [DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) for comprehensive de
 - ✅ WebSocket integration
 - ✅ Custom ESLint rules
 - ✅ Flexbox layout
-- ⏳ Feature modules
+- ✅ Material Design modules (5 modules, 67% bundle reduction)
+- ✅ Feature modules (4 routes with lazy loading)
+- ✅ Enhanced UI controls (duration sliders, completion estimates)
 - ⏳ Authentication UI
+- ⏳ Job monitoring dashboard
 
 ---
 

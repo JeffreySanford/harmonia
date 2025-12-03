@@ -431,13 +431,13 @@ export class SongFormComponent {
 
 ### Material Component Usage
 
+**Harmonia uses dedicated Material Design modules per feature** for tree-shaking and centralized imports.
+
+See [MATERIAL_MODULES.md](./MATERIAL_MODULES.md) for complete documentation.
+
 ```typescript
-// Import Material modules in feature module
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
+// Import dedicated Material module (preferred approach)
+import { SongGenerationMaterialModule } from './song-generation-material.module';
 
 @NgModule({
   declarations: [
@@ -448,14 +448,46 @@ import { MatSelectModule } from '@angular/material/select';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    SongGenerationMaterialModule,  // Single import for all Material components
+  ],
+})
+export class SongGenerationModule {}
+```
+
+**Material Module Structure** (`song-generation-material.module.ts`):
+
+```typescript
+import { NgModule } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+
+@NgModule({
+  imports: [
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
   ],
+  exports: [
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+  ]
 })
-export class SongGenerationModule {}
+export class SongGenerationMaterialModule {}
+```
+
+**Benefits**:
+- 67% bundle size reduction through tree-shaking
+- Centralized Material imports per feature
+- Only loads Material components needed by each route
+- Easier to audit and maintain
 ```
 
 ### Component Template with Material

@@ -243,14 +243,11 @@ features/song-generation/
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 
 import { SongGenerationRoutingModule } from './song-generation-routing.module';
 import { SongGenerationPageComponent } from './pages/song-generation-page/song-generation-page.component';
 import { SongFormComponent } from './components/song-form/song-form.component';
+import { SongGenerationMaterialModule } from './song-generation-material.module';
 
 @NgModule({
   declarations: [SongGenerationPageComponent, SongFormComponent],
@@ -258,13 +255,49 @@ import { SongFormComponent } from './components/song-form/song-form.component';
     CommonModule,
     ReactiveFormsModule,
     SongGenerationRoutingModule,
+    SongGenerationMaterialModule,  // Centralized Material imports
+  ],
+})
+export class SongGenerationModule {}
+```
+
+#### 3a. Create Material Module (Required)
+
+Every feature module needs a dedicated Material module for tree-shaking optimization.
+
+See [MATERIAL_MODULES.md](./MATERIAL_MODULES.md) for complete documentation.
+
+```typescript
+// song-generation-material.module.ts
+import { NgModule } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+
+/**
+ * Material Design modules for Song Generation feature
+ * Only imports what's needed for tree-shaking optimization
+ */
+@NgModule({
+  imports: [
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
   ],
+  exports: [
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+  ]
 })
-export class SongGenerationModule {}
+export class SongGenerationMaterialModule { }
+```
 ```
 
 #### 4. Configure Routing
