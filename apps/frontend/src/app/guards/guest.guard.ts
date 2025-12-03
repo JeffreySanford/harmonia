@@ -43,8 +43,8 @@ export const guestGuard: CanActivateFn = () => {
         return true;
       }
       
-      // Redirect to library if already authenticated
-      router.navigate(['/library']);
+      // Redirect to song generation if already authenticated
+      router.navigate(['/generate/song']);
       return false;
     })
   );

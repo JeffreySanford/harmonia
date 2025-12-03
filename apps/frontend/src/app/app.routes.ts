@@ -1,11 +1,13 @@
 import { Route } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { adminGuard } from './guards/admin.guard';
+import { guestGuard } from './guards/guest.guard';
 
 /**
  * Application Routes
  * 
  * Route configuration with lazy-loaded modules and guards:
+ * - `/` - Landing page (guests only)
  * - `/library` - User's music library (auth required)
  * - `/profile` - User profile settings (auth required)
  * - `/admin` - Admin dashboard (admin role required)
@@ -13,6 +15,7 @@ import { adminGuard } from './guards/admin.guard';
  * - `/edit/*` - Video editing features
  * 
  * **Guards**:
+ * - `guestGuard` - Prevents authenticated users from accessing guest pages
  * - `authGuard` - Protects authenticated routes
  * - `adminGuard` - Restricts admin-only access
  * 
@@ -21,8 +24,9 @@ import { adminGuard } from './guards/admin.guard';
 export const appRoutes: Route[] = [
   {
     path: '',
-    redirectTo: '/generate/song',
-    pathMatch: 'full',
+    loadComponent: () =>
+      import('./features/landing/landing.component').then((m) => m.LandingComponent),
+    canActivate: [guestGuard],
   },
   {
     path: 'library',
