@@ -15,6 +15,7 @@ v0.1.0 — Initial content
 Added `requirements.txt`, documentation updates, and example notebooks.
 
 Notes
+
 - Model artifacts are large and intentionally not tracked in Git. Inventories
   and verification artifacts are committed to help collaborators reproduce
   the environment without shipping large binaries.

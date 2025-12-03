@@ -133,6 +133,23 @@ $color-text-disabled-dark: rgba(255, 255, 255, 0.38);
 $color-divider: rgba(0, 0, 0, 0.12);
 $color-divider-dark: rgba(255, 255, 255, 0.12);
 
+// Short aliases for common usage
+$background: $color-background;
+$surface: $color-surface;
+$text-primary: $color-text-primary;
+$text-secondary: $color-text-secondary;
+$border: $color-divider;
+$white: $neutral-0;
+$black: $neutral-1000;
+$on-surface-variant: $color-text-secondary;
+$on-surface: $color-text-primary;
+$surface-variant: $color-surface-variant;
+$warning-50: #fff8e1;
+$warning-100: $warn-100;
+$warning-500: $warn-500;
+$warning-700: $warn-700;
+$warning-contrast-50: rgba(0, 0, 0, 0.87);
+
 // ============================================================================
 // ELEVATION SHADOWS
 // Material Design 3 elevation system
@@ -142,6 +159,13 @@ $shadow-2: 0px 3px 6px rgba(0, 0, 0, 0.15), 0px 2px 4px rgba(0, 0, 0, 0.12);
 $shadow-3: 0px 10px 20px rgba(0, 0, 0, 0.15), 0px 3px 6px rgba(0, 0, 0, 0.10);
 $shadow-4: 0px 15px 25px rgba(0, 0, 0, 0.15), 0px 5px 10px rgba(0, 0, 0, 0.05);
 $shadow-5: 0px 20px 40px rgba(0, 0, 0, 0.20);
+
+// Short aliases
+$elevation-1: $shadow-1;
+$elevation-2: $shadow-2;
+$elevation-3: $shadow-3;
+$elevation-4: $shadow-4;
+$elevation-5: $shadow-5;
 
 // ============================================================================
 // BRAND COLORS

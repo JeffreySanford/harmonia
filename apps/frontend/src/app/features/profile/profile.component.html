@@ -1,0 +1,35 @@
+<div class="profile-container">
+  <header class="profile-header">
+    <h1>Profile Settings</h1>
+    <p class="subtitle">Manage your account information</p>
+  </header>
+
+  <div class="profile-content" *ngIf="user$ | async as user">
+    <div class="current-user-info">
+      <div class="user-avatar">
+        <mat-icon class="avatar-icon">account_circle</mat-icon>
+      </div>
+      <div class="user-details">
+        <h2>{{ user.username }}</h2>
+        <p>{{ user.email }}</p>
+        <span class="role-badge">{{ user.role }}</span>
+      </div>
+    </div>
+
+    <div class="placeholder-message">
+      <h3>Profile Management Coming Soon</h3>
+      <p>This page will include:</p>
+      <ul>
+        <li>Edit profile information (username, email)</li>
+        <li>Change password form</li>
+        <li>Avatar upload and management</li>
+        <li>Account security settings</li>
+        <li>Notification preferences</li>
+      </ul>
+      <p class="note">
+        <strong>Note:</strong> Backend API integration required.
+        Profile update endpoint needed at <code>PUT /api/user/profile</code>
+      </p>
+    </div>
+  </div>
+</div>

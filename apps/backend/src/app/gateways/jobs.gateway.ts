@@ -192,7 +192,7 @@ export class JobsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   // Helper method to extract userId from JWT token
-  private extractUserIdFromToken(token: string): string | null {
+  private extractUserIdFromToken(_token: string): string | null {
     // TODO: Implement proper JWT validation
     // For now, return a mock userId
     return 'mock-user-id';

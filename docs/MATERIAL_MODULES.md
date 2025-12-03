@@ -9,6 +9,7 @@ Harmonia uses **dedicated Material Design modules** for each feature to enable t
 ### 1. Tree-Shaking Optimization
 
 By creating separate Material modules per feature, Angular's build optimizer can:
+
 - Eliminate unused Material components from final bundles
 - Reduce bundle size for each lazy-loaded route
 - Improve initial load performance
@@ -20,6 +21,7 @@ By creating separate Material modules per feature, Angular's build optimizer can
 Instead of importing Material modules scattered throughout feature modules:
 
 ❌ **Before** (Scattered Imports):
+
 ```typescript
 // music-generation.module.ts
 import { MatButtonModule } from '@angular/material/button';
@@ -33,6 +35,7 @@ import { MatSliderModule } from '@angular/material/slider';
 ```
 
 ✅ **After** (Centralized Module):
+
 ```typescript
 // music-generation.module.ts
 import { MusicGenerationMaterialModule } from './music-generation-material.module';
@@ -51,6 +54,7 @@ import { MusicGenerationMaterialModule } from './music-generation-material.modul
 ### 4. Bundle Analysis
 
 With dedicated modules, you can easily analyze:
+
 - Which Material components contribute most to bundle size
 - Opportunities to reduce Material usage
 - Duplicate component imports across features
@@ -149,12 +153,14 @@ export class AppMaterialModule { }
 ```
 
 **Components**:
+
 - `MatCardModule` (2 KB) - For layout cards
 - `MatIconModule` (1.5 KB) - For sidebar navigation icons
 
 **Total Size**: ~3.5 KB
 
 **Usage in AppModule**:
+
 ```typescript
 import { AppMaterialModule } from './app-material.module';
 
@@ -216,6 +222,7 @@ export class MusicGenerationMaterialModule { }
 ```
 
 **Components**:
+
 - `MatButtonModule` (3 KB) - Action buttons
 - `MatCardModule` (2 KB) - Form container
 - `MatFormFieldModule` (4 KB) - Form field wrapper
@@ -363,6 +370,7 @@ export class VideoEditingMaterialModule { }
 ```
 
 **Components**:
+
 - `MatButtonModule` (3 KB) - Timeline controls
 - `MatCardModule` (2 KB) - Section containers
 - `MatDividerModule` (0.5 KB) - Section separators (unique to this module)
@@ -476,7 +484,8 @@ export class VideoGenerationModule {}
 ### Without Dedicated Modules (Before)
 
 If all features imported all Material components:
-```
+
+```text
 App chunk: ~50 KB (all Material components)
 Music Gen chunk: ~50 KB (duplicates)
 Song Gen chunk: ~50 KB (duplicates)
@@ -488,7 +497,8 @@ Total: ~250 KB
 ### With Dedicated Modules (After)
 
 With tree-shaking and lazy loading:
-```
+
+```text
 App chunk: ~3.5 KB (Card, Icon only)
 Music Gen chunk: ~23 KB (8 components)
 Song Gen chunk: ~22 KB (7 components)
@@ -502,11 +512,13 @@ Total: ~82.5 KB (67% reduction!)
 Users only download Material components for routes they visit:
 
 **Initial Load** (App + First Route):
+
 - Before: ~100 KB (App + First feature with all Material)
 - After: ~25.5 KB (App 3.5 KB + Music Gen 23 KB)
 - **Savings**: 74.5 KB (75% reduction)
 
 **Subsequent Route Navigation**:
+
 - Only loads that route's specific Material components
 - No duplicate downloads
 
@@ -523,12 +535,14 @@ Users only download Material components for routes they visit:
 ```
 
 **Features**:
+
 - Tick marks every 5 seconds (5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60)
-- Custom label formatter: `formatDurationLabel = (value: number) => `${value}s`;`
+- Custom label formatter: `formatDurationLabel = (value: number) =>`${value}s`;`
 - Two-way data binding with `[(value)]`
 - Change event handler for real-time updates
 
 **Completion Time Estimation**:
+
 ```typescript
 // video-generation-page.component.ts
 private readonly processingRatios = {
@@ -627,6 +641,7 @@ Before adding Material components, consider:
 1. **Identify the component needed** (e.g., `MatDatepickerModule`)
 
 2. **Add to appropriate Material module**:
+
    ```typescript
    import { MatDatepickerModule } from '@angular/material/datepicker';
    
@@ -643,6 +658,7 @@ Before adding Material components, consider:
    ```
 
 3. **Use in template**:
+
    ```html
    <mat-form-field>
      <mat-label>Choose a date</mat-label>
@@ -655,11 +671,13 @@ Before adding Material components, consider:
 ### Creating a New Feature Module
 
 1. **Create Material module file**:
+
    ```bash
    touch apps/frontend/src/app/features/new-feature/new-feature-material.module.ts
    ```
 
 2. **Implement module**:
+
    ```typescript
    import { NgModule } from '@angular/core';
    import { MatButtonModule } from '@angular/material/button';
@@ -673,6 +691,7 @@ Before adding Material components, consider:
    ```
 
 3. **Import in feature module**:
+
    ```typescript
    import { NewFeatureMaterialModule } from './new-feature-material.module';
    
@@ -692,6 +711,7 @@ Before adding Material components, consider:
 **Cause**: Material module not imported or not exported
 
 **Solution**: Verify Material module has both imports AND exports:
+
 ```typescript
 @NgModule({
   imports: [MatButtonModule],  // Must import
@@ -704,6 +724,7 @@ Before adding Material components, consider:
 **Cause**: Material package not installed
 
 **Solution**:
+
 ```bash
 pnpm install @angular/material @angular/cdk
 ```

@@ -3,6 +3,7 @@
 This file contains step-by-step instructions to close VS Code, move into the repository directory, and run the initial setup. Keep this file if Copilot or VS Code restarts.
 
 ## Quick overview
+
 ````markdown
 # Harmonia — Setup & Workflow (updated)
 
@@ -89,7 +90,7 @@ Notes:
 ## Artifacts, verification, and smoke checks
 
 - The repository includes machine-readable inventories that describe the downloaded artifacts:
-	- `models/inventory.json`, `datasets/inventory.json` and `inventory/combined_inventory.json`.
+  - `models/inventory.json`, `datasets/inventory.json` and `inventory/combined_inventory.json`.
 - To quickly validate the environment, run the smoke-check which computes or compares SHA256 values and writes a report:
 
 ```bash

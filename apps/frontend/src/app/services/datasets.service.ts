@@ -3,7 +3,7 @@
  * HTTP client for datasets API endpoints
  */
 
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Dataset, AudioSample } from '../store/datasets/datasets.state';
@@ -13,8 +13,7 @@ import { Dataset, AudioSample } from '../store/datasets/datasets.state';
 })
 export class DatasetsService {
   private readonly apiUrl = '/api/datasets';
-
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   getDatasets(filters?: {
     search?: string;

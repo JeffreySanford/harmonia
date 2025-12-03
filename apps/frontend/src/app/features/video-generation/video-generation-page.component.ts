@@ -37,7 +37,7 @@ import { Component } from '@angular/core';
  * @see {@link calculateEstimatedTime} for estimation algorithm
  */
 @Component({
-  selector: 'app-video-generation-page',
+  selector: 'harmonia-video-generation-page',
   standalone: false,
   templateUrl: './video-generation-page.component.html',
   styleUrl: './video-generation-page.component.scss',

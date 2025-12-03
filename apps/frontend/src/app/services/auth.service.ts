@@ -3,13 +3,13 @@
  * HTTP client for authentication API endpoints
  */
 
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { User } from '../store/auth/auth.state';
 
 export interface LoginRequest {
-  email: string;
+  emailOrUsername: string;
   password: string;
 }
 
@@ -21,21 +21,29 @@ export interface RegisterRequest {
 
 export interface AuthResponse {
   user: User;
-  token: string;
+  accessToken: string;
   refreshToken: string;
+  expiresIn?: number;
 }
 
-export interface RefreshTokenRequest {
-  refreshToken: string;
+export interface SessionResponse {
+  id: string;
+  email: string;
+  username: string;
+  role: string;
+}
+
+export interface LogoutResponse {
+  message: string;
+  success: boolean;
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  private readonly apiUrl = '/api/auth';
-
-  constructor(private http: HttpClient) {}
+  private readonly apiUrl = 'http://localhost:3000/api/auth';
+  private readonly http = inject(HttpClient);
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials);
@@ -45,20 +53,15 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.apiUrl}/register`, data);
   }
 
-  logout(): Observable<void> {
-    return this.http.post<void>(`${this.apiUrl}/logout`, {});
+  logout(): Observable<LogoutResponse> {
+    return this.http.post<LogoutResponse>(`${this.apiUrl}/logout`, {});
   }
 
-  refreshToken(request: RefreshTokenRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(
-      `${this.apiUrl}/refresh-token`,
-      request
-    );
+  refreshToken(): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/refresh`, {});
   }
 
-  checkSession(): Observable<{ valid: boolean; user?: User }> {
-    return this.http.get<{ valid: boolean; user?: User }>(
-      `${this.apiUrl}/session`
-    );
+  checkSession(): Observable<SessionResponse> {
+    return this.http.get<SessionResponse>(`${this.apiUrl}/session`);
   }
 }

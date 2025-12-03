@@ -1,0 +1,91 @@
+@use '../../../styles/colors';
+@use '../../../styles/mixins';
+@use '../../../styles/typography';
+
+.library-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: mixins.spacing(3);
+}
+
+.library-header {
+  margin-bottom: mixins.spacing(4);
+
+  h1 {
+    @include typography.heading-3;
+    color: colors.$text-primary;
+    margin: 0 0 mixins.spacing(1) 0;
+  }
+
+  .subtitle {
+    @include typography.body-1;
+    color: colors.$text-secondary;
+    margin: 0;
+  }
+}
+
+.library-content {
+  background-color: colors.$surface;
+  border-radius: 8px;
+  padding: mixins.spacing(4);
+  box-shadow: colors.$elevation-1;
+}
+
+.placeholder-message {
+  text-align: center;
+  padding: mixins.spacing(6) mixins.spacing(3);
+
+  .placeholder-icon {
+    font-size: 80px;
+    width: 80px;
+    height: 80px;
+    color: colors.$primary-300;
+    margin-bottom: mixins.spacing(2);
+  }
+
+  h2 {
+    @include typography.heading-4;
+    color: colors.$text-primary;
+    margin-bottom: mixins.spacing(2);
+  }
+
+  p {
+    @include typography.body-1;
+    color: colors.$text-secondary;
+    margin-bottom: mixins.spacing(2);
+  }
+
+  ul {
+    @include typography.body-1;
+    color: colors.$text-secondary;
+    text-align: left;
+    max-width: 400px;
+    margin: 0 auto mixins.spacing(3) auto;
+    padding-left: mixins.spacing(3);
+
+    li {
+      margin-bottom: mixins.spacing(1);
+    }
+  }
+
+  .note {
+    padding: mixins.spacing(2);
+    background-color: colors.$primary-50;
+    border-left: 4px solid colors.$primary-500;
+    border-radius: 4px;
+    max-width: 600px;
+    margin: mixins.spacing(3) auto 0 auto;
+
+    strong {
+      color: colors.$primary-700;
+    }
+
+    code {
+      background-color: colors.$primary-100;
+      padding: mixins.spacing(0.25) mixins.spacing(0.75);
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+  }
+}

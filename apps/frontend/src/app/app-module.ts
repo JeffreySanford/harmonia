@@ -2,13 +2,15 @@ import { NgModule, provideBrowserGlobalErrorListeners, isDevMode } from '@angula
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterModule } from '@angular/router';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { StoreModule } from '@ngrx/store';
 import { EffectsModule } from '@ngrx/effects';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { App } from './app';
 import { appRoutes } from './app.routes';
 import { AppMaterialModule } from './app-material.module';
+import { AuthModule } from './features/auth/auth.module';
+import { AuthInterceptor } from './interceptors/auth.interceptor';
 
 // Reducers
 import { authReducer } from './store/auth/auth.reducer';
@@ -29,6 +31,7 @@ import { JobsEffects } from './store/jobs/jobs.effects';
     BrowserAnimationsModule,
     HttpClientModule,
     AppMaterialModule,
+    AuthModule,
     RouterModule.forRoot(appRoutes),
     StoreModule.forRoot(
       {
@@ -62,7 +65,14 @@ import { JobsEffects } from './store/jobs/jobs.effects';
       traceLimit: 75,
     }),
   ],
-  providers: [provideBrowserGlobalErrorListeners()],
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true
+    }
+  ],
   exports: [RouterModule],
   bootstrap: [App],
 })

@@ -5,50 +5,180 @@
         <mat-icon>music_note</mat-icon>
         {{ title }}
       </mat-card-title>
+      <mat-card-subtitle>
+        Generate song metadata (title, lyrics, genre, mood) from narrative descriptions
+      </mat-card-subtitle>
     </mat-card-header>
+
     <mat-card-content>
-      <p class="placeholder-text">
-        Generate songs from text narratives with customizable style and mood.
-      </p>
-      
-      <form class="generation-form">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Song Title</mat-label>
-          <input matInput placeholder="Enter song title">
-        </mat-form-field>
+      <!-- Step 1: Narrative Input -->
+      <section class="input-section">
+        <h3 class="section-title">
+          <mat-icon>edit_note</mat-icon>
+          1. Enter Your Narrative
+        </h3>
+        <p class="section-description">
+          Describe the story, theme, or emotion you want to convey in your song.
+        </p>
 
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Narrative / Lyrics</mat-label>
-          <textarea matInput placeholder="Describe your song or enter lyrics" rows="5"></textarea>
+          <mat-label>Narrative Description</mat-label>
+          <textarea 
+            matInput 
+            [(ngModel)]="narrative"
+            placeholder="Example: A melancholic story about lost love set in a rainy city, with reflective and introspective mood"
+            rows="6"
+            [maxlength]="maxNarrativeLength"
+          ></textarea>
+          <mat-hint align="end">
+            {{ characterCount }}/{{ maxNarrativeLength }} characters
+            <span *ngIf="characterCount < minNarrativeLength" class="error-hint">
+              (minimum {{ minNarrativeLength }})
+            </span>
+          </mat-hint>
         </mat-form-field>
+      </section>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Style</mat-label>
-          <mat-select>
-            <mat-option value="pop">Pop</mat-option>
-            <mat-option value="rock">Rock</mat-option>
-            <mat-option value="jazz">Jazz</mat-option>
-            <mat-option value="classical">Classical</mat-option>
-            <mat-option value="electronic">Electronic</mat-option>
-          </mat-select>
-        </mat-form-field>
+      <!-- Step 2: Duration Selection -->
+      <section class="duration-section">
+        <h3 class="section-title">
+          <mat-icon>timer</mat-icon>
+          2. Set Song Duration
+        </h3>
+        <p class="section-description">
+          Duration affects lyrics length. Singing speed: ~4.5 syllables/second
+        </p>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Mood</mat-label>
-          <mat-select>
-            <mat-option value="happy">Happy</mat-option>
-            <mat-option value="sad">Sad</mat-option>
-            <mat-option value="energetic">Energetic</mat-option>
-            <mat-option value="calm">Calm</mat-option>
-            <mat-option value="dramatic">Dramatic</mat-option>
-          </mat-select>
-        </mat-form-field>
-      </form>
+        <div class="slider-container">
+          <label class="slider-label">
+            Duration: {{ duration }}s
+            <span class="slider-info">(Target: {{ targetSyllables }} syllables, ~{{ targetWords }} words)</span>
+          </label>
+          <mat-slider 
+            [min]="minDuration" 
+            [max]="maxDuration" 
+            [step]="5" 
+            showTickMarks 
+            discrete
+            class="full-width"
+          >
+            <input matSliderThumb [(ngModel)]="duration">
+          </mat-slider>
+        </div>
+      </section>
+
+      <!-- Step 3: Generate Button -->
+      <section class="generate-section">
+        <button 
+          mat-raised-button 
+          color="primary" 
+          (click)="generateMetadata()"
+          [disabled]="!isNarrativeValid || isGenerating"
+          class="generate-button"
+        >
+          <mat-icon>{{ isGenerating ? 'hourglass_empty' : 'auto_awesome' }}</mat-icon>
+          {{ isGenerating ? 'Generating Metadata...' : 'Generate Song Metadata' }}
+        </button>
+        <p class="helper-text" *ngIf="!isNarrativeValid">
+          <mat-icon class="warning-icon">warning</mat-icon>
+          Enter at least {{ minNarrativeLength }} characters to generate
+        </p>
+      </section>
+
+      <!-- Step 4: Generated Metadata (appears after generation) -->
+      <section class="metadata-section" *ngIf="showMetadata && generatedMetadata">
+        <h3 class="section-title">
+          <mat-icon>library_music</mat-icon>
+          3. Review & Edit Metadata
+        </h3>
+        <p class="section-description">
+          AI-generated metadata is editable. Adjust as needed before approving.
+        </p>
+
+        <div class="metadata-form">
+          <!-- Title -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Song Title</mat-label>
+            <input matInput [(ngModel)]="generatedMetadata.title" placeholder="Enter title">
+            <mat-icon matPrefix>title</mat-icon>
+          </mat-form-field>
+
+          <!-- Lyrics with Syllable Count -->
+          <mat-form-field appearance="outline" class="full-width lyrics-field">
+            <mat-label>Lyrics</mat-label>
+            <textarea 
+              matInput 
+              [(ngModel)]="generatedMetadata.lyrics"
+              (ngModelChange)="onLyricsChange()"
+              rows="10"
+              placeholder="Edit lyrics as needed"
+            ></textarea>
+            <mat-icon matPrefix>lyrics</mat-icon>
+            <mat-hint align="start">
+              <span [ngClass]="{
+                'valid-hint': validateLyrics().status === 'valid',
+                'warning-hint': validateLyrics().status === 'warning',
+                'error-hint': validateLyrics().status === 'error'
+              }">
+                {{ validateLyrics().message }}
+              </span>
+            </mat-hint>
+          </mat-form-field>
+
+          <!-- Genre and Mood Row -->
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Genre</mat-label>
+              <mat-select [(ngModel)]="generatedMetadata.genre">
+                <mat-option *ngFor="let genre of genres" [value]="genre">
+                  {{ genre | titlecase }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>category</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Mood</mat-label>
+              <mat-select [(ngModel)]="generatedMetadata.mood">
+                <mat-option *ngFor="let mood of moods" [value]="mood">
+                  {{ mood | titlecase }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>mood</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <!-- Validation Summary -->
+          <div class="validation-summary" [ngClass]="validateLyrics().status">
+            <mat-icon>
+              {{ validateLyrics().status === 'valid' ? 'check_circle' : 
+                 validateLyrics().status === 'warning' ? 'warning' : 'error' }}
+            </mat-icon>
+            <span>{{ validateLyrics().message }}</span>
+          </div>
+        </div>
+      </section>
     </mat-card-content>
-    <mat-card-actions>
-      <button mat-raised-button color="primary">
-        <mat-icon>play_arrow</mat-icon>
-        Generate Song
+
+    <!-- Step 5: Actions -->
+    <mat-card-actions *ngIf="showMetadata && generatedMetadata" class="card-actions">
+      <button 
+        mat-button 
+        color="accent" 
+        (click)="regenerate()"
+        [disabled]="isGenerating"
+      >
+        <mat-icon>refresh</mat-icon>
+        Regenerate
+      </button>
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="approveAndContinue()"
+        [disabled]="isGenerating || isApproved"
+      >
+        <mat-icon>check_circle</mat-icon>
+        {{ isApproved ? 'Approved' : 'Approve & Continue to Music Generation' }}
       </button>
     </mat-card-actions>
   </mat-card>

@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 
 import { MusicGenerationRoutingModule } from './music-generation-routing.module';
 import { MusicGenerationPageComponent } from './music-generation-page.component';
@@ -11,6 +11,7 @@ import { MusicGenerationMaterialModule } from './music-generation-material.modul
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule, // For ngModel two-way binding
     MusicGenerationRoutingModule,
     MusicGenerationMaterialModule,
   ],

@@ -1,0 +1,164 @@
+<div class="login-modal">
+  <h2 mat-dialog-title>
+    {{ mode === 'login' ? 'Sign In' : 'Create Account' }}
+  </h2>
+
+  <mat-dialog-content>
+    <!-- Error Alert -->
+    <div class="error-alert" *ngIf="(error$ | async) as error">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ error }}</span>
+    </div>
+
+    <!-- Login Form -->
+    <form *ngIf="mode === 'login'" [formGroup]="loginForm" (ngSubmit)="onLogin()">
+      <!-- Email or Username Field -->
+      <mat-form-field appearance="outline">
+        <mat-label>Email or Username</mat-label>
+        <input 
+          matInput 
+          type="text" 
+          formControlName="emailOrUsername" 
+          placeholder="user@example.com or username"
+          autocomplete="username"
+        />
+        <mat-icon matPrefix>person</mat-icon>
+        <mat-error *ngIf="hasError('emailOrUsername', 'login')">
+          {{ getErrorMessage('emailOrUsername', 'login') }}
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Password Field -->
+      <mat-form-field appearance="outline">
+        <mat-label>Password</mat-label>
+        <input 
+          matInput 
+          [type]="hidePassword ? 'password' : 'text'" 
+          formControlName="password"
+          placeholder="Enter your password"
+          autocomplete="current-password"
+        />
+        <mat-icon matPrefix>lock</mat-icon>
+        <button 
+          mat-icon-button 
+          matSuffix 
+          type="button"
+          (click)="hidePassword = !hidePassword"
+          [attr.aria-label]="'Hide password'"
+          [attr.aria-pressed]="hidePassword"
+        >
+          <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        <mat-error *ngIf="hasError('password', 'login')">
+          {{ getErrorMessage('password', 'login') }}
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Submit Button -->
+      <button 
+        mat-raised-button 
+        color="primary" 
+        type="submit"
+        [disabled]="(loading$ | async) || loginForm.invalid"
+        class="submit-button"
+      >
+        <span *ngIf="(loading$ | async) === false">Sign In</span>
+        <mat-spinner *ngIf="(loading$ | async)" diameter="20"></mat-spinner>
+      </button>
+    </form>
+
+    <!-- Register Form -->
+    <form *ngIf="mode === 'register'" [formGroup]="registerForm" (ngSubmit)="onRegister()">
+      <!-- Email Field -->
+      <mat-form-field appearance="outline">
+        <mat-label>Email</mat-label>
+        <input 
+          matInput 
+          type="email" 
+          formControlName="email" 
+          placeholder="user@example.com"
+          autocomplete="email"
+        />
+        <mat-icon matPrefix>email</mat-icon>
+        <mat-error *ngIf="hasError('email', 'register')">
+          {{ getErrorMessage('email', 'register') }}
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Username Field -->
+      <mat-form-field appearance="outline">
+        <mat-label>Username</mat-label>
+        <input 
+          matInput 
+          type="text" 
+          formControlName="username" 
+          placeholder="johndoe"
+          autocomplete="username"
+        />
+        <mat-icon matPrefix>person</mat-icon>
+        <mat-error *ngIf="hasError('username', 'register')">
+          {{ getErrorMessage('username', 'register') }}
+        </mat-error>
+      </mat-form-field>
+
+      <!-- Password Field -->
+      <mat-form-field appearance="outline">
+        <mat-label>Password</mat-label>
+        <input 
+          matInput 
+          [type]="hidePassword ? 'password' : 'text'" 
+          formControlName="password"
+          placeholder="At least 8 characters"
+          autocomplete="new-password"
+        />
+        <mat-icon matPrefix>lock</mat-icon>
+        <button 
+          mat-icon-button 
+          matSuffix 
+          type="button"
+          (click)="hidePassword = !hidePassword"
+          [attr.aria-label]="'Hide password'"
+          [attr.aria-pressed]="hidePassword"
+        >
+          <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        <mat-error *ngIf="hasError('password', 'register')">
+          {{ getErrorMessage('password', 'register') }}
+        </mat-error>
+        <mat-hint>Use at least 8 characters</mat-hint>
+      </mat-form-field>
+
+      <!-- Submit Button -->
+      <button 
+        mat-raised-button 
+        color="primary" 
+        type="submit"
+        [disabled]="(loading$ | async) || registerForm.invalid"
+        class="submit-button"
+      >
+        <span *ngIf="(loading$ | async) === false">Create Account</span>
+        <mat-spinner *ngIf="(loading$ | async)" diameter="20"></mat-spinner>
+      </button>
+    </form>
+
+    <!-- Mode Toggle -->
+    <div class="mode-toggle">
+      <span *ngIf="mode === 'login'">
+        Don't have an account?
+        <button mat-button color="primary" type="button" (click)="toggleMode()">
+          Sign Up
+        </button>
+      </span>
+      <span *ngIf="mode === 'register'">
+        Already have an account?
+        <button mat-button color="primary" type="button" (click)="toggleMode()">
+          Sign In
+        </button>
+      </span>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="onCancel()">Cancel</button>
+  </mat-dialog-actions>
+</div>

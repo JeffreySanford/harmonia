@@ -1,0 +1,58 @@
+<div class="header-user-menu" *ngIf="user$ | async as user">
+  <!-- Menu Trigger Button -->
+  <button 
+    mat-icon-button 
+    [matMenuTriggerFor]="userMenu"
+    class="user-menu-trigger"
+    aria-label="User menu"
+  >
+    <mat-icon class="user-avatar-icon">account_circle</mat-icon>
+  </button>
+
+  <!-- Dropdown Menu -->
+  <mat-menu #userMenu="matMenu" class="user-menu-panel" xPosition="before">
+    <!-- User Info Header -->
+    <div class="user-info-header" mat-menu-item [disableRipple]="true">
+      <div class="user-details">
+        <div class="user-name">{{ user.username }}</div>
+        <div class="user-email">{{ user.email }}</div>
+      </div>
+      <span 
+        class="role-badge" 
+        [ngClass]="getRoleBadgeClass(user)"
+      >
+        {{ getRoleBadge(user) }}
+      </span>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <!-- Navigation Menu Items -->
+    <button mat-menu-item (click)="goToLibrary()">
+      <mat-icon>library_music</mat-icon>
+      <span>My Library</span>
+    </button>
+
+    <button mat-menu-item (click)="goToProfile()">
+      <mat-icon>person</mat-icon>
+      <span>Profile Settings</span>
+    </button>
+
+    <!-- Admin Dashboard (Admin Only) -->
+    <ng-container *ngIf="isAdmin$ | async">
+      <mat-divider></mat-divider>
+      <button mat-menu-item (click)="goToAdmin()" class="admin-menu-item">
+        <mat-icon>admin_panel_settings</mat-icon>
+        <span>Admin Dashboard</span>
+      </button>
+    </ng-container>
+
+    <mat-divider></mat-divider>
+
+    <!-- Logout -->
+    <button mat-menu-item (click)="logout()" class="logout-menu-item">
+      <mat-icon>logout</mat-icon>
+      <span>Logout</span>
+    </button>
+  </mat-menu>
+</div>

@@ -3,7 +3,7 @@
  * Real-time communication with Socket.IO
  */
 
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { io, Socket } from 'socket.io-client';
 import { Observable, fromEvent, Subject } from 'rxjs';
@@ -35,10 +35,10 @@ export interface JobFailedEvent {
   providedIn: 'root',
 })
 export class WebSocketService {
+  private readonly store = inject(Store<AppState>);
+  
   private socket: Socket | null = null;
   private destroy$ = new Subject<void>();
-
-  constructor(private store: Store<AppState>) {}
 
   connect(token: string): void {
     if (this.socket?.connected) {

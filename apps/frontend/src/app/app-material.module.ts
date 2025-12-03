@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 
 /**
  * Material Design modules used in the root App component.
@@ -10,9 +11,10 @@ import { MatIconModule } from '@angular/material/icon';
  * 
  * **Components Included**:
  * - `MatCardModule` (2 KB) - Layout cards for sections
- * - `MatIconModule` (1.5 KB) - Icons for sidebar navigation
+ * - `MatIconModule` (1.5 KB) - Icons for sidebar navigation and header
+ * - `MatButtonModule` (3 KB) - Login/logout buttons in header
  * 
- * **Total Bundle Size**: ~3.5 KB
+ * **Total Bundle Size**: ~6.5 KB
  * 
  * **Usage**: Imported in `AppModule` for app-wide Material components.
  * 
@@ -25,10 +27,12 @@ import { MatIconModule } from '@angular/material/icon';
   imports: [
     MatCardModule,
     MatIconModule,
+    MatButtonModule,
   ],
   exports: [
     MatCardModule,
     MatIconModule,
+    MatButtonModule,
   ]
 })
 export class AppMaterialModule { }

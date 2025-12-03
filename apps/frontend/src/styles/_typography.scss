@@ -4,6 +4,11 @@
 @use 'colors' as c;
 @use 'mixins' as m;
 
+// Re-export typography mixins for convenient access
+@forward 'mixins' show heading-1, heading-2, heading-3, heading-4, heading-5, heading-6, 
+  body-1, body-2, body-large, body-medium, body-small, 
+  label-large, label-medium, caption, overline;
+
 // ============================================================================
 // FONT FAMILIES
 // ============================================================================

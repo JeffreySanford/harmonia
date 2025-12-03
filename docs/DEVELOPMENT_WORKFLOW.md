@@ -298,7 +298,6 @@ import { MatSelectModule } from '@angular/material/select';
 })
 export class SongGenerationMaterialModule { }
 ```
-```
 
 #### 4. Configure Routing
 

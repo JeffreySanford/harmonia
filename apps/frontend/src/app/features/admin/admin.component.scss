@@ -1,0 +1,124 @@
+@use '../../../styles/colors';
+@use '../../../styles/mixins';
+@use '../../../styles/typography';
+
+.admin-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: mixins.spacing(3);
+}
+
+.admin-header {
+  margin-bottom: mixins.spacing(4);
+
+  h1 {
+    @include typography.heading-3;
+    color: colors.$text-primary;
+    margin: 0 0 mixins.spacing(1) 0;
+  }
+
+  .subtitle {
+    @include typography.body-1;
+    color: colors.$text-secondary;
+    margin: 0;
+  }
+}
+
+.admin-content {
+  background-color: colors.$surface;
+  border-radius: 8px;
+  padding: mixins.spacing(4);
+  box-shadow: colors.$elevation-1;
+}
+
+.placeholder-message {
+  text-align: center;
+  padding: mixins.spacing(4) mixins.spacing(3);
+
+  .placeholder-icon {
+    font-size: 80px;
+    width: 80px;
+    height: 80px;
+    color: colors.$primary-300;
+    margin-bottom: mixins.spacing(2);
+  }
+
+  h2 {
+    @include typography.heading-4;
+    color: colors.$text-primary;
+    margin-bottom: mixins.spacing(3);
+  }
+
+  > p {
+    @include typography.body-1;
+    color: colors.$text-secondary;
+    margin-bottom: mixins.spacing(4);
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: mixins.spacing(3);
+    margin-bottom: mixins.spacing(4);
+
+    .feature-card {
+      padding: mixins.spacing(3);
+      background-color: colors.$background;
+      border: 1px solid colors.$border;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: colors.$primary-300;
+        box-shadow: colors.$elevation-2;
+      }
+
+      mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        color: colors.$primary-500;
+        margin-bottom: mixins.spacing(2);
+      }
+
+      h3 {
+        @include typography.heading-6;
+        color: colors.$text-primary;
+        margin: 0 0 mixins.spacing(1) 0;
+      }
+
+      p {
+        @include typography.body-2;
+        color: colors.$text-secondary;
+        margin: 0;
+      }
+    }
+  }
+
+  .note {
+    padding: mixins.spacing(2);
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    border-radius: 4px;
+    max-width: 700px;
+    margin: 0 auto;
+
+    strong {
+      color: #1976d2;
+    }
+
+    code {
+      background-color: #bbdefb;
+      padding: mixins.spacing(0.25) mixins.spacing(0.75);
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .feature-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

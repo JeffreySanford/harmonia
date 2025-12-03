@@ -1,0 +1,170 @@
+@use '../../../../styles/colors';
+@use '../../../../styles/mixins';
+@use '../../../../styles/typography';
+
+.header-user-menu {
+  display: flex;
+  align-items: center;
+
+  .user-menu-trigger {
+    color: colors.$white;
+    
+    .user-avatar-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+    }
+
+    &:hover {
+      background-color: rgba(colors.$white, 0.1);
+    }
+  }
+}
+
+// Menu panel styles (applied to mat-menu)
+::ng-deep .user-menu-panel {
+  min-width: 280px;
+  margin-top: 8px;
+
+  .mat-mdc-menu-content {
+    padding: 0;
+  }
+
+  // User info header
+  .user-info-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: mixins.spacing(2);
+    background-color: colors.$primary-50;
+    cursor: default;
+    pointer-events: none;
+
+    &:hover {
+      background-color: colors.$primary-50;
+    }
+
+    .user-details {
+      flex: 1;
+      
+      .user-name {
+        @include typography.body-1;
+        font-weight: 600;
+        color: colors.$text-primary;
+        margin-bottom: mixins.spacing(0.5);
+      }
+
+      .user-email {
+        @include typography.body-2;
+        color: colors.$text-secondary;
+        font-size: 12px;
+      }
+    }
+
+    .role-badge {
+      padding: mixins.spacing(0.5) mixins.spacing(1);
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+
+      &.role-badge-admin {
+        background-color: colors.$primary-100;
+        color: colors.$primary-700;
+      }
+
+      &.role-badge-user {
+        background-color: colors.$surface;
+        color: colors.$text-secondary;
+      }
+    }
+  }
+
+  // Menu items
+  .mat-mdc-menu-item {
+    display: flex;
+    align-items: center;
+    gap: mixins.spacing(2);
+    padding: mixins.spacing(1.5) mixins.spacing(2);
+    min-height: 48px;
+    @include typography.body-1;
+
+    mat-icon {
+      color: colors.$text-secondary;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      background-color: colors.$primary-50;
+      
+      mat-icon {
+        color: colors.$primary-700;
+      }
+    }
+
+    &.admin-menu-item {
+      mat-icon {
+        color: colors.$primary-600;
+      }
+
+      &:hover {
+        background-color: colors.$primary-50;
+        
+        mat-icon {
+          color: colors.$primary-700;
+        }
+      }
+    }
+
+    &.logout-menu-item {
+      color: #d32f2f;
+
+      mat-icon {
+        color: #d32f2f;
+      }
+
+      &:hover {
+        background-color: #ffebee;
+      }
+    }
+  }
+
+  mat-divider {
+    margin: mixins.spacing(0.5) 0;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 640px) {
+  ::ng-deep .user-menu-panel {
+    min-width: 240px;
+
+    .user-info-header {
+      padding: mixins.spacing(1.5);
+
+      .user-details {
+        .user-name {
+          font-size: 14px;
+        }
+
+        .user-email {
+          font-size: 11px;
+        }
+      }
+
+      .role-badge {
+        font-size: 10px;
+        padding: mixins.spacing(0.25) mixins.spacing(0.75);
+      }
+    }
+
+    .mat-mdc-menu-item {
+      padding: mixins.spacing(1) mixins.spacing(1.5);
+      min-height: 44px;
+      font-size: 14px;
+    }
+  }
+}

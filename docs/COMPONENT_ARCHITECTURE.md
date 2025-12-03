@@ -484,10 +484,14 @@ export class SongGenerationMaterialModule {}
 ```
 
 **Benefits**:
+
 - 67% bundle size reduction through tree-shaking
 - Centralized Material imports per feature
 - Only loads Material components needed by each route
 - Easier to audit and maintain
+
+```text
+(See MATERIAL_MODULES.md for complete implementation details)
 ```
 
 ### Component Template with Material

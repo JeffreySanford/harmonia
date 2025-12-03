@@ -3,7 +3,7 @@
  * Handles job queue side effects and API calls
  */
 
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
 import { catchError, map, mergeMap } from 'rxjs/operators';
@@ -110,8 +110,6 @@ export class JobsEffects {
     )
   );
 
-  constructor(
-    private actions$: Actions,
-    private jobsService: JobsService
-  ) {}
+  private readonly actions$ = inject(Actions);
+  private readonly jobsService = inject(JobsService);
 }

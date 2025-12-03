@@ -4,6 +4,15 @@
 @use 'colors' as c;
 
 // ============================================================================
+// SPACING FUNCTION
+// Material Design 8px spacing system
+// ============================================================================
+
+@function spacing($multiplier: 1) {
+  @return calc($multiplier * 8px);
+}
+
+// ============================================================================
 // TYPOGRAPHY MIXINS
 // ============================================================================
 
@@ -63,6 +72,41 @@
   letter-spacing: 0.01786em;
 }
 
+@mixin body-large {
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+}
+
+@mixin body-medium {
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.03125em;
+}
+
+@mixin body-small {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.43;
+  letter-spacing: 0.01786em;
+}
+
+@mixin label-large {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.43;
+  letter-spacing: 0.00714em;
+}
+
+@mixin label-medium {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.66;
+  letter-spacing: 0.04167em;
+}
+
 @mixin caption {
   font-size: 0.75rem;
   font-weight: 400;
@@ -86,6 +130,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+@mixin flex-align-center {
+  display: flex;
+  align-items: center;
 }
 
 @mixin flex-between {
@@ -151,6 +200,44 @@
 
 @mixin elevation-transition($duration: 0.3s) {
   transition: box-shadow $duration cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+@mixin card-elevated {
+  background-color: c.$surface;
+  border-radius: 8px;
+  box-shadow: c.$shadow-2;
+  padding: spacing(3);
+  transition: box-shadow 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+
+  &:hover {
+    box-shadow: c.$shadow-3;
+  }
+}
+
+@mixin button-primary {
+  background-color: c.$primary-500;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: spacing(1.5) spacing(3);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, box-shadow 0.2s;
+
+  &:hover {
+    background-color: c.$primary-600;
+    box-shadow: c.$shadow-2;
+  }
+
+  &:active {
+    background-color: c.$primary-700;
+  }
+
+  &:disabled {
+    background-color: c.$neutral-300;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
 }
 
 // ============================================================================

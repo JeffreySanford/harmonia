@@ -4,6 +4,7 @@ Context
 Target hardware: consumer workstation (i9 24-core, 32GB RAM, GPU with ~10GB VRAM). Heavy model inference requires strategies to reduce memory, compute, and latency.
 
 Strategies
+
 1. Model variant selection
    - Prefer smaller variants or distilled checkpoints for local runs.
    - Keep canonical large variants for offline/production but use quantized versions locally.
@@ -37,9 +38,11 @@ Strategies
    - Use explicit RNG seeds and document them in artifact metadata to enable reproducible runs.
 
 10. Profiling and telemetry
-   - Add simple timing and memory telemetry to worker scripts to identify hotspots and guide optimizations.
+
+- Add simple timing and memory telemetry to worker scripts to identify hotspots and guide optimizations.
 
 Recommendations for Harmonia
+
 - Ship small quantized models for local dev and testing in `models/variants/quantized/*`.
 - Implement CPU-GPU offload options in worker scripts behind flags.
 - Add caching layers for encodings and prompt conditioning artifacts.

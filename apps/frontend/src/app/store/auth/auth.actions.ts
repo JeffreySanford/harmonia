@@ -9,7 +9,7 @@ import { User } from './auth.state';
 // Login actions
 export const login = createAction(
   '[Auth] Login',
-  props<{ email: string; password: string }>()
+  props<{ emailOrUsername: string; password: string }>()
 );
 
 export const loginSuccess = createAction(
@@ -44,10 +44,7 @@ export const logout = createAction('[Auth] Logout');
 export const logoutSuccess = createAction('[Auth] Logout Success');
 
 // Token refresh actions
-export const refreshToken = createAction(
-  '[Auth] Refresh Token',
-  props<{ refreshToken: string }>()
-);
+export const refreshToken = createAction('[Auth] Refresh Token');
 
 export const refreshTokenSuccess = createAction(
   '[Auth] Refresh Token Success',

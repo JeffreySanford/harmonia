@@ -3,7 +3,7 @@
  * HTTP client for job queue API endpoints
  */
 
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Job, JobStatus, JobType } from '../store/jobs/jobs.state';
@@ -13,8 +13,7 @@ import { Job, JobStatus, JobType } from '../store/jobs/jobs.state';
 })
 export class JobsService {
   private readonly apiUrl = '/api/jobs';
-
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   getJobs(filters?: {
     status?: JobStatus;

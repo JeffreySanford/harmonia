@@ -3,7 +3,7 @@
  * Handles authentication side effects and API calls
  */
 
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
 import { catchError, map, mergeMap, tap } from 'rxjs/operators';
@@ -13,6 +13,10 @@ import * as AuthActions from './auth.actions';
 
 @Injectable()
 export class AuthEffects {
+  private readonly actions$ = inject(Actions);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+
   login$ = createEffect(() =>
     this.actions$.pipe(
       ofType(AuthActions.login),
@@ -21,14 +25,14 @@ export class AuthEffects {
           map((response) =>
             AuthActions.loginSuccess({
               user: response.user,
-              token: response.token,
+              token: response.accessToken,
               refreshToken: response.refreshToken,
             })
           ),
           catchError((error) =>
             of(
               AuthActions.loginFailure({
-                error: error.message || 'Login failed',
+                error: error?.error?.message || error.message || 'Login failed',
               })
             )
           )
@@ -42,7 +46,7 @@ export class AuthEffects {
       this.actions$.pipe(
         ofType(AuthActions.loginSuccess),
         tap(() => {
-          this.router.navigate(['/dashboard']);
+          this.router.navigate(['/library']);
         })
       ),
     { dispatch: false }
@@ -56,14 +60,14 @@ export class AuthEffects {
           map((response) =>
             AuthActions.registerSuccess({
               user: response.user,
-              token: response.token,
+              token: response.accessToken,
               refreshToken: response.refreshToken,
             })
           ),
           catchError((error) =>
             of(
               AuthActions.registerFailure({
-                error: error.message || 'Registration failed',
+                error: error?.error?.message || error.message || 'Registration failed',
               })
             )
           )
@@ -77,7 +81,7 @@ export class AuthEffects {
       this.actions$.pipe(
         ofType(AuthActions.registerSuccess),
         tap(() => {
-          this.router.navigate(['/dashboard']);
+          this.router.navigate(['/library']);
         })
       ),
     { dispatch: false }
@@ -100,7 +104,7 @@ export class AuthEffects {
       this.actions$.pipe(
         ofType(AuthActions.logoutSuccess),
         tap(() => {
-          this.router.navigate(['/login']);
+          this.router.navigate(['/']);
         })
       ),
     { dispatch: false }
@@ -109,18 +113,18 @@ export class AuthEffects {
   refreshToken$ = createEffect(() =>
     this.actions$.pipe(
       ofType(AuthActions.refreshToken),
-      mergeMap((action) =>
-        this.authService.refreshToken({ refreshToken: action.refreshToken }).pipe(
+      mergeMap(() =>
+        this.authService.refreshToken().pipe(
           map((response) =>
             AuthActions.refreshTokenSuccess({
-              token: response.token,
+              token: response.accessToken,
               refreshToken: response.refreshToken,
             })
           ),
           catchError((error) =>
             of(
               AuthActions.refreshTokenFailure({
-                error: error.message || 'Token refresh failed',
+                error: error?.error?.message || error.message || 'Token refresh failed',
               })
             )
           )
@@ -135,19 +139,19 @@ export class AuthEffects {
       mergeMap(() =>
         this.authService.checkSession().pipe(
           map((response) =>
-            response.valid && response.user
-              ? AuthActions.sessionValid({ user: response.user })
-              : AuthActions.sessionInvalid()
+            AuthActions.sessionValid({ 
+              user: {
+                id: response.id,
+                email: response.email,
+                username: response.username,
+                role: response.role as 'admin' | 'user' | 'guest',
+                createdAt: new Date().toISOString()
+              }
+            })
           ),
           catchError(() => of(AuthActions.sessionInvalid()))
         )
       )
     )
   );
-
-  constructor(
-    private actions$: Actions,
-    private authService: AuthService,
-    private router: Router
-  ) {}
 }

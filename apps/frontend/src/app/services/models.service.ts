@@ -3,7 +3,7 @@
  * HTTP client for model artifacts API endpoints
  */
 
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ModelArtifact } from '../store/models/models.state';
@@ -13,8 +13,7 @@ import { ModelArtifact } from '../store/models/models.state';
 })
 export class ModelsService {
   private readonly apiUrl = '/api/models';
-
-  constructor(private http: HttpClient) {}
+  private readonly http = inject(HttpClient);
 
   getModels(filters?: {
     search?: string;

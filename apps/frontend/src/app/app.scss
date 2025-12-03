@@ -35,6 +35,20 @@
     display: flex;
     align-items: center;
     gap: mixins.spacing(2);
+
+    .auth-button {
+      color: colors.$white;
+      display: flex;
+      align-items: center;
+      gap: mixins.spacing(0.5);
+      font-weight: 500;
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
   }
 }
 

@@ -5,54 +5,217 @@
         <mat-icon>library_music</mat-icon>
         {{ title }}
       </mat-card-title>
+      <mat-card-subtitle>
+        Generate audio music files from song metadata using MusicGen model
+      </mat-card-subtitle>
     </mat-card-header>
+
     <mat-card-content>
-      <p class="placeholder-text">
-        Generate instrumental music with customizable genre, tempo, and duration.
-      </p>
-      
-      <form class="generation-form">
-        <mat-form-field appearance="outline" class="full-width">
+      <!-- Imported Song Banner -->
+      <div class="import-banner" *ngIf="hasImportedSong">
+        <mat-icon class="banner-icon">check_circle</mat-icon>
+        <div class="banner-content">
+          <h4>Song Imported Successfully</h4>
+          <p>Title, lyrics, genre, and mood have been pre-filled from your approved song.</p>
+        </div>
+      </div>
+
+      <!-- No Import Message -->
+      <div class="info-banner" *ngIf="!hasImportedSong">
+        <mat-icon class="banner-icon">info</mat-icon>
+        <div class="banner-content">
+          <p>
+            Start from scratch or 
+            <a (click)="backToSongGeneration()" class="link">generate a song first</a> 
+            to import metadata automatically.
+          </p>
+        </div>
+      </div>
+
+      <!-- Song Details (if imported) -->
+      <section class="song-details" *ngIf="hasImportedSong">
+        <h3 class="section-title">
+          <mat-icon>music_note</mat-icon>
+          Imported Song Details
+        </h3>
+
+        <div class="details-card">
+          <div class="detail-row">
+            <span class="detail-label">Title:</span>
+            <span class="detail-value">{{ musicTitle }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Genre:</span>
+            <span class="detail-value">{{ genre | titlecase }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Mood:</span>
+            <span class="detail-value">{{ mood | titlecase }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Duration:</span>
+            <span class="detail-value">{{ duration }}s</span>
+          </div>
+        </div>
+
+        <!-- Collapsible Lyrics -->
+        <div class="lyrics-section">
+          <button 
+            mat-button 
+            (click)="toggleLyrics()" 
+            class="lyrics-toggle"
+          >
+            <mat-icon>{{ lyricsExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+            {{ lyricsExpanded ? 'Hide' : 'Show' }} Lyrics
+          </button>
+          <div class="lyrics-content" *ngIf="lyricsExpanded">
+            <pre>{{ lyrics }}</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- Music Parameters Form -->
+      <section class="parameters-section">
+        <h3 class="section-title">
+          <mat-icon>tune</mat-icon>
+          Music Parameters
+        </h3>
+
+        <!-- Title (editable even if imported) -->
+        <mat-form-field appearance="outline" class="full-width" *ngIf="!hasImportedSong">
           <mat-label>Music Title</mat-label>
-          <input matInput placeholder="Enter music title">
+          <input matInput [(ngModel)]="musicTitle" placeholder="Enter music title">
+          <mat-icon matPrefix>title</mat-icon>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Description</mat-label>
-          <textarea matInput placeholder="Describe the music you want to generate" rows="4"></textarea>
-        </mat-form-field>
-
+        <!-- Genre and Duration Row -->
         <div class="form-row">
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline" class="half-width">
             <mat-label>Genre</mat-label>
-            <mat-select>
-              <mat-option value="classical">Classical</mat-option>
-              <mat-option value="jazz">Jazz</mat-option>
-              <mat-option value="ambient">Ambient</mat-option>
-              <mat-option value="electronic">Electronic</mat-option>
-              <mat-option value="orchestral">Orchestral</mat-option>
+            <mat-select 
+              [(ngModel)]="genre" 
+              (ngModelChange)="onGenreChange()"
+              [disabled]="hasImportedSong"
+            >
+              <mat-option *ngFor="let g of genres" [value]="g.value">
+                {{ g.label }}
+              </mat-option>
             </mat-select>
+            <mat-icon matPrefix>category</mat-icon>
+            <mat-hint *ngIf="hasImportedSong">From imported song</mat-hint>
           </mat-form-field>
 
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline" class="half-width">
             <mat-label>Duration (seconds)</mat-label>
-            <input matInput type="number" value="30" min="10" max="300">
+            <input 
+              matInput 
+              type="number" 
+              [(ngModel)]="duration" 
+              [min]="15" 
+              [max]="120"
+              [disabled]="hasImportedSong"
+            >
+            <mat-icon matPrefix>timer</mat-icon>
+            <mat-hint *ngIf="hasImportedSong">From imported song</mat-hint>
           </mat-form-field>
         </div>
 
-        <div class="slider-field">
-          <label>Tempo (BPM): 120</label>
-          <mat-slider min="60" max="180" step="5" showTickMarks discrete>
-            <input matSliderThumb value="120">
+        <!-- BPM Slider -->
+        <div class="slider-container">
+          <label class="slider-label">
+            Tempo (BPM): {{ bpm }}
+            <span class="slider-info">Default for {{ genre }}: {{ bpm }} BPM</span>
+          </label>
+          <mat-slider 
+            [min]="60" 
+            [max]="180" 
+            [step]="5" 
+            showTickMarks 
+            discrete
+            class="full-width"
+          >
+            <input matSliderThumb [(ngModel)]="bpm">
           </mat-slider>
         </div>
-      </form>
+
+        <!-- Instrumentation Selection -->
+        <div class="instrumentation-section">
+          <h4 class="subsection-title">
+            <mat-icon>piano</mat-icon>
+            Instrumentation
+          </h4>
+          <p class="subsection-description">
+            Select instruments for your composition ({{ selectedInstruments.length }} selected)
+          </p>
+          <div class="instrument-chips">
+            <mat-chip-option
+              *ngFor="let instrument of instruments"
+              [selected]="isInstrumentSelected(instrument.value)"
+              (click)="toggleInstrument(instrument.value)"
+            >
+              <mat-icon>{{ instrument.icon }}</mat-icon>
+              {{ instrument.label }}
+            </mat-chip-option>
+          </div>
+        </div>
+
+        <!-- Vocals Style -->
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Vocals Style</mat-label>
+          <mat-select [(ngModel)]="vocalsStyle">
+            <mat-option *ngFor="let style of vocalsStyles" [value]="style.value">
+              {{ style.label }}
+            </mat-option>
+          </mat-select>
+          <mat-icon matPrefix>record_voice_over</mat-icon>
+          <mat-hint>Singing voice characteristics</mat-hint>
+        </mat-form-field>
+      </section>
+
+      <!-- Generate Section -->
+      <section class="generate-section">
+        <button 
+          mat-raised-button 
+          color="primary" 
+          (click)="generateMusic()"
+          [disabled]="isGenerating || !musicTitle || !genre"
+          class="generate-button"
+        >
+          <mat-icon>{{ isGenerating ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
+          {{ isGenerating ? 'Generating...' : 'Generate Music' }}
+        </button>
+        <p class="helper-text">
+          <mat-icon class="info-icon">schedule</mat-icon>
+          Estimated generation time: {{ estimatedGenerationTime }}
+        </p>
+      </section>
+
+      <!-- Progress Section -->
+      <section class="progress-section" *ngIf="isGenerating">
+        <h3 class="section-title">
+          <mat-icon>autorenew</mat-icon>
+          Generating Audio...
+        </h3>
+        <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+        <p class="progress-text">{{ progress }}% complete</p>
+      </section>
+
+      <!-- Completed Section -->
+      <section class="completed-section" *ngIf="generatedAudioUrl && !isGenerating">
+        <h3 class="section-title">
+          <mat-icon>check_circle</mat-icon>
+          Generation Complete!
+        </h3>
+        <div class="audio-player">
+          <audio controls [src]="generatedAudioUrl" class="full-width-audio">
+            Your browser does not support the audio element.
+          </audio>
+        </div>
+        <button mat-raised-button color="accent" (click)="downloadAudio()">
+          <mat-icon>download</mat-icon>
+          Download Audio File
+        </button>
+      </section>
     </mat-card-content>
-    <mat-card-actions>
-      <button mat-raised-button color="primary">
-        <mat-icon>play_arrow</mat-icon>
-        Generate Music
-      </button>
-    </mat-card-actions>
   </mat-card>
 </div>

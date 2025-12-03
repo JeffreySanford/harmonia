@@ -2,7 +2,22 @@
   <header class="app-header">
     <h1 class="app-title">Harmonia</h1>
     <nav class="app-nav">
-      <!-- User menu, notifications, etc. -->
+      <!-- Guest user: show login/register buttons -->
+      <ng-container *ngIf="(isAuthenticated$ | async) === false">
+        <button mat-button (click)="openLogin()" class="auth-button">
+          <mat-icon>login</mat-icon>
+          Sign In
+        </button>
+        <button mat-raised-button color="primary" (click)="openRegister()" class="auth-button">
+          <mat-icon>person_add</mat-icon>
+          Sign Up
+        </button>
+      </ng-container>
+
+      <!-- Authenticated user: show user menu -->
+      <ng-container *ngIf="isAuthenticated$ | async">
+        <harmonia-header-user-menu></harmonia-header-user-menu>
+      </ng-container>
     </nav>
   </header>
 

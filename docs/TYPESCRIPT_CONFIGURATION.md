@@ -141,7 +141,7 @@ tsconfig.json (root)
 
 - `strictPropertyInitialization: false` - NestJS DI initializes properties
 
-### App Configuration (`tsconfig.app.json`)
+### Backend App Configuration (`tsconfig.app.json`)
 
 **Production Build Settings:**
 
@@ -151,7 +151,7 @@ tsconfig.json (root)
 - `declarationMap: true` - Debug support for libraries
 - `files: ["src/main.ts"]` - Explicit entry point
 
-### Test Configuration (`tsconfig.spec.json`)
+### Backend Test Configuration (`tsconfig.spec.json`)
 
 **Jest-Specific Settings:**
 
