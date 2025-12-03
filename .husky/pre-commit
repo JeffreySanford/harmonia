@@ -7,7 +7,7 @@ echo "🔍 Running pre-commit checks..."
 
 # Run ESLint on staged TypeScript files
 echo "  - Checking TypeScript files for lint errors..."
-pnpm lint --quiet || {
+pnpm lint:frontend --quiet || {
   echo "❌ ESLint failed. Fix errors and commit again."
   exit 1
 }

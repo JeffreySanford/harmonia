@@ -12,6 +12,9 @@ import * as JobsActions from './jobs.actions';
 
 @Injectable()
 export class JobsEffects {
+  private readonly actions$ = inject(Actions);
+  private readonly jobsService = inject(JobsService);
+
   loadJobs$ = createEffect(() =>
     this.actions$.pipe(
       ofType(JobsActions.loadJobs),
@@ -109,7 +112,4 @@ export class JobsEffects {
       )
     )
   );
-
-  private readonly actions$ = inject(Actions);
-  private readonly jobsService = inject(JobsService);
 }
