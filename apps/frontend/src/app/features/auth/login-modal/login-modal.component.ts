@@ -101,6 +101,13 @@ export class LoginModalComponent implements OnInit, OnDestroy {
   onLogin(): void {
     if (this.loginForm.valid) {
       const { emailOrUsername, password } = this.loginForm.value;
+      
+      // Defensive check - ensure values exist
+      if (!emailOrUsername || !password) {
+        console.error('Login form values missing:', { emailOrUsername, password });
+        return;
+      }
+      
       // Ensure dispatch happens inside NgZone
       this.ngZone.run(() => {
         this.store.dispatch(AuthActions.login({ emailOrUsername, password }));
