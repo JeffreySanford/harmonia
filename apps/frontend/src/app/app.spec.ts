@@ -19,7 +19,12 @@ describe('App', () => {
             library: {
               items: [],
               filters: {},
-              pagination: { currentPage: 1, totalPages: 0, total: 0, pageSize: 20 },
+              pagination: {
+                currentPage: 1,
+                totalPages: 0,
+                total: 0,
+                pageSize: 20,
+              },
               loading: false,
               error: null,
               selectedItem: null,
@@ -55,7 +60,14 @@ describe('App', () => {
     tick();
     // Simulate auth change: from true -> false
     store.setState({
-      auth: { user: null, isAuthenticated: false, token: null, refreshToken: null, loading: false, error: null },
+      auth: {
+        user: null,
+        isAuthenticated: false,
+        token: null,
+        refreshToken: null,
+        loading: false,
+        error: null,
+      },
       library: {
         items: [],
         filters: {},
