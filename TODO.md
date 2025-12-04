@@ -134,7 +134,7 @@
 #### **Phase 2: Consolidation** (Week 2) ✅ COMPLETE
 
 - [x] Merge redundant files (authentication and MongoDB docs consolidated)
-- [x] Delete docs for non-existent features (password reset, 2FA, keyboard shortcuts)
+- [ ] Plan implementation of enhanced authentication features (password reset, 2FA, keyboard shortcuts) — Future Roadmap
 - [x] Update outdated setup/installation docs
 - [x] Reduce file count from 60+ to 45 essential docs
 
@@ -371,6 +371,10 @@ Built with ❤️ using Angular, NestJS, and MongoDB
 - Implement vocal synthesis with consent and watermarking systems — Planned
 - Build collaboration features (shared palettes, team libraries, comments) — Planned
 - Create assistive AI modes ("rewrite chorus", instant previews) — Planned
+- **Implement enhanced authentication features**:
+  - Password reset flow with email verification — Planned
+  - Two-factor authentication (TOTP/SMS) — Planned
+  - Keyboard shortcuts for power users — Planned
 - **Review DANGER_AREAS.md for security and legal risks in advanced features** — Required
 
 ### **Months 10-12: Scale & Polish**
