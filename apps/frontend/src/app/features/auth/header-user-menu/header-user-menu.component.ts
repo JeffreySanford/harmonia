@@ -1,48 +1,66 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, NgZone } from '@angular/core';
+import { HealthService } from '../../../services/health.service';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
+// Material modules are provided by AuthMaterialModule; no direct imports needed here.
 import * as AuthSelectors from '../../../store/auth/auth.selectors';
 import * as AuthActions from '../../../store/auth/auth.actions';
 import { User } from '../../../store/auth/auth.state';
+import { AuthUiService } from '../../../services/auth-ui.service';
 
 /**
  * Header User Menu Component
- * 
+ *
  * Dropdown menu for authenticated users with:
  * - User info display (username, email, role badge)
  * - Navigation links (My Library, Profile Settings)
  * - Admin Dashboard link (admin users only)
  * - Logout action
- * 
+ *
  * **Features**:
  * - Material Menu component with trigger button
  * - Conditional rendering based on user role
  * - NGRX integration for auth state
  * - Router navigation for menu items
  * - Auto-close on item selection
- * 
+ *
  * **User Roles**:
  * - `admin`: Full access including Admin Dashboard
  * - `user`: Standard access (Library, Profile)
  * - `guest`: Should not see this menu (render condition)
- * 
+ *
  * @selector harmonia-header-user-menu
  */
 @Component({
   selector: 'harmonia-header-user-menu',
   templateUrl: './header-user-menu.component.html',
   styleUrls: ['./header-user-menu.component.scss'],
-  standalone: false
+  standalone: false,
 })
 export class HeaderUserMenuComponent {
   private store = inject(Store);
   private router = inject(Router);
+  private ngZone = inject(NgZone);
+  private authUiService = inject(AuthUiService);
+  private healthService = inject(HealthService);
 
   // Auth state observables
   user$: Observable<User | null> = this.store.select(AuthSelectors.selectUser);
-  username$: Observable<string> = this.store.select(AuthSelectors.selectUsername);
-  isAdmin$: Observable<boolean> = this.store.select(AuthSelectors.selectIsAdmin);
+  username$: Observable<string> = this.store.select(
+    AuthSelectors.selectUsername
+  );
+  isAdmin$: Observable<boolean> = this.store.select(
+    AuthSelectors.selectIsAdmin
+  );
+  isAuthenticated$: Observable<boolean> = this.store.select(
+    AuthSelectors.selectIsAuthenticated
+  );
+  backendReachable$ = this.healthService.isBackendReachable();
+  isLocalhost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1');
 
   /**
    * Navigate to user library
@@ -69,7 +87,10 @@ export class HeaderUserMenuComponent {
    * Logout user and redirect to home
    */
   logout(): void {
-    this.store.dispatch(AuthActions.logout());
+    // Ensure action dispatch happens within NgZone
+    this.ngZone.run(() => {
+      this.store.dispatch(AuthActions.logout());
+    });
     this.router.navigate(['/']);
   }
 
@@ -87,5 +108,27 @@ export class HeaderUserMenuComponent {
   getRoleBadgeClass(user: User | null): string {
     if (!user) return '';
     return user.role === 'admin' ? 'role-badge-admin' : 'role-badge-user';
+  }
+
+  /**
+   * Class applied to avatar icon depending on user role
+   */
+  getAvatarClass(user: User | null): string {
+    if (!user) return 'avatar-guest';
+    return user.role === 'admin' ? 'avatar-admin' : 'avatar-user';
+  }
+
+  /**
+   * Open login modal for guests
+   */
+  openLoginModal(): void {
+    this.authUiService.openLoginModal('login');
+  }
+
+  /**
+   * Open register modal for guests
+   */
+  openRegisterModal(): void {
+    this.authUiService.openRegisterModal();
   }
 }

@@ -1,24 +1,43 @@
 <div class="login-modal">
   <h2 mat-dialog-title>
     {{ mode === 'login' ? 'Sign In' : 'Create Account' }}
+    <!-- Dev-only backend health indicator: shows when running on localhost or 127.0.0.1 -->
+    <span
+      *ngIf="(backendReachable$ | async) !== null && isLocalhost"
+      class="backend-health"
+      [ngClass]="{
+        reach: (backendReachable$ | async) === true,
+        down: (backendReachable$ | async) === false
+      }"
+    >
+      <mat-icon *ngIf="backendReachable$ | async">check_circle</mat-icon>
+      <mat-icon *ngIf="(backendReachable$ | async) === false">error</mat-icon>
+      <span class="label">{{
+        (backendReachable$ | async) ? 'Backend OK' : 'Backend Unreachable'
+      }}</span>
+    </span>
   </h2>
 
   <mat-dialog-content>
     <!-- Error Alert -->
-    <div class="error-alert" *ngIf="(error$ | async) as error">
+    <div class="error-alert" *ngIf="error$ | async as error">
       <mat-icon>error_outline</mat-icon>
       <span>{{ error }}</span>
     </div>
 
     <!-- Login Form -->
-    <form *ngIf="mode === 'login'" [formGroup]="loginForm" (ngSubmit)="onLogin()">
+    <form
+      *ngIf="mode === 'login'"
+      [formGroup]="loginForm"
+      (ngSubmit)="onLogin()"
+    >
       <!-- Email or Username Field -->
       <mat-form-field appearance="outline">
         <mat-label>Email or Username</mat-label>
-        <input 
-          matInput 
-          type="text" 
-          formControlName="emailOrUsername" 
+        <input
+          matInput
+          type="text"
+          formControlName="emailOrUsername"
           placeholder="user@example.com or username"
           autocomplete="username"
         />
@@ -31,23 +50,25 @@
       <!-- Password Field -->
       <mat-form-field appearance="outline">
         <mat-label>Password</mat-label>
-        <input 
-          matInput 
-          [type]="hidePassword ? 'password' : 'text'" 
+        <input
+          matInput
+          [type]="hidePassword ? 'password' : 'text'"
           formControlName="password"
           placeholder="Enter your password"
           autocomplete="current-password"
         />
         <mat-icon matPrefix>lock</mat-icon>
-        <button 
-          mat-icon-button 
-          matSuffix 
+        <button
+          mat-icon-button
+          matSuffix
           type="button"
           (click)="hidePassword = !hidePassword"
           [attr.aria-label]="'Hide password'"
           [attr.aria-pressed]="hidePassword"
         >
-          <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          <mat-icon>{{
+            hidePassword ? 'visibility_off' : 'visibility'
+          }}</mat-icon>
         </button>
         <mat-error *ngIf="hasError('password', 'login')">
           {{ getErrorMessage('password', 'login') }}
@@ -55,27 +76,32 @@
       </mat-form-field>
 
       <!-- Submit Button -->
-      <button 
-        mat-raised-button 
-        color="primary" 
-        type="submit"
+      <button
+        mat-raised-button
+        color="primary"
+        type="button"
+        (click)="onLogin()"
         [disabled]="(loading$ | async) || loginForm.invalid"
         class="submit-button"
       >
         <span *ngIf="(loading$ | async) === false">Sign In</span>
-        <mat-spinner *ngIf="(loading$ | async)" diameter="20"></mat-spinner>
+        <mat-spinner *ngIf="loading$ | async" diameter="20"></mat-spinner>
       </button>
     </form>
 
     <!-- Register Form -->
-    <form *ngIf="mode === 'register'" [formGroup]="registerForm" (ngSubmit)="onRegister()">
+    <form
+      *ngIf="mode === 'register'"
+      [formGroup]="registerForm"
+      (ngSubmit)="onRegister()"
+    >
       <!-- Email Field -->
       <mat-form-field appearance="outline">
         <mat-label>Email</mat-label>
-        <input 
-          matInput 
-          type="email" 
-          formControlName="email" 
+        <input
+          matInput
+          type="email"
+          formControlName="email"
           placeholder="user@example.com"
           autocomplete="email"
         />
@@ -88,10 +114,10 @@
       <!-- Username Field -->
       <mat-form-field appearance="outline">
         <mat-label>Username</mat-label>
-        <input 
-          matInput 
-          type="text" 
-          formControlName="username" 
+        <input
+          matInput
+          type="text"
+          formControlName="username"
           placeholder="johndoe"
           autocomplete="username"
         />
@@ -104,23 +130,25 @@
       <!-- Password Field -->
       <mat-form-field appearance="outline">
         <mat-label>Password</mat-label>
-        <input 
-          matInput 
-          [type]="hidePassword ? 'password' : 'text'" 
+        <input
+          matInput
+          [type]="hidePassword ? 'password' : 'text'"
           formControlName="password"
           placeholder="At least 8 characters"
           autocomplete="new-password"
         />
         <mat-icon matPrefix>lock</mat-icon>
-        <button 
-          mat-icon-button 
-          matSuffix 
+        <button
+          mat-icon-button
+          matSuffix
           type="button"
           (click)="hidePassword = !hidePassword"
           [attr.aria-label]="'Hide password'"
           [attr.aria-pressed]="hidePassword"
         >
-          <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          <mat-icon>{{
+            hidePassword ? 'visibility_off' : 'visibility'
+          }}</mat-icon>
         </button>
         <mat-error *ngIf="hasError('password', 'register')">
           {{ getErrorMessage('password', 'register') }}
@@ -129,15 +157,16 @@
       </mat-form-field>
 
       <!-- Submit Button -->
-      <button 
-        mat-raised-button 
-        color="primary" 
-        type="submit"
+      <button
+        mat-raised-button
+        color="primary"
+        type="button"
+        (click)="onRegister()"
         [disabled]="(loading$ | async) || registerForm.invalid"
         class="submit-button"
       >
         <span *ngIf="(loading$ | async) === false">Create Account</span>
-        <mat-spinner *ngIf="(loading$ | async)" diameter="20"></mat-spinner>
+        <mat-spinner *ngIf="loading$ | async" diameter="20"></mat-spinner>
       </button>
     </form>
 

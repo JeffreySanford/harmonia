@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy, inject, NgZone } from '@angular/core';
+import { HealthService } from '../../../services/health.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
 import { Store } from '@ngrx/store';
@@ -8,58 +9,81 @@ import * as AuthSelectors from '../../../store/auth/auth.selectors';
 
 /**
  * Login/Register Modal Component
- * 
+ *
  * Material Design dialog for user authentication with:
  * - Login form (email, password)
  * - Register form (email, username, password)
  * - Mode switching between login and register
  * - Form validation and error display
  * - NGRX integration for auth state management
- * 
+ *
  * **Form Validation**:
  * - Email: Required, valid email format
  * - Username: Required, 3-20 characters (register only)
  * - Password: Required, minimum 8 characters
- * 
+ *
  * **NGRX Actions**:
  * - Dispatches `login` or `register` actions on form submit
  * - Subscribes to auth state for loading/error states
  * - Closes modal on successful authentication
- * 
+ *
  * @selector harmonia-login-modal
  */
 @Component({
   selector: 'harmonia-login-modal',
   templateUrl: './login-modal.component.html',
   styleUrls: ['./login-modal.component.scss'],
-  standalone: false
+  standalone: false,
 })
 export class LoginModalComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private store = inject(Store);
   private dialogRef = inject(MatDialogRef<LoginModalComponent>);
   private ngZone = inject(NgZone);
+  private healthService: HealthService = inject(HealthService);
+  isLocalhost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1');
 
   loginForm!: FormGroup;
   registerForm!: FormGroup;
   mode: 'login' | 'register' = 'login';
   hidePassword = true;
-  
+
   loading$ = this.store.select(AuthSelectors.selectAuthLoading);
   error$ = this.store.select(AuthSelectors.selectAuthError);
   isAuthenticated$ = this.store.select(AuthSelectors.selectIsAuthenticated);
-  
+  backendReachable$ = this.healthService.isBackendReachable();
+
   private destroy$ = new Subject<void>();
 
   ngOnInit(): void {
+    console.log('login-modal: ngOnInit, mode:', this.mode);
     this.initializeForms();
-    
+
     // Close modal on successful authentication
-    this.isAuthenticated$.pipe(takeUntil(this.destroy$)).subscribe(isAuthenticated => {
-      if (isAuthenticated) {
-        this.dialogRef.close({ success: true });
-      }
-    });
+    this.isAuthenticated$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((isAuthenticated) => {
+        if (isAuthenticated) {
+          this.dialogRef.close({ success: true });
+        }
+      });
+  }
+
+  ngAfterViewInit(): void {
+    try {
+      console.log('login-modal: ngAfterViewInit - component initialized', {
+        mode: this.mode,
+      });
+      (window as any).localStorage.setItem(
+        'e2e_login_modal_init',
+        Date.now().toString()
+      );
+    } catch (e) {
+      // ignore
+    }
   }
 
   ngOnDestroy(): void {
@@ -73,13 +97,20 @@ export class LoginModalComponent implements OnInit, OnDestroy {
   private initializeForms(): void {
     this.loginForm = this.fb.group({
       emailOrUsername: ['', [Validators.required]],
-      password: ['', [Validators.required, Validators.minLength(8)]]
+      password: ['', [Validators.required, Validators.minLength(8)]],
     });
 
     this.registerForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(20)]],
-      password: ['', [Validators.required, Validators.minLength(8)]]
+      username: [
+        '',
+        [
+          Validators.required,
+          Validators.minLength(3),
+          Validators.maxLength(20),
+        ],
+      ],
+      password: ['', [Validators.required, Validators.minLength(8)]],
     });
   }
 
@@ -101,16 +132,25 @@ export class LoginModalComponent implements OnInit, OnDestroy {
   onLogin(): void {
     if (this.loginForm.valid) {
       const { emailOrUsername, password } = this.loginForm.value;
-      
+
       // Defensive check - ensure values exist
       if (!emailOrUsername || !password) {
-        console.error('Login form values missing:', { emailOrUsername, password });
+        console.error('Login form values missing:', {
+          emailOrUsername,
+          password,
+        });
         return;
       }
-      
+
       // Ensure dispatch happens inside NgZone
       this.ngZone.run(() => {
         this.store.dispatch(AuthActions.login({ emailOrUsername, password }));
+        try {
+          (window as any).localStorage.setItem(
+            'e2e_login_attempt',
+            Date.now().toString()
+          );
+        } catch (e) {}
       });
     } else {
       this.loginForm.markAllAsTouched();
@@ -123,9 +163,18 @@ export class LoginModalComponent implements OnInit, OnDestroy {
   onRegister(): void {
     if (this.registerForm.valid) {
       const { email, username, password } = this.registerForm.value;
+      console.warn('login-modal: onRegister called', { email, username });
       // Ensure dispatch happens inside NgZone
       this.ngZone.run(() => {
-        this.store.dispatch(AuthActions.register({ email, username, password }));
+        this.store.dispatch(
+          AuthActions.register({ email, username, password })
+        );
+        try {
+          (window as any).localStorage.setItem(
+            'e2e_register_attempt',
+            Date.now().toString()
+          );
+        } catch (e) {}
       });
     } else {
       this.registerForm.markAllAsTouched();
@@ -158,11 +207,15 @@ export class LoginModalComponent implements OnInit, OnDestroy {
     }
     if (control.errors['minlength']) {
       const minLength = control.errors['minlength'].requiredLength;
-      return `${this.getFieldLabel(field)} must be at least ${minLength} characters`;
+      return `${this.getFieldLabel(
+        field
+      )} must be at least ${minLength} characters`;
     }
     if (control.errors['maxlength']) {
       const maxLength = control.errors['maxlength'].requiredLength;
-      return `${this.getFieldLabel(field)} must be no more than ${maxLength} characters`;
+      return `${this.getFieldLabel(
+        field
+      )} must be no more than ${maxLength} characters`;
     }
 
     return 'Invalid value';
@@ -176,7 +229,7 @@ export class LoginModalComponent implements OnInit, OnDestroy {
       email: 'Email',
       emailOrUsername: 'Email or Username',
       username: 'Username',
-      password: 'Password'
+      password: 'Password',
     };
     return labels[field] || field;
   }

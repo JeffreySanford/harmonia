@@ -73,6 +73,31 @@
     }
   }
 
+  .backend-health {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 12px;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+
+    &.reach {
+      color: #2e7d32; /* green */
+      mat-icon {
+        color: #2e7d32;
+      }
+    }
+    &.down {
+      color: #c62828;
+      mat-icon {
+        color: #c62828;
+      }
+    }
+    .label {
+      font-weight: 500;
+    }
+  }
+
   mat-dialog-actions {
     padding: 8px 24px 16px 24px;
     margin: 0;

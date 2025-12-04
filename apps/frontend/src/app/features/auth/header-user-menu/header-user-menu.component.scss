@@ -3,20 +3,48 @@
 @use '../../../../styles/typography';
 
 .header-user-menu {
-  display: flex;
-  align-items: center;
+  @include mixins.flex-align-center;
 
   .user-menu-trigger {
     color: colors.$white;
-    
+
     .user-avatar-icon {
       font-size: 32px;
       width: 32px;
       height: 32px;
+      &.avatar-user {
+        color: colors.$success-600;
+      }
+      &.avatar-admin {
+        color: colors.$warn-600;
+      }
+      &.avatar-guest {
+        color: colors.$white;
+        opacity: 0.9;
+      }
     }
 
     &:hover {
       background-color: rgba(colors.$white, 0.1);
+    }
+  }
+
+  .header-health {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    margin-right: 8px;
+    font-size: 18px;
+    color: colors.$white;
+
+    &.reach {
+      background-color: colors.$success-600;
+    }
+    &.down {
+      background-color: colors.$warn-600;
     }
   }
 }
@@ -32,9 +60,7 @@
 
   // User info header
   .user-info-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    @include mixins.flex-between;
     padding: mixins.spacing(2);
     background-color: colors.$primary-50;
     cursor: default;
@@ -46,7 +72,7 @@
 
     .user-details {
       flex: 1;
-      
+
       .user-name {
         @include typography.body-1;
         font-weight: 600;
@@ -83,8 +109,7 @@
 
   // Menu items
   .mat-mdc-menu-item {
-    display: flex;
-    align-items: center;
+    @include mixins.flex-align-center;
     gap: mixins.spacing(2);
     padding: mixins.spacing(1.5) mixins.spacing(2);
     min-height: 48px;
@@ -99,7 +124,7 @@
 
     &:hover {
       background-color: colors.$primary-50;
-      
+
       mat-icon {
         color: colors.$primary-700;
       }
@@ -112,7 +137,7 @@
 
       &:hover {
         background-color: colors.$primary-50;
-        
+
         mat-icon {
           color: colors.$primary-700;
         }
