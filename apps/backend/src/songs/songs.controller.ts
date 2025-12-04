@@ -61,6 +61,66 @@ export class SongsController {
     return this.ollama.generateMetadata(body.narrative, body.duration, model);
   }
 
+  @Post('generate-song')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Generate complete song with lyrics, melody, and instrumentation' })
+  @ApiResponse({
+    status: 200,
+    description: 'Complete song successfully generated',
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', example: 'Discovering Passion' },
+        lyrics: {
+          type: 'string',
+          example: '[Verse 1]\nIn the quiet of the night...',
+        },
+        genre: { type: 'string', example: 'folk' },
+        mood: { type: 'string', example: 'melancholic' },
+        melody: { type: 'string', example: 'Upbeat acoustic guitar melody with vocal harmonies' },
+        tempo: { type: 'number', example: 120 },
+        key: { type: 'string', example: 'G major' },
+        instrumentation: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['acoustic guitar', 'piano', 'drums'],
+        },
+        intro: {
+          type: 'object',
+          properties: {
+            enabled: { type: 'boolean', example: true },
+            style: { type: 'string', enum: ['with-music', 'sung', 'no-music'], example: 'with-music' },
+            content: { type: 'string', example: 'Soft guitar intro' },
+          },
+        },
+        outro: {
+          type: 'object',
+          properties: {
+            enabled: { type: 'boolean', example: false },
+            style: { type: 'string', enum: ['with-music', 'sung', 'no-music'], example: 'no-music' },
+            content: { type: 'string', example: null },
+          },
+        },
+        syllableCount: { type: 'number', example: 245 },
+        wordCount: { type: 'number', example: 180 },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid narrative or parameters' })
+  @ApiResponse({
+    status: 401,
+    description: 'Missing or invalid authentication',
+  })
+  @ApiResponse({ status: 503, description: 'AI service unavailable' })
+  async generateSong(@Body() body: GenerateMetadataDto) {
+    // Allow per-request override of model via `model` in the DTO
+    const defaultModel =
+      this.configService.get<string>('OLLAMA_MODEL') || 'deepseek';
+    const model = body.model || defaultModel;
+    return this.ollama.generateSong(body.narrative, body.duration, model);
+  }
+
   @Post('suggest-genres')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
