@@ -42,7 +42,7 @@
 
 ## 🔥 **CURRENT PRIORITIES** (What We're Working On NOW)
 
-**Progress: 55% Complete** | **Visual Indicator:** ███████████░░░░░░░
+**Progress: 60% Complete** | **Visual Indicator:** ████████████░░░░░░
 
 ### **🎯 ACTIVE DEVELOPMENT SPRINT** (December 2025)
 
@@ -52,7 +52,7 @@
 - **Goal**: Complete full song generation with Mistral3/DeepSeek models
 - **Next Steps**:
   - [x] Backend: Implement `/api/songs/generate-song` controller endpoint
-  - [ ] Frontend: Add narrative length indicator for song duration
+  - [x] Frontend: Add narrative length indicator for song duration
   - [ ] Frontend: Add lyrics analysis selector with Song Annotation DSL
   - [ ] Frontend: Update UI to display full song properties (melody, tempo, key, etc.)
   - [ ] Tests: Update E2E tests for complete song generation flow

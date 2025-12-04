@@ -149,6 +149,14 @@ export class SongGenerationPageComponent {
   }
 
   /**
+   * Get recommended narrative word count
+   * Formula: target words * 2 (narratives are more descriptive than lyrics)
+   */
+  get recommendedNarrativeWords(): number {
+    return this.targetWords * 2;
+  }
+
+  /**
    * Format duration for display
    */
   formatDuration(value: number): string {

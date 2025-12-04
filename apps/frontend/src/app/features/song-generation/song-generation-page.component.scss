@@ -81,6 +81,17 @@
         mat-form-field {
           flex: 1;
         }
+
+        .narrative-guidance {
+          color: colors.$primary-600;
+          font-weight: 500;
+          margin-left: mixins.spacing(1);
+        }
+
+        .error-hint {
+          color: colors.$warn-500;
+          font-weight: 500;
+        }
       }
     }
 
