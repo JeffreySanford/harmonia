@@ -26,10 +26,15 @@ export async function fillSongGenerationForm(
 
   // Select lyrics analysis if provided
   if (data.lyricsAnalysis) {
-    const lyricsAnalysisSelect = page.locator('mat-select[formControlName="lyricsAnalysis"]');
+    const lyricsAnalysisSelect = page.locator(
+      'mat-select[formControlName="lyricsAnalysis"]'
+    );
     await lyricsAnalysisSelect.click();
     await page.waitForSelector('mat-option');
-    await page.locator('mat-option').filter({ hasText: data.lyricsAnalysis }).click();
+    await page
+      .locator('mat-option')
+      .filter({ hasText: data.lyricsAnalysis })
+      .click();
   }
 
   // Fill melody if provided
@@ -52,25 +57,40 @@ export async function fillSongGenerationForm(
 
   // Select instrumentation if provided
   if (data.instrumentation) {
-    const instrumentationSelect = page.locator('mat-select[formControlName="instrumentation"]');
+    const instrumentationSelect = page.locator(
+      'mat-select[formControlName="instrumentation"]'
+    );
     await instrumentationSelect.click();
     await page.waitForSelector('mat-option');
-    await page.locator('mat-option').filter({ hasText: data.instrumentation }).click();
+    await page
+      .locator('mat-option')
+      .filter({ hasText: data.instrumentation })
+      .click();
   }
 
   // Configure intro/outro if specified
   if (data.includeIntro !== undefined) {
-    const introCheckbox = page.locator('mat-checkbox').filter({ hasText: 'Include Intro' });
+    const introCheckbox = page
+      .locator('mat-checkbox')
+      .filter({ hasText: 'Include Intro' });
     const isChecked = await introCheckbox.getAttribute('aria-checked');
-    if ((data.includeIntro && isChecked !== 'true') || (!data.includeIntro && isChecked === 'true')) {
+    if (
+      (data.includeIntro && isChecked !== 'true') ||
+      (!data.includeIntro && isChecked === 'true')
+    ) {
       await introCheckbox.click();
     }
   }
 
   if (data.includeOutro !== undefined) {
-    const outroCheckbox = page.locator('mat-checkbox').filter({ hasText: 'Include Outro' });
+    const outroCheckbox = page
+      .locator('mat-checkbox')
+      .filter({ hasText: 'Include Outro' });
     const isChecked = await outroCheckbox.getAttribute('aria-checked');
-    if ((data.includeOutro && isChecked !== 'true') || (!data.includeOutro && isChecked === 'true')) {
+    if (
+      (data.includeOutro && isChecked !== 'true') ||
+      (!data.includeOutro && isChecked === 'true')
+    ) {
       await outroCheckbox.click();
     }
   }
@@ -91,7 +111,7 @@ export async function submitSongGeneration(page: Page): Promise<{
         resp.url().includes('/api/songs/generate-song') &&
         resp.request().method() === 'POST'
     ),
-    generateButton.click()
+    generateButton.click(),
   ]);
 
   const status = generateResponse.status();
@@ -104,30 +124,40 @@ export async function submitSongGeneration(page: Page): Promise<{
 
   return {
     responseStatus: status,
-    body
+    body,
   };
 }
 
 /**
  * Helper function to wait for song generation result
  */
-export async function waitForSongGenerationResult(page: Page, timeout = 30000): Promise<void> {
+export async function waitForSongGenerationResult(
+  page: Page,
+  timeout = 30000
+): Promise<void> {
   await page.waitForSelector('.song-result', { timeout });
 }
 
 /**
  * Helper function to verify song result contains expected properties
  */
-export async function verifySongResult(page: Page, expectedProperties: Partial<SongGenerationData>): Promise<void> {
+export async function verifySongResult(
+  page: Page,
+  expectedProperties: Partial<SongGenerationData>
+): Promise<void> {
   const songResult = page.locator('.song-result');
   await expect(songResult).toBeVisible();
 
   if (expectedProperties.melody) {
-    await expect(songResult).toContainText(`Melody: ${expectedProperties.melody}`);
+    await expect(songResult).toContainText(
+      `Melody: ${expectedProperties.melody}`
+    );
   }
 
   if (expectedProperties.tempo) {
-    await expect(songResult).toContainText(`Tempo: ${expectedProperties.tempo}`);
+    await expect(songResult).toContainText(
+      `Tempo: ${expectedProperties.tempo}`
+    );
   }
 
   if (expectedProperties.key) {
@@ -135,7 +165,9 @@ export async function verifySongResult(page: Page, expectedProperties: Partial<S
   }
 
   if (expectedProperties.instrumentation) {
-    await expect(songResult).toContainText(`Instrumentation: ${expectedProperties.instrumentation}`);
+    await expect(songResult).toContainText(
+      `Instrumentation: ${expectedProperties.instrumentation}`
+    );
   }
 }
 
@@ -147,20 +179,21 @@ export const TEST_SONG_DATA = {
     narrative: 'A happy song about sunshine and friendship.',
     tempo: 120,
     key: 'C Major',
-    instrumentation: 'Piano'
+    instrumentation: 'Piano',
   },
   complex: {
-    narrative: 'An epic tale of adventure and discovery across vast landscapes.',
+    narrative:
+      'An epic tale of adventure and discovery across vast landscapes.',
     lyricsAnalysis: 'Narrative',
     melody: 'Epic and adventurous melody',
     tempo: 140,
     key: 'D Minor',
     instrumentation: 'Full Orchestra',
     includeIntro: true,
-    includeOutro: true
+    includeOutro: true,
   },
   minimal: {
     narrative: 'Simple love song.',
-    tempo: 100
-  }
+    tempo: 100,
+  },
 };

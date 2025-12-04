@@ -6,7 +6,7 @@ import {
   submitSongGeneration,
   waitForSongGenerationResult,
   verifySongResult,
-  TEST_SONG_DATA
+  TEST_SONG_DATA,
 } from './helpers';
 
 const { loginViaModal, logoutIfNeeded } = authHelper;
@@ -48,7 +48,9 @@ test.describe('Song Generation Flow (E2E)', () => {
     await verifySongResult(page, TEST_SONG_DATA.complex);
   });
 
-  test('Scenario 2: Song Generation with Minimal Properties', async ({ page }) => {
+  test('Scenario 2: Song Generation with Minimal Properties', async ({
+    page,
+  }) => {
     // Fill minimal required data
     await fillSongGenerationForm(page, TEST_SONG_DATA.minimal);
 
@@ -69,7 +71,7 @@ test.describe('Song Generation Flow (E2E)', () => {
     // Enter narrative but invalid tempo
     await fillSongGenerationForm(page, {
       narrative: 'Test narrative',
-      tempo: NaN // This will result in invalid input
+      tempo: NaN, // This will result in invalid input
     });
 
     // Manually set invalid tempo to test validation
@@ -89,11 +91,11 @@ test.describe('Song Generation Flow (E2E)', () => {
     await fillSongGenerationForm(page, TEST_SONG_DATA.simple);
 
     // Mock a backend error by intercepting the request
-    await page.route('**/api/songs/generate-song', async route => {
+    await page.route('**/api/songs/generate-song', async (route) => {
       await route.fulfill({
         status: 500,
         contentType: 'application/json',
-        body: JSON.stringify({ error: 'Internal server error' })
+        body: JSON.stringify({ error: 'Internal server error' }),
       });
     });
 

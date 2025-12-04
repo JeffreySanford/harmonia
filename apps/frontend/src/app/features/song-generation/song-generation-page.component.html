@@ -420,7 +420,20 @@ We are fire — we are the unsung.
                 placeholder="Select instruments"
               >
                 <mat-option
-                  *ngFor="let instrument of ['piano', 'guitar', 'bass', 'drums', 'strings', 'brass', 'woodwinds', 'percussion', 'synth', 'vocals']"
+                  *ngFor="
+                    let instrument of [
+                      'piano',
+                      'guitar',
+                      'bass',
+                      'drums',
+                      'strings',
+                      'brass',
+                      'woodwinds',
+                      'percussion',
+                      'synth',
+                      'vocals'
+                    ]
+                  "
                   [value]="instrument"
                 >
                   {{ instrument | titlecase }}
@@ -439,7 +452,10 @@ We are fire — we are the unsung.
               <mat-checkbox [(ngModel)]="generatedMetadata.intro.enabled">
                 <strong>Include Intro</strong>
               </mat-checkbox>
-              <div *ngIf="generatedMetadata.intro.enabled" class="structure-details">
+              <div
+                *ngIf="generatedMetadata.intro.enabled"
+                class="structure-details"
+              >
                 <mat-form-field appearance="outline" class="style-field">
                   <mat-label>Intro Style</mat-label>
                   <mat-select [(ngModel)]="generatedMetadata.intro.style">
@@ -464,7 +480,10 @@ We are fire — we are the unsung.
               <mat-checkbox [(ngModel)]="generatedMetadata.outro.enabled">
                 <strong>Include Outro</strong>
               </mat-checkbox>
-              <div *ngIf="generatedMetadata.outro.enabled" class="structure-details">
+              <div
+                *ngIf="generatedMetadata.outro.enabled"
+                class="structure-details"
+              >
                 <mat-form-field appearance="outline" class="style-field">
                   <mat-label>Outro Style</mat-label>
                   <mat-select [(ngModel)]="generatedMetadata.outro.style">
