@@ -1,12 +1,12 @@
 # Harmonia - Project TODO List
 
-**Last Updated**: December 4, 2025 - 4:30 PM
+**Last Updated**: December 4, 2025 - 5:00 PM
 **Project**: Harmonia Music Generation Platform
 **Phase**: Phase 1 - Full-Stack Implementation (🔄 In Progress)
-**Status**: 🟢 Development Active - Authentication Complete, API Documentation Complete, Song Generation In Progress
+**Status**: 🟢 Development Active - API Documentation Complete, Song Generation & User Library In Progress
 **Servers**: Backend (3000) ✅ | Frontend (4200) ✅
 **Start Date**: November 30, 2025
-**Hours Invested**: ~100 hours (estimated based on authentication system, UI development, and comprehensive API documentation)
+**Hours Invested**: ~105 hours (estimated based on authentication system, UI development, API documentation, and feature planning)
 
 ---
 
@@ -42,11 +42,36 @@
 
 ## 🔥 **CURRENT PRIORITIES** (What We're Working On NOW)
 
-**Progress: 50% Complete** | **Visual Indicator:** ██████████░░░░░░░░
+**Progress: 55% Complete** | **Visual Indicator:** ███████████░░░░░░░
 
-### **Month 1: Foundation Building** (Weeks 1-4)
+### **🎯 ACTIVE DEVELOPMENT SPRINT** (December 2025)
 
-#### Core Infrastructure Tasks
+#### **Priority 1: Song Generation E2E Completion** ⚡🔄 ACTIVE
+
+- **Status**: Backend service ready (30% → 50%), Frontend integration needed
+- **Goal**: Complete full song generation with Mistral3/DeepSeek models
+- **Next Steps**:
+  - [ ] Backend: Implement `/api/songs/generate-song` controller endpoint
+  - [ ] Frontend: Add narrative length indicator for song duration
+  - [ ] Frontend: Add lyrics analysis selector with Song Annotation DSL
+  - [ ] Frontend: Update UI to display full song properties (melody, tempo, key, etc.)
+  - [ ] Tests: Update E2E tests for complete song generation flow
+
+#### **Priority 2: User Library & Profile System** ⚡🔄 STARTING
+
+- **Status**: Planning complete, implementation beginning
+- **Goal**: Complete user-facing features for library management and profile settings
+- **Next Steps**:
+  - [ ] Backend: Create LibraryItem schema and CRUD endpoints
+  - [ ] Backend: Add profile management endpoints
+  - [ ] Frontend: Build LibraryModule with full component suite
+  - [ ] Frontend: Implement ProfileModule with form handling
+  - [ ] NGRX: Add library state management
+  - [ ] Integration: File upload/storage system
+
+### **Month 1: Foundation Building** (Weeks 1-4) ✅ COMPLETE ✅ COMPLETE
+
+#### Core Infrastructure Tasks ✅ COMPLETE
 
 - Create Instrument Catalog JSON (50+ presets with categories, fallback rules, sample references) — ✅ Completed
 - Extend M-MSL Parser for @Instruments headers and per-section parsing — ✅ Completed
@@ -54,20 +79,23 @@
 - Build multi-stage generation pipeline (Prompt → Outline → Melody → Arrangement → Audio) — Planned
 - **Review DANGER_AREAS.md for music generation risks (items 25-38) before implementation** — Required
 
-#### Quality & Testing
+#### Quality & Testing ✅ MOSTLY COMPLETE
 
 - Add E2E coverage for Song Generation flows using `llm:mock` — In progress
 - Integrate `llm:mock` into CI pipeline — Planned
 - Integrate Mistral3 model into Ollama for enhanced song generation — Planned
 - Implement actual song generation with Mistral3 and DeepSeek models — Planned
 
-### **Current Status Overview**
+### **Current Status Overview** ✅ UPDATED
 
 - Health Check (backend + frontend indicator): ✅ Completed
 - E2E Navigation tests for guest redirect & session invalidation: ✅ Completed
 - Ollama Integration (metadata generation): ✅ Completed (100%)
-- Mistral3 Integration for Song Generation: ⚠️ In progress (10%)
+- Mistral3 Integration for Song Generation: ⚠️ In progress (30% → 50% with service ready)
 - CI-friendly mock server and E2E stabilization: ⏳ In progress (75%)
+- **API Documentation**: ✅ Completed (comprehensive docs + Swagger integration)
+- **User Library & Profile**: 🔄 Starting implementation
+- **Song Generation E2E**: 🔄 Active development
 
 ---
 
