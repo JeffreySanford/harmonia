@@ -428,7 +428,7 @@ harmonia/
 │  │  + WebSocket Gateway     │          │
 │  └────────────┬─────────────┘          │
 │               │                         │
-│  Database (Phase 0 - DONE!)             │
+│  Database (Native MongoDB - DONE!)             │
 │  ┌────────────▼─────────────┐          │
 │  │  MongoDB Community 8.0   │          │
 │  │  + Mongoose ODM          │          │
@@ -447,9 +447,9 @@ harmonia/
 
 ## Phase Roadmap
 
-### ✅ Phase 0: Infrastructure (COMPLETE!)
+### ✅ Infrastructure Setup (COMPLETE!)
 
-- MongoDB installed and secured
+- MongoDB installed and secured (native Windows service)
 - PNPM configured
 - Documentation created
 - Scripts and automation ready

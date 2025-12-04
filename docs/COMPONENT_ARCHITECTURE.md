@@ -145,7 +145,11 @@ export class App {
   <div class="app-content">
     <aside class="app-sidebar">
       <nav class="sidebar-nav">
-        <a routerLink="/generate/song" routerLinkActive="active" class="nav-item">
+        <a
+          routerLink="/generate/song"
+          routerLinkActive="active"
+          class="nav-item"
+        >
           <span class="nav-icon">🎵</span>
           <span class="nav-label">Song Generation</span>
         </a>
@@ -219,16 +223,19 @@ export class App {
 ### Four Main Routes
 
 1. **Song Generation** (`/generate/song`)
+
    - Narrative-driven song creation
    - Style and title selection
    - Lyric generation
 
 2. **Music Generation** (`/generate/music`)
+
    - Instrumental music creation
    - Genre and mood selection
    - MusicGen integration
 
 3. **Video Generation** (`/generate/video`)
+
    - Text-to-video generation
    - Scene composition
    - Style transfer
@@ -324,34 +331,71 @@ export class SidebarComponent {
 
 ## Component Patterns
 
-### Feature Component Structure
+### Advanced Song Generation Component Architecture
+
+The song generation feature implements a sophisticated multi-stage AI pipeline with specialized components for each phase:
 
 ```text
 src/app/features/song-generation/
-├── song-generation.module.ts        # Feature module
-├── song-generation-routing.module.ts # Routing
+├── song-generation.module.ts
+├── song-generation-routing.module.ts
+├── services/
+│   ├── song-generation.service.ts      # Business logic coordination
+│   ├── websocket-progress.service.ts   # Real-time progress tracking
+│   └── metadata-validation.service.ts  # Form validation & syllable counting
 ├── components/
-│   ├── song-form/
-│   │   ├── song-form.component.ts
-│   │   ├── song-form.component.html
-│   │   ├── song-form.component.scss
-│   │   └── song-form.component.spec.ts
-│   ├── style-selector/
-│   │   ├── style-selector.component.ts
-│   │   ├── style-selector.component.html
-│   │   ├── style-selector.component.scss
-│   │   └── style-selector.component.spec.ts
-│   └── lyric-editor/
-│       ├── lyric-editor.component.ts
-│       ├── lyric-editor.component.html
-│       ├── lyric-editor.component.scss
-│       └── lyric-editor.component.spec.ts
+│   ├── narrative-input/
+│   │   ├── narrative-input.component.ts      # Story input with guidance
+│   │   ├── narrative-input.component.html
+│   │   ├── narrative-input.component.scss
+│   │   └── narrative-input.component.spec.ts
+│   ├── genre-suggestion/
+│   │   ├── genre-suggestion.component.ts    # AI genre recommendations
+│   │   ├── genre-suggestion.component.html
+│   │   ├── genre-suggestion.component.scss
+│   │   └── genre-suggestion.component.spec.ts
+│   ├── metadata-display/
+│   │   ├── metadata-display.component.ts    # Editable metadata form
+│   │   ├── metadata-display.component.html
+│   │   ├── metadata-display.component.scss
+│   │   └── metadata-display.component.spec.ts
+│   ├── instrument-expand-panel/
+│   │   ├── instrument-expand-panel.component.ts  # Advanced instrument control
+│   │   ├── instrument-expand-panel.component.html
+│   │   ├── instrument-expand-panel.component.scss
+│   │   └── instrument-expand-panel.component.spec.ts
+│   ├── detailed-annotations-toggle/
+│   │   ├── detailed-annotations-toggle.component.ts  # Annotation display control
+│   │   ├── detailed-annotations-toggle.component.html
+│   │   ├── detailed-annotations-toggle.component.scss
+│   │   └── detailed-annotations-toggle.component.spec.ts
+│   ├── generation-progress/
+│   │   ├── generation-progress.component.ts  # WebSocket progress display
+│   │   ├── generation-progress.component.html
+│   │   ├── generation-progress.component.scss
+│   │   └── generation-progress.component.spec.ts
+│   └── audio-player/
+│       ├── audio-player.component.ts        # Generated audio playback
+│       ├── audio-player.component.html
+│       ├── audio-player.component.scss
+│       └── audio-player.component.spec.ts
+├── store/
+│   ├── song-generation.actions.ts
+│   ├── song-generation.effects.ts
+│   ├── song-generation.reducer.ts
+│   ├── song-generation.selectors.ts
+│   └── song-generation.state.ts
 └── pages/
     ├── song-generation-page/
-    │   ├── song-generation-page.component.ts
+    │   ├── song-generation-page.component.ts    # Main orchestration component
     │   ├── song-generation-page.component.html
     │   ├── song-generation-page.component.scss
     │   └── song-generation-page.component.spec.ts
+    └── music-generation-page/
+        ├── music-generation-page.component.ts    # Audio generation phase
+        ├── music-generation-page.component.html
+        ├── music-generation-page.component.scss
+        └── music-generation-page.component.spec.ts
 ```
 
 ### Smart vs. Presentational Components
@@ -448,7 +492,7 @@ import { SongGenerationMaterialModule } from './song-generation-material.module'
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    SongGenerationMaterialModule,  // Single import for all Material components
+    SongGenerationMaterialModule, // Single import for all Material components
   ],
 })
 export class SongGenerationModule {}
@@ -478,7 +522,7 @@ import { MatSelectModule } from '@angular/material/select';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-  ]
+  ],
 })
 export class SongGenerationMaterialModule {}
 ```
@@ -519,9 +563,7 @@ export class SongGenerationMaterialModule {}
         </mat-select>
       </mat-form-field>
 
-      <button mat-raised-button color="primary" type="submit">
-        Generate
-      </button>
+      <button mat-raised-button color="primary" type="submit">Generate</button>
     </form>
   </mat-card-content>
 </mat-card>

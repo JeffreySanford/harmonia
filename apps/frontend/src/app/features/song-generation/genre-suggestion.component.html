@@ -1,0 +1,93 @@
+<div class="genre-suggestion-container" *ngIf="state === 'empty'">
+  <button
+    mat-raised-button
+    color="primary"
+    class="suggest-button"
+    [disabled]="!canSuggest"
+    (click)="onSuggestGenres()"
+    [class.glowing]="canSuggest"
+  >
+    <mat-icon>lightbulb</mat-icon>
+    Suggest Genres
+  </button>
+  <p class="hint-text" *ngIf="!canSuggest">
+    Enter at least 50 characters to get genre suggestions
+  </p>
+</div>
+
+<div class="genre-suggestion-container" *ngIf="state === 'loading'">
+  <div class="loading-container">
+    <mat-spinner diameter="24" class="loading-spinner"></mat-spinner>
+    <span class="loading-text">Analyzing your story...</span>
+  </div>
+</div>
+
+<div class="genre-suggestion-container" *ngIf="state === 'results'">
+  <div class="results-header">
+    <h4 class="results-title">
+      <mat-icon class="sparkle-icon">auto_awesome</mat-icon>
+      Suggested Genres
+    </h4>
+    <p class="results-subtitle">
+      Click to select/deselect genres for your song
+    </p>
+  </div>
+
+  <div class="genre-chips-container">
+    <div class="genre-chips-grid">
+      <button
+        mat-raised-button
+        *ngFor="let suggestion of suggestions; trackBy: trackByGenre"
+        [class.selected]="suggestion.selected"
+        [class.positive-feedback]="suggestion.feedback === 'positive'"
+        [class.negative-feedback]="suggestion.feedback === 'negative'"
+        (click)="toggleGenre(suggestion)"
+        class="genre-chip-button"
+      >
+        <mat-icon
+          *ngIf="suggestion.feedback === 'positive'"
+          class="feedback-icon positive"
+          >thumb_up</mat-icon
+        >
+        <mat-icon
+          *ngIf="suggestion.feedback === 'negative'"
+          class="feedback-icon negative"
+          >thumb_down</mat-icon
+        >
+        {{ suggestion.genre }}
+      </button>
+    </div>
+  </div>
+
+  <div class="feedback-section">
+    <p class="feedback-prompt">How helpful were these suggestions?</p>
+    <div class="feedback-buttons">
+      <button
+        mat-icon-button
+        class="feedback-btn positive"
+        (click)="giveFeedback('positive')"
+        matTooltip="These suggestions were helpful"
+      >
+        <mat-icon>thumb_up</mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        class="feedback-btn negative"
+        (click)="giveFeedback('negative')"
+        matTooltip="These suggestions weren't helpful"
+      >
+        <mat-icon>thumb_down</mat-icon>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="genre-suggestion-container" *ngIf="state === 'error'">
+  <div class="error-container">
+    <mat-icon class="error-icon">error_outline</mat-icon>
+    <p class="error-message">{{ errorMessage }}</p>
+    <button mat-raised-button color="accent" (click)="retry()">
+      Try Again
+    </button>
+  </div>
+</div>
