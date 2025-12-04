@@ -25,24 +25,29 @@ This document describes the complete workflow for generating music from narrativ
 ### Song Generation View
 
 1. **User enters narrative description**
+
    - Free-form text (500-1000 characters)
    - Example: "A melancholic story about lost love set in a rainy city, with reflective and introspective mood"
 
 2. **User sets desired song duration**
+
    - Duration slider: 15-120 seconds (default 30s)
    - Affects lyrics length calculation
 
 3. **Click "Generate Song Metadata"**
+
    - UI shows loading state
    - Backend calls Ollama API
 
 4. **AI generates song metadata**
+
    - Title (e.g., "Rain on Empty Streets")
    - Lyrics (duration-aware, 120-150 words for 30s)
    - Genre (from 12 standard options)
    - Mood/style descriptors
 
 5. **User reviews AI-generated metadata**
+
    - All fields are editable
    - Syllable count displayed with validation
    - Can regenerate if unsatisfied
@@ -55,16 +60,19 @@ This document describes the complete workflow for generating music from narrativ
 ### Music Generation View
 
 1. **Import approved song data**
+
    - Title, lyrics, genre, mood pre-filled
    - Duration locked to song duration
    - Read-only song fields (editable in Song view)
 
 2. **User adjusts music parameters**
+
    - BPM slider (60-180, default from genre)
    - Instrumentation multi-select
    - Additional style parameters
 
 3. **Click "Generate Music"**
+
    - Backend creates async job
    - Frontend subscribes via WebSocket
 
@@ -93,17 +101,20 @@ Examples:
 
 ```typescript
 function countSyllables(text: string): number {
-  const words = text.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/);
+  const words = text
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, '')
+    .split(/\s+/);
   return words.reduce((count, word) => {
     if (word.length === 0) return count;
-    
+
     // Count vowel groups
     const vowelGroups = word.match(/[aeiouy]+/g);
     let syllables = vowelGroups ? vowelGroups.length : 0;
-    
+
     // Adjust for silent 'e'
     if (word.endsWith('e') && syllables > 1) syllables--;
-    
+
     // Minimum 1 syllable per word
     return count + Math.max(1, syllables);
   }, 0);
@@ -148,11 +159,11 @@ Structured dropdown (not free-form text):
 
 ```typescript
 interface SongStyle {
-  genre: string;              // From 12 standard genres
-  mood: string;               // e.g., "melancholic", "energetic", "reflective"
-  vocalsStyle: string;        // e.g., "clean", "raspy", "smooth", "aggressive"
-  instrumentation: string[];  // e.g., ["acoustic-guitar", "piano", "strings"]
-  tempo: number;              // BPM (60-180)
+  genre: string; // From 12 standard genres
+  mood: string; // e.g., "melancholic", "energetic", "reflective"
+  vocalsStyle: string; // e.g., "clean", "raspy", "smooth", "aggressive"
+  instrumentation: string[]; // e.g., ["acoustic-guitar", "piano", "strings"]
+  tempo: number; // BPM (60-180)
 }
 ```
 
@@ -199,20 +210,20 @@ interface SongMetadata {
 
 ```typescript
 // Song Generation
-generateSongMetadata({ narrative, duration })
-generateSongMetadataSuccess({ metadata })
-generateSongMetadataFailure({ error })
+generateSongMetadata({ narrative, duration });
+generateSongMetadataSuccess({ metadata });
+generateSongMetadataFailure({ error });
 
 // Editing
-updateSongMetadata({ metadata })
-regenerateSongMetadata({ narrative, duration })
+updateSongMetadata({ metadata });
+regenerateSongMetadata({ narrative, duration });
 
 // Approval
-approveSongMetadata({ metadata })
-approveSongMetadataSuccess({ songId })
+approveSongMetadata({ metadata });
+approveSongMetadataSuccess({ songId });
 
 // Export
-exportToMusicGeneration({ songId })
+exportToMusicGeneration({ songId });
 ```
 
 ### State Flow
@@ -259,6 +270,7 @@ exportToMusicGeneration({ songId })
   narrative: string;      // User's narrative description
   duration: number;       // Desired song duration (15-120s)
   regenerate?: boolean;   // If regenerating from previous
+  model?: string;         // Optional override for Ollama model (e.g., 'minstral3' or 'deepseek-coder:6.7b')
 }
 ```
 
@@ -266,17 +278,18 @@ exportToMusicGeneration({ songId })
 
 ```typescript
 {
-  title: string;          // AI-generated title
-  lyrics: string;         // AI-generated lyrics (duration-aware)
-  genre: string;          // Suggested genre (from 12 options)
-  mood: string;           // Suggested mood
-  syllableCount: number;  // Calculated syllable count
-  targetSyllables: number;// Target based on duration
+  title: string; // AI-generated title
+  lyrics: string; // AI-generated lyrics (duration-aware)
+  genre: string; // Suggested genre (from 12 options)
+  mood: string; // Suggested mood
+  syllableCount: number; // Calculated syllable count
+  targetSyllables: number; // Target based on duration
   validationStatus: 'valid' | 'warning' | 'error';
 }
 ```
 
 **Ollama Prompt Design** (Future Implementation):
+**Note:** If `model` is supplied in the request body it will override `OLLAMA_MODEL` set on the backend; the service will call the mapped per-model mapper for consistent schema output.
 
 ```typescript
 const prompt = `
@@ -313,8 +326,8 @@ Return JSON:
 {
   narrative: string;
   duration: number;
-  title: string;          // Edited by user
-  lyrics: string;         // Edited by user
+  title: string; // Edited by user
+  lyrics: string; // Edited by user
   genre: string;
   mood: string;
 }
@@ -324,7 +337,7 @@ Return JSON:
 
 ```typescript
 {
-  songId: string;         // MongoDB ObjectId
+  songId: string; // MongoDB ObjectId
   createdAt: Date;
   approvedAt: Date;
 }
@@ -373,7 +386,7 @@ const SongSchema = new Schema({
 
 ```typescript
 {
-  jobId: string;          // For WebSocket tracking
+  jobId: string; // For WebSocket tracking
   estimatedDuration: number; // Estimated generation time
 }
 ```
@@ -448,14 +461,18 @@ function validateLyrics(lyrics: string, duration: number): ValidationResult {
   if (syllableCount < minSyllables) {
     return {
       status: 'error',
-      message: `Lyrics too short: ${syllableCount} syllables (need ${Math.floor(minSyllables)}-${Math.ceil(maxSyllables)})`,
+      message: `Lyrics too short: ${syllableCount} syllables (need ${Math.floor(
+        minSyllables
+      )}-${Math.ceil(maxSyllables)})`,
     };
   }
 
   if (syllableCount > maxSyllables) {
     return {
       status: 'error',
-      message: `Lyrics too long: ${syllableCount} syllables (need ${Math.floor(minSyllables)}-${Math.ceil(maxSyllables)})`,
+      message: `Lyrics too long: ${syllableCount} syllables (need ${Math.floor(
+        minSyllables
+      )}-${Math.ceil(maxSyllables)})`,
     };
   }
 
@@ -482,8 +499,18 @@ function validateContent(text: string): boolean {
 
 ```typescript
 const STANDARD_GENRES = [
-  'pop', 'rock', 'hip-hop', 'country', 'jazz', 'blues',
-  'electronic', 'r&b', 'folk', 'classical', 'indie', 'alternative',
+  'pop',
+  'rock',
+  'hip-hop',
+  'country',
+  'jazz',
+  'blues',
+  'electronic',
+  'r&b',
+  'folk',
+  'classical',
+  'indie',
+  'alternative',
 ];
 
 function validateGenre(genre: string): boolean {
@@ -654,24 +681,22 @@ describe('Song Generation Flow', () => {
     const response = await request(app)
       .post('/api/songs/generate-metadata')
       .send({ narrative: 'Test narrative', duration: 30 });
-    
+
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('title');
     expect(response.body).toHaveProperty('lyrics');
   });
 
   it('should approve and save song metadata', async () => {
-    const response = await request(app)
-      .post('/api/songs/approve')
-      .send({
-        narrative: 'Test',
-        duration: 30,
-        title: 'Test Song',
-        lyrics: 'Test lyrics',
-        genre: 'rock',
-        mood: 'energetic',
-      });
-    
+    const response = await request(app).post('/api/songs/approve').send({
+      narrative: 'Test',
+      duration: 30,
+      title: 'Test Song',
+      lyrics: 'Test lyrics',
+      genre: 'rock',
+      mood: 'energetic',
+    });
+
     expect(response.status).toBe(201);
     expect(response.body).toHaveProperty('songId');
   });
@@ -687,7 +712,7 @@ test('complete song-to-music workflow', async ({ page }) => {
 
   // 2. Enter narrative
   await page.fill('textarea[name="narrative"]', 'A sad story about loss');
-  
+
   // 3. Set duration
   await page.getByLabel('Duration').fill('30');
 
@@ -722,18 +747,25 @@ When ready to implement Ollama:
    ```typescript
    @Injectable()
    export class OllamaService {
-     async generate(prompt: string, model: string = 'deepseek'): Promise<string> {
-       const response = await axios.post('http://localhost:11434/api/generate', {
-         model,
-         prompt,
-         stream: false,
-       });
+     async generate(
+       prompt: string,
+       model: string = 'deepseek'
+     ): Promise<string> {
+       const response = await axios.post(
+         'http://localhost:11434/api/generate',
+         {
+           model,
+           prompt,
+           stream: false,
+         }
+       );
        return response.data.response;
      }
    }
    ```
 
 2. **Prompt Engineering**
+
    - Test different prompts for quality
    - Add few-shot examples
    - Implement temperature control

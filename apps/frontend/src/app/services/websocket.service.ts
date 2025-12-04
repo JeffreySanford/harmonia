@@ -3,7 +3,7 @@
  * Real-time communication with Socket.IO
  */
 
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, NgZone } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { io, Socket } from 'socket.io-client';
 import { Observable, fromEvent, Subject } from 'rxjs';
@@ -36,7 +36,8 @@ export interface JobFailedEvent {
 })
 export class WebSocketService {
   private readonly store = inject(Store<AppState>);
-  
+  private readonly ngZone = inject(NgZone);
+
   private socket: Socket | null = null;
   private destroy$ = new Subject<void>();
 
@@ -54,59 +55,74 @@ export class WebSocketService {
     });
 
     this.socket.on('connect', () => {
+      /* eslint-disable-next-line no-console */
       console.log('WebSocket connected');
-      this.store.dispatch(JobsActions.realTimeConnectionEstablished());
+      this.ngZone.run(() => {
+        this.store.dispatch(JobsActions.realTimeConnectionEstablished());
+      });
     });
 
     this.socket.on('disconnect', (reason) => {
+      /* eslint-disable-next-line no-console */
       console.log('WebSocket disconnected:', reason);
     });
 
     this.socket.on('connect_error', (error) => {
+      /* eslint-disable-next-line no-console */
       console.error('WebSocket connection error:', error);
-      this.store.dispatch(
-        JobsActions.realTimeConnectionLost({ error: error.message })
-      );
+      this.ngZone.run(() => {
+        this.store.dispatch(
+          JobsActions.realTimeConnectionLost({ error: error.message })
+        );
+      });
     });
 
     // Job status updates
     this.getJobStatusUpdates()
       .pipe(takeUntil(this.destroy$))
       .subscribe((event) => {
-        this.store.dispatch(
-          JobsActions.jobStatusUpdated({
-            id: event.id,
-            status: event.status,
-          })
-        );
+        this.ngZone.run(() => {
+          this.store.dispatch(
+            JobsActions.jobStatusUpdated({
+              id: event.id,
+              status: event.status,
+            })
+          );
+        });
       });
 
     // Job progress updates
     this.getJobProgressUpdates()
       .pipe(takeUntil(this.destroy$))
       .subscribe((event) => {
-        this.store.dispatch(
-          JobsActions.jobProgressUpdated({
-            id: event.id,
-            progress: event.progress,
-          })
-        );
+        this.ngZone.run(() => {
+          this.store.dispatch(
+            JobsActions.jobProgressUpdated({
+              id: event.id,
+              progress: event.progress,
+            })
+          );
+        });
       });
 
     // Job completed
     this.getJobCompletedEvents()
       .pipe(takeUntil(this.destroy$))
       .subscribe((event) => {
-        this.store.dispatch(JobsActions.jobCompleted({ job: event.job }));
+        this.ngZone.run(() => {
+          this.store.dispatch(JobsActions.jobCompleted({ job: event.job }));
+        });
       });
 
     // Job failed
     this.getJobFailedEvents()
       .pipe(takeUntil(this.destroy$))
       .subscribe((event) => {
-        this.store.dispatch(
-          JobsActions.jobFailed({ id: event.id, error: event.error })
-        );
+        this.ngZone.run(() => {
+          this.store.dispatch(
+            JobsActions.jobFailed({ id: event.id, error: event.error })
+          );
+        });
       });
   }
 

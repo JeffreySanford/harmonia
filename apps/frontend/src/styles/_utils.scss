@@ -1,0 +1,33 @@
+// Utility classes shared across components - keep these minimal and composable
+
+@use 'mixins' as mixins;
+@use 'colors' as colors;
+
+// Utility class for aligning flex children center
+.u-flex-align-center {
+  @include mixins.flex-align-center;
+}
+
+.u-flex-between {
+  @include mixins.flex-between;
+}
+
+.u-button-primary {
+  @include mixins.button-primary;
+}
+
+.u-card-elevated {
+  @include mixins.card-elevated;
+}
+
+.u-truncate {
+  @include mixins.truncate-text;
+}
+
+// Small helper utilities
+.u-ml-1 {
+  margin-left: mixins.spacing(0.5);
+}
+.u-mr-1 {
+  margin-right: mixins.spacing(0.5);
+}

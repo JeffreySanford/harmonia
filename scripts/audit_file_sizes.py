@@ -8,8 +8,14 @@ from pathlib import Path
 from typing import List, Tuple
 
 # Configuration
-MAX_LINES = 500
-WARN_LINES = 400
+DEFAULT_MAX_LINES = 500
+DEFAULT_WARN_LINES = 400
+
+# Directory-specific thresholds (path substring -> {max, warn})
+# e.g. tests can be larger because E2E suites are often long
+DIR_OVERRIDES = {
+    'tests': {'max': 900, 'warn': 800},
+}
 ROOT = Path(__file__).parent.parent
 
 # Directories to check
@@ -73,38 +79,51 @@ def audit_files() -> Tuple[List[Tuple[Path, int]], List[Tuple[Path, int]]]:
             
             line_count = count_lines(filepath)
             
-            if line_count > MAX_LINES:
-                violations.append((filepath.relative_to(ROOT), line_count))
-            elif line_count > WARN_LINES:
-                warnings.append((filepath.relative_to(ROOT), line_count))
+            # Determine applicable thresholds (allow per-directory overrides)
+            max_lines = DEFAULT_MAX_LINES
+            warn_lines = DEFAULT_WARN_LINES
+            for subdir, limits in DIR_OVERRIDES.items():
+                if subdir in str(filepath):
+                    max_lines = limits.get('max', max_lines)
+                    warn_lines = limits.get('warn', warn_lines)
+                    break
+
+                    if line_count > max_lines:
+                        violations.append((filepath.relative_to(ROOT), line_count, max_lines))
+                    elif line_count > warn_lines:
+                        warnings.append((filepath.relative_to(ROOT), line_count, warn_lines))
     
     return sorted(violations, key=lambda x: x[1], reverse=True), \
            sorted(warnings, key=lambda x: x[1], reverse=True)
 
-def print_report(violations: List[Tuple[Path, int]], warnings: List[Tuple[Path, int]]):
+def print_report(violations: List[Tuple[Path, int, int]], warnings: List[Tuple[Path, int, int]]):
     """Print audit report"""
     print("=" * 80)
     print("FILE SIZE AUDIT REPORT")
     print("=" * 80)
-    print(f"Maximum allowed: {MAX_LINES} lines")
-    print(f"Warning threshold: {WARN_LINES} lines")
+    print(f"Default maximum allowed: {DEFAULT_MAX_LINES} lines")
+    print(f"Default warning threshold: {DEFAULT_WARN_LINES} lines")
+    if DIR_OVERRIDES:
+        print("Per-directory overrides:")
+        for d, limits in DIR_OVERRIDES.items():
+            print(f"  {d}: max={limits.get('max')} warn={limits.get('warn')}")
     print()
     
     if violations:
-        print(f"❌ VIOLATIONS ({len(violations)} files exceed {MAX_LINES} lines):")
+        print(f"❌ VIOLATIONS ({len(violations)} files exceed their maximum lines):")
         print("-" * 80)
-        for filepath, lines in violations:
-            overage = lines - MAX_LINES
+        for filepath, lines, applicable in violations:
+            overage = lines - applicable
             print(f"  {filepath}")
-            print(f"    Lines: {lines} (over by {overage})")
+            print(f"    Lines: {lines} (over by {overage}) - limit: {applicable}")
         print()
     
     if warnings:
-        print(f"⚠️  WARNINGS ({len(warnings)} files between {WARN_LINES}-{MAX_LINES} lines):")
+        print(f"⚠️  WARNINGS ({len(warnings)} files exceeding their warning thresholds):")
         print("-" * 80)
-        for filepath, lines in warnings:
+        for filepath, lines, applicable in warnings:
             print(f"  {filepath}")
-            print(f"    Lines: {lines}")
+            print(f"    Lines: {lines} (warning threshold: {applicable})")
         print()
     
     if not violations and not warnings:
@@ -121,7 +140,7 @@ def print_report(violations: List[Tuple[Path, int]], warnings: List[Tuple[Path, 
     
     if violations:
         print("ACTION REQUIRED:")
-        print("  Refactor files exceeding 500 lines before committing.")
+        print("  Refactor files exceeding their maximum line limits before committing.")
         print("  See docs/CODING_STANDARDS.md for refactoring guidance.")
         return 1
     elif warnings:

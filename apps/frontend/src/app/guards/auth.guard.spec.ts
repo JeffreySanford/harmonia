@@ -1,5 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import {
+  Router,
+  type ActivatedRouteSnapshot,
+  type RouterStateSnapshot,
+} from '@angular/router';
+import { type Observable } from 'rxjs';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { authGuard } from './auth.guard';
 import * as AuthSelectors from '../store/auth/auth.selectors';
@@ -15,11 +20,11 @@ describe('authGuard', () => {
       providers: [
         provideMockStore({
           selectors: [
-            { selector: AuthSelectors.selectIsAuthenticated, value: false }
-          ]
+            { selector: AuthSelectors.selectIsAuthenticated, value: false },
+          ],
         }),
-        { provide: Router, useValue: routerSpy }
-      ]
+        { provide: Router, useValue: routerSpy },
+      ],
     });
 
     store = TestBed.inject(MockStore);
@@ -31,11 +36,23 @@ describe('authGuard', () => {
     store.refreshState();
 
     TestBed.runInInjectionContext(() => {
-      authGuard(null as any, null as any).subscribe(result => {
+      const result = authGuard(
+        null as unknown as ActivatedRouteSnapshot,
+        null as unknown as RouterStateSnapshot
+      );
+
+      if (typeof result === 'boolean') {
         expect(result).toBe(true);
         expect(router.navigate).not.toHaveBeenCalled();
         done();
-      });
+      } else {
+        // Handle observable/promise case
+        (result as unknown as Observable<boolean>).subscribe((res: boolean) => {
+          expect(res).toBe(true);
+          expect(router.navigate).not.toHaveBeenCalled();
+          done();
+        });
+      }
     });
   });
 
@@ -44,11 +61,23 @@ describe('authGuard', () => {
     store.refreshState();
 
     TestBed.runInInjectionContext(() => {
-      authGuard(null as any, null as any).subscribe(result => {
+      const result = authGuard(
+        null as unknown as ActivatedRouteSnapshot,
+        null as unknown as RouterStateSnapshot
+      );
+
+      if (typeof result === 'boolean') {
         expect(result).toBe(false);
         expect(router.navigate).toHaveBeenCalledWith(['/']);
         done();
-      });
+      } else {
+        // Handle observable/promise case
+        (result as unknown as Observable<boolean>).subscribe((res: boolean) => {
+          expect(res).toBe(false);
+          expect(router.navigate).toHaveBeenCalledWith(['/']);
+          done();
+        });
+      }
     });
   });
 });

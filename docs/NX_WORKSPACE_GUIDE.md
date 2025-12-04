@@ -9,7 +9,7 @@ Harmonia uses **Nx 22.1.3** as a monorepo orchestration tool with pnpm workspace
 ```text
 harmonia/
 ├── apps/                          # Application projects
-│   ├── frontend/                  # Angular 21 application
+│   ├── frontend/                  # Angular 20 application
 │   ├── frontend-e2e/              # Playwright E2E tests
 │   ├── backend/                   # NestJS 11 API server
 │   └── backend-e2e/               # Jest E2E tests

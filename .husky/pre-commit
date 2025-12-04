@@ -12,17 +12,12 @@ pnpm lint:frontend --quiet || {
   exit 1
 }
 
-# Check file sizes (max 500 lines)
-echo "  - Checking file sizes (max 500 lines)..."
-for file in $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|js)$'); do
-  if [ -f "$file" ]; then
-    lines=$(wc -l < "$file")
-    if [ "$lines" -gt 500 ]; then
-      echo "❌ $file has $lines lines (max 500). Refactor before committing."
-      exit 1
-    fi
-  fi
-done
+# Check file sizes using audit script
+echo "  - Checking file sizes..."
+python scripts/audit_file_sizes.py || {
+  echo "❌ File size audit failed. Fix oversized files and commit again."
+  exit 1
+}
 
 # Check for sensitive data in .env
 if git diff --cached --name-only | grep -q "^\.env$"; then

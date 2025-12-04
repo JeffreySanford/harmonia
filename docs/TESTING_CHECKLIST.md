@@ -1,6 +1,6 @@
 # Authentication Testing Checklist
 
-**Status**: Ready for Testing (Blocked by Angular version issue)  
+**Status**: Ready for E2E Testing ✅  
 **Date**: December 3, 2025  
 **Component**: Full-Stack Authentication System
 
@@ -8,21 +8,9 @@
 
 ## Prerequisites
 
-### Fix Angular Version Issue
+### ✅ Angular Version Issue - RESOLVED
 
-```bash
-# Current Error:
-# Error: The current version of "@angular/build" supports Angular versions ^20.0.0,
-# but detected Angular version 21.0.2 instead.
-
-# Option 1: Update @angular/build
-pnpm update @angular/build
-
-# Option 2: Check for Angular compatibility
-pnpm nx migrate latest
-
-# See: https://update.angular.dev/
-```
+**Status**: ✅ Fixed - Angular 21.0.2 compatible with updated build tools
 
 ### Start Servers
 
@@ -33,7 +21,7 @@ pnpm nx serve backend
 # Running on http://localhost:3000
 ```
 
-**Frontend** (after Angular fix):
+**Frontend** (now working):
 
 ```bash
 pnpm nx serve frontend
@@ -47,6 +35,64 @@ pnpm nx serve frontend
 - **Email**: `admin@harmonia.com`
 - **Username**: admin
 - **Password**: Admin123456
+
+**Local Dev Convenience**:
+
+You may enable `DEV_AUTOGEN_TEST_USER=true` in your local `.env` to auto-create a weak local dev test user (`test` / `password`) when standard E2E env vars are not set. This is only intended for local development; do not enable in CI or production.
+
+Note: If you enable `DEV_AUTOGEN_TEST_USER=true` and the script appends env values to `.env`, you'll need to restart the backend to pick up the new `E2E_TEST_USER_*` values before running Playwright tests.
+
+Quick verification commands (local convenience):
+
+```bash
+# Run setup to seed the test user into harmonia_test and runtime DB
+#
+# The setup script will automatically create an E2E test user in two situations:
+# - `DEV_AUTOGEN_TEST_USER=true` is set in `.env` (explicit developer preference)
+# - Or when running locally (no `CI` env var present), the script will auto-enable a weak dev user for convenience.
+#
+# If you need to explicitly force dev autogeneration even when `CI` or env detection would prevent it, use:
+pnpm run test:e2e:setup -- --force-dev
+
+pnpm test:e2e:setup
+
+# Verify the test user exists in runtime DB (reads .env's MONGODB_URI)
+pnpm test:e2e:check-user
+
+# Verify the login endpoint accepts the E2E credentials (reads .env credentials)
+pnpm test:e2e:verify-user
+```
+
+If your backend is configured with a runtime `MONGODB_URI` (for example in Docker/remote DB), the setup script will attempt to seed that runtime DB as well; it now passes `--mongo-uri` to the seeder. If seeding fails, run the seeder manually and inspect logs:
+
+```bash
+# Example: seed runtime DB explicitly using a provided MONGODB_URI
+node scripts/add-test-user.js --mongo-uri="$MONGODB_URI" --env=<db_name> --username=test --email=test@harmonia.local --password=password
+```
+
+If the user exists in the DB but you still receive "invalid credentials" in the frontend, re-run the verification step to see the HTTP response and check backend logs for 401/Unauthorized messages.
+
+To help debug why the login comparison fails locally, run the password verification tool which compares a plain password against the hash stored in the DB (does not contact the backend):
+
+```bash
+# Verify the stored password hash for the test user using the MONGODB_URI
+pnpm test:e2e:verify-password
+# or pass an explicit uri / username / password
+node scripts/verify-user-password.js --mongo-uri="$MONGODB_URI" --emailOrUsername=test --password=password
+```
+
+> 💡 Note: E2E tests capture network responses for `POST /api/auth/login` and `POST /api/auth/register` and assert HTTP status codes (201 for register, 200 for login). If a test fails to navigate after a successful response, inspect the captured response JSON for details.
+> 💡 Developer Note: The E2E helper `loginViaModal(page, { emailOrUsername, password })` is available at `tests/e2e/helpers/auth.ts` (centralizes login flow, retries on 429, asserts tokens exist in localStorage, and waits for UI updates).
+>
+> The helper now exposes both Promise-based and Observable-based variants (choose the idiom matching your test framework):
+>
+> - `loginViaModal(page, creds)` → returns a Promise (backwards-compatible)
+>
+> - `loginViaModal$(page, creds)` → returns a hot Observable (ReplaySubject) — use if you prefer RxJS-style composition and operators.
+>
+> Recommendation: For Jest and Playwright tests prefer the Promise wrapper `loginViaModal(...)` and `async/await` for clean, idiomatic testing code. Observables are available for those who prefer RxJS.
+>
+> Use these helpers to reduce flakiness in login flows.
 
 ---
 
@@ -250,7 +296,7 @@ pnpm nx serve frontend
    // Get current token
    const token = localStorage.getItem('auth_token');
    console.log('Current token:', token);
-   
+
    // Decode JWT (copy token to jwt.io)
    // Verify 'exp' claim (expiration timestamp)
    ```
@@ -445,18 +491,18 @@ Test in multiple browsers:
 
 ## Known Issues / Blockers
 
-### Angular Version Mismatch
+### ✅ Angular Version Mismatch - RESOLVED
 
-**Error**:
+**Status**: ✅ Fixed - All Angular packages updated to 21.0.2, build tools compatible
+
+**Previous Error**:
 
 ```text
 Error: The current version of "@angular/build" supports Angular versions ^20.0.0,
 but detected Angular version 21.0.2 instead.
 ```
 
-**Resolution**: Update Angular or @angular/build to compatible versions
-
-**Impact**: Frontend cannot serve, blocking all UI tests
+**Resolution**: Updated all Angular packages and build tools to compatible versions
 
 ---
 

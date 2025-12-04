@@ -101,7 +101,7 @@ pnpm e2e:backend
 ```text
 harmonia/
 ├── apps/
-│   ├── frontend/              # Angular 21 application
+│   ├── frontend/              # Angular 20 application
 │   │   ├── src/
 │   │   │   ├── app/
 │   │   │   │   ├── features/  # Feature modules (lazy loaded)
@@ -255,7 +255,7 @@ import { SongGenerationMaterialModule } from './song-generation-material.module'
     CommonModule,
     ReactiveFormsModule,
     SongGenerationRoutingModule,
-    SongGenerationMaterialModule,  // Centralized Material imports
+    SongGenerationMaterialModule, // Centralized Material imports
   ],
 })
 export class SongGenerationModule {}
@@ -294,9 +294,9 @@ import { MatSelectModule } from '@angular/material/select';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-  ]
+  ],
 })
-export class SongGenerationMaterialModule { }
+export class SongGenerationMaterialModule {}
 ```
 
 #### 4. Configure Routing

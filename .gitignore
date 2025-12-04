@@ -31,3 +31,12 @@ seeds/*-backup-*.json
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
 .angular
+
+# Playwright artifacts and reports
+/test-results/
+/playwright-report/
+**/.playwright-artifacts-*
+**/*.webm
+**/*.png
+**/*.jpg
+**/*.jpeg

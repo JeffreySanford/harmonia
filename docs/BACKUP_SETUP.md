@@ -4,19 +4,22 @@
 
 Harmonia includes automated MongoDB backup scripts that create daily compressed archives using `mongodump`. Backups are retained for 7 days and stored in `backups/mongo/`.
 
+**Note**: This guide assumes you're using native MongoDB (Windows Service) as per the production setup. If you're using Docker MongoDB, see `docs/I9_MONGODB_INSTALL.md` for Docker-specific backup instructions.
+
 ## Features
 
 - **Daily automated backups** at 2:00 AM
 - **Compressed archives** using gzip (`.archive.gz` format)
 - **7-day retention** (older backups automatically deleted)
 - **Disaster recovery seeds** (JSON exports for lightweight restore)
-- **Docker-native** (works with `harmonia-mongo-i9` container)
+- **Native MongoDB** (Windows Service on port 27017)
 - **Cross-platform** (Windows Task Scheduler or Linux/WSL cron)
 
 ## Prerequisites
 
-- MongoDB container running (`docker compose -f docker-compose.mongo.yml up -d`)
-- `.env` file with `MONGO_ROOT_PASSWORD` set
+- Native MongoDB service running (`Get-Service MongoDB` in PowerShell)
+- `.env` file with `MONGO_ROOT_PASSWORD` and `MONGO_HARMONIA_PASSWORD` set
+- MongoDB credentials configured (see `docs/MONGODB_SECURITY.md`)
 - Bash shell (Git Bash or WSL on Windows)
 - Administrator privileges (Windows) or sudo access (Linux)
 
@@ -117,13 +120,32 @@ backups/
 
 ## Restore from Backup
 
-### Full Database Restore
+### Full Database Restore (Native MongoDB)
+
+```bash
+# Stop backend services (keeps frontend stopped)
+pnpm run stop:backend
+
+# Restore from archive (native MongoDB)
+mongorestore \
+  --username admin \
+  --password "${MONGO_ROOT_PASSWORD}" \
+  --authenticationDatabase admin \
+  --gzip \
+  --archive=backups/mongo/harmonia_20241202_020001.archive.gz \
+  --drop
+
+# Restart backend
+pnpm run dev
+```
+
+### Full Database Restore (Docker MongoDB - Legacy)
 
 ```bash
 # Stop application containers
 docker compose down
 
-# Restore from archive
+# Restore from archive (Docker)
 docker exec harmonia-mongo-i9 mongorestore \
   --username admin \
   --password "${MONGO_ROOT_PASSWORD}" \

@@ -10,7 +10,10 @@ import * as fromJobs from './jobs.reducer';
 export const selectJobsState = createFeatureSelector<JobsState>('jobs');
 
 // Entity adapter selectors
-export const selectAllJobs = createSelector(selectJobsState, fromJobs.selectAll);
+export const selectAllJobs = createSelector(
+  selectJobsState,
+  fromJobs.selectAll
+);
 
 export const selectJobsEntities = createSelector(
   selectJobsState,
@@ -154,8 +157,8 @@ export const selectAverageJobDuration = createSelector(
     if (completedJobs.length === 0) return null;
 
     const totalDuration = completedJobs.reduce((sum, job) => {
-      const start = new Date(job.startedAt!).getTime();
-      const end = new Date(job.completedAt!).getTime();
+      const start = new Date(job.startedAt as string).getTime();
+      const end = new Date(job.completedAt as string).getTime();
       return sum + (end - start);
     }, 0);
 

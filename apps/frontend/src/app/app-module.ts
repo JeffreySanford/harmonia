@@ -1,4 +1,4 @@
-import { NgModule, provideBrowserGlobalErrorListeners, isDevMode } from '@angular/core';
+import { NgModule, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { RouterModule } from '@angular/router';
@@ -59,7 +59,7 @@ import { JobsEffects } from './store/jobs/jobs.effects';
     ]),
     StoreDevtoolsModule.instrument({
       maxAge: 25,
-      logOnly: !isDevMode(),
+      logOnly: false,
       autoPause: true,
       trace: false,
       traceLimit: 75,
@@ -70,8 +70,8 @@ import { JobsEffects } from './store/jobs/jobs.effects';
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
-      multi: true
-    }
+      multi: true,
+    },
   ],
   exports: [RouterModule],
   bootstrap: [App],

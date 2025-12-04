@@ -43,7 +43,7 @@ Tests:       2 passed, 2 total
 
 ### Frontend Tests ⚠️
 
-**Status**: 7 test suites need Angular 21 compatibility updates
+**Status**: 7 test suites need review to ensure they follow Angular 20 testing patterns
 
 **Issues**:
 
@@ -175,7 +175,7 @@ describe('AppController', () => {
   it('should return data from service', () => {
     const result = { message: 'Hello API' };
     jest.spyOn(service, 'getData').mockImplementation(() => result);
-    
+
     expect(controller.getData()).toBe(result);
   });
 });
@@ -217,8 +217,14 @@ describe('AuthService', () => {
   });
 
   it('should create user', async () => {
-    const dto = { email: 'test@example.com', username: 'test', password: 'password123' };
-    jest.spyOn(userModel, 'create').mockResolvedValue({ ...dto, _id: '123' } as any);
+    const dto = {
+      email: 'test@example.com',
+      username: 'test',
+      password: 'password123',
+    };
+    jest
+      .spyOn(userModel, 'create')
+      .mockResolvedValue({ ...dto, _id: '123' } as any);
 
     const result = await service.register(dto);
     expect(result).toHaveProperty('_id');
@@ -232,7 +238,7 @@ describe('AuthService', () => {
 
 ### Current Status
 
-Frontend tests need Angular 21 migration. Tests were written for Angular 20 testing patterns.
+Frontend tests are written for Angular 20 testing patterns; keep tests aligned with Angular 20 unless a separate Angular 21 migration is planned.
 
 ### Migration Required
 
@@ -240,12 +246,12 @@ Frontend tests need Angular 21 migration. Tests were written for Angular 20 test
 
 ```typescript
 // Guards returned Observable<boolean>
-authGuard(null as any, null as any).subscribe(result => {
+authGuard(null as any, null as any).subscribe((result) => {
   expect(result).toBe(true);
 });
 ```
 
-**New Pattern (Angular 21)**:
+**New Pattern (Angular 21)** (reference only — not targeted by current CI):
 
 ```typescript
 // Guards now return boolean or UrlTree directly
@@ -324,7 +330,7 @@ describe('authGuard', () => {
 
   it('should allow authenticated users', (done) => {
     jest.spyOn(store, 'select').mockReturnValue(of(true));
-    
+
     const result = authGuard(null as any, null as any);
     expect(result).toBe(true);
     done();
@@ -336,7 +342,10 @@ describe('authGuard', () => {
 
 ```typescript
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import {
+  HttpClientTestingModule,
+  HttpTestingController,
+} from '@angular/common/http/testing';
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
@@ -364,9 +373,11 @@ describe('AuthService', () => {
       refreshToken: 'refresh',
     };
 
-    service.login({ emailOrUsername: 'test', password: 'pass' }).subscribe(response => {
-      expect(response).toEqual(mockResponse);
-    });
+    service
+      .login({ emailOrUsername: 'test', password: 'pass' })
+      .subscribe((response) => {
+        expect(response).toEqual(mockResponse);
+      });
 
     const req = httpMock.expectOne('http://localhost:3000/api/auth/login');
     expect(req.request.method).toBe('POST');
@@ -423,10 +434,10 @@ it('test 1', () => {});
 it('should calculate total price', () => {
   // Arrange
   const items = [{ price: 10 }, { price: 20 }];
-  
+
   // Act
   const total = calculateTotal(items);
-  
+
   // Assert
   expect(total).toBe(30);
 });
@@ -556,17 +567,17 @@ describe('MyNewComponent', () => {
   it('should display title', () => {
     component.title = 'Test Title';
     fixture.detectChanges();
-    
+
     const compiled = fixture.nativeElement;
     expect(compiled.querySelector('h1')?.textContent).toContain('Test Title');
   });
 
   it('should call method on button click', () => {
     jest.spyOn(component, 'handleClick');
-    
+
     const button = fixture.nativeElement.querySelector('button');
     button.click();
-    
+
     expect(component.handleClick).toHaveBeenCalled();
   });
 });

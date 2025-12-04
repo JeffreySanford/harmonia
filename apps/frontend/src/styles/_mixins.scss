@@ -199,7 +199,7 @@
 }
 
 @mixin elevation-transition($duration: 0.3s) {
-  transition: box-shadow $duration cubic-bezier(0.4, 0.0, 0.2, 1);
+  transition: box-shadow $duration cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @mixin card-elevated {
@@ -207,7 +207,7 @@
   border-radius: 8px;
   box-shadow: c.$shadow-2;
   padding: spacing(3);
-  transition: box-shadow 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
     box-shadow: c.$shadow-3;
@@ -246,8 +246,8 @@
 // ============================================================================
 
 @mixin hover-lift {
-  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1),
-              box-shadow 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
     transform: translateY(-2px);
@@ -261,7 +261,7 @@
 }
 
 @mixin hover-scale($scale: 1.02) {
-  transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
     transform: scale($scale);
@@ -293,23 +293,23 @@
 // ============================================================================
 
 @mixin fade-in($duration: 0.3s) {
-  animation: fadeIn $duration cubic-bezier(0.4, 0.0, 0.2, 1);
+  animation: fadeIn $duration cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @mixin fade-out($duration: 0.3s) {
-  animation: fadeOut $duration cubic-bezier(0.4, 0.0, 0.2, 1);
+  animation: fadeOut $duration cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @mixin slide-in-up($duration: 0.4s) {
-  animation: slideInUp $duration cubic-bezier(0.4, 0.0, 0.2, 1);
+  animation: slideInUp $duration cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @mixin slide-in-down($duration: 0.4s) {
-  animation: slideInDown $duration cubic-bezier(0.4, 0.0, 0.2, 1);
+  animation: slideInDown $duration cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @mixin zoom-in($duration: 0.3s) {
-  animation: zoomIn $duration cubic-bezier(0.4, 0.0, 0.2, 1);
+  animation: zoomIn $duration cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ============================================================================
@@ -366,19 +366,23 @@
 
 @mixin smooth-scroll {
   scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
 }
 
 @mixin hide-scrollbar {
   -ms-overflow-style: none;
-  scrollbar-width: none;
+  @supports (scrollbar-width: none) {
+    scrollbar-width: none;
+  }
 
   &::-webkit-scrollbar {
     display: none;
   }
 }
 
-@mixin custom-scrollbar($track-color: c.$neutral-200, $thumb-color: c.$neutral-500) {
+@mixin custom-scrollbar(
+  $track-color: c.$neutral-200,
+  $thumb-color: c.$neutral-500
+) {
   &::-webkit-scrollbar {
     width: 8px;
     height: 8px;

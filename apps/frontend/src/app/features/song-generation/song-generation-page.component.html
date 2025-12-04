@@ -6,7 +6,8 @@
         {{ title }}
       </mat-card-title>
       <mat-card-subtitle>
-        Generate song metadata (title, lyrics, genre, mood) from narrative descriptions
+        Generate song metadata (title, lyrics, genre, mood) from narrative
+        descriptions
       </mat-card-subtitle>
     </mat-card-header>
 
@@ -23,8 +24,8 @@
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Narrative Description</mat-label>
-          <textarea 
-            matInput 
+          <textarea
+            matInput
             [(ngModel)]="narrative"
             placeholder="Example: A melancholic story about lost love set in a rainy city, with reflective and introspective mood"
             rows="6"
@@ -32,7 +33,10 @@
           ></textarea>
           <mat-hint align="end">
             {{ characterCount }}/{{ maxNarrativeLength }} characters
-            <span *ngIf="characterCount < minNarrativeLength" class="error-hint">
+            <span
+              *ngIf="characterCount < minNarrativeLength"
+              class="error-hint"
+            >
               (minimum {{ minNarrativeLength }})
             </span>
           </mat-hint>
@@ -52,32 +56,54 @@
         <div class="slider-container">
           <label class="slider-label">
             Duration: {{ duration }}s
-            <span class="slider-info">(Target: {{ targetSyllables }} syllables, ~{{ targetWords }} words)</span>
+            <span class="slider-info"
+              >(Target: {{ targetSyllables }} syllables, ~{{
+                targetWords
+              }}
+              words)</span
+            >
           </label>
-          <mat-slider 
-            [min]="minDuration" 
-            [max]="maxDuration" 
-            [step]="5" 
-            showTickMarks 
+          <mat-slider
+            [min]="minDuration"
+            [max]="maxDuration"
+            [step]="5"
+            showTickMarks
             discrete
             class="full-width"
           >
-            <input matSliderThumb [(ngModel)]="duration">
+            <input
+              matSliderThumb
+              [(ngModel)]="duration"
+              title="Duration slider"
+            />
           </mat-slider>
         </div>
       </section>
 
       <!-- Step 3: Generate Button -->
       <section class="generate-section">
-        <button 
-          mat-raised-button 
-          color="primary" 
+        <mat-form-field appearance="outline" class="model-select">
+          <mat-label>Model (dev)</mat-label>
+          <mat-select [(ngModel)]="selectedModel">
+            <mat-option *ngFor="let m of availableModels" [value]="m">
+              {{ m }}
+            </mat-option>
+          </mat-select>
+          <mat-hint>Optional: Select a local Ollama model (dev only)</mat-hint>
+        </mat-form-field>
+        <button
+          mat-raised-button
+          color="primary"
           (click)="generateMetadata()"
           [disabled]="!isNarrativeValid || isGenerating"
           class="generate-button"
         >
-          <mat-icon>{{ isGenerating ? 'hourglass_empty' : 'auto_awesome' }}</mat-icon>
-          {{ isGenerating ? 'Generating Metadata...' : 'Generate Song Metadata' }}
+          <mat-icon>{{
+            isGenerating ? 'hourglass_empty' : 'auto_awesome'
+          }}</mat-icon>
+          {{
+            isGenerating ? 'Generating Metadata...' : 'Generate Song Metadata'
+          }}
         </button>
         <p class="helper-text" *ngIf="!isNarrativeValid">
           <mat-icon class="warning-icon">warning</mat-icon>
@@ -86,7 +112,10 @@
       </section>
 
       <!-- Step 4: Generated Metadata (appears after generation) -->
-      <section class="metadata-section" *ngIf="showMetadata && generatedMetadata">
+      <section
+        class="metadata-section"
+        *ngIf="showMetadata && generatedMetadata"
+      >
         <h3 class="section-title">
           <mat-icon>library_music</mat-icon>
           3. Review & Edit Metadata
@@ -99,15 +128,19 @@
           <!-- Title -->
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Song Title</mat-label>
-            <input matInput [(ngModel)]="generatedMetadata.title" placeholder="Enter title">
+            <input
+              matInput
+              [(ngModel)]="generatedMetadata.title"
+              placeholder="Enter title"
+            />
             <mat-icon matPrefix>title</mat-icon>
           </mat-form-field>
 
           <!-- Lyrics with Syllable Count -->
           <mat-form-field appearance="outline" class="full-width lyrics-field">
             <mat-label>Lyrics</mat-label>
-            <textarea 
-              matInput 
+            <textarea
+              matInput
               [(ngModel)]="generatedMetadata.lyrics"
               (ngModelChange)="onLyricsChange()"
               rows="10"
@@ -115,11 +148,13 @@
             ></textarea>
             <mat-icon matPrefix>lyrics</mat-icon>
             <mat-hint align="start">
-              <span [ngClass]="{
-                'valid-hint': validateLyrics().status === 'valid',
-                'warning-hint': validateLyrics().status === 'warning',
-                'error-hint': validateLyrics().status === 'error'
-              }">
+              <span
+                [ngClass]="{
+                  'valid-hint': validateLyrics().status === 'valid',
+                  'warning-hint': validateLyrics().status === 'warning',
+                  'error-hint': validateLyrics().status === 'error'
+                }"
+              >
                 {{ validateLyrics().message }}
               </span>
             </mat-hint>
@@ -151,8 +186,13 @@
           <!-- Validation Summary -->
           <div class="validation-summary" [ngClass]="validateLyrics().status">
             <mat-icon>
-              {{ validateLyrics().status === 'valid' ? 'check_circle' : 
-                 validateLyrics().status === 'warning' ? 'warning' : 'error' }}
+              {{
+                validateLyrics().status === 'valid'
+                  ? 'check_circle'
+                  : validateLyrics().status === 'warning'
+                  ? 'warning'
+                  : 'error'
+              }}
             </mat-icon>
             <span>{{ validateLyrics().message }}</span>
           </div>
@@ -161,19 +201,22 @@
     </mat-card-content>
 
     <!-- Step 5: Actions -->
-    <mat-card-actions *ngIf="showMetadata && generatedMetadata" class="card-actions">
-      <button 
-        mat-button 
-        color="accent" 
+    <mat-card-actions
+      *ngIf="showMetadata && generatedMetadata"
+      class="card-actions"
+    >
+      <button
+        mat-button
+        color="accent"
         (click)="regenerate()"
         [disabled]="isGenerating"
       >
         <mat-icon>refresh</mat-icon>
         Regenerate
       </button>
-      <button 
-        mat-raised-button 
-        color="primary" 
+      <button
+        mat-raised-button
+        color="primary"
         (click)="approveAndContinue()"
         [disabled]="isGenerating || isApproved"
       >

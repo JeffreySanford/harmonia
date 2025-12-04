@@ -1,4 +1,11 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, inject, NgZone } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  AfterViewInit,
+  inject,
+  NgZone,
+} from '@angular/core';
 import { HealthService } from '../../../services/health.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';

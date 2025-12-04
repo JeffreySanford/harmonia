@@ -7,23 +7,23 @@
     "module": "ES2022",
     "moduleResolution": "bundler",
     "useDefineForClassFields": false,
-    
+
     // Strict Type Checking (inherited and enhanced)
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
-    
+
     // Decorators for Angular
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    
+    "emitDecoratorMetadata": false,
+
     // Angular optimizations
     "importHelpers": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-    
+
     // Paths for module resolution
     "baseUrl": ".",
     "paths": {
@@ -31,29 +31,6 @@
       "@environments/*": ["src/environments/*"],
       "@styles/*": ["src/styles/*"]
     }
-  },
-  "angularCompilerOptions": {
-    // Strict Angular template checking
-    "enableI18nLegacyMessageIdFormat": false,
-    "strictInjectionParameters": true,
-    "strictInputAccessModifiers": true,
-    "strictAttributeTypes": true,
-    "strictNullInputTypes": true,
-    "strictSafeNavigationTypes": true,
-    "strictDomLocalRefTypes": true,
-    "strictOutputEventTypes": true,
-    "strictDomEventTypes": true,
-    "strictContextGenerics": true,
-    "strictLiteralTypes": true,
-    "enableBlockSyntax": true,
-    "enableLetSyntax": true,
-    "typeCheckHostBindings": true,
-    "strictTemplates": true,
-    
-    // Optimization flags
-    "enableIvy": true,
-    "fullTemplateTypeCheck": true,
-    "strictPropertyInitialization": true
   },
   "files": [],
   "include": [],

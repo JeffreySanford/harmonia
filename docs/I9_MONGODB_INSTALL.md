@@ -4,6 +4,24 @@
 
 ---
 
+## ⚠️ Current Architecture Note
+
+**This guide describes the original Docker-based MongoDB setup.** The production Harmonia environment now uses **native MongoDB** (Windows Service) for better performance and easier management.
+
+**For current setup, see:**
+
+- `docs/MONGODB_SECURITY.md` - Native MongoDB hardening
+- `docs/QUICKSTART_MONGODB.md` - Quick native MongoDB setup
+- `docs/DOCKER_SETUP.md` - Current Docker architecture (ML container only)
+
+**Use this guide if:**
+
+- You want to run MongoDB in Docker for testing
+- You're setting up a containerized development environment
+- You're migrating from native MongoDB to Docker
+
+---
+
 ## Prerequisites
 
 - Windows 11 with WSL2 enabled (or Windows 10 with WSL2)

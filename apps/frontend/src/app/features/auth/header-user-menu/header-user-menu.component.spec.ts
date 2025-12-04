@@ -1,9 +1,11 @@
+/* eslint-disable max-lines-per-function */
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
 import { HeaderUserMenuComponent } from './header-user-menu.component';
-import { AuthMaterialModule } from '../auth-material.module';
+import { AuthUiService } from '../../../services/auth-ui.service';
+import { AuthMaterialModule } from '../../auth/auth-material.module';
 import * as AuthActions from '../../../store/auth/auth.actions';
 import * as AuthSelectors from '../../../store/auth/auth.selectors';
 import { User } from '../../../store/auth/auth.state';
@@ -13,43 +15,51 @@ describe('HeaderUserMenuComponent', () => {
   let fixture: ComponentFixture<HeaderUserMenuComponent>;
   let store: MockStore;
   let router: jasmine.SpyObj<Router>;
+  let authUiService: jasmine.SpyObj<AuthUiService>;
 
   const mockUser: User = {
     id: '123',
     email: 'test@example.com',
     username: 'testuser',
     role: 'user',
-    createdAt: '2025-01-01T00:00:00Z'
+    createdAt: '2025-01-01T00:00:00Z',
   };
 
   const mockAdminUser: User = {
     ...mockUser,
-    role: 'admin'
+    role: 'admin',
   };
 
   beforeEach(async () => {
     const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    const authUiServiceSpy = jasmine.createSpyObj('AuthUiService', [
+      'openLoginModal',
+      'openRegisterModal',
+      'closeAllDialogs',
+    ]);
 
     await TestBed.configureTestingModule({
+      imports: [NoopAnimationsModule, AuthMaterialModule],
       declarations: [HeaderUserMenuComponent],
-      imports: [
-        NoopAnimationsModule,
-        AuthMaterialModule
-      ],
       providers: [
         provideMockStore({
           selectors: [
             { selector: AuthSelectors.selectUser, value: mockUser },
             { selector: AuthSelectors.selectUsername, value: 'testuser' },
-            { selector: AuthSelectors.selectIsAdmin, value: false }
-          ]
+            { selector: AuthSelectors.selectIsAdmin, value: false },
+            { selector: AuthSelectors.selectIsAuthenticated, value: true },
+          ],
         }),
-        { provide: Router, useValue: routerSpy }
-      ]
+        { provide: AuthUiService, useValue: authUiServiceSpy },
+        { provide: Router, useValue: routerSpy },
+      ],
     }).compileComponents();
 
     store = TestBed.inject(MockStore);
     router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
+    authUiService = TestBed.inject(
+      AuthUiService
+    ) as jasmine.SpyObj<AuthUiService>;
     fixture = TestBed.createComponent(HeaderUserMenuComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -60,7 +70,7 @@ describe('HeaderUserMenuComponent', () => {
   });
 
   it('should display user information', (done) => {
-    component.user$.subscribe(user => {
+    component.user$.subscribe((user) => {
       expect(user).toEqual(mockUser);
       done();
     });
@@ -83,9 +93,9 @@ describe('HeaderUserMenuComponent', () => {
 
   it('should dispatch logout action and navigate home', () => {
     const dispatchSpy = spyOn(store, 'dispatch');
-    
+
     component.logout();
-    
+
     expect(dispatchSpy).toHaveBeenCalledWith(AuthActions.logout());
     expect(router.navigate).toHaveBeenCalledWith(['/']);
   });
@@ -121,9 +131,34 @@ describe('HeaderUserMenuComponent', () => {
     fixture.detectChanges();
 
     // Note: Material menu items are rendered in overlay, so this test verifies component logic
-    component.isAdmin$.subscribe(isAdmin => {
+    component.isAdmin$.subscribe((isAdmin) => {
       expect(isAdmin).toBe(true);
     });
+  });
+
+  it('should treat null user as guest and return avatar-guest class', () => {
+    // Simulate guest state
+    store.overrideSelector(AuthSelectors.selectUser, null as unknown as User);
+    store.overrideSelector(AuthSelectors.selectIsAuthenticated, false);
+    store.refreshState();
+    fixture.detectChanges();
+
+    expect(component.getAvatarClass(null)).toBe('avatar-guest');
+  });
+
+  it('should call authUiService when opening login modal as guest', () => {
+    authUiService.openLoginModal.and.returnValue({
+      afterClosed: () => ({}),
+    } as any);
+    component.openLoginModal();
+    expect(authUiService.openLoginModal).toHaveBeenCalledWith('login');
+  });
+
+  it('should render the menu trigger button', () => {
+    const button = fixture.nativeElement.querySelector(
+      'button.user-menu-trigger'
+    );
+    expect(button).toBeTruthy();
   });
 
   it('should not show admin menu item for regular users', () => {
@@ -131,7 +166,7 @@ describe('HeaderUserMenuComponent', () => {
     store.refreshState();
     fixture.detectChanges();
 
-    component.isAdmin$.subscribe(isAdmin => {
+    component.isAdmin$.subscribe((isAdmin) => {
       expect(isAdmin).toBe(false);
     });
   });

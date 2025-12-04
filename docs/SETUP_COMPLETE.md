@@ -4,6 +4,18 @@
 
 ---
 
+## ⚠️ Architecture Evolution Note
+
+**This document describes the original Phase 0 setup with Docker MongoDB.** The production environment has evolved to:
+
+- **Native MongoDB 8.0** (Windows Service) - See `docs/MONGODB_SECURITY.md`
+- **Docker ML Container** (harmonia-dev) - See `docs/DOCKER_SETUP.md`
+- **No mongo-express** (MongoDB Compass or mongosh used instead)
+
+This document is kept for historical reference.
+
+---
+
 ## What We Built Today
 
 ### 1. MongoDB Infrastructure ✅

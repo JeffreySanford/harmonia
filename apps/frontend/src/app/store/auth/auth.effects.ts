@@ -228,7 +228,9 @@ export class AuthEffects {
               'e2e_register_navigation',
               Date.now().toString()
             );
-              } catch (e) { /* ignore storage errors */ }
+          } catch (e) {
+            /* ignore storage errors */
+          }
           this.ngZone.run(() => this.router.navigate(['/library']));
         })
       ),

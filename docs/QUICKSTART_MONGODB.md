@@ -4,6 +4,19 @@
 
 ---
 
+## ⚠️ Current Architecture Note
+
+**This guide describes the Docker-based MongoDB setup.** The production Harmonia environment now uses **native MongoDB** (Windows Service) for better performance.
+
+**For current production setup, see:**
+
+- `docs/MONGODB_SECURITY.md` - Native MongoDB with security hardening
+- `docs/DOCKER_SETUP.md` - Current Docker architecture (ML container only)
+
+This guide is kept for reference and alternative development environments.
+
+---
+
 ## Prerequisites Check
 
 ```bash

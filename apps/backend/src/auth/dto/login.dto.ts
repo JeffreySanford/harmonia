@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsString, IsNotEmpty } from 'class-validator';
 
 /**
  * Login DTO
@@ -27,8 +27,10 @@ import { IsString } from 'class-validator';
  */
 export class LoginDto {
   @IsString({ message: 'Please provide email or username' })
+  @IsNotEmpty({ message: 'Email or username cannot be empty' })
   emailOrUsername: string;
 
   @IsString({ message: 'Please provide password' })
+  @IsNotEmpty({ message: 'Password cannot be empty' })
   password: string;
 }

@@ -57,7 +57,7 @@ tsconfig.json (root)
 
 ---
 
-## Frontend Configuration (Angular 21)
+## Frontend Configuration (Angular 20)
 
 ### Base (`apps/frontend/tsconfig.json`)
 
@@ -186,7 +186,8 @@ console.log(user?.toUpperCase()); // Safe!
 **Before (`noImplicitAny: false`):**
 
 ```typescript
-function process(data) { // any - no type safety
+function process(data) {
+  // any - no type safety
   return data.value; // No autocomplete, no checks
 }
 ```
@@ -284,7 +285,9 @@ import { LoggerMiddleware } from '@common/middleware/logger.middleware';
 **Strict Input Types:**
 
 ```typescript
-@Component({ /* ... */ })
+@Component({
+  /* ... */
+})
 export class UserCard {
   @Input() user!: User; // Not nullable
 }
@@ -301,7 +304,9 @@ export class UserCard {
 **Strict Output Types:**
 
 ```typescript
-@Component({ /* ... */ })
+@Component({
+  /* ... */
+})
 export class SearchBox {
   @Output() search = new EventEmitter<string>();
 }
@@ -319,11 +324,11 @@ export class SearchBox {
 
 ```html
 <!-- ❌ Error: Property 'focus' does not exist on type 'HTMLElement' -->
-<input #nameInput>
+<input #nameInput />
 <button (click)="nameInput.focus()">Focus</button>
 
 <!-- ✅ Correct: -->
-<input #nameInput>
+<input #nameInput />
 <button (click)="nameInput.focus()">Focus</button>
 ```
 
@@ -449,7 +454,7 @@ Start with less strict, then tighten:
 {
   "compilerOptions": {
     "strict": false, // Start here
-    "noImplicitAny": true, // Enable first
+    "noImplicitAny": true // Enable first
     // ... add more strict options gradually
   }
 }

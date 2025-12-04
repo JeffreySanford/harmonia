@@ -5,7 +5,7 @@ import { guestGuard } from './guards/guest.guard';
 
 /**
  * Application Routes
- * 
+ *
  * Route configuration with lazy-loaded modules and guards:
  * - `/` - Landing page (guests only)
  * - `/library` - User's music library (auth required)
@@ -13,19 +13,19 @@ import { guestGuard } from './guards/guest.guard';
  * - `/admin` - Admin dashboard (admin role required)
  * - `/generate/*` - Music/song/video generation features
  * - `/edit/*` - Video editing features
- * 
+ *
  * **Guards**:
  * - `guestGuard` - Prevents authenticated users from accessing guest pages
  * - `authGuard` - Protects authenticated routes
  * - `adminGuard` - Restricts admin-only access
- * 
+ *
  * @see {@link file://./guards/README.md} for guard documentation
  */
 export const appRoutes: Route[] = [
   {
     path: '',
-    loadComponent: () =>
-      import('./features/landing/landing.component').then((m) => m.LandingComponent),
+    loadChildren: () =>
+      import('./features/landing/landing.module').then((m) => m.LandingModule),
     canActivate: [guestGuard],
   },
   {
@@ -52,6 +52,7 @@ export const appRoutes: Route[] = [
       import('./features/song-generation/song-generation.module').then(
         (m) => m.SongGenerationModule
       ),
+    canActivate: [authGuard],
   },
   {
     path: 'generate/music',
@@ -59,6 +60,7 @@ export const appRoutes: Route[] = [
       import('./features/music-generation/music-generation.module').then(
         (m) => m.MusicGenerationModule
       ),
+    canActivate: [authGuard],
   },
   {
     path: 'generate/video',
@@ -66,6 +68,7 @@ export const appRoutes: Route[] = [
       import('./features/video-generation/video-generation.module').then(
         (m) => m.VideoGenerationModule
       ),
+    canActivate: [authGuard],
   },
   {
     path: 'edit/video',
@@ -73,6 +76,7 @@ export const appRoutes: Route[] = [
       import('./features/video-editing/video-editing.module').then(
         (m) => m.VideoEditingModule
       ),
+    canActivate: [authGuard],
   },
   {
     path: '**',

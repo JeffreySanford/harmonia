@@ -2,43 +2,56 @@
   <header class="app-header">
     <h1 class="app-title">Harmonia</h1>
     <nav class="app-nav">
-      <!-- Guest user: show login/register buttons -->
-      <ng-container *ngIf="(isAuthenticated$ | async) === false">
-        <button mat-button (click)="openLogin()" class="auth-button">
-          <mat-icon>login</mat-icon>
-          Sign In
-        </button>
-        <button mat-raised-button color="primary" (click)="openRegister()" class="auth-button">
-          <mat-icon>person_add</mat-icon>
-          Sign Up
-        </button>
-      </ng-container>
-
-      <!-- Authenticated user: show user menu -->
-      <ng-container *ngIf="isAuthenticated$ | async">
-        <harmonia-header-user-menu></harmonia-header-user-menu>
-      </ng-container>
+      <!-- Header User Menu (always-visible) - guest fallback handles Sign In/Sign Up -->
+      <harmonia-header-user-menu></harmonia-header-user-menu>
     </nav>
   </header>
 
   <div class="app-content">
-    <aside class="app-sidebar">
+    <aside class="app-sidebar" *ngIf="isAuthenticated$ | async">
       <nav class="sidebar-nav">
-        <a routerLink="/generate/song" routerLinkActive="active" class="nav-item">
+        <a
+          routerLink="/generate/song"
+          routerLinkActive="active"
+          class="nav-item"
+        >
           <span class="nav-icon">🎵</span>
           <span class="nav-label">Song Generation</span>
         </a>
-        <a routerLink="/generate/music" routerLinkActive="active" class="nav-item">
+        <a routerLink="/library" routerLinkActive="active" class="nav-item">
+          <span class="nav-icon">📚</span>
+          <span class="nav-label">Library</span>
+        </a>
+        <a
+          routerLink="/generate/music"
+          routerLinkActive="active"
+          class="nav-item"
+        >
           <span class="nav-icon">🎼</span>
           <span class="nav-label">Music Generation</span>
         </a>
-        <a routerLink="/generate/video" routerLinkActive="active" class="nav-item">
+        <a
+          routerLink="/generate/video"
+          routerLinkActive="active"
+          class="nav-item"
+        >
           <span class="nav-icon">🎬</span>
           <span class="nav-label">Video Generation</span>
         </a>
         <a routerLink="/edit/video" routerLinkActive="active" class="nav-item">
           <span class="nav-icon">✂️</span>
           <span class="nav-label">Video Editing</span>
+        </a>
+
+        <!-- Admin-only link: only show if user is admin -->
+        <a
+          *ngIf="(isAdmin$ | async)"
+          routerLink="/admin"
+          routerLinkActive="active"
+          class="nav-item"
+        >
+          <span class="nav-icon">🛠️</span>
+          <span class="nav-label">Admin Dashboard</span>
         </a>
       </nav>
     </aside>

@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 
 interface SongMetadata {
   title: string;
@@ -16,9 +17,9 @@ interface ValidationResult {
 
 /**
  * Song Generation Page Component
- * 
+ *
  * Allows users to generate song metadata (title, lyrics, genre, mood) from narrative descriptions.
- * 
+ *
  * Features:
  * - Narrative textarea input (50-1000 characters)
  * - Duration slider (15-120 seconds)
@@ -26,7 +27,7 @@ interface ValidationResult {
  * - Syllable counting and duration validation
  * - Editable generated metadata
  * - Approval workflow → Export to Music Generation
- * 
+ *
  * Workflow:
  * 1. User enters narrative
  * 2. User sets desired duration
@@ -44,6 +45,7 @@ interface ValidationResult {
 })
 export class SongGenerationPageComponent {
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
 
   title = 'Song Generation';
 
@@ -59,7 +61,11 @@ export class SongGenerationPageComponent {
 
   // Generated metadata
   generatedMetadata: SongMetadata | null = null;
-  
+
+  // Model options for Ollama (optional)
+  readonly availableModels = ['deepseek-coder:6.7b', 'deepseek', 'minstral3'];
+  selectedModel: string | undefined = undefined;
+
   // UI states
   isGenerating = false;
   isApproved = false;
@@ -67,14 +73,30 @@ export class SongGenerationPageComponent {
 
   // Genre options (12 standard genres)
   readonly genres = [
-    'pop', 'rock', 'hip-hop', 'country', 'jazz', 'blues',
-    'electronic', 'r&b', 'folk', 'classical', 'indie', 'alternative'
+    'pop',
+    'rock',
+    'hip-hop',
+    'country',
+    'jazz',
+    'blues',
+    'electronic',
+    'r&b',
+    'folk',
+    'classical',
+    'indie',
+    'alternative',
   ];
 
   // Mood options (8 standard moods)
   readonly moods = [
-    'energetic', 'melancholic', 'romantic', 'aggressive',
-    'calm', 'mysterious', 'uplifting', 'nostalgic'
+    'energetic',
+    'melancholic',
+    'romantic',
+    'aggressive',
+    'calm',
+    'mysterious',
+    'uplifting',
+    'nostalgic',
   ];
 
   /**
@@ -88,8 +110,10 @@ export class SongGenerationPageComponent {
    * Check if narrative is valid length
    */
   get isNarrativeValid(): boolean {
-    return this.narrative.length >= this.minNarrativeLength && 
-           this.narrative.length <= this.maxNarrativeLength;
+    return (
+      this.narrative.length >= this.minNarrativeLength &&
+      this.narrative.length <= this.maxNarrativeLength
+    );
   }
 
   /**
@@ -120,17 +144,20 @@ export class SongGenerationPageComponent {
    * Algorithm: Count vowel groups, adjust for silent 'e', minimum 1 per word
    */
   countSyllables(text: string): number {
-    const words = text.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/);
+    const words = text
+      .toLowerCase()
+      .replace(/[^a-z\s]/g, '')
+      .split(/\s+/);
     return words.reduce((count, word) => {
       if (word.length === 0) return count;
-      
+
       // Count vowel groups
       const vowelGroups = word.match(/[aeiouy]+/g);
       let syllables = vowelGroups ? vowelGroups.length : 0;
-      
+
       // Adjust for silent 'e'
       if (word.endsWith('e') && syllables > 1) syllables--;
-      
+
       // Minimum 1 syllable per word
       return count + Math.max(1, syllables);
     }, 0);
@@ -157,27 +184,35 @@ export class SongGenerationPageComponent {
     if (syllableCount >= min10 && syllableCount <= max10) {
       return {
         status: 'valid',
-        message: `Perfect! ${syllableCount} syllables (target: ${Math.floor(min10)}-${Math.ceil(max10)})`
+        message: `Perfect! ${syllableCount} syllables (target: ${Math.floor(
+          min10
+        )}-${Math.ceil(max10)})`,
       };
     }
 
     if (syllableCount >= min20 && syllableCount <= max20) {
       return {
         status: 'warning',
-        message: `Close. ${syllableCount} syllables (target: ${Math.floor(min10)}-${Math.ceil(max10)})`
+        message: `Close. ${syllableCount} syllables (target: ${Math.floor(
+          min10
+        )}-${Math.ceil(max10)})`,
       };
     }
 
     return {
       status: 'error',
-      message: `Too ${syllableCount < target ? 'short' : 'long'}. ${syllableCount} syllables (target: ${Math.floor(min10)}-${Math.ceil(max10)})`
+      message: `Too ${
+        syllableCount < target ? 'short' : 'long'
+      }. ${syllableCount} syllables (target: ${Math.floor(min10)}-${Math.ceil(
+        max10
+      )})`,
     };
   }
 
   /**
    * Generate song metadata from narrative
    * Currently simulated - ready for Ollama integration
-   * 
+   *
    * TODO: Replace with actual Ollama API call:
    * POST /api/songs/generate-metadata
    * { narrative, duration }
@@ -188,20 +223,38 @@ export class SongGenerationPageComponent {
     this.isGenerating = true;
     this.showMetadata = false;
 
-    // Simulate API call (2 second delay)
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Generate simulated metadata
-    // In production, this would come from Ollama API
-    const sampleLyrics = this.generateSampleLyrics();
-    
-    this.generatedMetadata = {
-      title: this.generateTitleFromNarrative(),
-      lyrics: sampleLyrics,
-      genre: this.suggestGenre(),
-      mood: this.suggestMood(),
-      syllableCount: this.countSyllables(sampleLyrics)
-    };
+    try {
+      // Call backend endpoint - backend will fallback to simulated if Ollama not configured
+      const resp: any = await this.http
+        .post('/api/songs/generate-metadata', {
+          narrative: this.narrative,
+          duration: this.duration,
+          model: this.selectedModel,
+        })
+        .toPromise();
+      this.generatedMetadata = {
+        title: resp.title || this.generateTitleFromNarrative(),
+        lyrics: resp.lyrics || this.generateSampleLyrics(),
+        genre: resp.genre || this.suggestGenre(),
+        mood: resp.mood || this.suggestMood(),
+        syllableCount:
+          resp.syllableCount ||
+          this.countSyllables(resp.lyrics || this.generateSampleLyrics()),
+      };
+    } catch (err) {
+      console.warn(
+        'Generate metadata failed; falling back to sample generator',
+        err
+      );
+      const sampleLyrics = this.generateSampleLyrics();
+      this.generatedMetadata = {
+        title: this.generateTitleFromNarrative(),
+        lyrics: sampleLyrics,
+        genre: this.suggestGenre(),
+        mood: this.suggestMood(),
+        syllableCount: this.countSyllables(sampleLyrics),
+      };
+    }
 
     this.isGenerating = false;
     this.showMetadata = true;
@@ -213,7 +266,9 @@ export class SongGenerationPageComponent {
    */
   private generateTitleFromNarrative(): string {
     const words = this.narrative.trim().split(/\s+/).slice(0, 4);
-    return words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    return words
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(' ');
   }
 
   /**
@@ -221,16 +276,28 @@ export class SongGenerationPageComponent {
    */
   private suggestGenre(): string {
     const narrativeLower = this.narrative.toLowerCase();
-    
-    if (narrativeLower.includes('rock') || narrativeLower.includes('guitar')) return 'rock';
-    if (narrativeLower.includes('jazz') || narrativeLower.includes('saxophone')) return 'jazz';
-    if (narrativeLower.includes('hip-hop') || narrativeLower.includes('rap')) return 'hip-hop';
-    if (narrativeLower.includes('country') || narrativeLower.includes('rural')) return 'country';
-    if (narrativeLower.includes('electronic') || narrativeLower.includes('synth')) return 'electronic';
-    if (narrativeLower.includes('classical') || narrativeLower.includes('orchestra')) return 'classical';
+
+    if (narrativeLower.includes('rock') || narrativeLower.includes('guitar'))
+      return 'rock';
+    if (narrativeLower.includes('jazz') || narrativeLower.includes('saxophone'))
+      return 'jazz';
+    if (narrativeLower.includes('hip-hop') || narrativeLower.includes('rap'))
+      return 'hip-hop';
+    if (narrativeLower.includes('country') || narrativeLower.includes('rural'))
+      return 'country';
+    if (
+      narrativeLower.includes('electronic') ||
+      narrativeLower.includes('synth')
+    )
+      return 'electronic';
+    if (
+      narrativeLower.includes('classical') ||
+      narrativeLower.includes('orchestra')
+    )
+      return 'classical';
     if (narrativeLower.includes('blues')) return 'blues';
     if (narrativeLower.includes('folk')) return 'folk';
-    
+
     return 'pop'; // Default
   }
 
@@ -239,26 +306,26 @@ export class SongGenerationPageComponent {
    */
   private suggestMood(): string {
     const narrativeLower = this.narrative.toLowerCase();
-    
+
     // Map of keywords to moods for simpler lookup
     const moodKeywords: Record<string, string[]> = {
-      'melancholic': ['sad', 'melanchol', 'lost'],
-      'romantic': ['love', 'romance'],
-      'aggressive': ['angry', 'aggress'],
-      'calm': ['calm', 'peace'],
-      'mysterious': ['dark', 'myster'],
-      'uplifting': ['happy', 'uplift'],
-      'nostalgic': ['nostalg', 'memory'],
-      'energetic': ['energy', 'exciting']
+      melancholic: ['sad', 'melanchol', 'lost'],
+      romantic: ['love', 'romance'],
+      aggressive: ['angry', 'aggress'],
+      calm: ['calm', 'peace'],
+      mysterious: ['dark', 'myster'],
+      uplifting: ['happy', 'uplift'],
+      nostalgic: ['nostalg', 'memory'],
+      energetic: ['energy', 'exciting'],
     };
 
     // Find first matching mood
     for (const [mood, keywords] of Object.entries(moodKeywords)) {
-      if (keywords.some(keyword => narrativeLower.includes(keyword))) {
+      if (keywords.some((keyword) => narrativeLower.includes(keyword))) {
         return mood;
       }
     }
-    
+
     return 'calm'; // Default
   }
 
@@ -268,17 +335,17 @@ export class SongGenerationPageComponent {
    */
   private generateSampleLyrics(): string {
     const wordsNeeded = this.targetWords;
-    
+
     // Sample verse structure
     const verses = [
-      "Walking through the empty streets at night",
-      "Memories of you still burning bright",
-      "The rain falls down like tears I cry",
+      'Walking through the empty streets at night',
+      'Memories of you still burning bright',
+      'The rain falls down like tears I cry',
       "Wondering when I'll say goodbye",
-      "Every step I take reminds me of your face",
-      "Lost in time and lost in space",
-      "The city lights reflect my pain",
-      "Dancing slowly in the rain"
+      'Every step I take reminds me of your face',
+      'Lost in time and lost in space',
+      'The city lights reflect my pain',
+      'Dancing slowly in the rain',
     ];
 
     let lyrics = '';
@@ -312,7 +379,9 @@ export class SongGenerationPageComponent {
    */
   onLyricsChange(): void {
     if (this.generatedMetadata) {
-      this.generatedMetadata.syllableCount = this.countSyllables(this.generatedMetadata.lyrics);
+      this.generatedMetadata.syllableCount = this.countSyllables(
+        this.generatedMetadata.lyrics
+      );
       this.isApproved = false; // Reset approval if edited
     }
   }
@@ -326,7 +395,7 @@ export class SongGenerationPageComponent {
 
   /**
    * Approve metadata and continue to music generation
-   * 
+   *
    * TODO: Add API call to save approved song:
    * POST /api/songs/approve
    * { narrative, duration, title, lyrics, genre, mood }
@@ -336,7 +405,9 @@ export class SongGenerationPageComponent {
 
     const validation = this.validateLyrics();
     if (validation.status === 'error') {
-      alert('Please adjust lyrics length to match the target duration before approving.');
+      alert(
+        'Please adjust lyrics length to match the target duration before approving.'
+      );
       return;
     }
 
@@ -353,9 +424,9 @@ export class SongGenerationPageComponent {
           lyrics: this.generatedMetadata.lyrics,
           genre: this.generatedMetadata.genre,
           mood: this.generatedMetadata.mood,
-          duration: this.duration
-        }
-      }
+          duration: this.duration,
+        },
+      },
     });
   }
 }

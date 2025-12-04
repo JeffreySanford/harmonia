@@ -8,10 +8,10 @@
 
 Before starting, ensure you have:
 
-- ✅ Windows 10/11 with WSL2 or native Windows development tools
+- ✅ Windows 10/11 with administrative access
 - ✅ 16GB+ RAM (32GB recommended for AI workloads)
 - ✅ 200GB+ free disk space (models are large!)
-- ✅ Administrative access to your machine
+- ✅ Native MongoDB 8.0+ or Docker Desktop (for ML container)
 
 ---
 
@@ -42,7 +42,9 @@ corepack prepare pnpm@latest --activate
 pnpm --version  # Should be 8.0+
 ```
 
-### 2c. Install Python 3.11+
+### 2c. Install Python 3.11+ (Optional - Only for ML Development)
+
+If you plan to work on ML/music generation:
 
 Download: <https://www.python.org/downloads/>
 
@@ -50,16 +52,24 @@ Download: <https://www.python.org/downloads/>
 python --version  # Should be 3.11+
 ```
 
-### 2d. Install MongoDB Community Edition
+**Note**: ML workloads run in Docker container (harmonia-dev), so Python is optional for most development.
 
-Already installed on your i9! If not:
+### 2d. Install MongoDB 8.0+
 
-Download: <https://www.mongodb.com/try/download/community>
+Native MongoDB is recommended for production performance.
 
-Or use Docker:
+**Download**: <https://www.mongodb.com/try/download/community>
 
-```bash
-docker compose -f docker-compose.mongo.yml up -d
+**Or follow**: `docs/MONGODB_SECURITY.md` for hardened installation
+
+**Verify installation**:
+
+```powershell
+# Check service status
+Get-Service MongoDB
+
+# Connect with mongosh
+mongosh mongodb://localhost:27017
 ```
 
 ---

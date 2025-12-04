@@ -11,26 +11,39 @@ Goals
 
 Core components
 
-- Models & Datasets: stored under `models/` and `datasets/`. Each snapshot includes an `inventory.json` and checksums where appropriate.
-- Downloader & CLI: `scripts/` contains authenticated snapshot downloaders (Hugging Face) that respect `HUGGINGFACE_HUB_TOKEN` via `.env`.
-- Generation Libraries: language-specific Python services (or Node wrappers) that load local models and expose a small CLI for inference/export.
-- Containerization: Docker images for reproducible runtime environments, with `docker-compose` examples for multi-service orchestration.
-- Backend: NestJS service to orchestrate generation jobs, manage manifests, and connect to storage or LLMs.
-- Frontend: Angular app (Material 3 + NGRX) to collect user intents, transform them into LLM prompts, and coordinate generation tasks via backend APIs.
+- **Models & Datasets**: stored under `models/` and `datasets/`. Each snapshot includes an `inventory.json` and checksums where appropriate.
+- **Downloader & CLI**: `scripts/` contains authenticated snapshot downloaders (Hugging Face) that respect `HUGGINGFACE_HUB_TOKEN` via `.env`.
+- **Generation Libraries**: Python services in Docker container (harmonia-dev) that load local models and expose APIs for inference/export.
+- **Containerization**: Docker image (`harmonia-harmonia`) for ML workloads, with `docker-compose.yml` for orchestration.
+- **Database**: Native MongoDB 8.0 (Windows Service) for production performance, with authentication and RBAC hardening.
+- **Backend**: NestJS service to orchestrate generation jobs, manage manifests, and connect to MongoDB.
+- **Frontend**: Angular 20 app (Material 3 + NGRX) to collect user intents, transform them into LLM prompts, and coordinate generation tasks via backend APIs.
+
+Infrastructure topology
+
+- **Native Services** (Windows):
+  - MongoDB 8.0 on `localhost:27017` (authentication enabled)
+  - NestJS backend on `localhost:3000`
+  - Angular frontend on `localhost:4200`
+- **Docker Services**:
+  - ML/Music Generation container (harmonia-dev) on `localhost:8000`
+  - Python 3.11, PyTorch, MusicGen, CUDA support (Ubuntu 22.04 base)
 
 Data flow (simple scenario)
 
 1. User submits an idea in the frontend (text / settings).
 2. NGRX reducers and effects pre-process input into canonical prompts and generation parameters.
-3. Frontend calls NestJS backend to start a job (job definitions map to library scripts).
-4. Backend schedules job; a worker container or process loads the local model, runs inference, and writes results to `artifacts/` or an object store.
-5. Backend returns job status and artifact links; frontend fetches and plays media.
+3. Frontend calls NestJS backend (port 3000) to start a job.
+4. Backend stores job metadata in native MongoDB (localhost:27017).
+5. Backend triggers ML container (harmonia-dev) to load MusicGen model, run inference, and write results to `models/` or `artifacts/`.
+6. Backend returns job status and artifact links; frontend fetches and plays media.
 
 Design trade-offs and constraints
 
-- Local-first: avoids HF re-downloads for each run by using manifests and artifact storage. CI will validate manifests and checksums rather than re-downloading models.
-- Storage & compute limits: expect heavy models to be hosted externally (S3/GCS) or stored locally on developer machines; prefer quantized / pruned variants for local testing.
-- Security & compliance: tokens live in `.env` (gitignored) and CI uses repository secrets.
+- **Local-first**: avoids HF re-downloads for each run by using manifests and artifact storage. CI will validate manifests and checksums rather than re-downloading models.
+- **Hybrid architecture**: Native MongoDB for performance, Docker for ML isolation and reproducibility.
+- **Storage & compute limits**: expect heavy models to be hosted externally (S3/GCS) or stored locally on developer machines; prefer quantized / pruned variants for local testing.
+- **Security & compliance**: tokens live in `.env` (gitignored) and CI uses repository secrets. MongoDB uses authentication and localhost-only binding.
 
 Next steps
 
@@ -48,4 +61,5 @@ Questions to resolve
 - Which model variants are considered canonical for CI verification (largest, medium, small)?
 
 ---
+
 End of architecture overview.

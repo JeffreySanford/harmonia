@@ -13,8 +13,10 @@
 // Import order matters - colors first, then mixins, then components
 // ============================================================================
 @use 'styles/colors';
+@use 'styles/variables';
 @use 'styles/mixins';
 @use 'styles/typography';
+@use 'styles/utils';
 @use 'styles/layout';
 @use 'styles/cards';
 @use 'styles/animations';
@@ -33,9 +35,16 @@
 
 html {
   height: 100%;
-  -webkit-text-size-adjust: 100%;
+  /* Prefer vendor-prefixed rules for cross-platform behavior; some browsers (older Safari/Firefox) have limited support for the unprefixed property. */
+  /* Ensure font smoothing is applied consistently across platforms */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Apply text-size-adjust only in engines that support a prefixed variant */
+  @supports (-webkit-text-size-adjust: 100%) or (-ms-text-size-adjust: 100%) {
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+  }
 }
 
 body {
@@ -94,10 +103,21 @@ body {
   }
 }
 
-// Firefox scrollbar
-* {
-  scrollbar-width: thin;
-  scrollbar-color: colors.$neutral-400 colors.$neutral-100;
+// Firefox scrollbar (conditionally enable when supported)
+@supports (scrollbar-width: thin) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: colors.$neutral-400 colors.$neutral-100; /* For Firefox */
+
+    /* Fallback for WebKit-based browsers */
+    &::-webkit-scrollbar {
+      background: colors.$neutral-100;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: colors.$neutral-400;
+    }
+  }
 }
 
 // ============================================================================
@@ -146,7 +166,7 @@ body {
   }
 
   a[href]::after {
-    content: " (" attr(href) ")";
+    content: ' (' attr(href) ')';
   }
 
   pre {
@@ -168,11 +188,14 @@ body {
     page-break-inside: avoid;
   }
 
-  p,
-  h2,
-  h3 {
-    orphans: 3;
-    widows: 3;
+  /* orphans/widows not widely supported in all browsers; apply only when supported */
+  @supports (orphans: 3) and (widows: 3) {
+    p,
+    h2,
+    h3 {
+      orphans: 3;
+      widows: 3;
+    }
   }
 
   h2,

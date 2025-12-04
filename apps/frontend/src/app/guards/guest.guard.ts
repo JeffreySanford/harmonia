@@ -6,10 +6,10 @@ import * as AuthSelectors from '../store/auth/auth.selectors';
 
 /**
  * Guest Guard
- * 
+ *
  * Prevents authenticated users from accessing guest-only routes (login, register).
  * Redirects to library if user is already authenticated.
- * 
+ *
  * **Usage**:
  * ```typescript
  * {
@@ -18,18 +18,18 @@ import * as AuthSelectors from '../store/auth/auth.selectors';
  *   component: LoginPageComponent
  * }
  * ```
- * 
+ *
  * **Flow**:
  * 1. Check if user is authenticated in NGRX store
  * 2. If NOT authenticated → Allow access (guest)
  * 3. If authenticated → Redirect to library page
- * 
+ *
  * **Use Cases**:
  * - Login page
  * - Registration page
  * - Password reset page
  * - Landing pages for unauthenticated users
- * 
+ *
  * @see {@link file://./docs/AUTHENTICATION_SYSTEM.md} for architecture
  */
 export const guestGuard: CanActivateFn = () => {
@@ -38,13 +38,13 @@ export const guestGuard: CanActivateFn = () => {
 
   return store.select(AuthSelectors.selectIsAuthenticated).pipe(
     take(1),
-    map(isAuthenticated => {
+    map((isAuthenticated) => {
       if (!isAuthenticated) {
         return true;
       }
-      
-      // Redirect to song generation if already authenticated
-      router.navigate(['/generate/song']);
+
+      // Redirect to library if already authenticated
+      router.navigate(['/library']);
       return false;
     })
   );
