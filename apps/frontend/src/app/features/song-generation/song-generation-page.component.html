@@ -40,10 +40,185 @@
               (minimum {{ minNarrativeLength }})
             </span>
             <span class="narrative-guidance">
-              • Recommended: ~{{ recommendedNarrativeWords }} words for {{ duration }}s song
+              • Recommended: ~{{ recommendedNarrativeWords }} words for
+              {{ duration }}s song
             </span>
           </mat-hint>
         </mat-form-field>
+      </section>
+
+      <!-- Mode Selector -->
+      <section class="mode-selector-section">
+        <h3 class="section-title">
+          <mat-icon>swap_horiz</mat-icon>
+          Choose Generation Mode
+        </h3>
+        <p class="section-description">
+          Generate new lyrics from narrative or analyze existing lyrics with
+          annotations.
+        </p>
+
+        <mat-button-toggle-group
+          [(ngModel)]="generationMode"
+          (change)="onModeChange($event)"
+          class="mode-toggle-group"
+        >
+          <mat-button-toggle value="generate">
+            <mat-icon>auto_awesome</mat-icon>
+            Generate New
+          </mat-button-toggle>
+          <mat-button-toggle value="analyze">
+            <mat-icon>analytics</mat-icon>
+            Analyze Existing
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+      </section>
+
+      <!-- Step 1.5: Lyrics Analysis Input (when analyze mode) -->
+      <section
+        class="lyrics-analysis-section"
+        *ngIf="generationMode === 'analyze'"
+      >
+        <h3 class="section-title">
+          <mat-icon>lyrics</mat-icon>
+          1.5. Paste Your Lyrics
+        </h3>
+        <p class="section-description">
+          Paste lyrics with Song Annotation DSL markers: [Section],
+          (Performance), &lt;Audio Cue&gt;.
+          <a href="#" (click)="showDslHelp($event)" class="dsl-help-link"
+            >View DSL Guide</a
+          >
+        </p>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Lyrics with Annotations</mat-label>
+          <textarea
+            matInput
+            [(ngModel)]="lyricsToAnalyze"
+            placeholder="Example:
+// Title: Nightfall
+// BPM: 92
+// Key: Em
+
+[Verse 1]
+(soft spoken)
+I walk into the night...
+&lt;SFX footsteps repeat=4&gt;
+
+[Chorus]
+(full voice)
+We are fire — we are the unsung.
+&lt;SFX orchestral_swell duration=4s&gt;"
+            rows="12"
+            [maxlength]="maxLyricsLength"
+          ></textarea>
+          <mat-hint align="end">
+            {{ lyricsCharacterCount }}/{{ maxLyricsLength }} characters
+          </mat-hint>
+        </mat-form-field>
+
+        <div class="analysis-actions" *ngIf="lyricsToAnalyze.trim()">
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="analyzeLyrics()"
+            [disabled]="isAnalyzing"
+            class="analyze-button"
+          >
+            <mat-icon *ngIf="!isAnalyzing">analytics</mat-icon>
+            <mat-spinner diameter="20" *ngIf="isAnalyzing"></mat-spinner>
+            Analyze Lyrics
+          </button>
+
+          <button
+            mat-button
+            (click)="validateLyricsOnly()"
+            [disabled]="isAnalyzing"
+            class="validate-button"
+          >
+            <mat-icon>check_circle</mat-icon>
+            Validate Only
+          </button>
+        </div>
+
+        <!-- Analysis Results -->
+        <div class="analysis-results" *ngIf="analysisResult">
+          <h4 class="results-title">
+            <mat-icon>fact_check</mat-icon>
+            Analysis Results
+          </h4>
+
+          <div class="parsed-structure" *ngIf="analysisResult.song">
+            <div
+              class="song-metadata"
+              *ngIf="
+                analysisResult.song.title ||
+                analysisResult.song.bpm ||
+                analysisResult.song.key
+              "
+            >
+              <h5>Song Metadata:</h5>
+              <div class="metadata-grid">
+                <div *ngIf="analysisResult.song.title">
+                  <strong>Title:</strong> {{ analysisResult.song.title }}
+                </div>
+                <div *ngIf="analysisResult.song.bpm">
+                  <strong>BPM:</strong> {{ analysisResult.song.bpm }}
+                </div>
+                <div *ngIf="analysisResult.song.key">
+                  <strong>Key:</strong> {{ analysisResult.song.key }}
+                </div>
+              </div>
+            </div>
+
+            <div class="sections-preview">
+              <h5>Sections ({{ analysisResult.song.sections.length }}):</h5>
+              <div class="section-list">
+                <div
+                  *ngFor="let section of analysisResult.song.sections"
+                  class="section-item"
+                >
+                  <strong>{{ section.label }}</strong>
+                  <span class="section-stats">
+                    ({{ section.items.length }} items)
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="validation-errors"
+            *ngIf="analysisResult.errors && analysisResult.errors.length > 0"
+          >
+            <h5>Issues Found:</h5>
+            <div class="error-list">
+              <div
+                *ngFor="let error of analysisResult.errors"
+                class="error-item"
+                [ngClass]="error.severity"
+              >
+                <mat-icon>{{
+                  error.severity === 'error' ? 'error' : 'warning'
+                }}</mat-icon>
+                <span>Line {{ error.line }}: {{ error.message }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="analysis-actions" *ngIf="canUseAnalyzedSong()">
+            <button
+              mat-raised-button
+              color="accent"
+              (click)="useAnalyzedSong()"
+              class="use-song-button"
+            >
+              <mat-icon>play_arrow</mat-icon>
+              Use This Song
+            </button>
+          </div>
+        </div>
       </section>
 
       <!-- Step 1.5: Genre Suggestions -->

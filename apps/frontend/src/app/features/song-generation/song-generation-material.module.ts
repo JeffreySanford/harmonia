@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -16,6 +17,7 @@ import { MatSliderModule } from '@angular/material/slider';
  *
  * **Components Included**:
  * - `MatButtonModule` (3 KB) - Action buttons
+ * - `MatButtonToggleModule` (2 KB) - Mode selection toggles
  * - `MatCardModule` (2 KB) - Form container
  * - `MatFormFieldModule` (4 KB) - Form field wrappers
  * - `MatIconModule` (1.5 KB) - UI icons
@@ -23,13 +25,14 @@ import { MatSliderModule } from '@angular/material/slider';
  * - `MatSelectModule` (5 KB) - Selectors (genre, style, mood)
  * - `MatSliderModule` (4 KB) - Duration/intensity controls
  *
- * **Total Bundle Size**: ~22 KB
+ * **Total Bundle Size**: ~24 KB
  *
  * **Form Features**:
  * - Song title and description inputs
  * - Genre and style selectors
  * - Lyric input/generation
  * - Duration and mood controls
+ * - Mode selection toggles
  *
  * **Usage**: Imported in `SongGenerationModule` for lazy-loaded route.
  *
@@ -40,6 +43,7 @@ import { MatSliderModule } from '@angular/material/slider';
 @NgModule({
   imports: [
     MatButtonModule,
+    MatButtonToggleModule,
     MatCardModule,
     MatChipsModule,
     MatFormFieldModule,
@@ -51,6 +55,7 @@ import { MatSliderModule } from '@angular/material/slider';
   ],
   exports: [
     MatButtonModule,
+    MatButtonToggleModule,
     MatCardModule,
     MatChipsModule,
     MatFormFieldModule,

@@ -7,9 +7,11 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { GenerateMetadataDto } from './dto/generate-metadata.dto';
+import { AnalyzeLyricsDto } from './dto/analyze-lyrics.dto';
 import { OllamaService } from '../llm/ollama.service';
 import { MmslParserService } from './mmsl-parser.service';
 import { StemExportService, StemExportOptions } from './stem-export.service';
+import { SongDslParserService } from './song-dsl-parser.service';
 
 @Controller('songs')
 @ApiTags('songs')
@@ -18,7 +20,8 @@ export class SongsController {
     private readonly ollama: OllamaService,
     private readonly configService: ConfigService,
     private readonly mmslParser: MmslParserService,
-    private readonly stemExport: StemExportService
+    private readonly stemExport: StemExportService,
+    private readonly dslParser: SongDslParserService
   ) {}
 
   @Post('generate-metadata')
@@ -64,7 +67,9 @@ export class SongsController {
   @Post('generate-song')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Generate complete song with lyrics, melody, and instrumentation' })
+  @ApiOperation({
+    summary: 'Generate complete song with lyrics, melody, and instrumentation',
+  })
   @ApiResponse({
     status: 200,
     description: 'Complete song successfully generated',
@@ -78,7 +83,10 @@ export class SongsController {
         },
         genre: { type: 'string', example: 'folk' },
         mood: { type: 'string', example: 'melancholic' },
-        melody: { type: 'string', example: 'Upbeat acoustic guitar melody with vocal harmonies' },
+        melody: {
+          type: 'string',
+          example: 'Upbeat acoustic guitar melody with vocal harmonies',
+        },
         tempo: { type: 'number', example: 120 },
         key: { type: 'string', example: 'G major' },
         instrumentation: {
@@ -90,7 +98,11 @@ export class SongsController {
           type: 'object',
           properties: {
             enabled: { type: 'boolean', example: true },
-            style: { type: 'string', enum: ['with-music', 'sung', 'no-music'], example: 'with-music' },
+            style: {
+              type: 'string',
+              enum: ['with-music', 'sung', 'no-music'],
+              example: 'with-music',
+            },
             content: { type: 'string', example: 'Soft guitar intro' },
           },
         },
@@ -98,7 +110,11 @@ export class SongsController {
           type: 'object',
           properties: {
             enabled: { type: 'boolean', example: false },
-            style: { type: 'string', enum: ['with-music', 'sung', 'no-music'], example: 'no-music' },
+            style: {
+              type: 'string',
+              enum: ['with-music', 'sung', 'no-music'],
+              example: 'no-music',
+            },
             content: { type: 'string', example: null },
           },
         },
@@ -211,6 +227,118 @@ export class SongsController {
   })
   async validateMmsl(@Body() body: { mmsl: string }) {
     return this.mmslParser.validate(body.mmsl);
+  }
+
+  @Post('analyze-lyrics')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Analyze and parse lyrics using Song Annotation DSL',
+    description:
+      'Parse pre-written lyrics with Song Annotation DSL markers ([Section], (Performance), <Audio Cue>) into structured format for music generation.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lyrics successfully analyzed and parsed',
+    schema: {
+      type: 'object',
+      properties: {
+        song: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', example: 'Nightfall' },
+            bpm: { type: 'number', example: 92 },
+            key: { type: 'string', example: 'Em' },
+            sections: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', example: 'verse-1' },
+                  label: { type: 'string', example: 'Verse 1' },
+                  items: {
+                    type: 'array',
+                    items: {
+                      oneOf: [
+                        {
+                          type: 'object',
+                          properties: {
+                            type: { type: 'string', enum: ['performance'] },
+                            text: { type: 'string', example: 'soft spoken' },
+                          },
+                        },
+                        {
+                          type: 'object',
+                          properties: {
+                            type: { type: 'string', enum: ['lyric'] },
+                            text: {
+                              type: 'string',
+                              example: 'I walk into the night...',
+                            },
+                          },
+                        },
+                        {
+                          type: 'object',
+                          properties: {
+                            type: { type: 'string', enum: ['cue'] },
+                            cue_type: { type: 'string', example: 'sfx' },
+                            name: { type: 'string', example: 'footsteps' },
+                            params: {
+                              type: 'object',
+                              example: {
+                                repeat: 4,
+                                duration: '2s',
+                                pan: 'center',
+                              },
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        errors: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              line: { type: 'number', example: 5 },
+              message: {
+                type: 'string',
+                example: 'Invalid duration: 500. Must be between 0-300 seconds',
+              },
+              severity: {
+                type: 'string',
+                enum: ['error', 'warning'],
+                example: 'error',
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid lyrics or DSL syntax' })
+  @ApiResponse({
+    status: 401,
+    description: 'Missing or invalid authentication',
+  })
+  async analyzeLyrics(@Body() body: AnalyzeLyricsDto) {
+    const result = this.dslParser.parseSong(body.lyrics);
+
+    // If validateOnly is true, return only validation result
+    if (body.validateOnly) {
+      return {
+        valid: result.errors.filter((e) => e.severity === 'error').length === 0,
+        errors: result.errors,
+      };
+    }
+
+    return result;
   }
 
   @Post('export-stems')

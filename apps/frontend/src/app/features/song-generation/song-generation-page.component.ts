@@ -77,6 +77,13 @@ export class SongGenerationPageComponent {
   isApproved = false;
   showMetadata = false;
 
+  // Lyrics analysis mode
+  generationMode: 'generate' | 'analyze' = 'generate';
+  lyricsToAnalyze = '';
+  readonly maxLyricsLength = 10000;
+  isAnalyzing = false;
+  analysisResult: any = null;
+
   // Genre suggestion states
   genreSuggestionState: 'empty' | 'loading' | 'results' | 'error' = 'empty';
   genreSuggestions: GenreSuggestion[] = [];
@@ -120,6 +127,13 @@ export class SongGenerationPageComponent {
    */
   get characterCount(): number {
     return this.narrative.length;
+  }
+
+  /**
+   * Get character count for lyrics analysis input
+   */
+  get lyricsCharacterCount(): number {
+    return this.lyricsToAnalyze.length;
   }
 
   /**
@@ -524,5 +538,151 @@ export class SongGenerationPageComponent {
    */
   onRetrySuggestions(): void {
     this.onSuggestGenres();
+  }
+
+  /**
+   * Handle generation mode change
+   */
+  onModeChange(event: any): void {
+    this.generationMode = event.value;
+    // Reset analysis result when switching modes
+    this.analysisResult = null;
+    this.lyricsToAnalyze = '';
+  }
+
+  /**
+   * Show DSL help/guide
+   */
+  showDslHelp(event: Event): void {
+    event.preventDefault();
+    // TODO: Open dialog with DSL guide or navigate to documentation
+    alert(
+      'Song Annotation DSL Guide:\n\n' +
+        '[Section Name] - Define song sections\n' +
+        '(Performance instruction) - Vocal delivery notes\n' +
+        '<SFX name params...> - Audio cues and effects\n\n' +
+        'Example:\n' +
+        '[Verse 1]\n' +
+        '(soft spoken)\n' +
+        'Lyrics here...\n' +
+        '<SFX footsteps repeat=4>'
+    );
+  }
+
+  /**
+   * Analyze lyrics using DSL parser
+   */
+  async analyzeLyrics(): Promise<void> {
+    if (!this.lyricsToAnalyze.trim()) return;
+
+    this.isAnalyzing = true;
+    this.analysisResult = null;
+
+    try {
+      const response = await this.http
+        .post('/api/songs/analyze-lyrics', {
+          lyrics: this.lyricsToAnalyze,
+          validateOnly: false,
+        })
+        .toPromise();
+
+      this.analysisResult = response;
+    } catch (error: any) {
+      this.analysisResult = {
+        song: null,
+        errors: [
+          {
+            line: 1,
+            message: error.error?.message || 'Failed to analyze lyrics',
+            severity: 'error',
+          },
+        ],
+      };
+    } finally {
+      this.isAnalyzing = false;
+    }
+  }
+
+  /**
+   * Validate lyrics without full parsing
+   */
+  async validateLyricsOnly(): Promise<void> {
+    if (!this.lyricsToAnalyze.trim()) return;
+
+    this.isAnalyzing = true;
+
+    try {
+      const response: any = await this.http
+        .post('/api/songs/analyze-lyrics', {
+          lyrics: this.lyricsToAnalyze,
+          validateOnly: true,
+        })
+        .toPromise();
+
+      this.analysisResult = {
+        song: null,
+        errors: response?.valid ? [] : response?.errors || [],
+      };
+    } catch (error: any) {
+      this.analysisResult = {
+        song: null,
+        errors: [
+          {
+            line: 1,
+            message: error.error?.message || 'Failed to validate lyrics',
+            severity: 'error',
+          },
+        ],
+      };
+    } finally {
+      this.isAnalyzing = false;
+    }
+  }
+
+  /**
+   * Check if analyzed song can be used (has song data and no critical errors)
+   */
+  canUseAnalyzedSong(): boolean {
+    if (!this.analysisResult?.song) return false;
+    if (!this.analysisResult.errors) return true;
+    return (
+      this.analysisResult.errors.filter((e: any) => e.severity === 'error')
+        .length === 0
+    );
+  }
+
+  /**
+   * Use the analyzed song for generation
+   */
+  useAnalyzedSong(): void {
+    if (!this.analysisResult?.song) return;
+
+    // TODO: Convert parsed DSL song to generation workflow
+    // For now, extract basic info and set narrative
+    const song = this.analysisResult.song;
+    let narrative = '';
+
+    if (song.title) narrative += `Song title: ${song.title}. `;
+    if (song.bpm) narrative += `BPM: ${song.bpm}. `;
+    if (song.key) narrative += `Key: ${song.key}. `;
+
+    // Extract lyrics as narrative
+    const lyrics = song.sections
+      .flatMap((section: any) => section.items)
+      .filter((item: any) => item.type === 'lyric')
+      .map((item: any) => item.text)
+      .join(' ')
+      .trim();
+
+    if (lyrics) {
+      narrative += `Lyrics content: ${lyrics}`;
+    }
+
+    this.narrative = narrative;
+    this.generationMode = 'generate';
+
+    // Clear analysis result
+    this.analysisResult = null;
+    this.lyricsToAnalyze = '';
   }
 }
