@@ -1,6 +1,6 @@
 # Harmonia - Project TODO List
 
-**Last Updated**: December 4, 2025 - 6:30 PM
+**Last Updated**: December 4, 2025 - 6:45 PM
 **Project**: Harmonia Music Generation Platform
 **Phase**: Phase 1 - Full-Stack Implementation (🔄 In Progress)
 **Status**: 🟢 Development Active - API Documentation Complete, Song Generation E2E Complete, User Library & Profile Complete
@@ -62,7 +62,7 @@
 - **Status**: Planning phase - Ready to begin implementation
 - **Goal**: Validate core functionality and prepare for MVP demonstration
 - **Next Steps**:
-  - [ ] Add JSON schema validation for instrument catalog and IR updates
+  - [x] Add JSON schema validation for instrument catalog and IR updates
   - [ ] Create demo CLI (DSL → IR → events.json → WAV stems with sample mapping)
   - [ ] Implement asset fallback system (missing instruments, polyphony limits)
   - [ ] Implement lyric diversity constraints and attention span modeling
@@ -102,7 +102,7 @@
 
 ### **Month 2: Validation & Demo** (Weeks 5-8)
 
-- Add JSON schema validation for instrument catalog and IR updates — Planned
+- Add JSON schema validation for instrument catalog and IR updates — ✅ Completed
 - Create demo CLI (DSL → IR → events.json → WAV stems with sample mapping) — Planned
 - Implement asset fallback system (missing instruments, polyphony limits) — Planned
 - **Implement lyric diversity constraints and attention span modeling (addresses risk #26)** — Planned
@@ -369,7 +369,7 @@ Built with ❤️ using Angular, NestJS, and MongoDB
 
 ### **Month 2: Validation & Demo** (Weeks 5-8)
 
-- Add JSON schema validation for instrument catalog and IR updates — Planned
+- Add JSON schema validation for instrument catalog and IR updates — ✅ Completed
 - Create demo CLI (DSL → IR → events.json → WAV stems with sample mapping) — Planned
 - Implement asset fallback system (missing instruments, polyphony limits) — Planned
 - **Implement lyric diversity constraints and attention span modeling (addresses risk #26)** — Planned

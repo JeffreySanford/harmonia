@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import * as path from 'path';
+import { InstrumentCatalogService } from './instrument-catalog.service';
 
 export interface StemExportOptions {
   format: 'wav' | 'mp3';
@@ -22,6 +23,9 @@ export interface StemExportResult {
 
 @Injectable()
 export class StemExportService {
+  constructor(
+    private readonly instrumentCatalog: InstrumentCatalogService,
+  ) {}
   /**
    * Export per-instrument stems in the specified format
    * This is a basic implementation that creates placeholder audio files
@@ -153,6 +157,12 @@ export class StemExportService {
       options.instruments.length === 0
     ) {
       errors.push('At least one instrument must be specified');
+    } else {
+      // Validate instrument IDs against catalog
+      const instrumentValidation = this.instrumentCatalog.validateInstrumentIds(options.instruments);
+      if (!instrumentValidation.valid) {
+        errors.push(...instrumentValidation.errors);
+      }
     }
 
     if (!options.outputDir || typeof options.outputDir !== 'string') {

@@ -12,6 +12,7 @@ import { OllamaService } from '../llm/ollama.service';
 import { MmslParserService } from './mmsl-parser.service';
 import { StemExportService, StemExportOptions } from './stem-export.service';
 import { SongDslParserService } from './song-dsl-parser.service';
+import { InstrumentCatalogService } from './instrument-catalog.service';
 
 @Controller('songs')
 @ApiTags('songs')
@@ -21,7 +22,8 @@ export class SongsController {
     private readonly configService: ConfigService,
     private readonly mmslParser: MmslParserService,
     private readonly stemExport: StemExportService,
-    private readonly dslParser: SongDslParserService
+    private readonly dslParser: SongDslParserService,
+    private readonly instrumentCatalog: InstrumentCatalogService
   ) {}
 
   @Post('generate-metadata')
@@ -335,6 +337,55 @@ export class SongsController {
       return {
         valid: result.errors.filter((e) => e.severity === 'error').length === 0,
         errors: result.errors,
+      };
+    }
+
+    return result;
+  }
+
+  @Post('validate-instrument-catalog')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Validate instrument catalog JSON schema and semantics' })
+  @ApiResponse({
+    status: 200,
+    description: 'Instrument catalog validation result',
+    schema: {
+      type: 'object',
+      properties: {
+        valid: { type: 'boolean', example: true },
+        errors: {
+          type: 'array',
+          items: { type: 'string' },
+          example: [],
+        },
+        catalog: {
+          type: 'object',
+          properties: {
+            version: { type: 'string', example: '1.0.0' },
+            instruments_count: { type: 'number', example: 45 },
+            categories: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['strings', 'woodwinds', 'brass'],
+            },
+          },
+        },
+      },
+    },
+  })
+  async validateInstrumentCatalog(@Body() body: { catalogPath?: string }) {
+    const result = await this.instrumentCatalog.loadCatalog(body.catalogPath);
+
+    if (result.valid) {
+      const catalog = this.instrumentCatalog.getCatalog();
+      return {
+        valid: true,
+        errors: [],
+        catalog: catalog ? {
+          version: catalog.version,
+          instruments_count: catalog.instruments.length,
+          categories: catalog.categories,
+        } : null,
       };
     }
 

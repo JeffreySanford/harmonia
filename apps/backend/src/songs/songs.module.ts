@@ -5,6 +5,7 @@ import { SongsController } from './songs.controller';
 import { MmslParserService } from './mmsl-parser.service';
 import { StemExportService } from './stem-export.service';
 import { SongDslParserService } from './song-dsl-parser.service';
+import { InstrumentCatalogService } from './instrument-catalog.service';
 
 @Module({
   imports: [ConfigModule],
@@ -14,14 +15,14 @@ import { SongDslParserService } from './song-dsl-parser.service';
     MmslParserService,
     StemExportService,
     SongDslParserService,
+    InstrumentCatalogService,
   ],
   exports: [
     OllamaService,
     MmslParserService,
     StemExportService,
     SongDslParserService,
+    InstrumentCatalogService,
   ],
 })
 export class SongsModule {}
-
-export default SongsModule;

@@ -5,6 +5,7 @@ import { OllamaService } from '../llm/ollama.service';
 import { MmslParserService } from './mmsl-parser.service';
 import { StemExportService } from './stem-export.service';
 import { SongDslParserService } from './song-dsl-parser.service';
+import { InstrumentCatalogService } from './instrument-catalog.service';
 
 describe('SongsController', () => {
   let controller: SongsController;
@@ -12,6 +13,7 @@ describe('SongsController', () => {
   const mockMmslParser = { parse: jest.fn(), validate: jest.fn() } as any;
   const mockStemExport = { export: jest.fn() } as any;
   const mockDslParser = { parse: jest.fn() } as any;
+  const mockInstrumentCatalog = { loadCatalog: jest.fn(), getCatalog: jest.fn() } as any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -22,6 +24,7 @@ describe('SongsController', () => {
         { provide: MmslParserService, useValue: mockMmslParser },
         { provide: StemExportService, useValue: mockStemExport },
         { provide: SongDslParserService, useValue: mockDslParser },
+        { provide: InstrumentCatalogService, useValue: mockInstrumentCatalog },
       ],
     }).compile();
 
