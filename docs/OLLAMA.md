@@ -275,7 +275,7 @@ Make the lyrics poetic and emotionally resonant.
 
 **Analytical Genre Prompt**:
 
-```
+```text
 Analyze this story and suggest 3-5 musical genres that would fit its mood and themes.
 Story: "{narrative}"
 Return as JSON array of genre strings, ordered by relevance.
@@ -321,7 +321,7 @@ Return as JSON array.
 
 **Basic Structure Annotation**:
 
-```
+```text
 Convert these lyrics into Song Annotation DSL format:
 
 {lyrics}
@@ -333,7 +333,7 @@ Add audio cues <SFX>, <instrument>, etc. where appropriate.
 
 **Advanced Annotation with Style**:
 
-```
+```text
 Create detailed song annotations for {style} music:
 
 {lyrics}
@@ -350,7 +350,7 @@ Focus on {genre} conventions and {mood} atmosphere.
 
 **Complete Song Generation**:
 
-```
+```text
 Generate a complete song specification from this narrative: "{narrative}"
 
 Return JSON with:
@@ -362,7 +362,7 @@ Return JSON with:
 
 **Iterative Refinement**:
 
-```
+```text
 Given this feedback: "{userFeedback}"
 And original narrative: "{narrative}"
 
@@ -373,7 +373,3 @@ Return updated JSON with improved title, lyrics, and genre suggestions.
 ## Notes
 
 - Because LLM output can include extraneous text or markdown fences, we parse the first JSON object found in the output. This is robust for many outputs but not guaranteed for all models. The `responseMapper` may be used to convert model-specific formats into the standard schema.
-
-```
-
-```

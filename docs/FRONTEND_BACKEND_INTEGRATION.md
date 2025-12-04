@@ -468,7 +468,7 @@ export class AuthGuard implements CanActivate {
 private readonly apiUrl = 'http://localhost:3000/api/auth';
 ```
 
-#### Updated Methods
+### Updated Methods
 
 ```typescript
 // refreshToken() no longer needs token parameter (uses Bearer header)
@@ -1035,7 +1035,7 @@ interface AuthState {
 
 ---
 
-## Security Considerations
+## JWT Security Considerations
 
 ### JWT Token Storage
 
