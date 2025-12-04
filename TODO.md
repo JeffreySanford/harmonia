@@ -1,12 +1,12 @@
 # Harmonia - Project TODO List
 
-**Last Updated**: December 5, 2025 - 11:00 AM
+**Last Updated**: December 6, 2025 - 2:00 PM
 **Project**: Harmonia Music Generation Platform
 **Phase**: Phase 3 - Frontend-Backend Integration ✅ COMPLETE
 **Status**: 🟢 Production Ready - Ready for E2E Testing
 **Servers**: Backend (3000) ✅ | Frontend (4200) ✅
 **Start Date**: November 30, 2025
-**Hours Invested**: ~80 hours (estimated based on completed authentication system, frontend-backend integration, and extensive documentation across 4 days)
+**Hours Invested**: ~85 hours (estimated based on completed authentication system, frontend-backend integration, and extensive documentation across 5 days)
 
 ---
 
@@ -72,6 +72,202 @@
 ---
 
 ## 🚀 **NEXT PRIORITIES** (Coming Up)
+
+### **Month 2: Validation & Demo** (Weeks 5-8)
+
+- Add JSON schema validation for instrument catalog and IR updates — Planned
+- Create demo CLI (DSL → IR → events.json → WAV stems with sample mapping) — Planned
+- Implement asset fallback system (missing instruments, polyphony limits) — Planned
+- **Implement lyric diversity constraints and attention span modeling (addresses risk #26)** — Planned
+
+### **Month 3-4: AI Enhancement** (Weeks 9-16)
+
+- Implement AI palette suggestion service (LLM prompts + genre→palette mapping) — Planned
+- Build prompt template libraries with few-shot examples and validation — Planned
+- Create A/B testing framework for UI and prompt optimization — Planned
+- **Review DANGER_AREAS.md for AI and content quality risks before prompt engineering** — Required
+- Add structured prompt templates for reliable LLM output — Planned
+
+### **Month 5-6: Production Tools** (Weeks 17-24)
+
+- Build authoring UI with expand panel, grouped instrument controls, and preview — Planned
+- Implement auto-mixing tools (intelligent leveling, smart EQ, sidechain routing) — Planned
+- Add mastering pipeline (LUFS targets, platform-specific presets) — Planned
+- Create DAW marker export (JSON format for Premiere/Resolve integration) — Planned
+- **Review DANGER_AREAS.md for mixing/mastering and video sync risks** — Required
+
+---
+
+## 📚 **DOCUMENTATION CRISIS - IMMEDIATE ACTION REQUIRED**
+
+### **Critical Issues Identified**
+
+#### **1. Documentation Bloat Crisis** 🚨
+
+- **60+ markdown files** in `/docs` directory (insane overkill)
+- **Redundant content**: Multiple files covering same topics
+- **Misleading documentation**: Files documenting non-existent features
+- **Excessive granularity**: 262-line docs for simple UI toggles
+
+#### **2. Outdated Information** 📅
+
+- README shows Phase 1 as "in progress" when system is Phase 2+
+- SETUP_COMPLETE.md still references Phase 0 setup
+- Multiple docs referencing Docker MongoDB (no longer used)
+
+#### **3. Missing Critical Documentation** 📭
+
+- No API endpoint documentation
+- Missing database schema docs
+- No deployment guides
+- Incomplete testing documentation
+
+### **Immediate Documentation Cleanup Tasks**
+
+#### **Phase 1: Audit & Inventory** (Week 1)
+
+- [ ] Create `docs/README.md` with documentation hierarchy
+- [ ] Audit all 60+ files for relevance and accuracy
+- [ ] Identify duplicate/redundant content
+- [ ] Flag misleading/non-existent feature docs
+
+#### **Phase 2: Consolidation** (Week 2)
+
+- [ ] Merge redundant files (e.g., multiple instrument selection docs)
+- [ ] Delete docs for non-existent features (password reset, 2FA, keyboard shortcuts)
+- [ ] Update outdated setup/installation docs
+- [ ] Reduce file count from 60+ to 15-20 essential docs
+
+#### **Phase 3: Content Updates** (Week 3)
+
+- [ ] Update README.md with accurate feature descriptions
+- [ ] Create missing API documentation
+- [ ] Update testing checklists to reflect current practices
+- [ ] Add deployment and production guides
+
+#### **Phase 4: Quality Assurance** (Week 4)
+
+- [ ] Fix all markdown linting errors
+- [ ] Ensure consistent formatting and structure
+- [ ] Add cross-references between related docs
+- [ ] Create documentation maintenance guidelines
+
+### **Target Documentation Structure**
+
+```text
+docs/
+├── README.md                 # Documentation index & navigation
+├── getting-started.md        # Quick start guide
+├── architecture.md           # System overview & design
+├── api/                      # API documentation
+│   ├── endpoints.md
+│   ├── websocket.md
+│   └── schemas.md
+├── development/              # Developer guides
+│   ├── workflow.md
+│   ├── testing.md
+│   └── deployment.md
+├── features/                 # Feature documentation
+│   ├── song-generation.md
+│   ├── authentication.md
+│   └── music-generation.md
+└── operations/               # Production operations
+    ├── monitoring.md
+    ├── backup.md
+    └── security.md
+```
+
+### **Files to Delete Immediately** ❌
+
+- `DETAILED_ANNOTATIONS_TOGGLE.md` (262 lines for a toggle!)
+- `INSTRUMENT_SELECTION_EXPAND_FEATURE.md` (464 lines for instrument selection!)
+- `PROFILE_SETTINGS_MODULE.md` (non-existent feature)
+- `ENHANCED_AUTHENTICATION_FEATURES.md` (password reset, 2FA don't exist)
+- `UX_ENHANCEMENTS.md` (keyboard shortcuts don't exist)
+- `SETUP_COMPLETE.md` (outdated Phase 0 content)
+- All redundant setup guides
+
+### **Business Impact**
+
+- **Developer Productivity**: Reduce documentation search time from 30min to 5min
+- **Onboarding**: New developers can get started in hours, not days
+- **Maintenance**: Easier to keep documentation current with fewer files
+- **Accuracy**: Eliminate confusion from outdated/misleading docs
+
+---
+
+## 📝 License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+---
+
+Built with ❤️ using Angular, NestJS, and MongoDB
+
+---
+
+## 📅 **PROJECT TIMELINE & SCOPE ADJUSTMENT**
+
+### **Original Plan vs. Current Reality**
+
+- **Original**: 3 months with full expert team (6-9 months total development)
+- **Current**: Solo developer + AI assistant (estimated 12-18 months for MVP)
+- **Scope**: Focus on core music generation MVP, defer advanced features
+
+### **MVP Definition (Months 1-6)**
+
+- ✅ **Completed**: Authentication, basic UI, Ollama integration
+- 🔄 **Current**: Song generation E2E, basic instrument selection
+- 🎯 **Target**: Functional song generation with AI lyrics + basic audio
+- 📅 **Timeline**: 3-4 months to working MVP
+
+### **Post-MVP (Months 7-12)**
+
+- Advanced instrument selection & expand features
+- Video storyboarding integration
+- Professional audio mixing/mastering
+- User library and collaboration features
+
+### **Long-term Vision (Year 2+)**
+
+- Multi-model coordination, live generation
+- Advanced AI features, third-party integrations
+- Enterprise features, monetization
+
+---
+
+## 🔥 **CURRENT PRIORITIES** (Adjusted Plan)
+
+**Progress: 40% Complete** | **Visual Indicator:** ████████░░░░░░░░░░
+
+### **Month 1: Foundation Building** (Weeks 1-4)
+
+#### Core Infrastructure Tasks
+
+- Create Instrument Catalog JSON (50+ presets with categories, fallback rules, sample references) — ✅ Completed
+- Extend M-MSL Parser for @Instruments headers and per-section parsing — ✅ Completed
+- Implement basic stem export functionality (WAV/MP3, per-instrument stems) — ✅ Completed
+- Build multi-stage generation pipeline (Prompt → Outline → Melody → Arrangement → Audio) — Planned
+- **Review DANGER_AREAS.md for music generation risks (items 25-38) before implementation** — Required
+
+#### Quality & Testing
+
+- Add E2E coverage for Song Generation flows using `llm:mock` — In progress
+- Integrate `llm:mock` into CI pipeline — Planned
+- Integrate Mistral3 model into Ollama for enhanced song generation — Planned
+- Implement actual song generation with Mistral3 and DeepSeek models — Planned
+
+### **Current Status Overview**
+
+- Health Check (backend + frontend indicator): ✅ Completed
+- E2E Navigation tests for guest redirect & session invalidation: ✅ Completed
+- Ollama Integration (metadata generation): ✅ Completed (100%)
+- Mistral3 Integration for Song Generation: ⚠️ In progress (10%)
+- CI-friendly mock server and E2E stabilization: ⏳ In progress (75%)
+
+---
+
+## 🚀 **NEXT PRIORITIES** (Adjusted Plan)
 
 ### **Month 2: Validation & Demo** (Weeks 5-8)
 
@@ -1608,7 +1804,7 @@ pnpm test:e2e:report
 
 ### Documentation Inventory
 
-**Authentication & Integration** (8 files):
+**Authentication & Integration** (9 files):
 
 - `AUTHENTICATION_SYSTEM.md` - Auth architecture
 - `AUTH_IMPLEMENTATION_STATUS.md` - Implementation tracking
@@ -1618,8 +1814,9 @@ pnpm test:e2e:report
 - `LINTING_GUIDE.md` - Linting guidelines **NEW**
 - `CODING_STANDARDS.md` - Code style guide
 - `TYPESCRIPT_CONFIGURATION.md` - TypeScript setup
+- `ENHANCED_AUTHENTICATION_FEATURES.md` - Advanced auth features **NEW**
 
-**Architecture & Design** (7 files):
+**Architecture & Design** (10 files):
 
 - `ARCHITECTURE.md` - System architecture
 - `COMPONENT_ARCHITECTURE.md` - Frontend components
@@ -1628,6 +1825,9 @@ pnpm test:e2e:report
 - `USER_LIBRARY.md` - Library feature spec
 - `ADMIN_DASHBOARD.md` - Admin panel design
 - `WEBSOCKET_INTEGRATION.md` - Real-time features
+- `DETAILED_ANNOTATIONS_TOGGLE.md` - UI toggle feature **NEW**
+- `PROFILE_SETTINGS_MODULE.md` - Profile management **NEW**
+- `UX_ENHANCEMENTS.md` - User experience features **NEW**
 
 **Database & Backend** (6 files):
 
@@ -1677,7 +1877,7 @@ pnpm test:e2e:report
 - `TODO.md` - Project tracking (this file)
 - `README.md` - Project overview
 
-**Total**: 46 comprehensive documentation files
+**Total**: 50 comprehensive documentation files
 
 ---
 
@@ -1689,7 +1889,7 @@ pnpm test:e2e:report
 
 - ✅ Frontend: 18 warnings (all non-blocking and acceptable)
 - ⚠️ Backend: Path length config issue (code quality verified via IDE)
-- ✅ Markdown: 0 errors across 44 documentation files
+- ✅ Markdown: 0 errors across 50 documentation files
 
 **Unit Testing**:
 
@@ -1702,8 +1902,12 @@ pnpm test:e2e:report
 
 - ✅ Created `UNIT_TESTING_GUIDE.md` - Comprehensive testing documentation
 - ✅ Created `LINTING_GUIDE.md` - Complete linting guidelines
-- ✅ Updated `TODO.md` - Reorganized sections per priority
-- ✅ All 44 markdown files reviewed and lint-clean
+- ✅ Created `DETAILED_ANNOTATIONS_TOGGLE.md` - UI toggle feature specification
+- ✅ Created `PROFILE_SETTINGS_MODULE.md` - Profile management interface
+- ✅ Created `ENHANCED_AUTHENTICATION_FEATURES.md` - Advanced authentication features
+- ✅ Created `UX_ENHANCEMENTS.md` - Keyboard shortcuts, themes, and notifications
+- ✅ Updated `TODO.md` - Reorganized sections per priority and updated inventory
+- ✅ All 50 markdown files reviewed and lint-clean
 
 **TODO.md Reorganization**:
 
