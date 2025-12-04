@@ -82,15 +82,60 @@
           flex: 1;
         }
 
-        .narrative-guidance {
-          color: colors.$primary-600;
-          font-weight: 500;
-          margin-left: mixins.spacing(1);
+        .form-row {
+          display: flex;
+          gap: mixins.spacing(2);
+          width: 100%;
+
+          .half-width {
+            flex: 1;
+            min-width: 0;
+          }
+
+          .third-width {
+            flex: 1;
+            min-width: 0;
+          }
         }
 
-        .error-hint {
-          color: colors.$warn-500;
-          font-weight: 500;
+        .lyrics-field {
+          margin: mixins.spacing(2) 0;
+        }
+
+        .intro-outro-section {
+          margin-top: mixins.spacing(3);
+          padding: mixins.spacing(2);
+          background-color: colors.$surface-variant;
+          border-radius: 8px;
+
+          h4 {
+            margin-bottom: mixins.spacing(2);
+            color: colors.$primary-700;
+            font-weight: 500;
+          }
+
+          .structure-item {
+            margin-bottom: mixins.spacing(2);
+
+            mat-checkbox {
+              margin-bottom: mixins.spacing(1);
+            }
+
+            .structure-details {
+              display: flex;
+              gap: mixins.spacing(2);
+              margin-left: mixins.spacing(3);
+              align-items: flex-start;
+
+              .style-field {
+                flex: 0 0 150px;
+              }
+
+              .content-field {
+                flex: 1;
+              }
+            }
+          }
         }
       }
 

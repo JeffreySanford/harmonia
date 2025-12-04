@@ -375,6 +375,116 @@ We are fire — we are the unsung.
             </mat-form-field>
           </div>
 
+          <!-- Melody Description -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Melody Description</mat-label>
+            <textarea
+              matInput
+              [(ngModel)]="generatedMetadata.melody"
+              rows="2"
+              placeholder="Describe the melody style and structure"
+            ></textarea>
+            <mat-icon matPrefix>music_note</mat-icon>
+          </mat-form-field>
+
+          <!-- Musical Properties Row -->
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="third-width">
+              <mat-label>Tempo (BPM)</mat-label>
+              <input
+                matInput
+                type="number"
+                [(ngModel)]="generatedMetadata.tempo"
+                min="60"
+                max="200"
+                placeholder="120"
+              />
+              <mat-icon matPrefix>timer</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="third-width">
+              <mat-label>Musical Key</mat-label>
+              <input
+                matInput
+                [(ngModel)]="generatedMetadata.key"
+                placeholder="C major"
+              />
+              <mat-icon matPrefix>piano</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="third-width">
+              <mat-label>Instrumentation</mat-label>
+              <mat-select
+                [(ngModel)]="generatedMetadata.instrumentation"
+                multiple
+                placeholder="Select instruments"
+              >
+                <mat-option
+                  *ngFor="let instrument of ['piano', 'guitar', 'bass', 'drums', 'strings', 'brass', 'woodwinds', 'percussion', 'synth', 'vocals']"
+                  [value]="instrument"
+                >
+                  {{ instrument | titlecase }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>library_music</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <!-- Intro/Outro Section -->
+          <div class="intro-outro-section">
+            <h4>Structure Options</h4>
+
+            <!-- Intro -->
+            <div class="structure-item">
+              <mat-checkbox [(ngModel)]="generatedMetadata.intro.enabled">
+                <strong>Include Intro</strong>
+              </mat-checkbox>
+              <div *ngIf="generatedMetadata.intro.enabled" class="structure-details">
+                <mat-form-field appearance="outline" class="style-field">
+                  <mat-label>Intro Style</mat-label>
+                  <mat-select [(ngModel)]="generatedMetadata.intro.style">
+                    <mat-option value="with-music">With Music</mat-option>
+                    <mat-option value="sung">Sung</mat-option>
+                    <mat-option value="no-music">No Music</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="content-field">
+                  <mat-label>Intro Content (Optional)</mat-label>
+                  <input
+                    matInput
+                    [(ngModel)]="generatedMetadata.intro.content"
+                    placeholder="Soft guitar intro, Spoken verse, etc."
+                  />
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- Outro -->
+            <div class="structure-item">
+              <mat-checkbox [(ngModel)]="generatedMetadata.outro.enabled">
+                <strong>Include Outro</strong>
+              </mat-checkbox>
+              <div *ngIf="generatedMetadata.outro.enabled" class="structure-details">
+                <mat-form-field appearance="outline" class="style-field">
+                  <mat-label>Outro Style</mat-label>
+                  <mat-select [(ngModel)]="generatedMetadata.outro.style">
+                    <mat-option value="with-music">With Music</mat-option>
+                    <mat-option value="sung">Sung</mat-option>
+                    <mat-option value="no-music">No Music</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="content-field">
+                  <mat-label>Outro Content (Optional)</mat-label>
+                  <input
+                    matInput
+                    [(ngModel)]="generatedMetadata.outro.content"
+                    placeholder="Fade out, Final chorus, etc."
+                  />
+                </mat-form-field>
+              </div>
+            </div>
+          </div>
+
           <!-- Validation Summary -->
           <div class="validation-summary" [ngClass]="validateLyrics().status">
             <mat-icon>
