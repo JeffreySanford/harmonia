@@ -1,6 +1,7 @@
 /* eslint-disable max-lines-per-function */
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { AuthMaterialModule } from '../../auth/auth-material.module';
 import { MatDialogRef } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -31,7 +32,12 @@ describe('LoginModalComponent', () => {
 
     await TestBed.configureTestingModule({
       declarations: [LoginModalComponent],
-      imports: [ReactiveFormsModule, NoopAnimationsModule, AuthMaterialModule],
+      imports: [
+        ReactiveFormsModule,
+        NoopAnimationsModule,
+        AuthMaterialModule,
+        HttpClientTestingModule,
+      ],
       providers: [
         provideMockStore({ initialState }),
         { provide: MatDialogRef, useValue: dialogRefSpy },

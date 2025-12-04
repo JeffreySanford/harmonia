@@ -1,0 +1,24 @@
+.upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 400px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.file-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-select-button {
+  align-self: flex-start;
+}
+
+.file-input {
+  display: none;
+}

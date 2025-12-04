@@ -1,24 +1,158 @@
 <div class="library-container">
   <header class="library-header">
-    <h1>My Library</h1>
-    <p class="subtitle">Your personal music collection</p>
+    <div class="header-content">
+      <div>
+        <h1>My Library</h1>
+        <p class="subtitle">Your personal music collection</p>
+      </div>
+      <div class="header-actions">
+        <button
+          mat-icon-button
+          (click)="toggleViewMode()"
+          [attr.aria-label]="
+            viewMode === 'grid' ? 'Switch to list view' : 'Switch to grid view'
+          "
+        >
+          <mat-icon>{{
+            viewMode === 'grid' ? 'view_list' : 'view_module'
+          }}</mat-icon>
+        </button>
+        <button mat-raised-button color="primary" (click)="openUploadDialog()">
+          <mat-icon>add</mat-icon>
+          Upload File
+        </button>
+      </div>
+    </div>
+
+    <div class="filters-section">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Search</mat-label>
+        <input
+          matInput
+          [formControl]="searchControl"
+          placeholder="Search your library..."
+        />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Type</mat-label>
+        <mat-select
+          (selectionChange)="onTypeFilterChange($event.value)"
+          [value]="(filters$ | async)?.type || 'all'"
+        >
+          <mat-option *ngFor="let option of typeOptions" [value]="option.value">
+            {{ option.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Sort By</mat-label>
+        <mat-select
+          (selectionChange)="onSortChange($event.value)"
+          [value]="(filters$ | async)?.sortBy || 'newest'"
+        >
+          <mat-option *ngFor="let option of sortOptions" [value]="option.value">
+            {{ option.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
   </header>
 
   <div class="library-content">
-    <div class="placeholder-message">
-      <mat-icon class="placeholder-icon">library_music</mat-icon>
-      <h2>Library Coming Soon</h2>
-      <p>This page will display your music library with:</p>
-      <ul>
-        <li>File listing in grid/list view</li>
-        <li>Audio playback controls</li>
-        <li>Upload and manage files</li>
-        <li>Search and filter functionality</li>
-      </ul>
-      <p class="note">
-        <strong>Note:</strong> Backend API integration required.
-        See <code>docs/USER_LIBRARY.md</code> for implementation details.
-      </p>
+    <div *ngIf="loading$ | async" class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Loading your library...</p>
     </div>
+
+    <div
+      *ngIf="(loading$ | async) === false && (items$ | async)?.length === 0"
+      class="empty-state"
+    >
+      <mat-icon class="empty-icon">library_music</mat-icon>
+      <h2>Your library is empty</h2>
+      <p>Upload your first music file to get started!</p>
+      <button mat-raised-button color="primary" (click)="openUploadDialog()">
+        <mat-icon>add</mat-icon>
+        Upload File
+      </button>
+    </div>
+
+    <div
+      *ngIf="(items$ | async) && (items$ | async)!.length > 0"
+      class="items-container"
+      [ngClass]="viewMode"
+    >
+      <mat-card
+        *ngFor="let item of items$ | async"
+        class="item-card"
+        (click)="onItemClick(item)"
+      >
+        <mat-card-header>
+          <div mat-card-avatar class="item-avatar">
+            <mat-icon>{{ getFileTypeIcon(item.type) }}</mat-icon>
+          </div>
+          <mat-card-title>{{ item.title }}</mat-card-title>
+          <mat-card-subtitle>{{ item.type | titlecase }}</mat-card-subtitle>
+        </mat-card-header>
+
+        <img
+          mat-card-image
+          *ngIf="item.thumbnailUrl"
+          [src]="item.thumbnailUrl"
+          alt="{{ item.title + ' thumbnail' }}"
+          title="{{ item.title }}"
+        />
+
+        <mat-card-content>
+          <p *ngIf="item.description" class="item-description">
+            {{ item.description }}
+          </p>
+          <div class="item-meta">
+            <span *ngIf="item.duration" class="meta-item">
+              <mat-icon>schedule</mat-icon>
+              {{ formatDuration(item.duration) }}
+            </span>
+            <span *ngIf="item.fileSize" class="meta-item">
+              <mat-icon>folder</mat-icon>
+              {{ formatFileSize(item.fileSize) }}
+            </span>
+            <span class="meta-item">
+              <mat-icon>play_arrow</mat-icon>
+              {{ item.playCount }}
+            </span>
+          </div>
+        </mat-card-content>
+
+        <mat-card-actions>
+          <button mat-icon-button [attr.aria-label]="'Play ' + item.title">
+            <mat-icon>play_arrow</mat-icon>
+          </button>
+          <button mat-icon-button [attr.aria-label]="'Download ' + item.title">
+            <mat-icon>download</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            color="warn"
+            (click)="onDeleteItem(item); $event.stopPropagation()"
+            [attr.aria-label]="'Delete ' + item.title"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+
+    <mat-paginator
+      *ngIf="(pagination$ | async) && (pagination$ | async)!.totalPages > 1"
+      [length]="(pagination$ | async)?.total || 0"
+      [pageSize]="(pagination$ | async)?.pageSize || 20"
+      [pageIndex]="((pagination$ | async)?.currentPage || 1) - 1"
+      (page)="onPageChange($event.pageIndex + 1)"
+      showFirstLastButtons
+    >
+    </mat-paginator>
   </div>
 </div>

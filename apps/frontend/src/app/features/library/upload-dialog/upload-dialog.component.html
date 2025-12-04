@@ -1,0 +1,70 @@
+<h2 mat-dialog-title>Upload File</h2>
+<mat-dialog-content>
+  <form [formGroup]="uploadForm" class="upload-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Title</mat-label>
+      <input matInput formControlName="title" placeholder="Enter file title" />
+      <mat-error *ngIf="uploadForm.get('title')?.hasError('required')">
+        Title is required
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Description (Optional)</mat-label>
+      <textarea
+        matInput
+        formControlName="description"
+        rows="3"
+        placeholder="Enter file description"
+      ></textarea>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Type</mat-label>
+      <mat-select formControlName="type">
+        <mat-option value="song">Song</mat-option>
+        <mat-option value="music">Music</mat-option>
+        <mat-option value="audio">Audio</mat-option>
+        <mat-option value="style">Style</mat-option>
+      </mat-select>
+      <mat-error *ngIf="uploadForm.get('type')?.hasError('required')">
+        Type is required
+      </mat-error>
+    </mat-form-field>
+
+    <div class="file-input-container">
+      <input
+        type="file"
+        #fileInput
+        (change)="onFileSelected($event)"
+        accept="audio/*,.wav,.mp3,.flac,.json"
+        class="file-input"
+        aria-hidden="true"
+      />
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="fileInput.click()"
+        class="file-select-button"
+        aria-label="Select file to upload"
+      >
+        <mat-icon>attach_file</mat-icon>
+        {{ selectedFile ? selectedFile.name : 'Select File' }}
+      </button>
+      <mat-hint *ngIf="selectedFile">
+        Size: {{ selectedFile ? formatFileSize(selectedFile.size) : '' }}
+      </mat-hint>
+    </div>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+  <button
+    mat-raised-button
+    color="primary"
+    (click)="onUpload()"
+    [disabled]="!uploadForm.valid || !selectedFile"
+  >
+    Upload
+  </button>
+</mat-dialog-actions>

@@ -1,12 +1,16 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import * as path from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { JobsGateway } from './gateways/jobs.gateway';
 import { HealthController } from '../health/health.controller';
 import { AuthModule } from '../auth/auth.module';
 import { SongsModule } from '../songs/songs.module';
+import { LibraryModule } from '../library/library.module';
+import { ProfileModule } from '../profile/profile.module';
 
 /**
  * App Module
@@ -31,6 +35,10 @@ import { SongsModule } from '../songs/songs.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ServeStaticModule.forRoot({
+      rootPath: path.join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+    }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -42,6 +50,8 @@ import { SongsModule } from '../songs/songs.module';
     }),
     AuthModule,
     SongsModule,
+    LibraryModule,
+    ProfileModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService, JobsGateway],

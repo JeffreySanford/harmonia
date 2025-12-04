@@ -1,5 +1,6 @@
 /* eslint-disable max-lines-per-function */
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideMockStore, MockStore } from '@ngrx/store/testing';
@@ -39,7 +40,11 @@ describe('HeaderUserMenuComponent', () => {
     ]);
 
     await TestBed.configureTestingModule({
-      imports: [NoopAnimationsModule, AuthMaterialModule],
+      imports: [
+        NoopAnimationsModule,
+        AuthMaterialModule,
+        HttpClientTestingModule,
+      ],
       declarations: [HeaderUserMenuComponent],
       providers: [
         provideMockStore({

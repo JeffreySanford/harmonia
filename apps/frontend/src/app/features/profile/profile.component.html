@@ -1,35 +1,223 @@
 <div class="profile-container">
   <header class="profile-header">
     <h1>Profile Settings</h1>
-    <p class="subtitle">Manage your account information</p>
+    <p class="subtitle">Manage your account information and preferences</p>
   </header>
 
-  <div class="profile-content" *ngIf="user$ | async as user">
-    <div class="current-user-info">
-      <div class="user-avatar">
-        <mat-icon class="avatar-icon">account_circle</mat-icon>
-      </div>
-      <div class="user-details">
-        <h2>{{ user.username }}</h2>
-        <p>{{ user.email }}</p>
-        <span class="role-badge">{{ user.role }}</span>
-      </div>
-    </div>
+  <div
+    class="profile-content"
+    *ngIf="profile$ | async as profile; else loading"
+  >
+    <!-- Profile Overview -->
+    <mat-card class="profile-overview-card">
+      <mat-card-content>
+        <div class="profile-overview">
+          <div class="avatar-section">
+            <div class="avatar-container">
+              <img
+                *ngIf="profile.avatarUrl || avatarPreview; else defaultAvatar"
+                [src]="avatarPreview || profile.avatarUrl"
+                alt="Profile avatar"
+                class="profile-avatar"
+              />
+              <ng-template #defaultAvatar>
+                <mat-icon class="default-avatar">account_circle</mat-icon>
+              </ng-template>
+            </div>
+            <div class="avatar-actions">
+              <input
+                type="file"
+                #avatarInput
+                (change)="onAvatarSelected($event)"
+                accept="image/*"
+                class="avatar-input"
+                aria-hidden="true"
+              />
+              <button mat-stroked-button (click)="avatarInput.click()">
+                <mat-icon>photo_camera</mat-icon>
+                Change Avatar
+              </button>
+              <div *ngIf="selectedAvatar" class="upload-actions">
+                <button mat-button color="primary" (click)="onAvatarUpload()">
+                  Upload
+                </button>
+                <button mat-button (click)="cancelAvatarUpload()">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
 
-    <div class="placeholder-message">
-      <h3>Profile Management Coming Soon</h3>
-      <p>This page will include:</p>
-      <ul>
-        <li>Edit profile information (username, email)</li>
-        <li>Change password form</li>
-        <li>Avatar upload and management</li>
-        <li>Account security settings</li>
-        <li>Notification preferences</li>
-      </ul>
-      <p class="note">
-        <strong>Note:</strong> Backend API integration required.
-        Profile update endpoint needed at <code>PUT /api/user/profile</code>
-      </p>
-    </div>
+          <div class="profile-info">
+            <h2>{{ profile.displayName || profile.username }}</h2>
+            <p class="username">@{{ profile.username }}</p>
+            <p class="email">{{ profile.email }}</p>
+            <p class="bio" *ngIf="profile.bio">{{ profile.bio }}</p>
+            <div class="stats-grid">
+              <div *ngFor="let stat of getStats(profile)" class="stat-item">
+                <span class="stat-value">{{ stat.value }}</span>
+                <span class="stat-label">{{ stat.label }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Profile Edit Form -->
+    <mat-card class="profile-edit-card">
+      <mat-card-header>
+        <mat-card-title>Edit Profile</mat-card-title>
+        <mat-card-subtitle>Update your personal information</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <form
+          [formGroup]="profileForm"
+          (ngSubmit)="onProfileSubmit()"
+          class="profile-form"
+        >
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Display Name</mat-label>
+            <input
+              matInput
+              formControlName="displayName"
+              placeholder="Your display name"
+            />
+            <mat-hint>Optional. Leave blank to use your username</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Bio</mat-label>
+            <textarea
+              matInput
+              formControlName="bio"
+              rows="3"
+              placeholder="Tell us about yourself..."
+            ></textarea>
+            <mat-hint
+              >{{ profileForm.get('bio')?.value?.length || 0 }}/500
+              characters</mat-hint
+            >
+          </mat-form-field>
+
+          <div class="form-actions">
+            <button
+              mat-raised-button
+              color="primary"
+              type="submit"
+              [disabled]="!profileForm.valid || (loading$ | async)"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Preferences -->
+    <mat-card class="preferences-card">
+      <mat-card-header>
+        <mat-card-title>Preferences</mat-card-title>
+        <mat-card-subtitle>Customize your experience</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <form
+          [formGroup]="preferencesForm"
+          (ngSubmit)="onPreferencesSubmit()"
+          class="preferences-form"
+        >
+          <div class="form-section">
+            <h3>Appearance</h3>
+            <mat-form-field appearance="outline">
+              <mat-label>Theme</mat-label>
+              <mat-select formControlName="theme">
+                <mat-option
+                  *ngFor="let option of themeOptions"
+                  [value]="option.value"
+                >
+                  {{ option.label }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="form-section">
+            <h3>Notifications</h3>
+            <mat-checkbox formControlName="notifications.email">
+              Email notifications
+            </mat-checkbox>
+            <mat-checkbox formControlName="notifications.push">
+              Push notifications
+            </mat-checkbox>
+            <mat-checkbox formControlName="notifications.libraryUpdates">
+              Library update notifications
+            </mat-checkbox>
+          </div>
+
+          <div class="form-section">
+            <h3>Privacy</h3>
+            <mat-form-field appearance="outline">
+              <mat-label>Profile Visibility</mat-label>
+              <mat-select formControlName="privacy.profileVisibility">
+                <mat-option value="public">Public</mat-option>
+                <mat-option value="private">Private</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Library Visibility</mat-label>
+              <mat-select formControlName="privacy.libraryVisibility">
+                <mat-option value="public">Public</mat-option>
+                <mat-option value="private">Private</mat-option>
+                <mat-option value="followers">Followers Only</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="form-actions">
+            <button
+              mat-raised-button
+              color="primary"
+              type="submit"
+              [disabled]="!preferencesForm.valid || (loading$ | async)"
+            >
+              Save Preferences
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Account Actions -->
+    <mat-card class="account-actions-card">
+      <mat-card-header>
+        <mat-card-title>Account Actions</mat-card-title>
+        <mat-card-subtitle>Manage your account security</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="account-actions">
+          <button
+            mat-stroked-button
+            color="primary"
+            (click)="openChangePasswordDialog()"
+          >
+            <mat-icon>lock</mat-icon>
+            Change Password
+          </button>
+
+          <button mat-stroked-button color="warn" (click)="onDeleteAccount()">
+            <mat-icon>delete_forever</mat-icon>
+            Delete Account
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
   </div>
+
+  <ng-template #loading>
+    <div class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Loading profile...</p>
+    </div>
+  </ng-template>
 </div>

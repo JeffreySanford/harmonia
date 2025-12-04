@@ -17,12 +17,16 @@ import { authReducer } from './store/auth/auth.reducer';
 import { modelsReducer } from './store/models/models.reducer';
 import { datasetsReducer } from './store/datasets/datasets.reducer';
 import { jobsReducer } from './store/jobs/jobs.reducer';
+import { libraryReducer } from './store/library/library.state';
+import { profileReducer } from './store/profile/profile.state';
 
 // Effects
 import { AuthEffects } from './store/auth/auth.effects';
 import { ModelsEffects } from './store/models/models.effects';
 import { DatasetsEffects } from './store/datasets/datasets.effects';
 import { JobsEffects } from './store/jobs/jobs.effects';
+import { LibraryEffects } from './store/library/library.effects';
+import { ProfileEffects } from './store/profile/profile.effects';
 
 @NgModule({
   declarations: [App],
@@ -39,6 +43,8 @@ import { JobsEffects } from './store/jobs/jobs.effects';
         models: modelsReducer,
         datasets: datasetsReducer,
         jobs: jobsReducer,
+        library: libraryReducer,
+        profile: profileReducer,
       },
       {
         runtimeChecks: {
@@ -56,6 +62,8 @@ import { JobsEffects } from './store/jobs/jobs.effects';
       ModelsEffects,
       DatasetsEffects,
       JobsEffects,
+      LibraryEffects,
+      ProfileEffects,
     ]),
     StoreDevtoolsModule.instrument({
       maxAge: 25,
