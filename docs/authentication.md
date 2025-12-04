@@ -82,8 +82,8 @@ Comprehensive authentication and authorization system with role-based access con
 
 ```typescript
 enum UserGroup {
-  USER = 'user',      // Basic authenticated user
-  ADMIN = 'admin'     // Administrator with elevated privileges
+  USER = 'user', // Basic authenticated user
+  ADMIN = 'admin', // Administrator with elevated privileges
 }
 
 // Permission inheritance
@@ -99,14 +99,14 @@ const defaultUsers = [
     username: 'user',
     email: 'user@harmonia.local',
     password: 'user123!',
-    group: UserGroup.USER
+    group: UserGroup.USER,
   },
   {
     username: 'admin',
     email: 'admin@harmonia.local',
     password: 'admin123!',
-    group: UserGroup.ADMIN
-  }
+    group: UserGroup.ADMIN,
+  },
 ];
 ```
 
@@ -122,6 +122,7 @@ const defaultUsers = [
 ##### Authentication Components
 
 1. **Login Modal Component** (`features/auth/login-modal/`)
+
    - Component, template, styles, tests
    - Dual-mode form (login/register)
    - Material Design with validation
@@ -136,11 +137,13 @@ const defaultUsers = [
 ##### Placeholder Pages
 
 1. **Library Module** (`features/library/`)
+
    - Module, routing, component (ts, html, scss)
    - Material module for icons
    - Protected by `authGuard`
 
 2. **Profile Module** (`features/profile/`)
+
    - Module, routing, component (ts, html, scss)
    - Material module for icons
    - User info display
@@ -155,6 +158,7 @@ const defaultUsers = [
 ##### Infrastructure
 
 1. **Route Guards** (`guards/`)
+
    - `authGuard` - Protect authenticated routes
    - `adminGuard` - Admin-only access
    - `guestGuard` - Prevent authenticated access
@@ -162,12 +166,14 @@ const defaultUsers = [
    - Index file for exports
 
 2. **HTTP Interceptor** (`interceptors/`)
+
    - `AuthInterceptor` - Auto-attach JWT tokens
    - 401 error handling with auto-logout
    - Skip auth endpoints
    - Unit tests
 
 3. **Services**
+
    - `AuthUiService` - Modal management
    - Unit tests
 
@@ -234,7 +240,7 @@ export class User extends Document {
 export const UserSchema = SchemaFactory.createForClass(User);
 
 // Pre-save middleware for password hashing
-UserSchema.pre<User>('save', async function(next) {
+UserSchema.pre<User>('save', async function (next) {
   if (!this.isModified('password')) return next();
 
   const saltRounds = 12;
@@ -406,7 +412,7 @@ export class EnableTwoFactorComponent {
       next: (response) => {
         this.qrCodeUrl = response.qrCodeUrl;
         this.backupCodes = response.backupCodes;
-      }
+      },
     });
   }
 

@@ -17,7 +17,7 @@ Before starting, ensure you have:
 
 ## Step 1: Clone Repository (1 minute)
 
-```bash
+````bash
 git clone https://github.com/jeffreysanford/harmonia.git
 cd harmonia
 ```plaintext
@@ -32,7 +32,7 @@ Download and install: <https://nodejs.org/> (LTS version)
 
 ```bash
 node --version  # Should be v18.0.0 or higher
-```
+````
 
 ### 2b. Install pnpm
 
@@ -195,7 +195,7 @@ Skip this for now if you just want to develop!
 ### What You Have Now
 
 - ✅ MongoDB running and secured
-- ✅ PNPM package manager configured  
+- ✅ PNPM package manager configured
 - ✅ Dependencies installed
 - ✅ Database initialized with collections
 - ✅ Authentication enabled

@@ -141,9 +141,10 @@
 #### **Phase 3: Content Updates** (Week 3) 🔄 IN PROGRESS
 
 - [x] Update README.md with accurate feature descriptions
-- [ ] Create missing API documentation
+- [x] Create missing API documentation
 - [ ] Update testing checklists to reflect current practices
 - [ ] Add deployment and production guides
+- [x] Delete bloated feature docs (annotations toggle, instrument selection, profile module, UX enhancements - removed 1928 lines of overkill documentation)
 
 #### **Phase 4: Quality Assurance** (Week 4) 🔄 IN PROGRESS
 
@@ -229,6 +230,7 @@ docs/
 - [ ] Create `docs/README.md` with documentation hierarchy and navigation
 - [ ] Merge Ollama documentation (`OLLAMA.md` + `OLLAMA_BACKEND_OVERVIEW.md` → `docs/ollama-integration.md`)
 - [ ] Consolidate setup docs (`GETTING_STARTED.md` + `DOCKER_SETUP.md` + `DOCKER_WSL2_GUIDE.md` → `docs/setup.md`)
+- [ ] Merge duplicate health check docs (`DEVELOPER_HEALTH_CHECK.md` + `DEVELOPER_HEALTH_CHECK_V2.md` → `docs/health-check.md`)
 - [ ] Review and delete remaining bloated feature docs (instrument selection, annotations toggle, etc.)
 
 #### **Missing Critical Documentation** 📭
@@ -1501,7 +1503,7 @@ pnpm test:e2e:report
 - [ ] User analytics
 - [ ] Uptime monitoring
 - [ ] Documentation
-- [ ] API documentation (Swagger)
+- [x] API documentation (Swagger)
 - [ ] Developer onboarding guide
 - [ ] Deployment guide
 - [ ] Troubleshooting guide
@@ -1690,7 +1692,7 @@ pnpm test:e2e:report
   - [ ] User analytics
   - [ ] Uptime monitoring
 - [ ] Documentation
-  - [ ] API documentation (Swagger)
+  - [x] API documentation (Swagger)
   - [ ] Developer onboarding guide
   - [ ] Deployment guide
   - [ ] Troubleshooting guide

@@ -56,6 +56,7 @@ NestJS (backend)
 - Use DTOs and class-validator for input validation; no untyped `any` bodies.
 - Keep controllers thin; orchestration in services.
 - Avoid promiscuous `async` everywhere: only use async for real IO (DB, network, file I/O). CPU-bound operations should be synchronous or delegated to worker processes.
+- **Swagger/OpenAPI documentation required**: All controllers, endpoints, DTOs, and responses must be fully documented with @nestjs/swagger decorators. Every endpoint must include @ApiOperation, @ApiResponse (success and error cases), and appropriate @ApiTags. DTOs must use @ApiProperty decorators for all properties. This ensures comprehensive API documentation and developer experience.
 
 Python (worker libraries)
 

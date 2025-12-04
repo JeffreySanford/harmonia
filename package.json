@@ -63,10 +63,12 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@nestjs/swagger": "^11.2.3",
     "axios": "^1.6.0",
     "bcrypt": "^6.0.0",
     "mongodb-memory-server": "^8.11.0",
     "reflect-metadata": "^0.1.13",
+    "swagger-ui-express": "^5.0.1",
     "tslib": "^2.3.0",
     "zone.js": "^0.15.1"
   },

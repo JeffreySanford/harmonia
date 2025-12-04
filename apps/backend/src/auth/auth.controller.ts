@@ -10,6 +10,12 @@ import {
   Delete,
   Param,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -49,6 +55,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
  * @see {@link file://./../../docs/AUTHENTICATION_SYSTEM.md} for API specification
  */
 @Controller('auth')
+@ApiTags('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
@@ -64,6 +71,30 @@ export class AuthController {
    */
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Register new user account' })
+  @ApiResponse({
+    status: 201,
+    description: 'User successfully registered',
+    schema: {
+      type: 'object',
+      properties: {
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: '507f1f77bcf86cd799439011' },
+            email: { type: 'string', example: 'user@example.com' },
+            username: { type: 'string', example: 'johndoe' },
+            role: { type: 'string', example: 'user' },
+          },
+        },
+        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIs...' },
+        refreshToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIs...' },
+        expiresIn: { type: 'number', example: 900 },
+      },
+    },
+  })
+  @ApiResponse({ status: 409, description: 'Email or username already exists' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
   async register(@Body() registerDto: RegisterDto) {
     // Debug logging in development/test only (mask sensitive fields)
     if (
@@ -97,6 +128,29 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Authenticate user with credentials' })
+  @ApiResponse({
+    status: 200,
+    description: 'User successfully authenticated',
+    schema: {
+      type: 'object',
+      properties: {
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: '507f1f77bcf86cd799439011' },
+            email: { type: 'string', example: 'user@example.com' },
+            username: { type: 'string', example: 'johndoe' },
+            role: { type: 'string', example: 'user' },
+          },
+        },
+        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIs...' },
+        refreshToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIs...' },
+        expiresIn: { type: 'number', example: 900 },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto) {
     if (
       process.env.NODE_ENV === 'development' ||
@@ -128,6 +182,21 @@ export class AuthController {
   @Post('refresh')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Refresh access token using refresh token' })
+  @ApiResponse({
+    status: 200,
+    description: 'Tokens successfully refreshed',
+    schema: {
+      type: 'object',
+      properties: {
+        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIs...' },
+        refreshToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIs...' },
+        expiresIn: { type: 'number', example: 900 },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
   async refresh(@Request() req: { user: { userId: string } }) {
     return this.authService.refresh(req.user.userId);
   }
@@ -144,6 +213,27 @@ export class AuthController {
    */
   @Get('session')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Validate current user session' })
+  @ApiResponse({
+    status: 200,
+    description: 'Session is valid',
+    schema: {
+      type: 'object',
+      properties: {
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: '507f1f77bcf86cd799439011' },
+            email: { type: 'string', example: 'user@example.com' },
+            username: { type: 'string', example: 'johndoe' },
+            role: { type: 'string', example: 'user' },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid or expired access token' })
   async checkSession(@Request() req: { user: { userId: string } }) {
     return this.authService.validateSession(req.user.userId);
   }
@@ -165,6 +255,19 @@ export class AuthController {
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Logout user (client-side token removal)' })
+  @ApiResponse({
+    status: 200,
+    description: 'User successfully logged out',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Logged out successfully' },
+        success: { type: 'boolean', example: true },
+      },
+    },
+  })
   async logout() {
     // For stateless JWT, logout is client-side (remove token from storage)
     // If using Redis sessions, invalidate session here:

@@ -97,10 +97,10 @@ security:
 
 ```javascript
 // This should fail without credentials
-db.runCommand({ connectionStatus: 1 })
+db.runCommand({ connectionStatus: 1 });
 
 // This should succeed with admin credentials
-db.auth("admin", "your_secure_password")
+db.auth('admin', 'your_secure_password');
 ```
 
 #### Layer 3: User Management
@@ -110,20 +110,20 @@ db.auth("admin", "your_secure_password")
 ```javascript
 // Admin user (full access)
 db.createUser({
-  user: "admin",
-  pwd: "secure_admin_password",
-  roles: ["userAdminAnyDatabase", "dbAdminAnyDatabase", "readWriteAnyDatabase"]
-})
+  user: 'admin',
+  pwd: 'secure_admin_password',
+  roles: ['userAdminAnyDatabase', 'dbAdminAnyDatabase', 'readWriteAnyDatabase'],
+});
 
 // Application user (limited access)
 db.createUser({
-  user: "harmonia_app",
-  pwd: "secure_app_password",
+  user: 'harmonia_app',
+  pwd: 'secure_app_password',
   roles: [
-    { role: "readWrite", db: "harmonia" },
-    { role: "dbAdmin", db: "harmonia" }
-  ]
-})
+    { role: 'readWrite', db: 'harmonia' },
+    { role: 'dbAdmin', db: 'harmonia' },
+  ],
+});
 ```
 
 **What it does:**
@@ -281,12 +281,12 @@ const ModelArtifactSchema = new Schema<IModelArtifact>({
   path: { type: String, required: true },
   size_bytes: { type: Number, required: true },
   hashes: {
-    sha256: { type: String, required: true }
+    sha256: { type: String, required: true },
   },
   license_id: { type: Schema.Types.ObjectId, ref: 'License', required: true },
   tags: [{ type: String }],
   created_at: { type: Date, default: Date.now },
-  created_by: { type: String, required: true }
+  created_by: { type: String, required: true },
 });
 
 // Indexes for performance
@@ -386,11 +386,11 @@ export default ModelArtifactSchema;
 4. **Create Collections**
 
    ```javascript
-   db.createCollection("model_artifacts")
-   db.createCollection("licenses")
-   db.createCollection("inventory_versions")
-   db.createCollection("jobs")
-   db.createCollection("events")
+   db.createCollection('model_artifacts');
+   db.createCollection('licenses');
+   db.createCollection('inventory_versions');
+   db.createCollection('jobs');
+   db.createCollection('events');
    ```
 
 ### Environment Configuration
