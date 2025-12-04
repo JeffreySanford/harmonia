@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, inject, NgZone } from '@angular/core';
 import { HealthService } from '../../../services/health.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
@@ -35,7 +35,7 @@ import * as AuthSelectors from '../../../store/auth/auth.selectors';
   styleUrls: ['./login-modal.component.scss'],
   standalone: false,
 })
-export class LoginModalComponent implements OnInit, OnDestroy {
+export class LoginModalComponent implements OnInit, AfterViewInit, OnDestroy {
   private fb = inject(FormBuilder);
   private store = inject(Store);
   private dialogRef = inject(MatDialogRef<LoginModalComponent>);
@@ -59,7 +59,7 @@ export class LoginModalComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
 
   ngOnInit(): void {
-    console.log('login-modal: ngOnInit, mode:', this.mode);
+    // ngOnInit: initialization complete
     this.initializeForms();
 
     // Close modal on successful authentication
@@ -74,15 +74,12 @@ export class LoginModalComponent implements OnInit, OnDestroy {
 
   ngAfterViewInit(): void {
     try {
-      console.log('login-modal: ngAfterViewInit - component initialized', {
-        mode: this.mode,
-      });
       (window as any).localStorage.setItem(
         'e2e_login_modal_init',
         Date.now().toString()
       );
     } catch (e) {
-      // ignore
+      // ignore errors during e2e initialization checks
     }
   }
 
@@ -150,7 +147,9 @@ export class LoginModalComponent implements OnInit, OnDestroy {
             'e2e_login_attempt',
             Date.now().toString()
           );
-        } catch (e) {}
+        } catch (e) {
+          // ignore storage errors
+        }
       });
     } else {
       this.loginForm.markAllAsTouched();
@@ -163,7 +162,6 @@ export class LoginModalComponent implements OnInit, OnDestroy {
   onRegister(): void {
     if (this.registerForm.valid) {
       const { email, username, password } = this.registerForm.value;
-      console.warn('login-modal: onRegister called', { email, username });
       // Ensure dispatch happens inside NgZone
       this.ngZone.run(() => {
         this.store.dispatch(
@@ -174,7 +172,9 @@ export class LoginModalComponent implements OnInit, OnDestroy {
             'e2e_register_attempt',
             Date.now().toString()
           );
-        } catch (e) {}
+        } catch (e) {
+          // ignore storage errors
+        }
       });
     } else {
       this.registerForm.markAllAsTouched();
