@@ -1,17 +1,19 @@
 import { NgModule } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSliderModule } from '@angular/material/slider';
 
 /**
  * Material Design modules for Song Generation feature.
- * 
+ *
  * Provides Material components for narrative-driven song creation forms.
- * 
+ *
  * **Components Included**:
  * - `MatButtonModule` (3 KB) - Action buttons
  * - `MatCardModule` (2 KB) - Form container
@@ -20,39 +22,43 @@ import { MatSliderModule } from '@angular/material/slider';
  * - `MatInputModule` (2.5 KB) - Text inputs (title, lyrics)
  * - `MatSelectModule` (5 KB) - Selectors (genre, style, mood)
  * - `MatSliderModule` (4 KB) - Duration/intensity controls
- * 
+ *
  * **Total Bundle Size**: ~22 KB
- * 
+ *
  * **Form Features**:
  * - Song title and description inputs
  * - Genre and style selectors
  * - Lyric input/generation
  * - Duration and mood controls
- * 
+ *
  * **Usage**: Imported in `SongGenerationModule` for lazy-loaded route.
- * 
+ *
  * **Tree-Shaking**: Only loaded when user navigates to /generate/song.
- * 
+ *
  * @see {@link file://./docs/MATERIAL_MODULES.md} for architecture documentation
  */
 @NgModule({
   imports: [
     MatButtonModule,
     MatCardModule,
+    MatChipsModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatProgressSpinnerModule,
     MatSelectModule,
     MatSliderModule,
   ],
   exports: [
     MatButtonModule,
     MatCardModule,
+    MatChipsModule,
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatProgressSpinnerModule,
     MatSelectModule,
     MatSliderModule,
-  ]
+  ],
 })
-export class SongGenerationMaterialModule { }
+export class SongGenerationMaterialModule {}

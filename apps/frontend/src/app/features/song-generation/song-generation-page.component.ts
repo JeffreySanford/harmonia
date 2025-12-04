@@ -15,6 +15,12 @@ interface ValidationResult {
   message: string;
 }
 
+interface GenreSuggestion {
+  genre: string;
+  selected: boolean;
+  feedback?: 'positive' | 'negative';
+}
+
 /**
  * Song Generation Page Component
  *
@@ -41,7 +47,7 @@ interface ValidationResult {
   selector: 'harmonia-song-generation-page',
   standalone: false,
   templateUrl: './song-generation-page.component.html',
-  styleUrl: './song-generation-page.component.scss',
+  styleUrls: ['./song-generation-page.component.scss'],
 })
 export class SongGenerationPageComponent {
   private readonly router = inject(Router);
@@ -71,20 +77,30 @@ export class SongGenerationPageComponent {
   isApproved = false;
   showMetadata = false;
 
-  // Genre options (12 standard genres)
+  // Genre suggestion states
+  genreSuggestionState: 'empty' | 'loading' | 'results' | 'error' = 'empty';
+  genreSuggestions: GenreSuggestion[] = [];
+  genreSuggestionError = 'Failed to get genre suggestions';
+
+  // Genre options (17 standard genres)
   readonly genres = [
-    'pop',
-    'rock',
-    'hip-hop',
-    'country',
+    '1940s big band',
+    'rat pack (swing/lounge)',
     'jazz',
     'blues',
-    'electronic',
-    'r&b',
-    'folk',
+    "rock 'n' roll",
     'classical',
-    'indie',
-    'alternative',
+    'pop',
+    'hip hop',
+    'country',
+    'folk',
+    'electronic/dance',
+    'reggae',
+    'industrial',
+    'house',
+    'metal',
+    'gospel',
+    'melodic rock ballads',
   ];
 
   // Mood options (8 standard moods)
@@ -428,5 +444,77 @@ export class SongGenerationPageComponent {
         },
       },
     });
+  }
+
+  /**
+   * Handle genre suggestion request
+   */
+  async onSuggestGenres(): Promise<void> {
+    this.genreSuggestionState = 'loading';
+    this.genreSuggestionError = '';
+
+    try {
+      const response = await this.http
+        .post<string[]>('/api/songs/suggest-genres', {
+          narrative: this.narrative,
+          model: this.selectedModel,
+        })
+        .toPromise();
+
+      if (response && response.length > 0) {
+        this.genreSuggestions = response.map((genre) => ({
+          genre,
+          selected: false,
+        }));
+        this.genreSuggestionState = 'results';
+      } else {
+        throw new Error('No suggestions received');
+      }
+    } catch (error) {
+      console.error('Genre suggestion error:', error);
+      this.genreSuggestionError =
+        'Failed to get genre suggestions. Please try again.';
+      this.genreSuggestionState = 'error';
+    }
+  }
+
+  /**
+   * Handle genre toggle in suggestions
+   */
+  onGenreToggled(suggestion: GenreSuggestion): void {
+    // Update the suggestion in the array
+    const index = this.genreSuggestions.findIndex(
+      (s) => s.genre === suggestion.genre
+    );
+    if (index !== -1) {
+      this.genreSuggestions[index] = suggestion;
+    }
+  }
+
+  /**
+   * Handle user feedback on suggestions
+   */
+  onFeedbackGiven(feedback: 'positive' | 'negative'): void {
+    // Store feedback for future improvement
+    console.log(
+      'User feedback:',
+      feedback,
+      'for suggestions:',
+      this.genreSuggestions
+    );
+
+    // In production, send to backend for analytics
+    // this.http.post('/api/feedback/genre-suggestions', { feedback, suggestions: this.genreSuggestions });
+
+    // Reset suggestions after feedback
+    this.genreSuggestionState = 'empty';
+    this.genreSuggestions = [];
+  }
+
+  /**
+   * Handle retry suggestions
+   */
+  onRetrySuggestions(): void {
+    this.onSuggestGenres();
   }
 }

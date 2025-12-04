@@ -1,15 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigModule } from '@nestjs/config';
 import { SongsController } from './songs.controller';
 import { OllamaService } from '../llm/ollama.service';
+import { MmslParserService } from './mmsl-parser.service';
 
 describe('SongsController', () => {
   let controller: SongsController;
   const mockOllama = { generateMetadata: jest.fn() } as any;
+  const mockMmslParser = { parse: jest.fn(), validate: jest.fn() } as any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [ConfigModule.forRoot({ isGlobal: true })],
       controllers: [SongsController],
-      providers: [{ provide: OllamaService, useValue: mockOllama }],
+      providers: [
+        { provide: OllamaService, useValue: mockOllama },
+        { provide: MmslParserService, useValue: mockMmslParser },
+      ],
     }).compile();
 
     controller = module.get<SongsController>(SongsController);

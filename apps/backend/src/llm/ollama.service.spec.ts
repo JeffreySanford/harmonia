@@ -9,6 +9,10 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 describe('OllamaService', () => {
   let service: OllamaService;
 
+  beforeEach(async () => {
+    service = await createServiceWithModel();
+  });
+
   async function createServiceWithModel(model?: string) {
     const old = process.env.OLLAMA_MODEL;
     if (model) process.env.OLLAMA_MODEL = model;
@@ -41,7 +45,7 @@ describe('OllamaService', () => {
       data: {
         choices: [
           {
-            text: '{"title":"D","lyrics":"a\nb","genre":"rock","mood":"happy"}',
+            text: '{"title":"D","lyrics":"a b","genre":"rock","mood":"happy"}',
           },
         ],
       },
@@ -86,5 +90,27 @@ describe('OllamaService', () => {
     expect(res.title).toBe('M');
     expect(res.genre).toBe('indie');
     expect(res.mood).toBe('calm');
+  });
+
+  it('should generate full song with melody, tempo, and instrumentation', async () => {
+    service = await createServiceWithModel('deepseek');
+    mockedAxios.post.mockResolvedValueOnce({
+      data: {
+        choices: [
+          {
+            text: '{"title":"Test Song","lyrics":"Verse 1\\nChorus","genre":"pop","mood":"happy","melody":"Upbeat melody","tempo":120,"key":"C major","instrumentation":["piano","drums","bass"]}',
+          },
+        ],
+      },
+    });
+    const res = await service.generateSong('happy story', 180);
+    expect(res.title).toBe('Test Song');
+    expect(res.lyrics).toBe('Verse 1\nChorus');
+    expect(res.genre).toBe('pop');
+    expect(res.mood).toBe('happy');
+    expect(res.melody).toBe('Upbeat melody');
+    expect(res.tempo).toBe(120);
+    expect(res.key).toBe('C major');
+    expect(res.instrumentation).toEqual(['piano', 'drums', 'bass']);
   });
 });

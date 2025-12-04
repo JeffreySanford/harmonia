@@ -1,29 +1,159 @@
 # Harmonia - Project TODO List
 
-**Last Updated**: December 3, 2025 - 12:15 PM  
-**Project**: Harmonia Music Generation Platform  
-**Phase**: Phase 3 - Frontend-Backend Integration ✅ COMPLETE  
-**Status**: 🟢 Production Ready - Ready for E2E Testing  
+**Last Updated**: December 5, 2025 - 11:00 AM
+**Project**: Harmonia Music Generation Platform
+**Phase**: Phase 3 - Frontend-Backend Integration ✅ COMPLETE
+**Status**: 🟢 Production Ready - Ready for E2E Testing
 **Servers**: Backend (3000) ✅ | Frontend (4200) ✅
+**Start Date**: November 30, 2025
+**Hours Invested**: ~80 hours (estimated based on completed authentication system, frontend-backend integration, and extensive documentation across 4 days)
 
 ---
 
-## REORGANIZED TODO (Snapshot)
+## 📅 **REALISTIC TIMELINE & SCOPE ADJUSTMENT**
 
-### Opening
+### **Original Plan vs. Current Reality**
 
-This snapshot highlights priorities and progress; the file contains full backlog and details below.
+- **Original**: 3 months with full expert team (6-9 months total development)
+- **Current**: Solo developer + AI assistant (estimated 12-18 months for MVP)
+- **Scope**: Focus on core music generation MVP, defer advanced features
 
-### Overview
+### **MVP Definition (Months 1-6)**
 
-Maintain production readiness, finish feature work (Library/Profile) and stabilize E2E tests and CI flows.
+- ✅ **Completed**: Authentication, basic UI, Ollama integration
+- 🔄 **Current**: Song generation E2E, basic instrument selection
+- 🎯 **Target**: Functional song generation with AI lyrics + basic audio
+- 📅 **Timeline**: 3-4 months to working MVP
 
-### Current Major Items & Progress (quick view)
+### **Post-MVP (Months 7-12)**
+
+- Advanced instrument selection & expand features
+- Video storyboarding integration
+- Professional audio mixing/mastering
+- User library and collaboration features
+
+### **Long-term Vision (Year 2+)**
+
+- Multi-model coordination, live generation
+- Advanced AI features, third-party integrations
+- Enterprise features, monetization
+
+---
+
+## 🔥 **CURRENT PRIORITIES** (What We're Working On NOW)
+
+**Progress: 40% Complete** | **Visual Indicator:** ████████░░░░░░░░░░
+
+### **Month 1: Foundation Building** (Weeks 1-4)
+
+#### Core Infrastructure Tasks
+
+- Create Instrument Catalog JSON (50+ presets with categories, fallback rules, sample references) — ✅ Completed
+- Extend M-MSL Parser for @Instruments headers and per-section parsing — ✅ Completed
+- Implement basic stem export functionality (WAV/MP3, per-instrument stems) — ✅ Completed
+- Build multi-stage generation pipeline (Prompt → Outline → Melody → Arrangement → Audio) — Planned
+- **Review DANGER_AREAS.md for music generation risks (items 25-38) before implementation** — Required
+
+#### Quality & Testing
+
+- Add E2E coverage for Song Generation flows using `llm:mock` — In progress
+- Integrate `llm:mock` into CI pipeline — Planned
+- Integrate Mistral3 model into Ollama for enhanced song generation — Planned
+- Implement actual song generation with Mistral3 and DeepSeek models — Planned
+
+### **Current Status Overview**
 
 - Health Check (backend + frontend indicator): ✅ Completed
 - E2E Navigation tests for guest redirect & session invalidation: ✅ Completed
-- Ollama Integration (metadata generation): ⚠️ In progress (90%)
-- CI-friendly mock server and E2E stabilization: ⏳ In progress (60%)
+- Ollama Integration (metadata generation): ✅ Completed (100%)
+- Mistral3 Integration for Song Generation: ⚠️ In progress (10%)
+- CI-friendly mock server and E2E stabilization: ⏳ In progress (75%)
+
+---
+
+## 🚀 **NEXT PRIORITIES** (Coming Up)
+
+### **Month 2: Validation & Demo** (Weeks 5-8)
+
+- Add JSON schema validation for instrument catalog and IR updates — Planned
+- Create demo CLI (DSL → IR → events.json → WAV stems with sample mapping) — Planned
+- Implement asset fallback system (missing instruments, polyphony limits) — Planned
+- **Implement lyric diversity constraints and attention span modeling (addresses risk #26)** — Planned
+
+### **Month 3-4: AI Enhancement** (Weeks 9-16)
+
+- Implement AI palette suggestion service (LLM prompts + genre→palette mapping) — Planned
+- Build prompt template libraries with few-shot examples and validation — Planned
+- Create A/B testing framework for UI and prompt optimization — Planned
+- **Review DANGER_AREAS.md for AI and content quality risks before prompt engineering** — Required
+- Add structured prompt templates for reliable LLM output — Planned
+
+### **Month 5-6: Production Tools** (Weeks 17-24)
+
+- Build authoring UI with expand panel, grouped instrument controls, and preview — Planned
+- Implement auto-mixing tools (intelligent leveling, smart EQ, sidechain routing) — Planned
+- Add mastering pipeline (LUFS targets, platform-specific presets) — Planned
+- Create DAW marker export (JSON format for Premiere/Resolve integration) — Planned
+- **Review DANGER_AREAS.md for mixing/mastering and video sync risks** — Required
+
+---
+
+## 🔮 **FUTURE ROADMAP** (6+ Months Out)
+
+### **Months 7-9: Advanced Features**
+
+- Add low-latency generation for live preview and improvisation — Planned
+- Implement vocal synthesis with consent and watermarking systems — Planned
+- Build collaboration features (shared palettes, team libraries, comments) — Planned
+- Create assistive AI modes ("rewrite chorus", instant previews) — Planned
+- **Review DANGER_AREAS.md for security and legal risks in advanced features** — Required
+
+### **Months 10-12: Scale & Polish**
+
+- Implement comprehensive caching and reuse system — Planned
+- Add monitoring, cost metrics, and performance analytics — Planned
+- Build legal compliance features (content safety filters, licensing UI) — Planned
+- Create failover systems and latency SLAs — Planned
+- **Complete full DANGER_AREAS.md risk mitigation checklist before production** — Required
+
+### **Year 2+: Long-term Vision**
+
+- Multi-model coordination, live generation
+- Advanced AI features, third-party integrations
+- Enterprise features, monetization
+
+---
+
+## 📋 **BACKLOG & SUPPORTING TASKS**
+
+- **Review DANGER_AREAS.md for AI and content quality risks before prompt engineering** — Required
+- Add structured prompt templates for reliable LLM output — Planned
+
+### Month 5-6: Production Tools (Weeks 17-24)
+
+- Build authoring UI with expand panel, grouped instrument controls, and preview — Planned
+- Implement auto-mixing tools (intelligent leveling, smart EQ, sidechain routing) — Planned
+- Add mastering pipeline (LUFS targets, platform-specific presets) — Planned
+- Create DAW marker export (JSON format for Premiere/Resolve integration) — Planned
+- **Review DANGER_AREAS.md for mixing/mastering and video sync risks** — Required
+
+### Music Generation — Future Phases (Phase 4-5: Advanced Features & Scale)
+
+#### Months 7-9: Advanced Features
+
+- Add low-latency generation for live preview and improvisation — Planned
+- Implement vocal synthesis with consent and watermarking systems — Planned
+- Build collaboration features (shared palettes, team libraries, comments) — Planned
+- Create assistive AI modes ("rewrite chorus", instant previews) — Planned
+- **Review DANGER_AREAS.md for security and legal risks in advanced features** — Required
+
+#### Months 10-12: Scale & Polish
+
+- Implement comprehensive caching and reuse system — Planned
+- Add monitoring, cost metrics, and performance analytics — Planned
+- Build legal compliance features (content safety filters, licensing UI) — Planned
+- Create failover systems and latency SLAs — Planned
+- **Complete full DANGER_AREAS.md risk mitigation checklist before production** — Required
 
 ### Prioritized Backlog
 
@@ -37,9 +167,24 @@ Maintain production readiness, finish feature work (Library/Profile) and stabili
 
 - Add E2E coverage for Song Generation flows using `llm:mock` — In progress
 - Integrate `llm:mock` into CI pipeline — Planned
-- Add `minstral3` mapper & normalization — Planned
+- Integrate Mistral3 model into Ollama for enhanced song generation — Partially Complete (Service ready)
+- Implement actual song generation with Mistral3 and DeepSeek models — Partially Complete (Backend service ready, needs endpoint + frontend wiring)
+- Add narrative length indicator to song generation UI based on duration — Planned
+- **NEW**: Implement LLM-powered genre suggestions (3+ genres based on narrative) — ✅ COMPLETED
+- **NEW**: Add lyrics analysis selector - allow users to paste prebuilt lyrics and analyze using Song Annotation DSL ([Section], (Performance), &lt;Audio Cue&gt;) — Planned
+- **NEW**: Implement M-MSL (Micro Music Score Language) - unified DSL for lyrics, performance directions, audio cues, and beat-level timing — Planned
+- **NEW**: Add beat counting system for video storyboarding synchronization — Planned
+- **NEW**: Add UI toggle to enable/disable detailed annotations display in song generation sections — Planned
+- **NEW**: Implement Instrument Selection & "Expand" Feature - AI auto-select instrument palettes with manual override controls — Planned
+- **Review DANGER_AREAS.md regularly during development and UAT phases** — Ongoing
 
-#### Medium
+## Instrument Preview Feature Implementation
+
+- Add Instrument Audio Preview Feature - Hover descriptions and click-to-play short clips — Planned
+
+See detailed implementation in `docs/INSTRUMENT_PREVIEW_FEATURE.md`
+
+### Medium
 
 - Implement User Library end-to-end — Planned
 - Profile module and APIs — Planned
@@ -52,6 +197,91 @@ Maintain production readiness, finish feature work (Library/Profile) and stabili
 
 - Social logins, 2FA — Backlog
 
+### Production, Mixing & Mastering Features
+
+#### High Priority
+
+- Implement stem rendering & export (per-instrument, grouped, WAV/MP3 formats) — Planned
+- Add auto-mixing tools (intelligent leveling, smart EQ, sidechain routing) — Planned
+- Create mastering pipeline (LUFS targets, platform-specific presets) — Planned
+
+#### Medium Priority
+
+- Build automation & FX chains (saveable effect chains, preset mapping) — Planned
+- Add human-in-the-loop mixing (non-destructive stem editing, quick iteration) — Planned
+
+#### Low Priority
+
+- Style/stem transfer capabilities (convert between mix styles) — Backlog
+- Advanced mixing features (differentiable mixing, end-to-end learning) — Backlog
+
+### Video / Storyboard / DAW Integration
+
+#### High Priority
+
+- Add timecode & SMPTE support (professional NLE workflow compatibility) — Planned
+- Implement marker sidecars & NLE plugins (JSON import for Premiere/Resolve) — Planned
+
+#### Medium Priority
+
+- Create shot templates & visual mappings (musical event to visual template mapping) — Planned
+- Build MIDI/OSC live control bridge (real-time event streaming) — Planned
+
+#### Low Priority
+
+- Advanced video features (cross-modal story generation, motion sync) — Backlog
+
+### Authoring Tools & UX Enhancements
+
+#### High Priority
+
+- Build authoring editor (syntax-highlighted M-MSL editor, live validation) — Planned
+- Implement A/B comparison & variation browser (side-by-side auditioning) — Planned
+
+#### Medium Priority
+
+- Add non-destructive editing (snapshots, undo/redo, branching) — Planned
+- Create assistive AI modes ("rewrite chorus", instant previews) — Planned
+
+#### Low Priority
+
+- Collaboration features (shared palettes, team libraries, comments) — Backlog
+- Accessibility improvements (keyboard-first, transcripts, screen reader) — Backlog
+
+### Legal, Ethics & Safety
+
+#### High Priority
+
+- Implement content safety filters (harmful content detection, moderation) — Planned
+- Add licensing UI (clear license display, usage restrictions) — Planned
+
+#### Medium Priority
+
+- Build DMCA & takedown workflow (automated rights claim processing) — Planned
+- Add voice cloning consent system (verifiable consent, watermarking) — Planned
+
+#### Low Priority
+
+- Copyright tracking (model/dataset provenance, rights notifications) — Backlog
+- Advanced safety features (hate content filters, ethical usage guidelines) — Backlog
+
+### Infrastructure & Scale
+
+#### High Priority
+
+- Implement caching & reuse system (generated content caching, deduplication) — Planned
+- Add monitoring & cost metrics (generation time, resource tracking) — Planned
+
+#### Medium Priority
+
+- Build failover & latency SLAs (low-latency modes, quality degradation) — Planned
+- Enhance security & secrets management (API key rotation, access control) — Planned
+
+#### Low Priority
+
+- Model hosting orchestration (GPU scheduling, multi-tenant inference) — Backlog
+- Advanced analytics (usage patterns, monetization models) — Backlog
+
 ### Completed (Organized)
 
 #### High
@@ -60,6 +290,9 @@ Maintain production readiness, finish feature work (Library/Profile) and stabili
 - `OllamaService` endpoint `POST /api/songs/generate-metadata` implemented — Done
 - Developer health endpoint & login modal health indicator — Done
 - E2E tests for guest redirect & session invalidation — Done
+- E2E authentication test refactoring (modular structure) — Done
+- Linting configuration fixes (recursive loop, E2E file limits) — Done
+- Pre-commit hooks updated for proper file size auditing — Done
 
 #### Medium
 
@@ -152,6 +385,13 @@ Note: The detailed remaining backlog items remain listed below in each section f
   - [x] Fixed MD024 (duplicate headings) in NGRX_OPTIMIZATION.md
   - [x] Fixed MD024 (duplicate headings) in TYPESCRIPT_CONFIGURATION.md
   - [x] Fixed MD024 (duplicate headings) in USER_LIBRARY.md
+- [x] E2E Test Refactoring and CI Improvements
+  - [x] Refactored monolithic `authentication.spec.ts` (559 lines) into modular orchestrator importing individual test suites
+  - [x] Created modular auth test files: `registration.spec.ts`, `login.spec.ts`, `header.spec.ts`, `routes.spec.ts`, `admin.spec.ts`, `logout.spec.ts`
+  - [x] Fixed recursive lint execution by excluding harmonia project from `lint:all` command
+  - [x] Updated pre-commit hooks to use Python audit script (allows 900 lines for test files vs 500 default)
+  - [x] Configured ESLint to lint E2E test files with appropriate overrides
+  - [x] Resolved file size audit conflicts between ESLint max-lines and Python script allowances
 
 ---
 
@@ -184,21 +424,27 @@ Note: The detailed remaining backlog items remain listed below in each section f
   - [ ] NGRX: Library state slice (actions/reducer/effects/selectors) and profile selectors/actions where applicable.
   - [ ] Minimal unit tests to validate the API workflows and store integration for library/profile.
 
-  ### Highest Priority: Song Generation - Ollama Integration (AI Metadata/ Lyrics)
+  ### Highest Priority: Song Generation - Advanced LLM Integration (Mistral3/DeepSeek) ⚡
 
-  - Reason: The user-facing Song Generation feature is currently simulated in the frontend. Replacing the simulated metadata (title, lyrics, genre, mood) with real LLM-driven metadata via Ollama (or the final `minstral3` LLM) is required to provide genuine, context-aware lyrics and better song-inference quality.
+  - Reason: Metadata generation is complete; now implement full song creation using Mistral3 and DeepSeek models for higher quality lyrics and melody generation. Add UI feedback for narrative length based on song duration.
   - Acceptance criteria:
 
-    - [ ] Backend: Implement `OllamaService` with a `generateMetadata(narrative, duration)` method (HTTP client for the running Ollama server).
-    - [ ] Backend: POST `/api/songs/generate-metadata` endpoint that accepts narrative & duration, returns a consistent JSON response { title, lyrics, genre, mood, syllableCount }.
-    - [ ] Frontend: Replace stubbed `generateMetadata()` in `song-generation-page.component.ts` to call the backend endpoint and display returned metadata with editing enabled.
-    - [ ] Fallback: When Ollama is not available (DEV), continue to use simulated generation (no user-facing error). In production (USE_OLLAMA=true), require backend call success and display errors gracefully.
-    - [ ] Tests: Add unit and e2e tests for the endpoint and the front-end flow (mock Ollama responses when running tests); add integration test verifying syllable count validation, approve flow and the MusicGen handoff.
-    - [ ] Security: Add rate limit and input-size restrictions (backend) to protect the Ollama API and avoid large prompts causing cost or memory issues.
+    - [x] Backend: Extend `OllamaService` to support Mistral3 and DeepSeek models with model switching
+    - [ ] Backend: Implement full song generation endpoint that creates complete lyrics and melody suggestions (Service method exists, needs controller endpoint)
+    - [x] **NEW**: Backend: Add genre suggestion endpoint that analyzes narrative and suggests 3+ relevant genres from available options
+    - [ ] Frontend: Add narrative length indicator showing required content based on song duration (e.g., "30s jingle needs ~50 words, 3min song needs ~300 words")
+    - [ ] Frontend: Implement LLM-guided estimation for narrative sufficiency (optional back-and-forth with LLM for complex songs)
+    - [x] Frontend: Add genre suggestion UI component showing LLM-recommended genres as selectable chips
+    - [ ] **NEW**: Frontend: Add lyrics analysis selector allowing users to paste prebuilt lyrics and parse using Song Annotation DSL
+    - [ ] **NEW**: Frontend: Wire song generation page to call `/api/songs/generate-song` endpoint instead of just metadata
+    - [ ] **NEW**: Frontend: Update song generation UI to display full song properties (melody, tempo, key, instrumentation, intro/outro)
+    - [ ] **NEW**: Frontend: Add UI controls for editing generated song structure (tempo, key, instrumentation)
+    - [ ] Tests: Update E2E tests for full song generation flow with new models
+    - [ ] Performance: Optimize prompts and add caching for repeated generations
 
       - [x] Protect generate routes using `authGuard` so guests cannot access `generate/*` and edit routes.
 
-    - [ ] Add `docs/OLLAMA_BACKEND_OVERVIEW.md` as a reference and track tasks in the TODO list for implementation
+    - [x] Basic metadata generation with Ollama (100% complete)
 
   #### Implementation plan (high-level)
 
@@ -248,13 +494,17 @@ Note: The detailed remaining backlog items remain listed below in each section f
 
   Checklist (owner: Backend + Frontend)
 
-  - [ ] Add `OllamaService` to backend (with configuration variables: `OLLAMA_URL`, `OLLAMA_MODEL`, `USE_OLLAMA`)
-  - [ ] Add `/api/songs/generate-metadata` controller + DTO
-  - [ ] Add frontend integration (replace simulated generator) + UI states
-  - [ ] Add dev scripts to probe Ollama & document in `SONG_MUSIC_GENERATION_WORKFLOW.md`
-  - [ ] Add unit/integration tests for controller and service; add e2e flow test
-  - [ ] Add security safeguards: input size, rate-limiting, and fallback to simulated generator
-  - [ ] Add `minstral3` integration plan (switch via `OLLAMA_MODEL`)
+  - [x] Add `OllamaService` to backend (with configuration variables: `OLLAMA_URL`, `OLLAMA_MODEL`, `USE_OLLAMA`)
+  - [x] Add `/api/songs/generate-metadata` controller + DTO
+  - [x] Add frontend integration (replace simulated generator) + UI states
+  - [x] Add dev scripts to probe Ollama & document in `SONG_MUSIC_GENERATION_WORKFLOW.md`
+  - [x] Add unit/integration tests for controller and service; add e2e flow test
+  - [x] Add security safeguards: input size, rate-limiting, and fallback to simulated generator
+  - [x] Add `minstral3` integration plan (switch via `OLLAMA_MODEL`)
+  - [ ] Add `/api/songs/generate-song` controller endpoint (service method exists)
+  - [ ] Update frontend to call generate-song instead of generate-metadata for full song creation
+  - [ ] Update frontend UI to display full song properties (melody, tempo, key, instrumentation, intro/outro)
+  - [ ] Add frontend controls for editing generated song structure
 
   Additional verification task: Check if an Ollama instance is running (runtime check)
 
@@ -272,6 +522,43 @@ Note: The detailed remaining backlog items remain listed below in each section f
 - [x] SCSS/theming resolved (frontend builds successfully)
 - [x] Both servers running and responding
 - [x] NgZone runtime errors fixed in all action dispatches
+
+---
+
+### **NEW**: Lyrics Analysis Selector - Song Annotation DSL Integration 📝
+
+**Feature**: Add a UI selector that allows users to paste prebuilt lyrics and analyze them using the Song Annotation DSL. This enables users to import existing songs with structured annotations for [Sections], (Performance directions), and &lt;Audio Cues&gt;.
+
+**Reason**: Users may have existing lyrics or want to import songs with professional annotations. This feature provides a bridge between external song formats and Harmonia's generation system.
+
+**Acceptance criteria**:
+
+- [ ] Frontend: Add toggle/selector in song generation page to switch between "Generate New" and "Analyze Existing"
+- [ ] Frontend: Add textarea for pasting prebuilt lyrics with DSL annotations
+- [ ] Backend: Implement lyrics parsing endpoint that validates and parses DSL annotations
+- [ ] Backend: Return structured JSON with sections, performance notes, and audio cues
+- [ ] Frontend: Display parsed structure with syntax highlighting for [Section], (Performance), &lt;Cue&gt;
+- [ ] Frontend: Allow editing of parsed content and conversion back to generation workflow
+- [ ] Integration: Support import from parsed DSL into song generation pipeline
+- [ ] Documentation: Update `SONG_ANNOTATION_DSL.md` with UI usage examples
+- [ ] Tests: Add unit tests for DSL parser and E2E tests for analysis workflow
+
+**Implementation plan**:
+
+1. **UI Component**: Add selector toggle and analysis textarea to song generation page
+2. **Parser Integration**: Use TypeScript DSL parser from `SONG_ANNOTATION_DSL.md` in backend service
+3. **Validation**: Add comprehensive validation for DSL syntax and provide helpful error messages
+4. **Display**: Show parsed structure with color-coded annotations (sections=blue, performance=green, cues=red)
+5. **Export**: Allow users to export parsed songs back to DSL format
+6. **Templates**: Provide example DSL templates for common song structures
+
+**Technical details**:
+
+- Parser location: `apps/backend/src/songs/song-dsl-parser.service.ts`
+- Endpoint: `POST /api/songs/analyze-lyrics`
+- Input: `{ lyrics: string, validateOnly?: boolean }`
+- Output: Parsed JSON structure matching DSL schema
+- Error handling: Detailed line-by-line error reporting for invalid DSL
 
 ---
 

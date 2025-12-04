@@ -43,6 +43,20 @@
         </mat-form-field>
       </section>
 
+      <!-- Step 1.5: Genre Suggestions -->
+      <section class="genre-suggestion-section">
+        <harmonia-genre-suggestion
+          [narrative]="narrative"
+          [state]="genreSuggestionState"
+          [suggestions]="genreSuggestions"
+          [errorMessage]="genreSuggestionError"
+          (suggestGenres)="onSuggestGenres()"
+          (genreToggled)="onGenreToggled($event)"
+          (feedbackGiven)="onFeedbackGiven($event)"
+          (retryClicked)="onRetrySuggestions()"
+        ></harmonia-genre-suggestion>
+      </section>
+
       <!-- Step 2: Duration Selection -->
       <section class="duration-section">
         <h3 class="section-title">

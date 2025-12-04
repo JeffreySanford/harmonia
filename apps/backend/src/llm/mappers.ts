@@ -55,6 +55,9 @@ export const modelMappers: Record<string, ModelMapper | undefined> = {
   'deepseek-coder:6.7b': deepseekMapper,
   minstral3: minstral3Mapper,
   'minstral3:1.0': minstral3Mapper,
+  mistral: minstral3Mapper,
+  'mistral:7b': minstral3Mapper,
+  'mistral-7b': minstral3Mapper,
 };
 
 export function mapResponseForModel(

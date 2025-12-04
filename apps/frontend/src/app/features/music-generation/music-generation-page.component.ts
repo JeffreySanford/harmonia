@@ -17,9 +17,9 @@ interface InstrumentOption {
 
 /**
  * Music Generation Page Component
- * 
+ *
  * Generates audio music files from song metadata using MusicGen model.
- * 
+ *
  * Features:
  * - Import approved song metadata from Song Generation
  * - Pre-filled fields from imported song (title, lyrics, genre, duration)
@@ -27,7 +27,7 @@ interface InstrumentOption {
  * - Instrumentation multi-select
  * - Vocals style selection
  * - Audio generation with progress tracking
- * 
+ *
  * Workflow:
  * 1. Import song from Song Generation (optional)
  * 2. Review/adjust music parameters (BPM, instrumentation)
@@ -40,7 +40,7 @@ interface InstrumentOption {
   selector: 'harmonia-music-generation-page',
   standalone: false,
   templateUrl: './music-generation-page.component.html',
-  styleUrl: './music-generation-page.component.scss',
+  styleUrls: ['./music-generation-page.component.scss'],
 })
 export class MusicGenerationPageComponent implements OnInit {
   private readonly router = inject(Router);
@@ -85,8 +85,14 @@ export class MusicGenerationPageComponent implements OnInit {
 
   // Mood options
   readonly moods = [
-    'energetic', 'melancholic', 'romantic', 'aggressive',
-    'calm', 'mysterious', 'uplifting', 'nostalgic'
+    'energetic',
+    'melancholic',
+    'romantic',
+    'aggressive',
+    'calm',
+    'mysterious',
+    'uplifting',
+    'nostalgic',
   ];
 
   // Vocals style options
@@ -128,9 +134,9 @@ export class MusicGenerationPageComponent implements OnInit {
       this.genre = this.importedSong.genre;
       this.mood = this.importedSong.mood;
       this.duration = this.importedSong.duration;
-      
+
       // Set BPM based on genre
-      const genreData = this.genres.find(g => g.value === this.genre);
+      const genreData = this.genres.find((g) => g.value === this.genre);
       if (genreData) {
         this.bpm = genreData.defaultBpm;
       }
@@ -145,18 +151,18 @@ export class MusicGenerationPageComponent implements OnInit {
    */
   private getDefaultInstruments(genre: string): string[] {
     const defaults: Record<string, string[]> = {
-      'pop': ['electric-guitar', 'drums', 'bass', 'synth'],
-      'rock': ['electric-guitar', 'drums', 'bass'],
+      pop: ['electric-guitar', 'drums', 'bass', 'synth'],
+      rock: ['electric-guitar', 'drums', 'bass'],
       'hip-hop': ['drums', 'bass', 'synth'],
-      'country': ['acoustic-guitar', 'drums', 'bass'],
-      'jazz': ['piano', 'bass', 'drums', 'saxophone'],
-      'blues': ['electric-guitar', 'bass', 'drums'],
-      'electronic': ['synth', 'drums'],
+      country: ['acoustic-guitar', 'drums', 'bass'],
+      jazz: ['piano', 'bass', 'drums', 'saxophone'],
+      blues: ['electric-guitar', 'bass', 'drums'],
+      electronic: ['synth', 'drums'],
       'r&b': ['piano', 'bass', 'drums'],
-      'folk': ['acoustic-guitar'],
-      'classical': ['piano', 'strings'],
-      'indie': ['acoustic-guitar', 'drums', 'bass'],
-      'alternative': ['electric-guitar', 'drums', 'bass'],
+      folk: ['acoustic-guitar'],
+      classical: ['piano', 'strings'],
+      indie: ['acoustic-guitar', 'drums', 'bass'],
+      alternative: ['electric-guitar', 'drums', 'bass'],
     };
     return defaults[genre] || ['electric-guitar', 'drums', 'bass'];
   }
@@ -165,7 +171,7 @@ export class MusicGenerationPageComponent implements OnInit {
    * Update BPM when genre changes
    */
   onGenreChange(): void {
-    const genreData = this.genres.find(g => g.value === this.genre);
+    const genreData = this.genres.find((g) => g.value === this.genre);
     if (genreData) {
       this.bpm = genreData.defaultBpm;
     }
@@ -223,7 +229,7 @@ export class MusicGenerationPageComponent implements OnInit {
 
   /**
    * Generate music from parameters
-   * 
+   *
    * TODO: Replace with actual backend call:
    * POST /api/music/generate
    * { title, lyrics, genre, mood, duration, bpm, instrumentation, vocalsStyle }
@@ -244,7 +250,7 @@ export class MusicGenerationPageComponent implements OnInit {
       if (this.progress >= 100) {
         clearInterval(interval);
         this.isGenerating = false;
-        
+
         // Simulated audio URL (in production, from backend)
         this.generatedAudioUrl = '/assets/sample-audio.mp3';
       }
@@ -261,11 +267,11 @@ export class MusicGenerationPageComponent implements OnInit {
     //   instrumentation: this.selectedInstruments,
     //   vocalsStyle: this.vocalsStyle
     // });
-    // 
+    //
     // this.websocketService.on(`job:${job.jobId}:progress`, (data) => {
     //   this.progress = data.progress;
     // });
-    // 
+    //
     // this.websocketService.on(`job:${job.jobId}:completed`, (data) => {
     //   this.generatedAudioUrl = data.audioUrl;
     //   this.isGenerating = false;

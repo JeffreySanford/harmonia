@@ -30,7 +30,8 @@ describe('LLM Model Mappers', () => {
     expect(out.title).toBe('M');
     expect(out.genre).toBe('indie');
     expect(out.mood).toBe('reflective');
-    expect(out.lyrics.split('\n').length).toBeGreaterThanOrEqual(2);
+    expect(out.lyrics).toBeDefined();
+    expect((out.lyrics || '').split('\n').length).toBeGreaterThanOrEqual(2);
   });
 
   it('genericMapper should fall back for unknown shapes', () => {

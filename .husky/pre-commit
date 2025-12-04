@@ -12,6 +12,13 @@ pnpm lint:frontend --quiet || {
   exit 1
 }
 
+# Run ESLint on E2E test files
+echo "  - Checking E2E test files for lint errors..."
+npx eslint tests/e2e/ --ext .ts --quiet --no-ignore || {
+  echo "❌ E2E ESLint failed. Fix errors and commit again."
+  exit 1
+}
+
 # Check file sizes using audit script
 echo "  - Checking file sizes..."
 python scripts/audit_file_sizes.py || {
