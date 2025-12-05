@@ -1,7 +1,21 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
-import { catchError, map, of } from 'rxjs';
+import { Store } from '@ngrx/store';
+import { BehaviorSubject, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import {
+  selectFormData,
+  selectCurrentResult,
+  selectProgress,
+  selectLoading,
+  selectError,
+  selectProgressPercentage,
+  selectProgressMessage,
+} from '../../store/song-generation/song-generation.selectors';
+import {
+  generateMetadata,
+  clearError,
+} from '../../store/song-generation/song-generation.actions';
 
 interface SongMetadata {
   title: string;
@@ -64,13 +78,14 @@ interface GenreSuggestion {
   templateUrl: './song-generation-page.component.html',
   styleUrls: ['./song-generation-page.component.scss'],
 })
-export class SongGenerationPageComponent {
+export class SongGenerationPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
-  private readonly http = inject(HttpClient);
+  private readonly store = inject(Store);
+  private readonly destroy$ = new Subject<void>();
 
   title = 'Song Generation';
 
-  // Form fields
+  // Form fields (will be synced with store)
   narrative = '';
   duration = 30;
 
@@ -80,17 +95,16 @@ export class SongGenerationPageComponent {
   readonly minDuration = 15;
   readonly maxDuration = 120;
 
-  // Generated metadata
-  generatedMetadata: SongMetadata | null = null;
-
   // Model options for Ollama (optional)
   readonly availableModels = ['deepseek-coder:6.7b', 'deepseek', 'minstral3'];
   selectedModel: string | undefined = undefined;
 
   // UI states
-  isGenerating = false;
   isApproved = false;
   showMetadata = false;
+
+  // Generated metadata
+  generatedMetadata: SongMetadata | null = null;
 
   // Lyrics analysis mode
   generationMode: 'generate' | 'analyze' = 'generate';
@@ -98,6 +112,33 @@ export class SongGenerationPageComponent {
   readonly maxLyricsLength = 10000;
   isAnalyzing = false;
   analysisResult: any = null;
+
+  // Reactive subjects for backward compatibility
+  private isGeneratingSubject = new BehaviorSubject<boolean>(false);
+  readonly isGenerating$ = this.isGeneratingSubject.asObservable();
+
+  // NGRX selectors
+  readonly formData$ = this.store.select(selectFormData);
+  readonly currentResult$ = this.store.select(selectCurrentResult);
+  readonly progress$ = this.store.select(selectProgress);
+  readonly loading$ = this.store.select(selectLoading);
+  readonly error$ = this.store.select(selectError);
+  readonly progressPercentage$ = this.store.select(selectProgressPercentage);
+  readonly progressMessage$ = this.store.select(selectProgressMessage);
+
+  ngOnInit(): void {
+    // Subscribe to form data changes to sync local component state
+    this.formData$.pipe(takeUntil(this.destroy$)).subscribe((formData) => {
+      this.narrative = formData.narrative;
+      this.duration = formData.duration;
+      this.selectedModel = formData.model;
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   // Genre suggestion states
   genreSuggestionState: 'empty' | 'loading' | 'results' | 'error' = 'empty';
@@ -264,204 +305,21 @@ export class SongGenerationPageComponent {
 
   /**
    * Generate complete song with full properties
-   * Uses /api/songs/generate-song endpoint for comprehensive song data
+   * Uses NGRX store to dispatch generateMetadata action
    */
   generateMetadata(): void {
     if (!this.isNarrativeValid) return;
 
-    this.isGenerating = true;
     this.showMetadata = false;
+    this.store.dispatch(clearError());
 
-    this.http
-      .post('/api/songs/generate-song', {
+    this.store.dispatch(
+      generateMetadata({
         narrative: this.narrative,
         duration: this.duration,
-        model: this.selectedModel,
+        model: this.selectedModel || 'deepseek',
       })
-      .pipe(
-        map((resp: any) => {
-          this.generatedMetadata = {
-            title: resp.title || this.generateTitleFromNarrative(),
-            lyrics: resp.lyrics || this.generateSampleLyrics(),
-            genre: resp.genre || this.suggestGenre(),
-            mood: resp.mood || this.suggestMood(),
-            melody: resp.melody || 'Upbeat melody with verse-chorus structure',
-            tempo: resp.tempo || this.getDefaultTempo(resp.genre || 'pop'),
-            key: resp.key || 'C major',
-            instrumentation: resp.instrumentation || [
-              'piano',
-              'guitar',
-              'drums',
-            ],
-            intro: resp.intro || { enabled: false, style: 'no-music' },
-            outro: resp.outro || { enabled: false, style: 'no-music' },
-            syllableCount:
-              resp.syllableCount ||
-              this.countSyllables(resp.lyrics || this.generateSampleLyrics()),
-          };
-          return resp;
-        }),
-        catchError((err) => {
-          console.warn(
-            'Generate song failed; falling back to sample generator',
-            err
-          );
-          const sampleLyrics = this.generateSampleLyrics();
-          this.generatedMetadata = {
-            title: this.generateTitleFromNarrative(),
-            lyrics: sampleLyrics,
-            genre: this.suggestGenre(),
-            mood: this.suggestMood(),
-            melody: 'Upbeat melody with verse-chorus structure',
-            tempo: this.getDefaultTempo(this.suggestGenre()),
-            key: 'C major',
-            instrumentation: ['piano', 'guitar', 'bass', 'drums'],
-            intro: { enabled: false, style: 'no-music' },
-            outro: { enabled: false, style: 'no-music' },
-            syllableCount: this.countSyllables(sampleLyrics),
-          };
-          return of(null);
-        })
-      )
-      .subscribe(() => {
-        this.isGenerating = false;
-        this.showMetadata = true;
-        this.isApproved = false;
-      });
-  }
-
-  /**
-   * Generate title from narrative (first few words)
-   */
-  private generateTitleFromNarrative(): string {
-    const words = this.narrative.trim().split(/\s+/).slice(0, 4);
-    return words
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-      .join(' ');
-  }
-
-  /**
-   * Suggest genre based on narrative keywords
-   */
-  private suggestGenre(): string {
-    const narrativeLower = this.narrative.toLowerCase();
-
-    if (narrativeLower.includes('rock') || narrativeLower.includes('guitar'))
-      return 'rock';
-    if (narrativeLower.includes('jazz') || narrativeLower.includes('saxophone'))
-      return 'jazz';
-    if (narrativeLower.includes('hip-hop') || narrativeLower.includes('rap'))
-      return 'hip-hop';
-    if (narrativeLower.includes('country') || narrativeLower.includes('rural'))
-      return 'country';
-    if (
-      narrativeLower.includes('electronic') ||
-      narrativeLower.includes('synth')
-    )
-      return 'electronic';
-    if (
-      narrativeLower.includes('classical') ||
-      narrativeLower.includes('orchestra')
-    )
-      return 'classical';
-    if (narrativeLower.includes('blues')) return 'blues';
-    if (narrativeLower.includes('folk')) return 'folk';
-
-    return 'pop'; // Default
-  }
-
-  /**
-   * Suggest mood based on narrative keywords
-   */
-  private suggestMood(): string {
-    const narrativeLower = this.narrative.toLowerCase();
-
-    // Map of keywords to moods for simpler lookup
-    const moodKeywords: Record<string, string[]> = {
-      melancholic: ['sad', 'melanchol', 'lost'],
-      romantic: ['love', 'romance'],
-      aggressive: ['angry', 'aggress'],
-      calm: ['calm', 'peace'],
-      mysterious: ['dark', 'myster'],
-      uplifting: ['happy', 'uplift'],
-      nostalgic: ['nostalg', 'memory'],
-      energetic: ['energy', 'exciting'],
-    };
-
-    // Find first matching mood
-    for (const [mood, keywords] of Object.entries(moodKeywords)) {
-      if (keywords.some((keyword) => narrativeLower.includes(keyword))) {
-        return mood;
-      }
-    }
-
-    return 'calm'; // Default
-  }
-
-  /**
-   * Get default tempo for a genre
-   */
-  private getDefaultTempo(genre: string): number {
-    const genreTempos: Record<string, number> = {
-      '1940s big band': 180,
-      'rat pack (swing/lounge)': 140,
-      jazz: 120,
-      blues: 90,
-      "rock 'n' roll": 160,
-      classical: 110,
-      pop: 120,
-      'hip hop': 95,
-      country: 110,
-      folk: 100,
-      'electronic/dance': 128,
-      reggae: 80,
-      industrial: 130,
-      house: 125,
-      metal: 150,
-      gospel: 100,
-      'melodic rock ballads': 85,
-    };
-    return genreTempos[genre.toLowerCase()] || 120;
-  }
-  private generateSampleLyrics(): string {
-    const wordsNeeded = this.targetWords;
-
-    // Sample verse structure
-    const verses = [
-      'Walking through the empty streets at night',
-      'Memories of you still burning bright',
-      'The rain falls down like tears I cry',
-      "Wondering when I'll say goodbye",
-      'Every step I take reminds me of your face',
-      'Lost in time and lost in space',
-      'The city lights reflect my pain',
-      'Dancing slowly in the rain',
-    ];
-
-    let lyrics = '';
-    let currentWords = 0;
-    let verseIndex = 0;
-
-    while (currentWords < wordsNeeded && verseIndex < verses.length) {
-      const line = verses[verseIndex];
-      if (line) {
-        lyrics += line + '\n';
-        currentWords += line.split(/\s+/).length;
-      }
-      verseIndex++;
-    }
-
-    // If we need more words, repeat verses
-    while (currentWords < wordsNeeded) {
-      const line = verses[verseIndex % verses.length];
-      if (line) {
-        lyrics += line + '\n';
-        currentWords += line.split(/\s+/).length;
-      }
-      verseIndex++;
-    }
-
-    return lyrics.trim();
+    );
   }
 
   /**
@@ -527,42 +385,6 @@ export class SongGenerationPageComponent {
   }
 
   /**
-   * Handle genre suggestion request
-   */
-  onSuggestGenres(): void {
-    this.genreSuggestionState = 'loading';
-    this.genreSuggestionError = '';
-
-    this.http
-      .post<string[]>('/api/songs/suggest-genres', {
-        narrative: this.narrative,
-        model: this.selectedModel,
-      })
-      .pipe(
-        map((response) => {
-          if (response && response.length > 0) {
-            this.genreSuggestions = response.map((genre) => ({
-              genre,
-              selected: false,
-            }));
-            this.genreSuggestionState = 'results';
-          } else {
-            throw new Error('No suggestions received');
-          }
-          return response;
-        }),
-        catchError((error) => {
-          console.error('Genre suggestion error:', error);
-          this.genreSuggestionError =
-            'Failed to get genre suggestions. Please try again.';
-          this.genreSuggestionState = 'error';
-          return of(null);
-        })
-      )
-      .subscribe();
-  }
-
-  /**
    * Handle genre toggle in suggestions
    */
   onGenreToggled(suggestion: GenreSuggestion): void {
@@ -596,13 +418,6 @@ export class SongGenerationPageComponent {
   }
 
   /**
-   * Handle retry suggestions
-   */
-  onRetrySuggestions(): void {
-    this.onSuggestGenres();
-  }
-
-  /**
    * Handle generation mode change
    */
   onModeChange(event: any): void {
@@ -629,86 +444,6 @@ export class SongGenerationPageComponent {
         'Lyrics here...\n' +
         '<SFX footsteps repeat=4>'
     );
-  }
-
-  /**
-   * Analyze lyrics using DSL parser
-   */
-  analyzeLyrics(): void {
-    if (!this.lyricsToAnalyze.trim()) return;
-
-    this.isAnalyzing = true;
-    this.analysisResult = null;
-
-    this.http
-      .post('/api/songs/analyze-lyrics', {
-        lyrics: this.lyricsToAnalyze,
-        validateOnly: false,
-      })
-      .pipe(
-        map((response) => {
-          this.analysisResult = response;
-          return response;
-        }),
-        catchError((error: any) => {
-          this.analysisResult = {
-            song: null,
-            errors: [
-              {
-                line: 1,
-                message: error.error?.message || 'Failed to analyze lyrics',
-                severity: 'error',
-              },
-            ],
-          };
-          return of(null);
-        }),
-        map(() => {
-          this.isAnalyzing = false;
-        })
-      )
-      .subscribe();
-  }
-
-  /**
-   * Validate lyrics without full parsing
-   */
-  validateLyricsOnly(): void {
-    if (!this.lyricsToAnalyze.trim()) return;
-
-    this.isAnalyzing = true;
-
-    this.http
-      .post('/api/songs/analyze-lyrics', {
-        lyrics: this.lyricsToAnalyze,
-        validateOnly: true,
-      })
-      .pipe(
-        map((response: any) => {
-          this.analysisResult = {
-            song: null,
-            errors: response?.valid ? [] : response?.errors || [],
-          };
-          return response;
-        }),
-        catchError((error: any) => {
-          this.analysisResult = {
-            song: null,
-            errors: [
-              {
-                line: 1,
-                message: error.error?.message || 'Failed to validate lyrics',
-                severity: 'error',
-              },
-            ],
-          };
-          return of(null);
-        }),
-        map(() => {
-          this.isAnalyzing = false;
-        })
-      )
-      .subscribe();
   }
 
   /**

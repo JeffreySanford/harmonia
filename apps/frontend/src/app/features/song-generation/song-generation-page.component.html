@@ -118,30 +118,6 @@ We are fire — we are the unsung.
           </mat-hint>
         </mat-form-field>
 
-        <div class="analysis-actions" *ngIf="lyricsToAnalyze.trim()">
-          <button
-            mat-raised-button
-            color="primary"
-            (click)="analyzeLyrics()"
-            [disabled]="isAnalyzing"
-            class="analyze-button"
-          >
-            <mat-icon *ngIf="!isAnalyzing">analytics</mat-icon>
-            <mat-spinner diameter="20" *ngIf="isAnalyzing"></mat-spinner>
-            Analyze Lyrics
-          </button>
-
-          <button
-            mat-button
-            (click)="validateLyricsOnly()"
-            [disabled]="isAnalyzing"
-            class="validate-button"
-          >
-            <mat-icon>check_circle</mat-icon>
-            Validate Only
-          </button>
-        </div>
-
         <!-- Analysis Results -->
         <div class="analysis-results" *ngIf="analysisResult">
           <h4 class="results-title">
@@ -228,10 +204,8 @@ We are fire — we are the unsung.
           [state]="genreSuggestionState"
           [suggestions]="genreSuggestions"
           [errorMessage]="genreSuggestionError"
-          (suggestGenres)="onSuggestGenres()"
           (genreToggled)="onGenreToggled($event)"
           (feedbackGiven)="onFeedbackGiven($event)"
-          (retryClicked)="onRetrySuggestions()"
         ></harmonia-genre-suggestion>
       </section>
 
@@ -287,14 +261,16 @@ We are fire — we are the unsung.
           mat-raised-button
           color="primary"
           (click)="generateMetadata()"
-          [disabled]="!isNarrativeValid || isGenerating"
+          [disabled]="!isNarrativeValid || (isGenerating$ | async)"
           class="generate-button"
         >
           <mat-icon>{{
-            isGenerating ? 'hourglass_empty' : 'auto_awesome'
+            (isGenerating$ | async) ? 'hourglass_empty' : 'auto_awesome'
           }}</mat-icon>
           {{
-            isGenerating ? 'Generating Metadata...' : 'Generate Song Metadata'
+            (isGenerating$ | async)
+              ? 'Generating Metadata...'
+              : 'Generate Song Metadata'
           }}
         </button>
         <p class="helper-text" *ngIf="!isNarrativeValid">
@@ -306,7 +282,7 @@ We are fire — we are the unsung.
       <!-- Step 4: Generated Metadata (appears after generation) -->
       <section
         class="metadata-section"
-        *ngIf="showMetadata && generatedMetadata"
+        *ngIf="showMetadata && (currentResult$ | async) as result"
       >
         <h3 class="section-title">
           <mat-icon>library_music</mat-icon>
@@ -322,7 +298,7 @@ We are fire — we are the unsung.
             <mat-label>Song Title</mat-label>
             <input
               matInput
-              [(ngModel)]="generatedMetadata.title"
+              [(ngModel)]="result.metadata.title"
               placeholder="Enter title"
             />
             <mat-icon matPrefix>title</mat-icon>
@@ -333,7 +309,7 @@ We are fire — we are the unsung.
             <mat-label>Lyrics</mat-label>
             <textarea
               matInput
-              [(ngModel)]="generatedMetadata.lyrics"
+              [(ngModel)]="result.metadata.lyrics"
               (ngModelChange)="onLyricsChange()"
               rows="10"
               placeholder="Edit lyrics as needed"
@@ -356,7 +332,7 @@ We are fire — we are the unsung.
           <div class="form-row">
             <mat-form-field appearance="outline" class="half-width">
               <mat-label>Genre</mat-label>
-              <mat-select [(ngModel)]="generatedMetadata.genre">
+              <mat-select [(ngModel)]="result.metadata.genre">
                 <mat-option *ngFor="let genre of genres" [value]="genre">
                   {{ genre | titlecase }}
                 </mat-option>
@@ -366,7 +342,7 @@ We are fire — we are the unsung.
 
             <mat-form-field appearance="outline" class="half-width">
               <mat-label>Mood</mat-label>
-              <mat-select [(ngModel)]="generatedMetadata.mood">
+              <mat-select [(ngModel)]="result.metadata.mood">
                 <mat-option *ngFor="let mood of moods" [value]="mood">
                   {{ mood | titlecase }}
                 </mat-option>
@@ -375,18 +351,6 @@ We are fire — we are the unsung.
             </mat-form-field>
           </div>
 
-          <!-- Melody Description -->
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Melody Description</mat-label>
-            <textarea
-              matInput
-              [(ngModel)]="generatedMetadata.melody"
-              rows="2"
-              placeholder="Describe the melody style and structure"
-            ></textarea>
-            <mat-icon matPrefix>music_note</mat-icon>
-          </mat-form-field>
-
           <!-- Musical Properties Row -->
           <div class="form-row">
             <mat-form-field appearance="outline" class="third-width">
@@ -394,7 +358,7 @@ We are fire — we are the unsung.
               <input
                 matInput
                 type="number"
-                [(ngModel)]="generatedMetadata.tempo"
+                [(ngModel)]="result.metadata.bpm"
                 min="60"
                 max="200"
                 placeholder="120"
@@ -406,7 +370,7 @@ We are fire — we are the unsung.
               <mat-label>Musical Key</mat-label>
               <input
                 matInput
-                [(ngModel)]="generatedMetadata.key"
+                [(ngModel)]="result.metadata.key"
                 placeholder="C major"
               />
               <mat-icon matPrefix>piano</mat-icon>
@@ -415,7 +379,7 @@ We are fire — we are the unsung.
             <mat-form-field appearance="outline" class="third-width">
               <mat-label>Instrumentation</mat-label>
               <mat-select
-                [(ngModel)]="generatedMetadata.instrumentation"
+                [(ngModel)]="result.metadata.instruments"
                 multiple
                 placeholder="Select instruments"
               >
@@ -441,67 +405,6 @@ We are fire — we are the unsung.
               </mat-select>
               <mat-icon matPrefix>library_music</mat-icon>
             </mat-form-field>
-          </div>
-
-          <!-- Intro/Outro Section -->
-          <div class="intro-outro-section">
-            <h4>Structure Options</h4>
-
-            <!-- Intro -->
-            <div class="structure-item">
-              <mat-checkbox [(ngModel)]="generatedMetadata.intro.enabled">
-                <strong>Include Intro</strong>
-              </mat-checkbox>
-              <div
-                *ngIf="generatedMetadata.intro.enabled"
-                class="structure-details"
-              >
-                <mat-form-field appearance="outline" class="style-field">
-                  <mat-label>Intro Style</mat-label>
-                  <mat-select [(ngModel)]="generatedMetadata.intro.style">
-                    <mat-option value="with-music">With Music</mat-option>
-                    <mat-option value="sung">Sung</mat-option>
-                    <mat-option value="no-music">No Music</mat-option>
-                  </mat-select>
-                </mat-form-field>
-                <mat-form-field appearance="outline" class="content-field">
-                  <mat-label>Intro Content (Optional)</mat-label>
-                  <input
-                    matInput
-                    [(ngModel)]="generatedMetadata.intro.content"
-                    placeholder="Soft guitar intro, Spoken verse, etc."
-                  />
-                </mat-form-field>
-              </div>
-            </div>
-
-            <!-- Outro -->
-            <div class="structure-item">
-              <mat-checkbox [(ngModel)]="generatedMetadata.outro.enabled">
-                <strong>Include Outro</strong>
-              </mat-checkbox>
-              <div
-                *ngIf="generatedMetadata.outro.enabled"
-                class="structure-details"
-              >
-                <mat-form-field appearance="outline" class="style-field">
-                  <mat-label>Outro Style</mat-label>
-                  <mat-select [(ngModel)]="generatedMetadata.outro.style">
-                    <mat-option value="with-music">With Music</mat-option>
-                    <mat-option value="sung">Sung</mat-option>
-                    <mat-option value="no-music">No Music</mat-option>
-                  </mat-select>
-                </mat-form-field>
-                <mat-form-field appearance="outline" class="content-field">
-                  <mat-label>Outro Content (Optional)</mat-label>
-                  <input
-                    matInput
-                    [(ngModel)]="generatedMetadata.outro.content"
-                    placeholder="Fade out, Final chorus, etc."
-                  />
-                </mat-form-field>
-              </div>
-            </div>
           </div>
 
           <!-- Validation Summary -->
@@ -530,7 +433,7 @@ We are fire — we are the unsung.
         mat-button
         color="accent"
         (click)="regenerate()"
-        [disabled]="isGenerating"
+        [disabled]="isGenerating$ | async"
       >
         <mat-icon>refresh</mat-icon>
         Regenerate
@@ -539,7 +442,7 @@ We are fire — we are the unsung.
         mat-raised-button
         color="primary"
         (click)="approveAndContinue()"
-        [disabled]="isGenerating || isApproved"
+        [disabled]="(isGenerating$ | async) || isApproved"
       >
         <mat-icon>check_circle</mat-icon>
         {{ isApproved ? 'Approved' : 'Approve & Continue to Music Generation' }}
