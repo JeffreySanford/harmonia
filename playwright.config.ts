@@ -52,24 +52,21 @@ export default defineConfig({
   // Global timeout for the whole test run
   globalTimeout: 600000, // 10 minutes
 
-  // Web Server Configuration - DISABLED (servers run externally)
-  // webServer: [
-  //   {
-  //     command: 'pnpm run start:backend',
-  //     url: 'http://localhost:3000/api/health',
-  //     reuseExistingServer: !process.env.CI,
-  //     timeout: 120000,
-  //     env: {
-  //       NODE_ENV: 'test',
-  //     },
-  //   },
-  //   {
-  //     command: 'pnpm run start:frontend',
-  //     url: 'http://localhost:4200',
-  //     reuseExistingServer: !process.env.CI,
-  //     timeout: 120000,
-  //   },
-  // ],
+  // Web Server Configuration
+  webServer: [
+    {
+      command: 'npx nx serve backend',
+      url: 'http://localhost:3000/api/__health',
+      reuseExistingServer: false,
+      timeout: 120000,
+    },
+    {
+      command: 'npx nx serve frontend',
+      url: 'http://localhost:4200',
+      reuseExistingServer: false,
+      timeout: 120000,
+    },
+  ],
 
   // Configure projects for major browsers
   projects: [

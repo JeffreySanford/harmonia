@@ -4,12 +4,24 @@
  */
 
 import { createAction, props } from '@ngrx/store';
-import { SongMetadata, SongGenerationResult, GenerationProgress } from './song-generation.state';
+import {
+  SongMetadata,
+  SongGenerationResult,
+  GenerationProgress,
+} from './song-generation.state';
 
 // Form actions
 export const updateFormData = createAction(
   '[Song Generation] Update Form Data',
-  props<{ formData: Partial<{ narrative: string; duration: number; model: string; genre: string; mood: string[] }> }>()
+  props<{
+    formData: Partial<{
+      narrative: string;
+      duration: number;
+      model: string;
+      genre: string;
+      mood: string[];
+    }>;
+  }>()
 );
 
 export const resetForm = createAction('[Song Generation] Reset Form');
@@ -33,7 +45,12 @@ export const generateMetadataFailure = createAction(
 // Song generation actions
 export const generateSong = createAction(
   '[Song Generation] Generate Song',
-  props<{ narrative: string; duration: number; model: string; metadata?: SongMetadata }>()
+  props<{
+    narrative: string;
+    duration: number;
+    model: string;
+    metadata?: SongMetadata;
+  }>()
 );
 
 export const generateSongSuccess = createAction(
@@ -55,7 +72,9 @@ export const updateProgress = createAction(
 export const resetProgress = createAction('[Song Generation] Reset Progress');
 
 // Result management actions
-export const clearCurrentResult = createAction('[Song Generation] Clear Current Result');
+export const clearCurrentResult = createAction(
+  '[Song Generation] Clear Current Result'
+);
 
 export const addToHistory = createAction(
   '[Song Generation] Add to History',

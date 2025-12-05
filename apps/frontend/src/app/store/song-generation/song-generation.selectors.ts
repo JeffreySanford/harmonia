@@ -7,7 +7,8 @@ import { createFeatureSelector, createSelector } from '@ngrx/store';
 import { SongGenerationState } from './song-generation.state';
 
 // Feature selector
-export const selectSongGenerationState = createFeatureSelector<SongGenerationState>('songGeneration');
+export const selectSongGenerationState =
+  createFeatureSelector<SongGenerationState>('songGeneration');
 
 // Basic selectors
 export const selectFormData = createSelector(
@@ -48,7 +49,9 @@ export const selectError = createSelector(
 // Computed selectors
 export const selectIsGenerating = createSelector(
   selectProgress,
-  (progress) => progress.stage === 'generating-metadata' || progress.stage === 'generating-song'
+  (progress) =>
+    progress.stage === 'generating-metadata' ||
+    progress.stage === 'generating-song'
 );
 
 export const selectIsComplete = createSelector(

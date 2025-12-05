@@ -15,7 +15,12 @@ export interface SongMetadata {
 }
 
 export interface GenerationProgress {
-  stage: 'idle' | 'generating-metadata' | 'generating-song' | 'complete' | 'error';
+  stage:
+    | 'idle'
+    | 'generating-metadata'
+    | 'generating-song'
+    | 'complete'
+    | 'error';
   progress: number; // 0-100
   message: string;
   currentStep?: string;
