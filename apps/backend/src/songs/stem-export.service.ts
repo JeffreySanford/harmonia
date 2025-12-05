@@ -76,34 +76,32 @@ export class StemExportService {
     return mkdirObservable(options.outputDir).pipe(
       switchMap(() => {
         // Process each instrument reactively
-        const instrumentObservables = options.instruments.map(
-          (instrument) => {
-            const fileName = `${instrument.replace(/[^a-zA-Z0-9]/g, '_')}.${
-              options.format
-            }`;
-            const filePath = path.join(options.outputDir, fileName);
-            const audioData = this.generatePlaceholderAudio(
-              instrument,
-              options.format
-            );
+        const instrumentObservables = options.instruments.map((instrument) => {
+          const fileName = `${instrument.replace(/[^a-zA-Z0-9]/g, '_')}.${
+            options.format
+          }`;
+          const filePath = path.join(options.outputDir, fileName);
+          const audioData = this.generatePlaceholderAudio(
+            instrument,
+            options.format
+          );
 
-            return writeFileObservable(filePath, audioData).pipe(
-              switchMap(() => statObservable(filePath)),
-              map((stats) => ({
-                instrument,
-                filePath,
-                format: options.format,
-                size: stats.size,
-              })),
-              catchError((error) => {
-                const errorMsg = `Failed to export stem for ${instrument}: ${
-                  error instanceof Error ? error.message : 'Unknown error'
-                }`;
-                return [{ error: errorMsg }];
-              })
-            );
-          }
-        );
+          return writeFileObservable(filePath, audioData).pipe(
+            switchMap(() => statObservable(filePath)),
+            map((stats) => ({
+              instrument,
+              filePath,
+              format: options.format,
+              size: stats.size,
+            })),
+            catchError((error) => {
+              const errorMsg = `Failed to export stem for ${instrument}: ${
+                error instanceof Error ? error.message : 'Unknown error'
+              }`;
+              return [{ error: errorMsg }];
+            })
+          );
+        });
 
         return from(instrumentObservables).pipe(
           mergeMap((obs) => obs),

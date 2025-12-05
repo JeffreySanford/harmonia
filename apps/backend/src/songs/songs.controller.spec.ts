@@ -49,11 +49,13 @@ describe('SongsController', () => {
         mood: 'calm',
       })
     );
-    const res = await firstValueFrom(controller.generateMetadata({
-      narrative: 'x',
-      duration: 30,
-      model: 'minstral3',
-    } as any));
+    const res = await firstValueFrom(
+      controller.generateMetadata({
+        narrative: 'x',
+        duration: 30,
+        model: 'minstral3',
+      } as any)
+    );
     expect(mockOllama.generateMetadata).toHaveBeenCalledWith(
       'x',
       30,

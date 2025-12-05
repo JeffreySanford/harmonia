@@ -134,9 +134,7 @@ export class ProfileService {
           this.userModel.findByIdAndUpdate(user._id, {
             password: hashedNewPassword,
           })
-        ).pipe(
-          map(() => ({ message: 'Password changed successfully' }))
-        );
+        ).pipe(map(() => ({ message: 'Password changed successfully' })));
       }),
       catchError((error) => {
         throw error;

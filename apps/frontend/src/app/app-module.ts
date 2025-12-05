@@ -19,6 +19,7 @@ import { datasetsReducer } from './store/datasets/datasets.reducer';
 import { jobsReducer } from './store/jobs/jobs.reducer';
 import { libraryReducer } from './store/library/library.state';
 import { profileReducer } from './store/profile/profile.state';
+import { songGenerationReducer } from './store/song-generation/song-generation.reducer';
 
 // Effects
 import { AuthEffects } from './store/auth/auth.effects';
@@ -27,6 +28,7 @@ import { DatasetsEffects } from './store/datasets/datasets.effects';
 import { JobsEffects } from './store/jobs/jobs.effects';
 import { LibraryEffects } from './store/library/library.effects';
 import { ProfileEffects } from './store/profile/profile.effects';
+import { SongGenerationEffects } from './store/song-generation/song-generation.effects';
 
 @NgModule({
   declarations: [App],
@@ -45,6 +47,7 @@ import { ProfileEffects } from './store/profile/profile.effects';
         jobs: jobsReducer,
         library: libraryReducer,
         profile: profileReducer,
+        songGeneration: songGenerationReducer,
       },
       {
         runtimeChecks: {
@@ -64,6 +67,7 @@ import { ProfileEffects } from './store/profile/profile.effects';
       JobsEffects,
       LibraryEffects,
       ProfileEffects,
+      SongGenerationEffects,
     ]),
     StoreDevtoolsModule.instrument({
       maxAge: 25,
