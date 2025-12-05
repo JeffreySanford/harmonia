@@ -3,13 +3,14 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { Observable, from } from 'rxjs';
 import { map, catchError, switchMap, mergeMap, toArray } from 'rxjs/operators';
-import { InstrumentCatalogService } from './instrument-catalog.service';
+import { InstrumentCatalogService, Instrument } from './instrument-catalog.service';
 
 export interface StemExportOptions {
   format: 'wav' | 'mp3';
   instruments: string[];
   outputDir: string;
   sampleRate?: number;
+  useFallbacks?: boolean; // Enable fallback system for missing instruments
 }
 
 export interface StemExportResult {
@@ -19,15 +20,18 @@ export interface StemExportResult {
     filePath: string;
     format: string;
     size: number;
+    fallbackUsed?: string; // Which fallback instrument was used
   }>;
   errors: string[];
+  warnings: string[]; // Non-fatal issues like fallbacks used
 }
 
 @Injectable()
 export class StemExportService {
   constructor(private readonly instrumentCatalog: InstrumentCatalogService) {}
+
   /**
-   * Export per-instrument stems in the specified format
+   * Export per-instrument stems in the specified format with fallback support
    * This is a basic implementation that creates placeholder audio files
    * In production, this would synthesize actual audio from instrument data
    */
@@ -75,29 +79,36 @@ export class StemExportService {
     // Start with creating the output directory
     return mkdirObservable(options.outputDir).pipe(
       switchMap(() => {
-        // Process each instrument reactively
-        const instrumentObservables = options.instruments.map((instrument) => {
-          const fileName = `${instrument.replace(/[^a-zA-Z0-9]/g, '_')}.${
-            options.format
-          }`;
+        // Resolve instruments with fallbacks
+        const resolvedInstruments = this.resolveInstrumentsWithFallbacks(
+          options.instruments,
+          options.useFallbacks ?? true
+        );
+
+        // Process each resolved instrument reactively
+        const instrumentObservables = resolvedInstruments.map((resolution) => {
+          const fileName = `${resolution.effectiveInstrument.replace(
+            /[^a-zA-Z0-9]/g,
+            '_'
+          )}.${options.format}`;
           const filePath = path.join(options.outputDir, fileName);
-          const audioData = this.generatePlaceholderAudio(
-            instrument,
-            options.format
-          );
+          const audioData = this.generateWavPlaceholder();
 
           return writeFileObservable(filePath, audioData).pipe(
             switchMap(() => statObservable(filePath)),
             map((stats) => ({
-              instrument,
+              instrument: resolution.requestedInstrument,
               filePath,
               format: options.format,
               size: stats.size,
+              fallbackUsed: resolution.fallbackUsed
+                ? resolution.effectiveInstrument
+                : undefined,
             })),
             catchError((error) => {
-              const errorMsg = `Failed to export stem for ${instrument}: ${
-                error instanceof Error ? error.message : 'Unknown error'
-              }`;
+              const errorMsg = `Failed to export stem for ${
+                resolution.requestedInstrument
+              }: ${error instanceof Error ? error.message : 'Unknown error'}`;
               return [{ error: errorMsg }];
             })
           );
@@ -116,15 +127,28 @@ export class StemExportService {
           filePath: string;
           format: string;
           size: number;
+          fallbackUsed?: string;
         }>;
         const errors = results
           .filter((result) => 'error' in result)
           .map((result) => (result as any).error);
 
+        // Generate warnings for fallbacks used
+        const warnings: string[] = [];
+        const fallbackUsed = stems.filter((stem) => stem.fallbackUsed);
+        if (fallbackUsed.length > 0) {
+          warnings.push(
+            `Fallback instruments used: ${fallbackUsed
+              .map((s) => `${s.instrument} → ${s.fallbackUsed}`)
+              .join(', ')}`
+          );
+        }
+
         const result: StemExportResult = {
           success: errors.length === 0,
           stems,
           errors,
+          warnings,
         };
 
         return result;
@@ -138,26 +162,176 @@ export class StemExportService {
               error instanceof Error ? error.message : 'Unknown error'
             }`,
           ],
+          warnings: [],
         };
         return from(Promise.resolve(result));
       })
     );
   }
   /**
-   * Generate placeholder audio data
-   * This creates a minimal valid WAV file with silence
-   * In production, replace with actual audio synthesis
+   * Resolve instruments with fallback logic
+   * Returns an array of instrument resolutions that can be used for export
    */
-  private generatePlaceholderAudio(
-    instrument: string,
-    format: 'wav' | 'mp3'
-  ): Buffer {
-    if (format === 'wav') {
-      return this.generateWavPlaceholder();
-    } else {
-      // For MP3, we'd need an encoder, but for now return a placeholder
-      return Buffer.from(`Placeholder MP3 data for ${instrument}`, 'utf8');
+  private resolveInstrumentsWithFallbacks(
+    requestedInstruments: string[],
+    useFallbacks: boolean
+  ): Array<{
+    requestedInstrument: string;
+    effectiveInstrument: string;
+    fallbackUsed: boolean;
+  }> {
+    const resolutions: Array<{
+      requestedInstrument: string;
+      effectiveInstrument: string;
+      fallbackUsed: boolean;
+    }> = [];
+
+    // Track polyphony usage to enforce limits
+    const polyphonyUsage = new Map<string, number>();
+
+    for (const requestedId of requestedInstruments) {
+      let effectiveInstrument = requestedId;
+      let fallbackUsed = false;
+
+      // Check if the requested instrument exists
+      const instrument = this.instrumentCatalog.getInstrument(requestedId);
+
+      if (!instrument) {
+        if (useFallbacks) {
+          // Try to find a fallback
+          const fallbacks = this.findBestFallback(requestedId);
+          if (fallbacks.length > 0) {
+            effectiveInstrument = fallbacks[0]!.id;
+            fallbackUsed = true;
+          } else {
+            // No fallback available, use a default silent instrument
+            effectiveInstrument = 'default_silence';
+            fallbackUsed = true;
+          }
+        } else {
+          // No fallbacks allowed, keep original (will fail validation)
+          effectiveInstrument = requestedId;
+        }
+      }
+
+      // Check polyphony limits
+      if (instrument?.polyphony_limit) {
+        const currentUsage = polyphonyUsage.get(effectiveInstrument) || 0;
+        if (currentUsage >= instrument.polyphony_limit) {
+          if (useFallbacks) {
+            // Find alternative instrument that doesn't exceed polyphony
+            const alternative = this.findAlternativeForPolyphony(
+              effectiveInstrument,
+              polyphonyUsage
+            );
+            if (alternative) {
+              effectiveInstrument = alternative.id;
+              fallbackUsed = true;
+            }
+          }
+        }
+      }
+
+      // Update polyphony usage
+      const effectiveInst =
+        this.instrumentCatalog.getInstrument(effectiveInstrument);
+      if (effectiveInst?.polyphony_limit) {
+        polyphonyUsage.set(
+          effectiveInstrument,
+          (polyphonyUsage.get(effectiveInstrument) || 0) + 1
+        );
+      }
+
+      resolutions.push({
+        requestedInstrument: requestedId,
+        effectiveInstrument,
+        fallbackUsed,
+      });
     }
+
+    return resolutions;
+  }
+
+  /**
+   * Find the best fallback instrument for a missing instrument
+   */
+  private findBestFallback(missingInstrumentId: string): Instrument[] {
+    // First, try direct fallback rules from any instrument that references this one
+    const catalog = this.instrumentCatalog.getCatalog();
+    if (!catalog) return [];
+
+    // Look for instruments that have this as a fallback
+    for (const instrument of catalog.instruments) {
+      if (instrument.fallback_rules?.includes(missingInstrumentId)) {
+        return [instrument];
+      }
+    }
+
+    // Try category-based fallback - find instruments in the same category
+    const category = this.extractCategoryFromId(missingInstrumentId);
+    if (category) {
+      const categoryInstruments =
+        this.instrumentCatalog.getInstrumentsByCategory(category);
+      if (categoryInstruments.length > 0) {
+        return categoryInstruments.slice(0, 1); // Return first available
+      }
+    }
+
+    // Last resort: find any available instrument
+    if (catalog.instruments.length > 0) {
+      return [catalog.instruments[0]!];
+    }
+
+    return [];
+  }
+
+  /**
+   * Find an alternative instrument that doesn't exceed polyphony limits
+   */
+  private findAlternativeForPolyphony(
+    currentInstrumentId: string,
+    polyphonyUsage: Map<string, number>
+  ): Instrument | null {
+    const currentInstrument =
+      this.instrumentCatalog.getInstrument(currentInstrumentId);
+    if (!currentInstrument) return null;
+
+    // Try fallbacks of the current instrument
+    const fallbacks =
+      this.instrumentCatalog.getFallbackInstruments(currentInstrumentId);
+    for (const fallback of fallbacks) {
+      const currentUsage = polyphonyUsage.get(fallback.id) || 0;
+      if (currentUsage < (fallback.polyphony_limit || Infinity)) {
+        return fallback;
+      }
+    }
+
+    // Try instruments in the same category
+    const categoryInstruments = this.instrumentCatalog.getInstrumentsByCategory(
+      currentInstrument.category
+    );
+    for (const instrument of categoryInstruments) {
+      if (instrument.id !== currentInstrumentId) {
+        const currentUsage = polyphonyUsage.get(instrument.id) || 0;
+        if (currentUsage < (instrument.polyphony_limit || Infinity)) {
+          return instrument;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Extract category from instrument ID (simple heuristic)
+   */
+  private extractCategoryFromId(instrumentId: string): string | null {
+    // Simple pattern: category_instrumentname
+    const parts = instrumentId.split('_');
+    if (parts.length >= 2) {
+      return parts[0] as string;
+    }
+    return null;
   }
 
   /**
@@ -215,13 +389,17 @@ export class StemExportService {
     ) {
       errors.push('At least one instrument must be specified');
     } else {
-      // Validate instrument IDs against catalog
+      // Validate instrument IDs against catalog (with fallbacks enabled)
       const instrumentValidation = this.instrumentCatalog.validateInstrumentIds(
         options.instruments
       );
-      if (!instrumentValidation.valid) {
+
+      // If fallbacks are disabled and there are invalid instruments, that's an error
+      // If fallbacks are enabled, we'll resolve them during export
+      if (!options.useFallbacks && !instrumentValidation.valid) {
         errors.push(...instrumentValidation.errors);
       }
+      // Note: When fallbacks are enabled, we allow invalid instruments to be resolved later
     }
 
     if (!options.outputDir || typeof options.outputDir !== 'string') {

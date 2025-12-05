@@ -4,6 +4,9 @@ import {
   MaxLength,
   IsOptional,
   IsBoolean,
+  IsNumber,
+  Min,
+  Max,
 } from 'class-validator';
 
 export class AnalyzeLyricsDto {
@@ -15,6 +18,12 @@ export class AnalyzeLyricsDto {
   @IsOptional()
   @IsBoolean()
   validateOnly?: boolean; // If true, only validate without full parsing
+
+  @IsOptional()
+  @IsNumber()
+  @Min(30)
+  @Max(600) // 10 minutes max
+  durationSeconds?: number; // Target song duration for attention span analysis
 
   @IsOptional()
   @IsString()

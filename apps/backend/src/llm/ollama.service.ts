@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Observable, from } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { mapResponseForModel } from './mappers';
+import { LyricAnalysisService } from '../songs/lyric-analysis.service';
 
 export interface GeneratedMetadata {
   title: string;
@@ -33,7 +34,10 @@ export interface GeneratedSong extends GeneratedMetadata {
 @Injectable()
 export class OllamaService {
   private readonly logger = new Logger(OllamaService.name);
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly lyricAnalysis: LyricAnalysisService
+  ) {}
 
   private get ollamaUrl(): string {
     return (
@@ -57,7 +61,19 @@ export class OllamaService {
       narrative = narrative.slice(0, maxLen);
     }
 
-    const prompt = `You are a music metadata generator. Output exactly one JSON object with keys: title, lyrics, genre, mood. Lyrics should be appropriate for a ${durationSeconds}s song and be succinct (3-6 lines). The output must be valid JSON only; no explanatory text.`;
+    // Get optimal lyric constraints based on attention span modeling
+    const optimalLineCount = this.lyricAnalysis.getOptimalLineCount(durationSeconds);
+    const diversityGuidelines = this.lyricAnalysis.getDiversityGuidelines();
+
+    const prompt = `You are a music metadata generator. Output exactly one JSON object with keys: title, lyrics, genre, mood.
+
+LYRICS REQUIREMENTS:
+- Length: ${optimalLineCount} lines maximum (appropriate for ${durationSeconds}s song)
+- Diversity: ${diversityGuidelines}
+- Quality: Avoid repetitive filler words, maintain engagement throughout
+- Structure: Clear progression with variety in rhythm and content
+
+The output must be valid JSON only; no explanatory text.`;
     const body = {
       model,
       prompt: `${prompt}\n\nNarrative: ${narrative}`,
@@ -154,10 +170,14 @@ Output must be valid JSON array only; no explanatory text.`;
       narrative = narrative.slice(0, maxLen);
     }
 
+    // Get optimal lyric constraints based on attention span modeling
+    const optimalLineCount = this.lyricAnalysis.getOptimalLineCount(durationSeconds);
+    const diversityGuidelines = this.lyricAnalysis.getDiversityGuidelines();
+
     const prompt = `You are a complete song generator. Create a full song from the narrative. Output exactly one JSON object with keys: title, lyrics, genre, mood, melody, tempo, key, instrumentation, intro, outro. 
 
 Requirements:
-- Lyrics: 4-8 lines appropriate for a ${durationSeconds}s song
+- Lyrics: ${optimalLineCount} lines maximum (appropriate for ${durationSeconds}s song) - ${diversityGuidelines}
 - Melody: Brief description of the melody style (e.g., "upbeat pop melody with chorus hooks")
 - Tempo: BPM between 60-180 appropriate for the genre
 - Key: Musical key (e.g., "C major", "A minor")

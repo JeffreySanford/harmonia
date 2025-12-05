@@ -14,6 +14,7 @@ import { MmslParserService } from './mmsl-parser.service';
 import { StemExportService, StemExportOptions } from './stem-export.service';
 import { SongDslParserService } from './song-dsl-parser.service';
 import { InstrumentCatalogService } from './instrument-catalog.service';
+import { LyricAnalysisService } from './lyric-analysis.service';
 
 @Controller('songs')
 @ApiTags('songs')
@@ -24,7 +25,8 @@ export class SongsController {
     private readonly mmslParser: MmslParserService,
     private readonly stemExport: StemExportService,
     private readonly dslParser: SongDslParserService,
-    private readonly instrumentCatalog: InstrumentCatalogService
+    private readonly instrumentCatalog: InstrumentCatalogService,
+    private readonly lyricAnalysis: LyricAnalysisService
   ) {}
 
   @Post('generate-metadata')
@@ -322,6 +324,47 @@ export class SongsController {
             },
           },
         },
+        analysis: {
+          type: 'object',
+          properties: {
+            diversity: {
+              type: 'object',
+              properties: {
+                score: { type: 'number', example: 0.75 },
+                level: { type: 'string', example: 'good' },
+                issues: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  example: ['Some repetitive phrases detected'],
+                },
+              },
+            },
+            attentionSpan: {
+              type: 'object',
+              properties: {
+                optimalDuration: { type: 'number', example: 180 },
+                recommendedLength: { type: 'number', example: 8 },
+                engagement: { type: 'string', example: 'high' },
+              },
+            },
+            quality: {
+              type: 'object',
+              properties: {
+                score: { type: 'number', example: 0.85 },
+                strengths: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  example: ['Good rhyme scheme', 'Clear structure'],
+                },
+                suggestions: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  example: ['Consider varying sentence length'],
+                },
+              },
+            },
+          },
+        },
       },
     },
   })
@@ -341,7 +384,11 @@ export class SongsController {
       };
     }
 
-    return result;
+    // Add lyric diversity and quality analysis
+    const analysis = this.lyricAnalysis.analyzeLyrics(body.lyrics, body.durationSeconds || 180);    return {
+      ...result,
+      analysis,
+    };
   }
 
   @Post('validate-instrument-catalog')

@@ -6,6 +6,7 @@ import { MmslParserService } from './mmsl-parser.service';
 import { StemExportService } from './stem-export.service';
 import { SongDslParserService } from './song-dsl-parser.service';
 import { InstrumentCatalogService } from './instrument-catalog.service';
+import { LyricAnalysisService } from './lyric-analysis.service';
 
 @Module({
   imports: [ConfigModule],
@@ -16,6 +17,7 @@ import { InstrumentCatalogService } from './instrument-catalog.service';
     StemExportService,
     SongDslParserService,
     InstrumentCatalogService,
+    LyricAnalysisService,
   ],
   exports: [
     OllamaService,
@@ -23,6 +25,7 @@ import { InstrumentCatalogService } from './instrument-catalog.service';
     StemExportService,
     SongDslParserService,
     InstrumentCatalogService,
+    LyricAnalysisService,
   ],
 })
 export class SongsModule {}

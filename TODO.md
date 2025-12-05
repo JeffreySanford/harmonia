@@ -1,6 +1,6 @@
 # Harmonia - Project TODO List
 
-**Last Updated**: December 4, 2025 - 9:15 PM
+**Last Updated**: December 5, 2025 - 10:00 AM
 **Project**: Harmonia Music Generation Platform
 **Phase**: MVP Validation Phase (🎉 COMPLETE - 100% Ready for Production)
 **Status**: 🟢 **FULLY REACTIVE ARCHITECTURE + NGRX INTEGRATION COMPLETE** - All 28+ async methods converted to RxJS observables across 7 services and all controllers. Hot data streams enabled for NGRX integration. NGRX store implemented with reactive effects for production-ready state management. UI components fully integrated with reactive state management!
@@ -145,9 +145,9 @@
 - **Create demo CLI with hot observables (DSL → IR → events.json → WAV stems)** — ✅ Completed
 - **Convert InstrumentCatalogService to RxJS observables** — ✅ Completed
 - **Create comprehensive observable conversion plan (28+ async methods)** — ✅ Completed - Document archived to `docs/archive/ASYNC_TO_OBSERVABLE_CONVERSION_PLAN.md`
-- Implement asset fallback system (missing instruments, polyphony limits) — Planned
+- **Implement asset fallback system (missing instruments, polyphony limits)** — ✅ Completed
 - **Implement full observable conversion across 6 backend services** — New Priority
-- **Implement lyric diversity constraints and attention span modeling (addresses risk #26)** — Planned
+- **Implement lyric diversity constraints and attention span modeling (addresses risk #26)** — ✅ Completed
 
 ### **Month 3-4: AI Enhancement** (Weeks 9-16)
 
@@ -270,11 +270,9 @@ docs/
 
 - **Authentication Docs**: ✅ Merged `AUTHENTICATION_SYSTEM.md` (1710 lines), `AUTH_IMPLEMENTATION_STATUS.md` (549 lines), and `ENHANCED_AUTHENTICATION_FEATURES.md` (561 lines) into single `docs/authentication.md` with sections for current implementation and future features
 - **MongoDB Docs**: ✅ Consolidated `MONGODB_SETUP.md`, `QUICKSTART_MONGODB.md`, `MONGODB_SECURITY.md`, and `MONGO_SCHEMA_GUIDE.md` into comprehensive `docs/mongodb.md` reflecting current native Windows service setup
-
-#### **Remaining Mergers** 🔄
-
-- **Ollama Docs**: Merge `OLLAMA.md` and `OLLAMA_BACKEND_OVERVIEW.md` into single `docs/ollama-integration.md`
-- **Setup Docs**: Merge `GETTING_STARTED.md`, `DOCKER_SETUP.md`, and `DOCKER_WSL2_GUIDE.md` into `docs/setup.md` with current architecture
+- **Ollama Docs**: ✅ Merged `OLLAMA.md` and `OLLAMA_BACKEND_OVERVIEW.md` into `docs/ollama-integration.md`
+- **Setup Docs**: ✅ Consolidated `GETTING_STARTED.md`, `DOCKER_SETUP.md`, and `DOCKER_WSL2_GUIDE.md` into `docs/setup.md` with current architecture
+- **Health Check Docs**: ✅ Merged `DEVELOPER_HEALTH_CHECK.md` + `DEVELOPER_HEALTH_CHECK_V2.md` → `docs/health-check.md`
 
 #### **Completed Updates** ✅
 
@@ -286,21 +284,21 @@ docs/
 #### **File Reduction Results** 📊
 
 - **Starting**: 60+ files
-- **Current**: ~45 files (25% reduction achieved)
-- **Target**: 20-25 essential files (additional 10-15 files to merge/delete)
-- **Deleted**: 10 redundant files
-- **Archived**: 2 outdated files
-- **Created**: 2 consolidated files
+- **Current**: ~44 active files (27% reduction achieved)
+- **Target**: 20-25 essential files (additional 19 files to merge/delete)
+- **Deleted**: 15+ redundant files (including bloated feature docs)
+- **Archived**: 5+ outdated files to `docs/archive/` folder
+- **Merged**: 6 consolidation operations completed
 
 ### **Remaining Documentation Tasks** 📋
 
 #### **Immediate Next Steps** (This Week)
 
 - [x] Create `docs/README.md` with documentation hierarchy and navigation
-- [ ] Merge Ollama documentation (`OLLAMA.md` + `OLLAMA_BACKEND_OVERVIEW.md` → `docs/ollama-integration.md`)
-- [ ] Consolidate setup docs (`GETTING_STARTED.md` + `DOCKER_SETUP.md` + `DOCKER_WSL2_GUIDE.md` → `docs/setup.md`)
-- [ ] Merge duplicate health check docs (`DEVELOPER_HEALTH_CHECK.md` + `DEVELOPER_HEALTH_CHECK_V2.md` → `docs/health-check.md`)
-- [ ] Review and delete remaining bloated feature docs (instrument selection, annotations toggle, etc.)
+- [x] Merge Ollama documentation (`OLLAMA.md` + `OLLAMA_BACKEND_OVERVIEW.md` → `docs/ollama-integration.md`)
+- [x] Consolidate setup docs (`GETTING_STARTED.md` + `DOCKER_SETUP.md` + `DOCKER_WSL2_GUIDE.md` → `docs/setup.md`)
+- [x] Merge duplicate health check docs (`DEVELOPER_HEALTH_CHECK.md` + `DEVELOPER_HEALTH_CHECK_V2.md` → `docs/health-check.md`)
+- [x] Review and delete remaining bloated feature docs (instrument selection, annotations toggle, etc.)
 
 #### **Missing Critical Documentation** 📭
 
@@ -319,13 +317,13 @@ docs/
 
 ### **Documentation Crisis Status** 📊
 
-**Progress**: 75% Complete | **Impact**: Major improvement in maintainability
+**Progress**: 90% Complete | **Impact**: Major improvement in maintainability
 
 - ✅ **Audit & Inventory**: Complete
-- ✅ **Major Consolidation**: Complete (auth + MongoDB)
+- ✅ **Major Consolidation**: Complete (auth + MongoDB + Ollama + Setup + Health Check)
 - ✅ **Content Updates**: Major progress (README updated, API docs created, phase references fixed)
 - ✅ **Quality Assurance**: Significant progress (all linting errors fixed, consolidated files validated)
-- 🎯 **Target**: 20-25 essential docs from current 45
+- 🎯 **Target**: 20-25 essential docs from current ~44 active files
 
 **Business Impact Achieved**:
 
@@ -413,8 +411,8 @@ Built with ❤️ using Angular, NestJS, and MongoDB
 
 - Add JSON schema validation for instrument catalog and IR updates — ✅ Completed
 - Create demo CLI (DSL → IR → events.json → WAV stems with sample mapping) — Planned
-- Implement asset fallback system (missing instruments, polyphony limits) — Planned
-- **Implement lyric diversity constraints and attention span modeling (addresses risk #26)** — Planned
+- **Implement asset fallback system (missing instruments, polyphony limits)** — ✅ Completed
+- **Implement lyric diversity constraints and attention span modeling (addresses risk #26)** — ✅ Completed
 
 ### **Month 3-4: AI Enhancement** (Weeks 9-16)
 

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 import { OllamaService } from './ollama.service';
+import { LyricAnalysisService } from '../songs/lyric-analysis.service';
 import axios from 'axios';
 import { firstValueFrom } from 'rxjs';
 
@@ -19,7 +20,7 @@ describe('OllamaService', () => {
     if (model) process.env.OLLAMA_MODEL = model;
     const module: TestingModule = await Test.createTestingModule({
       imports: [ConfigModule.forRoot({ isGlobal: true })],
-      providers: [OllamaService],
+      providers: [OllamaService, LyricAnalysisService],
     }).compile();
     const created = module.get<OllamaService>(OllamaService);
     // restore env
