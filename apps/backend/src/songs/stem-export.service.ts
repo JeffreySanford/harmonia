@@ -3,7 +3,10 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { Observable, from } from 'rxjs';
 import { map, catchError, switchMap, mergeMap, toArray } from 'rxjs/operators';
-import { InstrumentCatalogService, Instrument } from './instrument-catalog.service';
+import {
+  InstrumentCatalogService,
+  Instrument,
+} from './instrument-catalog.service';
 
 export interface StemExportOptions {
   format: 'wav' | 'mp3';

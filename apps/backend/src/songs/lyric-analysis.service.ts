@@ -28,9 +28,15 @@ export class LyricAnalysisService {
   /**
    * Analyze lyrics for diversity, repetition, and engagement metrics
    */
-  analyzeLyrics(lyrics: string, targetDurationSeconds: number): LyricQualityAnalysis {
-    const lines = lyrics.split('\n').filter(line => line.trim().length > 0);
-    const words = lyrics.toLowerCase().split(/\s+/).filter(word => word.length > 0);
+  analyzeLyrics(
+    lyrics: string,
+    targetDurationSeconds: number
+  ): LyricQualityAnalysis {
+    const lines = lyrics.split('\n').filter((line) => line.trim().length > 0);
+    const words = lyrics
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((word) => word.length > 0);
 
     // Diversity analysis
     const uniqueWords = new Set(words);
@@ -40,13 +46,25 @@ export class LyricAnalysisService {
     const repetitivePhrases = this.findRepetitivePhrases(lyrics);
 
     // Attention span modeling
-    const attentionSpan = this.analyzeAttentionSpan(lines.length, targetDurationSeconds, diversityScore);
+    const attentionSpan = this.analyzeAttentionSpan(
+      lines.length,
+      targetDurationSeconds,
+      diversityScore
+    );
 
     // Calculate overall score
-    const overallScore = this.calculateOverallScore(diversityScore, attentionSpan, repetitivePhrases);
+    const overallScore = this.calculateOverallScore(
+      diversityScore,
+      attentionSpan,
+      repetitivePhrases
+    );
 
     // Generate suggestions
-    const suggestions = this.generateSuggestions(diversityScore, attentionSpan, repetitivePhrases);
+    const suggestions = this.generateSuggestions(
+      diversityScore,
+      attentionSpan,
+      repetitivePhrases
+    );
 
     return {
       diversity: {
@@ -80,7 +98,11 @@ LYRICS REQUIREMENTS:
 - Structure: Natural flow without filler phrases
 - Quality: Meaningful content that fits the ${durationSeconds}s duration
 
-${existingLyrics ? `IMPROVE these existing lyrics by fixing repetition and length issues: "${existingLyrics}"` : ''}
+${
+  existingLyrics
+    ? `IMPROVE these existing lyrics by fixing repetition and length issues: "${existingLyrics}"`
+    : ''
+}
 
 Return only the lyrics as plain text, no explanations.`;
 
@@ -90,7 +112,10 @@ Return only the lyrics as plain text, no explanations.`;
   /**
    * Validate lyrics against diversity and attention span constraints
    */
-  validateLyricsConstraints(lyrics: string, targetDurationSeconds: number): {
+  validateLyricsConstraints(
+    lyrics: string,
+    targetDurationSeconds: number
+  ): {
     valid: boolean;
     errors: string[];
     warnings: string[];
@@ -108,18 +133,24 @@ Return only the lyrics as plain text, no explanations.`;
 
     // Check attention span fit
     if (!analysis.attentionSpan.attentionSpanFit) {
-      errors.push(`Lyrics length doesn't fit ${targetDurationSeconds}s duration. Recommended: ${analysis.attentionSpan.recommendedDuration}s.`);
+      errors.push(
+        `Lyrics length doesn't fit ${targetDurationSeconds}s duration. Recommended: ${analysis.attentionSpan.recommendedDuration}s.`
+      );
     }
 
     // Check repetitive phrases
     if (analysis.diversity.repetitivePhrases.length > 2) {
-      warnings.push('Multiple repetitive phrases detected. Consider varying the language.');
+      warnings.push(
+        'Multiple repetitive phrases detected. Consider varying the language.'
+      );
     }
 
     // Check line count appropriateness
     const optimalLines = this.getOptimalLineCount(targetDurationSeconds);
     if (analysis.diversity.lineCount > optimalLines * 1.5) {
-      errors.push(`Too many lines (${analysis.diversity.lineCount}). Maximum recommended: ${optimalLines}.`);
+      errors.push(
+        `Too many lines (${analysis.diversity.lineCount}). Maximum recommended: ${optimalLines}.`
+      );
     }
 
     return {
@@ -157,8 +188,13 @@ Return only the lyrics as plain text, no explanations.`;
     const estimatedDuration = lineCount * 2.5;
 
     // Calculate engagement score based on diversity and length fit
-    const durationFit = Math.max(0, 1 - Math.abs(estimatedDuration - targetDurationSeconds) / targetDurationSeconds);
-    const engagementScore = (diversityScore * 0.7) + (durationFit * 0.3);
+    const durationFit = Math.max(
+      0,
+      1 -
+        Math.abs(estimatedDuration - targetDurationSeconds) /
+          targetDurationSeconds
+    );
+    const engagementScore = diversityScore * 0.7 + durationFit * 0.3;
 
     // Determine complexity level
     let complexityLevel: 'simple' | 'moderate' | 'complex';
@@ -167,7 +203,10 @@ Return only the lyrics as plain text, no explanations.`;
     else complexityLevel = 'complex';
 
     // Check if it fits attention span (allow 20% variance)
-    const attentionSpanFit = Math.abs(estimatedDuration - targetDurationSeconds) / targetDurationSeconds <= 0.2;
+    const attentionSpanFit =
+      Math.abs(estimatedDuration - targetDurationSeconds) /
+        targetDurationSeconds <=
+      0.2;
 
     return {
       recommendedDuration: Math.round(estimatedDuration),
@@ -186,9 +225,11 @@ Return only the lyrics as plain text, no explanations.`;
     const attentionWeight = 0.4;
     const repetitionPenalty = Math.max(0, 1 - repetitivePhrases.length * 0.1);
 
-    return (diversityScore * diversityWeight) +
-           (attentionSpan.engagementScore * attentionWeight) +
-           (repetitionPenalty * 0.2);
+    return (
+      diversityScore * diversityWeight +
+      attentionSpan.engagementScore * attentionWeight +
+      repetitionPenalty * 0.2
+    );
   }
 
   private generateSuggestions(
@@ -203,15 +244,23 @@ Return only the lyrics as plain text, no explanations.`;
     }
 
     if (!attentionSpan.attentionSpanFit) {
-      suggestions.push(`Adjust length for ${attentionSpan.recommendedDuration}s duration instead of current estimate.`);
+      suggestions.push(
+        `Adjust length for ${attentionSpan.recommendedDuration}s duration instead of current estimate.`
+      );
     }
 
     if (repetitivePhrases.length > 0) {
-      suggestions.push(`Avoid overusing phrases like: ${repetitivePhrases.slice(0, 3).join(', ')}`);
+      suggestions.push(
+        `Avoid overusing phrases like: ${repetitivePhrases
+          .slice(0, 3)
+          .join(', ')}`
+      );
     }
 
     if (attentionSpan.complexityLevel === 'complex') {
-      suggestions.push('Consider simplifying the structure for better attention retention.');
+      suggestions.push(
+        'Consider simplifying the structure for better attention retention.'
+      );
     }
 
     return suggestions;
@@ -223,7 +272,10 @@ Return only the lyrics as plain text, no explanations.`;
   getOptimalLineCount(durationSeconds: number): number {
     // Rough guideline: 2-3 lines per 30 seconds
     const linesPer30Seconds = 2.5;
-    return Math.max(3, Math.min(12, Math.round((durationSeconds / 30) * linesPer30Seconds)));
+    return Math.max(
+      3,
+      Math.min(12, Math.round((durationSeconds / 30) * linesPer30Seconds))
+    );
   }
 
   /**

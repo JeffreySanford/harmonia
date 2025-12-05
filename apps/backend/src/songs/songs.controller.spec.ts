@@ -7,6 +7,7 @@ import { StemExportService } from './stem-export.service';
 import { SongDslParserService } from './song-dsl-parser.service';
 import { InstrumentCatalogService } from './instrument-catalog.service';
 import { LyricAnalysisService } from './lyric-analysis.service';
+import { PaletteSuggestionService } from './palette-suggestion.service';
 import { of } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
 
@@ -23,6 +24,9 @@ describe('SongsController', () => {
   const mockLyricAnalysis = {
     analyzeLyrics: jest.fn(),
   } as any;
+  const mockPaletteSuggestion = {
+    suggestPalette: jest.fn(),
+  } as any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -35,6 +39,7 @@ describe('SongsController', () => {
         { provide: SongDslParserService, useValue: mockDslParser },
         { provide: InstrumentCatalogService, useValue: mockInstrumentCatalog },
         { provide: LyricAnalysisService, useValue: mockLyricAnalysis },
+        { provide: PaletteSuggestionService, useValue: mockPaletteSuggestion },
       ],
     }).compile();
 

@@ -62,7 +62,8 @@ export class OllamaService {
     }
 
     // Get optimal lyric constraints based on attention span modeling
-    const optimalLineCount = this.lyricAnalysis.getOptimalLineCount(durationSeconds);
+    const optimalLineCount =
+      this.lyricAnalysis.getOptimalLineCount(durationSeconds);
     const diversityGuidelines = this.lyricAnalysis.getDiversityGuidelines();
 
     const prompt = `You are a music metadata generator. Output exactly one JSON object with keys: title, lyrics, genre, mood.
@@ -171,7 +172,8 @@ Output must be valid JSON array only; no explanatory text.`;
     }
 
     // Get optimal lyric constraints based on attention span modeling
-    const optimalLineCount = this.lyricAnalysis.getOptimalLineCount(durationSeconds);
+    const optimalLineCount =
+      this.lyricAnalysis.getOptimalLineCount(durationSeconds);
     const diversityGuidelines = this.lyricAnalysis.getDiversityGuidelines();
 
     const prompt = `You are a complete song generator. Create a full song from the narrative. Output exactly one JSON object with keys: title, lyrics, genre, mood, melody, tempo, key, instrumentation, intro, outro. 

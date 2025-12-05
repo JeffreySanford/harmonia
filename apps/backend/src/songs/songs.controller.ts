@@ -15,6 +15,7 @@ import { StemExportService, StemExportOptions } from './stem-export.service';
 import { SongDslParserService } from './song-dsl-parser.service';
 import { InstrumentCatalogService } from './instrument-catalog.service';
 import { LyricAnalysisService } from './lyric-analysis.service';
+import { PaletteSuggestionService } from './palette-suggestion.service';
 
 @Controller('songs')
 @ApiTags('songs')
@@ -26,7 +27,8 @@ export class SongsController {
     private readonly stemExport: StemExportService,
     private readonly dslParser: SongDslParserService,
     private readonly instrumentCatalog: InstrumentCatalogService,
-    private readonly lyricAnalysis: LyricAnalysisService
+    private readonly lyricAnalysis: LyricAnalysisService,
+    private readonly paletteSuggestion: PaletteSuggestionService
   ) {}
 
   @Post('generate-metadata')
@@ -385,10 +387,77 @@ export class SongsController {
     }
 
     // Add lyric diversity and quality analysis
-    const analysis = this.lyricAnalysis.analyzeLyrics(body.lyrics, body.durationSeconds || 180);    return {
+    const analysis = this.lyricAnalysis.analyzeLyrics(
+      body.lyrics,
+      body.durationSeconds || 180
+    );
+    return {
       ...result,
       analysis,
     };
+  }
+
+  @Post('suggest-palette')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Suggest optimal instrument palette based on narrative analysis',
+    description:
+      'Analyze narrative content to suggest appropriate musical instruments, genre, mood, tempo range, and complexity for song generation.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Instrument palette successfully suggested',
+    schema: {
+      type: 'object',
+      properties: {
+        genre: { type: 'string', example: 'Pop' },
+        confidence: { type: 'number', example: 0.85 },
+        instruments: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string', example: 'piano' },
+              name: { type: 'string', example: 'Piano' },
+              category: { type: 'string', example: 'keyboard' },
+              role: {
+                type: 'string',
+                enum: ['primary', 'secondary', 'accent', 'bass', 'drums', 'melody'],
+                example: 'primary',
+              },
+              reasoning: {
+                type: 'string',
+                example: 'primary instrument for Pop genre',
+              },
+            },
+          },
+        },
+        mood: { type: 'string', example: 'upbeat' },
+        tempoRange: {
+          type: 'object',
+          properties: {
+            min: { type: 'number', example: 90 },
+            max: { type: 'number', example: 130 },
+            suggested: { type: 'number', example: 110 },
+          },
+        },
+        complexity: {
+          type: 'string',
+          enum: ['simple', 'moderate', 'complex'],
+          example: 'moderate',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid narrative' })
+  @ApiResponse({
+    status: 401,
+    description: 'Missing or invalid authentication',
+  })
+  @ApiResponse({ status: 503, description: 'AI service unavailable' })
+  suggestPalette(@Body() body: { narrative: string; model?: string }) {
+    return this.paletteSuggestion.suggestPalette(body.narrative, body.model);
   }
 
   @Post('validate-instrument-catalog')
