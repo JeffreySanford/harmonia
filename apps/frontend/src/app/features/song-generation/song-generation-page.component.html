@@ -422,6 +422,15 @@ We are fire — we are the unsung.
           </div>
         </div>
       </section>
+
+      <!-- Step 3.5: AI Palette Suggestions -->
+      <harmonia-palette-suggestion
+        [narrative]="narrative"
+        [generatedMetadata]="generatedMetadata"
+        [isVisible]="showMetadata && !!generatedMetadata"
+        (paletteAccepted)="onPaletteAccepted($event)"
+        (paletteModified)="onPaletteModified($event)"
+      ></harmonia-palette-suggestion>
     </mat-card-content>
 
     <!-- Step 5: Actions -->

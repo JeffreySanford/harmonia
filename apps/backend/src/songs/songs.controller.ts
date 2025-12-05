@@ -423,7 +423,14 @@ export class SongsController {
               category: { type: 'string', example: 'keyboard' },
               role: {
                 type: 'string',
-                enum: ['primary', 'secondary', 'accent', 'bass', 'drums', 'melody'],
+                enum: [
+                  'primary',
+                  'secondary',
+                  'accent',
+                  'bass',
+                  'drums',
+                  'melody',
+                ],
                 example: 'primary',
               },
               reasoning: {

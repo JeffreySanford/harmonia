@@ -1,0 +1,200 @@
+<div class="palette-suggestion" *ngIf="isVisible">
+  <mat-card class="palette-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>palette</mat-icon>
+        AI Instrument Palette Suggestions
+      </mat-card-title>
+      <mat-card-subtitle>
+        Intelligent instrument recommendations based on your narrative
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <!-- Generate Button (when no palette exists) -->
+      <div class="generate-section" *ngIf="!(palette$ | async)">
+        <p class="description">
+          Get AI-powered instrument suggestions that match your song's genre, mood, and narrative.
+          The system analyzes your story to recommend the perfect combination of instruments.
+        </p>
+
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="generatePalette()"
+          [disabled]="(isLoading$ | async) || !narrative.trim()"
+          class="generate-palette-button"
+        >
+          <mat-icon>{{ (isLoading$ | async) ? 'hourglass_empty' : 'auto_awesome' }}</mat-icon>
+          {{ (isLoading$ | async) ? 'Analyzing...' : 'Generate Palette Suggestions' }}
+        </button>
+
+        <p class="helper-text" *ngIf="!narrative.trim()">
+          <mat-icon class="warning-icon">info</mat-icon>
+          Enter a narrative first to generate palette suggestions
+        </p>
+      </div>
+
+      <!-- Error Display -->
+      <div class="error-section" *ngIf="error$ | async as error">
+        <mat-error>
+          <mat-icon>error</mat-icon>
+          {{ error }}
+        </mat-error>
+        <button mat-button color="warn" (click)="generatePalette()">
+          <mat-icon>refresh</mat-icon>
+          Try Again
+        </button>
+      </div>
+
+      <!-- Palette Display -->
+      <div class="palette-display" *ngIf="palette$ | async as palette">
+        <!-- Genre & Confidence -->
+        <div class="genre-header">
+          <div class="genre-info">
+            <h4 class="genre-title">
+              <mat-icon>genre</mat-icon>
+              {{ palette.genre }}
+            </h4>
+            <div class="confidence-bar">
+              <mat-progress-bar
+                mode="determinate"
+                [value]="palette.confidence * 100"
+                color="primary"
+              ></mat-progress-bar>
+              <span class="confidence-text">{{ (palette.confidence * 100) | number:'1.0-0' }}% confidence</span>
+            </div>
+          </div>
+
+          <div class="palette-meta">
+            <div class="meta-item">
+              <mat-icon>mood</mat-icon>
+              <span>{{ palette.mood }}</span>
+            </div>
+            <div class="meta-item">
+              <mat-icon>speed</mat-icon>
+              <span>{{ palette.tempoRange.suggested }} BPM</span>
+            </div>
+            <div class="meta-item">
+              <mat-icon>tune</mat-icon>
+              <span>{{ palette.complexity }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Instruments List -->
+        <div class="instruments-section">
+          <h5 class="section-title">
+            <mat-icon>music_note</mat-icon>
+            Recommended Instruments ({{ selectedInstrumentCount }}/{{ totalInstrumentCount }})
+          </h5>
+
+          <div class="instruments-grid">
+            <mat-card
+              *ngFor="let selection of instrumentSelections; let i = index"
+              class="instrument-card"
+              [ngClass]="{
+                'selected': selection.selected,
+                'user-modified': selection.userOverride
+              }"
+              (click)="toggleInstrument(i)"
+            >
+              <mat-card-content class="instrument-content">
+                <div class="instrument-header">
+                  <div class="role-indicator" [style.background-color]="getRoleColor(selection.instrument.role)">
+                    <mat-icon [style.color]="'white'">{{ getRoleIcon(selection.instrument.role) }}</mat-icon>
+                  </div>
+                  <div class="instrument-info">
+                    <h6 class="instrument-name">{{ selection.instrument.name }}</h6>
+                    <span class="instrument-category">{{ selection.instrument.category }}</span>
+                  </div>
+                  <mat-checkbox
+                    [checked]="selection.selected"
+                    (change)="toggleInstrument(i)"
+                    (click)="$event.stopPropagation()"
+                  ></mat-checkbox>
+                </div>
+
+                <div class="instrument-details">
+                  <span class="role-badge" [style.background-color]="getRoleColor(selection.instrument.role)">
+                    {{ selection.instrument.role }}
+                  </span>
+                  <p class="reasoning">{{ selection.instrument.reasoning }}</p>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+
+        <!-- Advanced Options -->
+        <div class="advanced-options" *ngIf="showAdvancedOptions">
+          <h5 class="section-title">
+            <mat-icon>settings</mat-icon>
+            Advanced Options
+          </h5>
+
+          <div class="options-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Custom Tempo (BPM)</mat-label>
+              <input
+                matInput
+                type="number"
+                [(ngModel)]="customTempo"
+                [min]="palette.tempoRange.min"
+                [max]="palette.tempoRange.max"
+                placeholder="{{ palette.tempoRange.suggested }}"
+              >
+              <mat-hint>Range: {{ palette.tempoRange.min }}-{{ palette.tempoRange.max }} BPM</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Custom Mood</mat-label>
+              <mat-select [(ngModel)]="customMood">
+                <mat-option value="energetic">Energetic</mat-option>
+                <mat-option value="melancholic">Melancholic</mat-option>
+                <mat-option value="romantic">Romantic</mat-option>
+                <mat-option value="aggressive">Aggressive</mat-option>
+                <mat-option value="calm">Calm</mat-option>
+                <mat-option value="mysterious">Mysterious</mat-option>
+                <mat-option value="uplifting">Uplifting</mat-option>
+                <mat-option value="nostalgic">Nostalgic</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button
+            mat-button
+            (click)="showAdvancedOptions = !showAdvancedOptions"
+          >
+            <mat-icon>{{ showAdvancedOptions ? 'expand_less' : 'expand_more' }}</mat-icon>
+            {{ showAdvancedOptions ? 'Hide' : 'Show' }} Advanced Options
+          </button>
+
+          <div class="primary-actions">
+            <button
+              mat-button
+              (click)="regeneratePalette()"
+              [disabled]="isLoading$ | async"
+            >
+              <mat-icon>refresh</mat-icon>
+              Regenerate
+            </button>
+
+            <button
+              mat-raised-button
+              color="primary"
+              (click)="acceptPalette()"
+              [disabled]="!hasSelectedInstruments"
+            >
+              <mat-icon>check</mat-icon>
+              Accept Palette
+            </button>
+          </div>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

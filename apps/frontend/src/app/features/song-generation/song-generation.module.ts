@@ -6,10 +6,11 @@ import { HttpClientModule } from '@angular/common/http';
 import { SongGenerationRoutingModule } from './song-generation-routing.module';
 import { SongGenerationPageComponent } from './song-generation-page.component';
 import { GenreSuggestionComponent } from './genre-suggestion.component';
+import { PaletteSuggestionComponent } from './palette-suggestion.component';
 import { SongGenerationMaterialModule } from './song-generation-material.module';
 
 @NgModule({
-  declarations: [SongGenerationPageComponent, GenreSuggestionComponent],
+  declarations: [SongGenerationPageComponent, GenreSuggestionComponent, PaletteSuggestionComponent],
   imports: [
     CommonModule,
     ReactiveFormsModule,

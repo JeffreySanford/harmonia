@@ -106,6 +106,9 @@ export class SongGenerationPageComponent implements OnInit, OnDestroy {
   // Generated metadata
   generatedMetadata: SongMetadata | null = null;
 
+  // Accepted palette from AI suggestions
+  acceptedPalette: any = null;
+
   // Lyrics analysis mode
   generationMode: 'generate' | 'analyze' = 'generate';
   lyricsToAnalyze = '';
@@ -491,5 +494,23 @@ export class SongGenerationPageComponent implements OnInit, OnDestroy {
     // Clear analysis result
     this.analysisResult = null;
     this.lyricsToAnalyze = '';
+  }
+
+  /**
+   * Handle palette suggestion acceptance
+   */
+  onPaletteAccepted(palette: any): void {
+    // Store the accepted palette for use in music generation
+    this.acceptedPalette = palette;
+    console.log('Palette accepted:', palette);
+    // TODO: Store in NGRX state or pass to music generation workflow
+  }
+
+  /**
+   * Handle palette modifications
+   */
+  onPaletteModified(modifications: any[]): void {
+    console.log('Palette modified:', modifications);
+    // TODO: Update local state or NGRX store with modifications
   }
 }
