@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
+import { Observable, from } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 import { mapResponseForModel } from './mappers';
 
 export interface GeneratedMetadata {
@@ -43,11 +45,11 @@ export class OllamaService {
     return this.configService.get<string>('OLLAMA_MODEL') || 'deepseek-coder';
   }
 
-  async generateMetadata(
+  generateMetadata(
     narrative: string,
     durationSeconds: number,
     modelOverride?: string
-  ): Promise<GeneratedMetadata> {
+  ): Observable<GeneratedMetadata> {
     const model = modelOverride || this.model;
     // Guard: limit narrative length
     const maxLen = 1000;
@@ -63,39 +65,42 @@ export class OllamaService {
       max_tokens: 400,
     };
 
-    try {
-      const url = `${this.ollamaUrl}/v1/completions`;
-      const resp = await axios.post(url, body, { timeout: 20_000 });
-      const text = resp.data?.choices?.[0]?.text || resp.data?.text || '';
-      // Try to extract JSON from the resulting text
-      const json = this.extractJson(text);
-      if (!json) {
-        throw new Error('Unable to parse JSON from model response');
-      }
-      const normalized = mapResponseForModel(model, json);
-      const metadata: GeneratedMetadata = {
-        title: normalized.title || 'Untitled',
-        lyrics: normalized.lyrics || '',
-        genre: normalized.genre || 'pop',
-        mood: normalized.mood || 'calm',
-      };
-      metadata.syllableCount = this.estimateSyllables(metadata.lyrics);
-      return metadata;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(
-        'Ollama model call failed, falling back to sample metadata: ' + msg
-      );
-      // Fallback generated metadata - same shape as in frontend sample
-      const sample = this.generateSample(narrative, durationSeconds);
-      return sample;
-    }
+    return from(
+      axios.post(`${this.ollamaUrl}/v1/completions`, body, { timeout: 20_000 })
+    ).pipe(
+      map((resp) => {
+        const text = resp.data?.choices?.[0]?.text || resp.data?.text || '';
+        // Try to extract JSON from the resulting text
+        const json = this.extractJson(text);
+        if (!json) {
+          throw new Error('Unable to parse JSON from model response');
+        }
+        const normalized = mapResponseForModel(model, json);
+        const metadata: GeneratedMetadata = {
+          title: normalized.title || 'Untitled',
+          lyrics: normalized.lyrics || '',
+          genre: normalized.genre || 'pop',
+          mood: normalized.mood || 'calm',
+        };
+        metadata.syllableCount = this.estimateSyllables(metadata.lyrics);
+        return metadata;
+      }),
+      catchError((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          'Ollama model call failed, falling back to sample metadata: ' + msg
+        );
+        // Fallback generated metadata - same shape as in frontend sample
+        const sample = this.generateSample(narrative, durationSeconds);
+        return [sample];
+      })
+    );
   }
 
-  async suggestGenres(
+  suggestGenres(
     narrative: string,
     modelOverride?: string
-  ): Promise<string[]> {
+  ): Observable<string[]> {
     const model = modelOverride || this.model;
     // Guard: limit narrative length
     const maxLen = 1000;
@@ -114,30 +119,34 @@ Output must be valid JSON array only; no explanatory text.`;
       max_tokens: 200,
     };
 
-    try {
-      const url = `${this.ollamaUrl}/v1/completions`;
-      const resp = await axios.post(url, body, { timeout: 15_000 });
-      const text = resp.data?.choices?.[0]?.text || resp.data?.text || '';
-      const json = this.extractJson(text);
-      if (Array.isArray(json)) {
-        return json;
-      }
-      throw new Error('Response is not a valid genre array');
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(
-        'Ollama genre suggestion failed, falling back to defaults: ' + msg
-      );
-      // Fallback: return some general genres
-      return ['Pop', 'Rock', 'Electronic/Dance'];
-    }
+    return from(
+      axios.post(`${this.ollamaUrl}/v1/completions`, body, { timeout: 15_000 })
+    ).pipe(
+      map((resp) => {
+        const text = resp.data?.choices?.[0]?.text || resp.data?.text || '';
+        const json = this.extractJson(text);
+        if (Array.isArray(json)) {
+          return json;
+        } else {
+          throw new Error('Response is not a valid genre array');
+        }
+      }),
+      catchError((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          'Ollama genre suggestion failed, falling back to defaults: ' + msg
+        );
+        // Fallback: return some general genres
+        return [['Pop', 'Rock', 'Electronic/Dance']];
+      })
+    );
   }
 
-  async generateSong(
+  generateSong(
     narrative: string,
     durationSeconds: number,
     modelOverride?: string
-  ): Promise<GeneratedSong> {
+  ): Observable<GeneratedSong> {
     const model = modelOverride || this.model;
     // Guard: limit narrative length
     const maxLen = 1500;
@@ -164,51 +173,54 @@ Requirements:
       max_tokens: 600,
     };
 
-    try {
-      const url = `${this.ollamaUrl}/v1/completions`;
-      const resp = await axios.post(url, body, { timeout: 25_000 });
-      const text = resp.data?.choices?.[0]?.text || resp.data?.text || '';
-      const json = this.extractJson(text);
-      if (!json) {
-        throw new Error('Unable to parse JSON from model response');
-      }
-      const normalized = mapResponseForModel(model, json);
-      const song: GeneratedSong = {
-        title: normalized.title || 'Untitled',
-        lyrics: normalized.lyrics || '',
-        genre: normalized.genre || 'pop',
-        mood: normalized.mood || 'calm',
-        melody: json.melody || json.melody_description || 'Catchy melody',
-        tempo: json.tempo || this.getDefaultTempo(normalized.genre || 'pop'),
-        key: json.key || 'C major',
-        instrumentation: Array.isArray(json.instrumentation)
-          ? json.instrumentation
-          : ['piano', 'guitar', 'drums'],
-        intro: json.intro || { enabled: false, style: 'no-music' },
-        outro: json.outro || { enabled: false, style: 'no-music' },
-      };
-      song.syllableCount = this.estimateSyllables(song.lyrics);
-      return song;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(
-        'Ollama song generation failed, falling back to metadata + defaults: ' +
-          msg
-      );
-      // Fallback: generate metadata + add default song elements
-      const metadata = await this.generateMetadata(
-        narrative,
-        durationSeconds,
-        model
-      );
-      return {
-        ...metadata,
-        melody: 'Upbeat melody with verse-chorus structure',
-        tempo: this.getDefaultTempo(metadata.genre),
-        key: 'C major',
-        instrumentation: ['piano', 'guitar', 'bass', 'drums'],
-      };
-    }
+    return from(
+      axios.post(`${this.ollamaUrl}/v1/completions`, body, { timeout: 25_000 })
+    ).pipe(
+      map((resp) => {
+        const text = resp.data?.choices?.[0]?.text || resp.data?.text || '';
+        const json = this.extractJson(text);
+        if (!json) {
+          throw new Error('Unable to parse JSON from model response');
+        }
+        const normalized = mapResponseForModel(model, json);
+        const song: GeneratedSong = {
+          title: normalized.title || 'Untitled',
+          lyrics: normalized.lyrics || '',
+          genre: normalized.genre || 'pop',
+          mood: normalized.mood || 'calm',
+          melody: json.melody || json.melody_description || 'Catchy melody',
+          tempo: json.tempo || this.getDefaultTempo(normalized.genre || 'pop'),
+          key: json.key || 'C major',
+          instrumentation: Array.isArray(json.instrumentation)
+            ? json.instrumentation
+            : ['piano', 'guitar', 'drums'],
+          intro: json.intro || { enabled: false, style: 'no-music' },
+          outro: json.outro || { enabled: false, style: 'no-music' },
+        };
+        song.syllableCount = this.estimateSyllables(song.lyrics);
+        return song;
+      }),
+      catchError((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          'Ollama song generation failed, falling back to metadata + defaults: ' +
+            msg
+        );
+        // Fallback: generate metadata + add default song elements
+        return this.generateMetadata(narrative, durationSeconds, model).pipe(
+          map((metadata) => {
+            const song: GeneratedSong = {
+              ...metadata,
+              melody: 'Upbeat melody with verse-chorus structure',
+              tempo: this.getDefaultTempo(metadata.genre),
+              key: 'C major',
+              instrumentation: ['piano', 'guitar', 'bass', 'drums'],
+            };
+            return song;
+          })
+        );
+      })
+    );
   }
 
   // Normalization handled by per-model mappers in `mappers.ts`

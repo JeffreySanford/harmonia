@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { catchError, map, of } from 'rxjs';
 
 interface SongMetadata {
   title: string;
@@ -265,60 +266,68 @@ export class SongGenerationPageComponent {
    * Generate complete song with full properties
    * Uses /api/songs/generate-song endpoint for comprehensive song data
    */
-  async generateMetadata(): Promise<void> {
+  generateMetadata(): void {
     if (!this.isNarrativeValid) return;
 
     this.isGenerating = true;
     this.showMetadata = false;
 
-    try {
-      // Call backend endpoint for complete song generation
-      const resp: any = await this.http
-        .post('/api/songs/generate-song', {
-          narrative: this.narrative,
-          duration: this.duration,
-          model: this.selectedModel,
+    this.http
+      .post('/api/songs/generate-song', {
+        narrative: this.narrative,
+        duration: this.duration,
+        model: this.selectedModel,
+      })
+      .pipe(
+        map((resp: any) => {
+          this.generatedMetadata = {
+            title: resp.title || this.generateTitleFromNarrative(),
+            lyrics: resp.lyrics || this.generateSampleLyrics(),
+            genre: resp.genre || this.suggestGenre(),
+            mood: resp.mood || this.suggestMood(),
+            melody: resp.melody || 'Upbeat melody with verse-chorus structure',
+            tempo: resp.tempo || this.getDefaultTempo(resp.genre || 'pop'),
+            key: resp.key || 'C major',
+            instrumentation: resp.instrumentation || [
+              'piano',
+              'guitar',
+              'drums',
+            ],
+            intro: resp.intro || { enabled: false, style: 'no-music' },
+            outro: resp.outro || { enabled: false, style: 'no-music' },
+            syllableCount:
+              resp.syllableCount ||
+              this.countSyllables(resp.lyrics || this.generateSampleLyrics()),
+          };
+          return resp;
+        }),
+        catchError((err) => {
+          console.warn(
+            'Generate song failed; falling back to sample generator',
+            err
+          );
+          const sampleLyrics = this.generateSampleLyrics();
+          this.generatedMetadata = {
+            title: this.generateTitleFromNarrative(),
+            lyrics: sampleLyrics,
+            genre: this.suggestGenre(),
+            mood: this.suggestMood(),
+            melody: 'Upbeat melody with verse-chorus structure',
+            tempo: this.getDefaultTempo(this.suggestGenre()),
+            key: 'C major',
+            instrumentation: ['piano', 'guitar', 'bass', 'drums'],
+            intro: { enabled: false, style: 'no-music' },
+            outro: { enabled: false, style: 'no-music' },
+            syllableCount: this.countSyllables(sampleLyrics),
+          };
+          return of(null);
         })
-        .toPromise();
-      this.generatedMetadata = {
-        title: resp.title || this.generateTitleFromNarrative(),
-        lyrics: resp.lyrics || this.generateSampleLyrics(),
-        genre: resp.genre || this.suggestGenre(),
-        mood: resp.mood || this.suggestMood(),
-        melody: resp.melody || 'Upbeat melody with verse-chorus structure',
-        tempo: resp.tempo || this.getDefaultTempo(resp.genre || 'pop'),
-        key: resp.key || 'C major',
-        instrumentation: resp.instrumentation || ['piano', 'guitar', 'drums'],
-        intro: resp.intro || { enabled: false, style: 'no-music' },
-        outro: resp.outro || { enabled: false, style: 'no-music' },
-        syllableCount:
-          resp.syllableCount ||
-          this.countSyllables(resp.lyrics || this.generateSampleLyrics()),
-      };
-    } catch (err) {
-      console.warn(
-        'Generate song failed; falling back to sample generator',
-        err
-      );
-      const sampleLyrics = this.generateSampleLyrics();
-      this.generatedMetadata = {
-        title: this.generateTitleFromNarrative(),
-        lyrics: sampleLyrics,
-        genre: this.suggestGenre(),
-        mood: this.suggestMood(),
-        melody: 'Upbeat melody with verse-chorus structure',
-        tempo: this.getDefaultTempo(this.suggestGenre()),
-        key: 'C major',
-        instrumentation: ['piano', 'guitar', 'bass', 'drums'],
-        intro: { enabled: false, style: 'no-music' },
-        outro: { enabled: false, style: 'no-music' },
-        syllableCount: this.countSyllables(sampleLyrics),
-      };
-    }
-
-    this.isGenerating = false;
-    this.showMetadata = true;
-    this.isApproved = false;
+      )
+      .subscribe(() => {
+        this.isGenerating = false;
+        this.showMetadata = true;
+        this.isApproved = false;
+      });
   }
 
   /**
@@ -470,8 +479,8 @@ export class SongGenerationPageComponent {
   /**
    * Regenerate metadata with same narrative
    */
-  async regenerate(): Promise<void> {
-    await this.generateMetadata();
+  regenerate(): void {
+    this.generateMetadata();
   }
 
   /**
@@ -481,7 +490,7 @@ export class SongGenerationPageComponent {
    * POST /api/songs/approve
    * { narrative, duration, title, lyrics, genre, mood, melody, tempo, key, instrumentation, intro, outro }
    */
-  async approveAndContinue(): Promise<void> {
+  approveAndContinue(): void {
     if (!this.generatedMetadata) return;
 
     const validation = this.validateLyrics();
@@ -520,33 +529,37 @@ export class SongGenerationPageComponent {
   /**
    * Handle genre suggestion request
    */
-  async onSuggestGenres(): Promise<void> {
+  onSuggestGenres(): void {
     this.genreSuggestionState = 'loading';
     this.genreSuggestionError = '';
 
-    try {
-      const response = await this.http
-        .post<string[]>('/api/songs/suggest-genres', {
-          narrative: this.narrative,
-          model: this.selectedModel,
+    this.http
+      .post<string[]>('/api/songs/suggest-genres', {
+        narrative: this.narrative,
+        model: this.selectedModel,
+      })
+      .pipe(
+        map((response) => {
+          if (response && response.length > 0) {
+            this.genreSuggestions = response.map((genre) => ({
+              genre,
+              selected: false,
+            }));
+            this.genreSuggestionState = 'results';
+          } else {
+            throw new Error('No suggestions received');
+          }
+          return response;
+        }),
+        catchError((error) => {
+          console.error('Genre suggestion error:', error);
+          this.genreSuggestionError =
+            'Failed to get genre suggestions. Please try again.';
+          this.genreSuggestionState = 'error';
+          return of(null);
         })
-        .toPromise();
-
-      if (response && response.length > 0) {
-        this.genreSuggestions = response.map((genre) => ({
-          genre,
-          selected: false,
-        }));
-        this.genreSuggestionState = 'results';
-      } else {
-        throw new Error('No suggestions received');
-      }
-    } catch (error) {
-      console.error('Genre suggestion error:', error);
-      this.genreSuggestionError =
-        'Failed to get genre suggestions. Please try again.';
-      this.genreSuggestionState = 'error';
-    }
+      )
+      .subscribe();
   }
 
   /**
@@ -621,71 +634,81 @@ export class SongGenerationPageComponent {
   /**
    * Analyze lyrics using DSL parser
    */
-  async analyzeLyrics(): Promise<void> {
+  analyzeLyrics(): void {
     if (!this.lyricsToAnalyze.trim()) return;
 
     this.isAnalyzing = true;
     this.analysisResult = null;
 
-    try {
-      const response = await this.http
-        .post('/api/songs/analyze-lyrics', {
-          lyrics: this.lyricsToAnalyze,
-          validateOnly: false,
+    this.http
+      .post('/api/songs/analyze-lyrics', {
+        lyrics: this.lyricsToAnalyze,
+        validateOnly: false,
+      })
+      .pipe(
+        map((response) => {
+          this.analysisResult = response;
+          return response;
+        }),
+        catchError((error: any) => {
+          this.analysisResult = {
+            song: null,
+            errors: [
+              {
+                line: 1,
+                message: error.error?.message || 'Failed to analyze lyrics',
+                severity: 'error',
+              },
+            ],
+          };
+          return of(null);
+        }),
+        map(() => {
+          this.isAnalyzing = false;
         })
-        .toPromise();
-
-      this.analysisResult = response;
-    } catch (error: any) {
-      this.analysisResult = {
-        song: null,
-        errors: [
-          {
-            line: 1,
-            message: error.error?.message || 'Failed to analyze lyrics',
-            severity: 'error',
-          },
-        ],
-      };
-    } finally {
-      this.isAnalyzing = false;
-    }
+      )
+      .subscribe();
   }
 
   /**
    * Validate lyrics without full parsing
    */
-  async validateLyricsOnly(): Promise<void> {
+  validateLyricsOnly(): void {
     if (!this.lyricsToAnalyze.trim()) return;
 
     this.isAnalyzing = true;
 
-    try {
-      const response: any = await this.http
-        .post('/api/songs/analyze-lyrics', {
-          lyrics: this.lyricsToAnalyze,
-          validateOnly: true,
+    this.http
+      .post('/api/songs/analyze-lyrics', {
+        lyrics: this.lyricsToAnalyze,
+        validateOnly: true,
+      })
+      .pipe(
+        map((response: any) => {
+          this.analysisResult = {
+            song: null,
+            errors: response?.valid ? [] : response?.errors || [],
+          };
+          return response;
+        }),
+        catchError((error: any) => {
+          this.analysisResult = {
+            song: null,
+            errors: [
+              {
+                line: 1,
+                message: error.error?.message || 'Failed to validate lyrics',
+                severity: 'error',
+              },
+            ],
+          };
+          return of(null);
+        }),
+        map(() => {
+          this.isAnalyzing = false;
         })
-        .toPromise();
-
-      this.analysisResult = {
-        song: null,
-        errors: response?.valid ? [] : response?.errors || [],
-      };
-    } catch (error: any) {
-      this.analysisResult = {
-        song: null,
-        errors: [
-          {
-            line: 1,
-            message: error.error?.message || 'Failed to validate lyrics',
-            severity: 'error',
-          },
-        ],
-      };
-    } finally {
-      this.isAnalyzing = false;
-    }
+      )
+      .subscribe();
   }
 
   /**

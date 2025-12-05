@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { promises as fs } from 'fs';
 import * as path from 'path';
+import * as fs from 'fs';
+import { Observable } from 'rxjs';
+import { map, catchError, switchMap } from 'rxjs/operators';
 import Ajv from 'ajv';
 
 export interface InstrumentCatalog {
@@ -41,49 +43,78 @@ export class InstrumentCatalogService {
   /**
    * Load and validate the instrument catalog
    */
-  async loadCatalog(catalogPath?: string): Promise<ValidationResult> {
-    const catalogFile = catalogPath || path.join(process.cwd(), 'models', 'instrument_catalog.json');
-    const schemaFile = path.join(process.cwd(), 'models', 'instrument_catalog.schema.json');
+  loadCatalog(catalogPath?: string): Observable<ValidationResult> {
+    const catalogFile =
+      catalogPath ||
+      path.join(process.cwd(), 'models', 'instrument_catalog.json');
+    const schemaFile = path.join(
+      process.cwd(),
+      'models',
+      'instrument_catalog.schema.json'
+    );
 
-    try {
-      // Load schema
-      const schemaContent = await fs.readFile(schemaFile, 'utf8');
-      this.schema = JSON.parse(schemaContent);
-      const validate = this.ajv.compile(this.schema);
+    // Create observables for file reading
+    const readFileObservable = (filePath: string) => {
+      return new Observable<string>((observer) => {
+        fs.readFile(filePath, 'utf8', (err, data) => {
+          if (err) {
+            observer.error(err);
+          } else {
+            observer.next(data);
+            observer.complete();
+          }
+        });
+      });
+    };
 
-      // Load catalog
-      const catalogContent = await fs.readFile(catalogFile, 'utf8');
-      const catalogData: InstrumentCatalog = JSON.parse(catalogContent);
+    // Chain the file reading operations reactively
+    return readFileObservable(schemaFile).pipe(
+      map((schemaContent) => {
+        this.schema = JSON.parse(schemaContent);
+        return this.schema;
+      }),
+      switchMap(() => readFileObservable(catalogFile)),
+      map((catalogContent) => {
+        const catalogData: InstrumentCatalog = JSON.parse(catalogContent);
+        const validate = this.ajv.compile(this.schema);
+        const valid = validate(catalogData);
 
-      // Validate against schema
-      const valid = validate(catalogData);
+        if (!valid) {
+          const errors = validate.errors?.map((err: any) => {
+            const field = err.instancePath || 'root';
+            return `${field}: ${err.message}`;
+          }) || ['Unknown validation error'];
 
-      if (!valid) {
-        const errors = validate.errors?.map((err: any) => {
-          const field = err.instancePath || 'root';
-          return `${field}: ${err.message}`;
-        }) || ['Unknown validation error'];
+          this.logger.error(
+            `Instrument catalog validation failed: ${errors.join(', ')}`
+          );
+          return { valid: false, errors };
+        }
 
-        this.logger.error(`Instrument catalog validation failed: ${errors.join(', ')}`);
-        return { valid: false, errors };
-      }
+        // Additional semantic validation
+        const semanticErrors = this.validateSemantics(catalogData);
+        if (semanticErrors.length > 0) {
+          this.logger.error(
+            `Instrument catalog semantic validation failed: ${semanticErrors.join(
+              ', '
+            )}`
+          );
+          return { valid: false, errors: semanticErrors };
+        }
 
-      // Additional semantic validation
-      const semanticErrors = this.validateSemantics(catalogData);
-      if (semanticErrors.length > 0) {
-        this.logger.error(`Instrument catalog semantic validation failed: ${semanticErrors.join(', ')}`);
-        return { valid: false, errors: semanticErrors };
-      }
-
-      this.catalog = catalogData;
-      this.logger.log(`Successfully loaded instrument catalog v${catalogData.version} with ${catalogData.instruments.length} instruments`);
-      return { valid: true, errors: [] };
-
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Failed to load instrument catalog: ${errorMsg}`);
-      return { valid: false, errors: [errorMsg] };
-    }
+        this.catalog = catalogData;
+        this.logger.log(
+          `Successfully loaded instrument catalog v${catalogData.version} with ${catalogData.instruments.length} instruments`
+        );
+        return { valid: true, errors: [] };
+      }),
+      catchError((error) => {
+        const errorMsg =
+          error instanceof Error ? error.message : 'Unknown error';
+        this.logger.error(`Failed to load instrument catalog: ${errorMsg}`);
+        return [{ valid: false, errors: [errorMsg] }];
+      })
+    );
   }
 
   /**
@@ -98,7 +129,9 @@ export class InstrumentCatalogService {
    */
   getInstrument(instrumentId: string): Instrument | null {
     if (!this.catalog) return null;
-    return this.catalog.instruments.find(inst => inst.id === instrumentId) || null;
+    return (
+      this.catalog.instruments.find((inst) => inst.id === instrumentId) || null
+    );
   }
 
   /**
@@ -106,7 +139,9 @@ export class InstrumentCatalogService {
    */
   getInstrumentsByCategory(category: string): Instrument[] {
     if (!this.catalog) return [];
-    return this.catalog.instruments.filter(inst => inst.category === category);
+    return this.catalog.instruments.filter(
+      (inst) => inst.category === category
+    );
   }
 
   /**
@@ -117,7 +152,7 @@ export class InstrumentCatalogService {
     if (!instrument || !instrument.fallback_rules) return [];
 
     return instrument.fallback_rules
-      .map(id => this.getInstrument(id))
+      .map((id) => this.getInstrument(id))
       .filter((inst): inst is Instrument => inst !== null);
   }
 
@@ -130,7 +165,7 @@ export class InstrumentCatalogService {
     }
 
     const errors: string[] = [];
-    const validIds = new Set(this.catalog.instruments.map(inst => inst.id));
+    const validIds = new Set(this.catalog.instruments.map((inst) => inst.id));
 
     for (const id of instrumentIds) {
       if (!validIds.has(id)) {
@@ -148,20 +183,26 @@ export class InstrumentCatalogService {
     const errors: string[] = [];
 
     // Check that all fallback rules reference existing instruments
-    const instrumentIds = new Set(catalog.instruments.map((inst: any) => inst.id));
+    const instrumentIds = new Set(
+      catalog.instruments.map((inst: any) => inst.id)
+    );
 
     for (const instrument of catalog.instruments) {
       if (instrument.fallback_rules) {
         for (const fallbackId of instrument.fallback_rules) {
           if (!instrumentIds.has(fallbackId)) {
-            errors.push(`Instrument ${instrument.id} has invalid fallback rule: ${fallbackId}`);
+            errors.push(
+              `Instrument ${instrument.id} has invalid fallback rule: ${fallbackId}`
+            );
           }
         }
       }
 
       // Check that category exists in categories array
       if (!catalog.categories.includes(instrument.category)) {
-        errors.push(`Instrument ${instrument.id} has unknown category: ${instrument.category}`);
+        errors.push(
+          `Instrument ${instrument.id} has unknown category: ${instrument.category}`
+        );
       }
     }
 

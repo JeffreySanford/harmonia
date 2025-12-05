@@ -6,6 +6,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { map, catchError, of } from 'rxjs';
 import { GenerateMetadataDto } from './dto/generate-metadata.dto';
 import { AnalyzeLyricsDto } from './dto/analyze-lyrics.dto';
 import { OllamaService } from '../llm/ollama.service';
@@ -58,7 +59,7 @@ export class SongsController {
     description: 'Missing or invalid authentication',
   })
   @ApiResponse({ status: 503, description: 'AI service unavailable' })
-  async generateMetadata(@Body() body: GenerateMetadataDto) {
+  generateMetadata(@Body() body: GenerateMetadataDto) {
     // Allow per-request override of model via `model` in the DTO
     const defaultModel =
       this.configService.get<string>('OLLAMA_MODEL') || 'deepseek';
@@ -131,7 +132,7 @@ export class SongsController {
     description: 'Missing or invalid authentication',
   })
   @ApiResponse({ status: 503, description: 'AI service unavailable' })
-  async generateSong(@Body() body: GenerateMetadataDto) {
+  generateSong(@Body() body: GenerateMetadataDto) {
     // Allow per-request override of model via `model` in the DTO
     const defaultModel =
       this.configService.get<string>('OLLAMA_MODEL') || 'deepseek';
@@ -162,7 +163,7 @@ export class SongsController {
       },
     },
   })
-  async suggestGenres(@Body() body: { narrative: string; model?: string }) {
+  suggestGenres(@Body() body: { narrative: string; model?: string }) {
     const defaultModel =
       this.configService.get<string>('OLLAMA_MODEL') || 'deepseek';
     const model = body.model || defaultModel;
@@ -208,7 +209,7 @@ export class SongsController {
       },
     },
   })
-  async parseMmsl(@Body() body: { mmsl: string }) {
+  parseMmsl(@Body() body: { mmsl: string }) {
     return this.mmslParser.parse(body.mmsl);
   }
 
@@ -227,7 +228,7 @@ export class SongsController {
       },
     },
   })
-  async validateMmsl(@Body() body: { mmsl: string }) {
+  validateMmsl(@Body() body: { mmsl: string }) {
     return this.mmslParser.validate(body.mmsl);
   }
 
@@ -329,7 +330,7 @@ export class SongsController {
     status: 401,
     description: 'Missing or invalid authentication',
   })
-  async analyzeLyrics(@Body() body: AnalyzeLyricsDto) {
+  analyzeLyrics(@Body() body: AnalyzeLyricsDto) {
     const result = this.dslParser.parseSong(body.lyrics);
 
     // If validateOnly is true, return only validation result
@@ -345,7 +346,9 @@ export class SongsController {
 
   @Post('validate-instrument-catalog')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Validate instrument catalog JSON schema and semantics' })
+  @ApiOperation({
+    summary: 'Validate instrument catalog JSON schema and semantics',
+  })
   @ApiResponse({
     status: 200,
     description: 'Instrument catalog validation result',
@@ -373,23 +376,32 @@ export class SongsController {
       },
     },
   })
-  async validateInstrumentCatalog(@Body() body: { catalogPath?: string }) {
-    const result = await this.instrumentCatalog.loadCatalog(body.catalogPath);
-
-    if (result.valid) {
-      const catalog = this.instrumentCatalog.getCatalog();
-      return {
-        valid: true,
-        errors: [],
-        catalog: catalog ? {
-          version: catalog.version,
-          instruments_count: catalog.instruments.length,
-          categories: catalog.categories,
-        } : null,
-      };
-    }
-
-    return result;
+  validateInstrumentCatalog(@Body() body: { catalogPath?: string }) {
+    return this.instrumentCatalog.loadCatalog(body.catalogPath).pipe(
+      map((result) => {
+        if (result.valid) {
+          const catalog = this.instrumentCatalog.getCatalog();
+          return {
+            valid: true,
+            errors: [],
+            catalog: catalog
+              ? {
+                  version: catalog.version,
+                  instruments_count: catalog.instruments.length,
+                  categories: catalog.categories,
+                }
+              : null,
+          };
+        }
+        return result;
+      }),
+      catchError((error) => {
+        return of({
+          valid: false,
+          errors: [error.message || 'Failed to validate catalog'],
+        });
+      })
+    );
   }
 
   @Post('export-stems')
@@ -426,11 +438,14 @@ export class SongsController {
       },
     },
   })
-  async exportStems(@Body() body: StemExportOptions) {
+  exportStems(@Body() body: StemExportOptions) {
     const validation = this.stemExport.validateOptions(body);
     if (!validation.valid) {
-      return { success: false, errors: validation.errors };
+      return of({ success: false, errors: validation.errors });
     }
-    return this.stemExport.exportStems(body);
+    return this.stemExport.exportStems(body).pipe(
+      map((result) => result),
+      catchError((error) => of({ success: false, errors: [error.message] }))
+    );
   }
 }

@@ -18,12 +18,12 @@ export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
   @Get()
-  async getProfile(@Request() req: any) {
+  getProfile(@Request() req: any) {
     return this.profileService.getProfile(req.user.userId);
   }
 
   @Put()
-  async updateProfile(
+  updateProfile(
     @Body() updateProfileDto: UpdateProfileDto,
     @Request() req: any
   ) {
@@ -31,7 +31,7 @@ export class ProfileController {
   }
 
   @Post('change-password')
-  async changePassword(
+  changePassword(
     @Body() changePasswordDto: ChangePasswordDto,
     @Request() req: any
   ) {
@@ -42,7 +42,7 @@ export class ProfileController {
   }
 
   @Delete()
-  async deleteProfile(@Request() req: any) {
+  deleteProfile(@Request() req: any) {
     return this.profileService.deleteProfile(req.user.userId);
   }
 }

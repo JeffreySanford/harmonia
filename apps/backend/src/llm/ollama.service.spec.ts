@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 import { OllamaService } from './ollama.service';
 import axios from 'axios';
+import { firstValueFrom } from 'rxjs';
 
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
@@ -34,7 +35,9 @@ describe('OllamaService', () => {
   it('should return fallback sample when axios fails', async () => {
     service = await createServiceWithModel('deepseek');
     mockedAxios.post.mockRejectedValueOnce(new Error('network'));
-    const res = await service.generateMetadata('short story', 30);
+    const res = await firstValueFrom(
+      service.generateMetadata('short story', 30)
+    );
     expect(res.title).toBeDefined();
     expect(res.lyrics).toBeDefined();
   });
@@ -50,7 +53,7 @@ describe('OllamaService', () => {
         ],
       },
     });
-    const res = await service.generateMetadata('narrative', 60);
+    const res = await firstValueFrom(service.generateMetadata('narrative', 60));
     expect(res.title).toBe('D');
     expect(res.genre).toBe('rock');
     expect(res.mood).toBe('happy');
@@ -68,7 +71,7 @@ describe('OllamaService', () => {
         ],
       },
     });
-    const res = await service.generateMetadata('story', 120);
+    const res = await firstValueFrom(service.generateMetadata('story', 120));
     expect(res.title).toBe('M');
     expect(res.genre).toBe('indie');
     expect(res.mood).toBe('reflective');
@@ -86,7 +89,9 @@ describe('OllamaService', () => {
         ],
       },
     });
-    const res = await service.generateMetadata('story', 30, 'minstral3');
+    const res = await firstValueFrom(
+      service.generateMetadata('story', 30, 'minstral3')
+    );
     expect(res.title).toBe('M');
     expect(res.genre).toBe('indie');
     expect(res.mood).toBe('calm');
@@ -103,7 +108,7 @@ describe('OllamaService', () => {
         ],
       },
     });
-    const res = await service.generateSong('happy story', 180);
+    const res = await firstValueFrom(service.generateSong('happy story', 180));
     expect(res.title).toBe('Test Song');
     expect(res.lyrics).toBe('Verse 1\nChorus');
     expect(res.genre).toBe('pop');

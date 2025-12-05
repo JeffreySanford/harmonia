@@ -6,6 +6,8 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
+import { Observable, from } from 'rxjs';
+import { map, switchMap, catchError } from 'rxjs/operators';
 import { User, UserDocument } from '../schemas/user.schema';
 import {
   UpdateProfileDto,
@@ -20,100 +22,146 @@ export class ProfileService {
     private userModel: Model<UserDocument>
   ) {}
 
-  async getProfile(userId: string): Promise<ProfileResponseDto> {
-    const user = await this.userModel.findById(userId).select('-password');
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    return this.mapToProfileResponse(user);
+  getProfile(userId: string): Observable<ProfileResponseDto> {
+    return from(this.userModel.findById(userId).select('-password')).pipe(
+      map((user) => {
+        if (!user) {
+          throw new NotFoundException('User not found');
+        }
+        return this.mapToProfileResponse(user);
+      }),
+      catchError((error) => {
+        throw error;
+      })
+    );
   }
 
-  async updateProfile(
+  updateProfile(
     userId: string,
     updateProfileDto: UpdateProfileDto
-  ): Promise<ProfileResponseDto> {
-    // Check for username/email uniqueness if they're being updated
+  ): Observable<ProfileResponseDto> {
+    // Check for username uniqueness if being updated
+    let uniquenessCheck$: Observable<any>;
     if (updateProfileDto.username) {
-      const existingUser = await this.userModel.findOne({
-        username: updateProfileDto.username,
-        _id: { $ne: userId },
-      });
-      if (existingUser) {
-        throw new BadRequestException('Username already taken');
-      }
+      uniquenessCheck$ = from(
+        this.userModel.findOne({
+          username: updateProfileDto.username,
+          _id: { $ne: userId },
+        })
+      ).pipe(
+        map((existingUser) => {
+          if (existingUser) {
+            throw new BadRequestException('Username already taken');
+          }
+          return null;
+        })
+      );
+    } else {
+      uniquenessCheck$ = from(Promise.resolve(null));
     }
 
-    if (updateProfileDto.email) {
-      const existingUser = await this.userModel.findOne({
-        email: updateProfileDto.email,
-        _id: { $ne: userId },
-      });
-      if (existingUser) {
-        throw new BadRequestException('Email already taken');
-      }
-    }
-
-    const updatedUser = await this.userModel
-      .findByIdAndUpdate(userId, updateProfileDto, { new: true })
-      .select('-password');
-
-    if (!updatedUser) {
-      throw new NotFoundException('User not found');
-    }
-
-    return this.mapToProfileResponse(updatedUser);
+    return uniquenessCheck$.pipe(
+      switchMap(() => {
+        // Check for email uniqueness if being updated
+        if (updateProfileDto.email) {
+          return from(
+            this.userModel.findOne({
+              email: updateProfileDto.email,
+              _id: { $ne: userId },
+            })
+          ).pipe(
+            map((existingUser) => {
+              if (existingUser) {
+                throw new BadRequestException('Email already taken');
+              }
+              return null;
+            })
+          );
+        }
+        return from(Promise.resolve(null));
+      }),
+      switchMap(() =>
+        from(
+          this.userModel
+            .findByIdAndUpdate(userId, updateProfileDto, { new: true })
+            .select('-password')
+        )
+      ),
+      map((updatedUser) => {
+        if (!updatedUser) {
+          throw new NotFoundException('User not found');
+        }
+        return this.mapToProfileResponse(updatedUser);
+      }),
+      catchError((error) => {
+        throw error;
+      })
+    );
   }
 
-  async changePassword(
+  changePassword(
     userId: string,
     changePasswordDto: ChangePasswordDto
-  ): Promise<{ message: string }> {
-    const user = await this.userModel.findById(userId);
+  ): Observable<{ message: string }> {
+    return from(this.userModel.findById(userId)).pipe(
+      switchMap((user) => {
+        if (!user) {
+          throw new NotFoundException('User not found');
+        }
 
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(
-      changePasswordDto.currentPassword,
-      user.password
+        // Verify current password
+        return from(
+          bcrypt.compare(changePasswordDto.currentPassword, user.password)
+        ).pipe(
+          map((isCurrentPasswordValid) => {
+            if (!isCurrentPasswordValid) {
+              throw new BadRequestException('Current password is incorrect');
+            }
+            return user;
+          })
+        );
+      }),
+      switchMap((user) => {
+        // Hash new password
+        const saltRounds = 10;
+        return from(
+          bcrypt.hash(changePasswordDto.newPassword, saltRounds)
+        ).pipe(map((hashedNewPassword) => ({ user, hashedNewPassword })));
+      }),
+      switchMap(({ user, hashedNewPassword }) => {
+        // Update password
+        return from(
+          this.userModel.findByIdAndUpdate(user._id, {
+            password: hashedNewPassword,
+          })
+        ).pipe(
+          map(() => ({ message: 'Password changed successfully' }))
+        );
+      }),
+      catchError((error) => {
+        throw error;
+      })
     );
-
-    if (!isCurrentPasswordValid) {
-      throw new BadRequestException('Current password is incorrect');
-    }
-
-    // Hash new password
-    const saltRounds = 10;
-    const hashedNewPassword = await bcrypt.hash(
-      changePasswordDto.newPassword,
-      saltRounds
-    );
-
-    // Update password
-    await this.userModel.findByIdAndUpdate(userId, {
-      password: hashedNewPassword,
-    });
-
-    return { message: 'Password changed successfully' };
   }
 
-  async deleteProfile(userId: string): Promise<{ message: string }> {
-    const user = await this.userModel.findById(userId);
+  deleteProfile(userId: string): Observable<{ message: string }> {
+    return from(this.userModel.findById(userId)).pipe(
+      switchMap((user) => {
+        if (!user) {
+          throw new NotFoundException('User not found');
+        }
 
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+        // TODO: Delete all user's library items and associated files
+        // await this.libraryService.deleteAllByUserId(userId);
 
-    // TODO: Delete all user's library items and associated files
-    // await this.libraryService.deleteAllByUserId(userId);
-
-    await this.userModel.findByIdAndDelete(userId);
-
-    return { message: 'Profile deleted successfully' };
+        return from(this.userModel.findByIdAndDelete(userId)).pipe(
+          map(() => ({ message: 'Profile deleted successfully' }))
+        );
+      }),
+      catchError((error) => {
+        throw error;
+      })
+    );
   }
 
   private mapToProfileResponse(user: UserDocument): ProfileResponseDto {

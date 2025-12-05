@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { promises as fs } from 'fs';
 import * as path from 'path';
+import * as fs from 'fs';
+import { Observable, from } from 'rxjs';
+import { map, catchError, switchMap, mergeMap, toArray } from 'rxjs/operators';
 import { InstrumentCatalogService } from './instrument-catalog.service';
 
 export interface StemExportOptions {
@@ -23,69 +25,126 @@ export interface StemExportResult {
 
 @Injectable()
 export class StemExportService {
-  constructor(
-    private readonly instrumentCatalog: InstrumentCatalogService,
-  ) {}
+  constructor(private readonly instrumentCatalog: InstrumentCatalogService) {}
   /**
    * Export per-instrument stems in the specified format
    * This is a basic implementation that creates placeholder audio files
    * In production, this would synthesize actual audio from instrument data
    */
-  async exportStems(options: StemExportOptions): Promise<StemExportResult> {
-    const result: StemExportResult = {
-      success: true,
-      stems: [],
-      errors: [],
+  exportStems(options: StemExportOptions): Observable<StemExportResult> {
+    // Create observables for file operations
+    const mkdirObservable = (dirPath: string) => {
+      return new Observable<void>((observer) => {
+        fs.mkdir(dirPath, { recursive: true }, (err) => {
+          if (err) {
+            observer.error(err);
+          } else {
+            observer.next();
+            observer.complete();
+          }
+        });
+      });
     };
 
-    try {
-      // Ensure output directory exists
-      await fs.mkdir(options.outputDir, { recursive: true });
+    const writeFileObservable = (filePath: string, data: Buffer) => {
+      return new Observable<void>((observer) => {
+        fs.writeFile(filePath, data, (err) => {
+          if (err) {
+            observer.error(err);
+          } else {
+            observer.next();
+            observer.complete();
+          }
+        });
+      });
+    };
 
-      for (const instrument of options.instruments) {
-        try {
-          const fileName = `${instrument.replace(/[^a-zA-Z0-9]/g, '_')}.${
-            options.format
-          }`;
-          const filePath = path.join(options.outputDir, fileName);
+    const statObservable = (filePath: string) => {
+      return new Observable<fs.Stats>((observer) => {
+        fs.stat(filePath, (err, stats) => {
+          if (err) {
+            observer.error(err);
+          } else {
+            observer.next(stats);
+            observer.complete();
+          }
+        });
+      });
+    };
 
-          // For now, create a minimal placeholder WAV file
-          // In production, this would generate actual audio data
-          const audioData = this.generatePlaceholderAudio(
-            instrument,
-            options.format
-          );
+    // Start with creating the output directory
+    return mkdirObservable(options.outputDir).pipe(
+      switchMap(() => {
+        // Process each instrument reactively
+        const instrumentObservables = options.instruments.map(
+          (instrument) => {
+            const fileName = `${instrument.replace(/[^a-zA-Z0-9]/g, '_')}.${
+              options.format
+            }`;
+            const filePath = path.join(options.outputDir, fileName);
+            const audioData = this.generatePlaceholderAudio(
+              instrument,
+              options.format
+            );
 
-          await fs.writeFile(filePath, audioData);
+            return writeFileObservable(filePath, audioData).pipe(
+              switchMap(() => statObservable(filePath)),
+              map((stats) => ({
+                instrument,
+                filePath,
+                format: options.format,
+                size: stats.size,
+              })),
+              catchError((error) => {
+                const errorMsg = `Failed to export stem for ${instrument}: ${
+                  error instanceof Error ? error.message : 'Unknown error'
+                }`;
+                return [{ error: errorMsg }];
+              })
+            );
+          }
+        );
 
-          const stats = await fs.stat(filePath);
+        return from(instrumentObservables).pipe(
+          mergeMap((obs) => obs),
+          toArray()
+        );
+      }),
+      map((results) => {
+        const stems = results.filter(
+          (result) => !('error' in result)
+        ) as Array<{
+          instrument: string;
+          filePath: string;
+          format: string;
+          size: number;
+        }>;
+        const errors = results
+          .filter((result) => 'error' in result)
+          .map((result) => (result as any).error);
 
-          result.stems.push({
-            instrument,
-            filePath,
-            format: options.format,
-            size: stats.size,
-          });
-        } catch (error) {
-          const errorMsg = `Failed to export stem for ${instrument}: ${
-            error instanceof Error ? error.message : 'Unknown error'
-          }`;
-          result.errors.push(errorMsg);
-          result.success = false;
-        }
-      }
-    } catch (error) {
-      result.success = false;
-      result.errors.push(
-        `Export failed: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`
-      );
-    }
+        const result: StemExportResult = {
+          success: errors.length === 0,
+          stems,
+          errors,
+        };
 
-    return result;
+        return result;
+      }),
+      catchError((error) => {
+        const result: StemExportResult = {
+          success: false,
+          stems: [],
+          errors: [
+            `Export failed: ${
+              error instanceof Error ? error.message : 'Unknown error'
+            }`,
+          ],
+        };
+        return from(Promise.resolve(result));
+      })
+    );
   }
-
   /**
    * Generate placeholder audio data
    * This creates a minimal valid WAV file with silence
@@ -159,7 +218,9 @@ export class StemExportService {
       errors.push('At least one instrument must be specified');
     } else {
       // Validate instrument IDs against catalog
-      const instrumentValidation = this.instrumentCatalog.validateInstrumentIds(options.instruments);
+      const instrumentValidation = this.instrumentCatalog.validateInstrumentIds(
+        options.instruments
+      );
       if (!instrumentValidation.valid) {
         errors.push(...instrumentValidation.errors);
       }

@@ -6,6 +6,8 @@ import { MmslParserService } from './mmsl-parser.service';
 import { StemExportService } from './stem-export.service';
 import { SongDslParserService } from './song-dsl-parser.service';
 import { InstrumentCatalogService } from './instrument-catalog.service';
+import { of } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 
 describe('SongsController', () => {
   let controller: SongsController;
@@ -13,7 +15,10 @@ describe('SongsController', () => {
   const mockMmslParser = { parse: jest.fn(), validate: jest.fn() } as any;
   const mockStemExport = { export: jest.fn() } as any;
   const mockDslParser = { parse: jest.fn() } as any;
-  const mockInstrumentCatalog = { loadCatalog: jest.fn(), getCatalog: jest.fn() } as any;
+  const mockInstrumentCatalog = {
+    loadCatalog: jest.fn(),
+    getCatalog: jest.fn(),
+  } as any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -36,17 +41,19 @@ describe('SongsController', () => {
   });
 
   it('should call ollama service', async () => {
-    mockOllama.generateMetadata.mockResolvedValueOnce({
-      title: 'T',
-      lyrics: 'L',
-      genre: 'pop',
-      mood: 'calm',
-    });
-    const res = await controller.generateMetadata({
+    mockOllama.generateMetadata.mockReturnValueOnce(
+      of({
+        title: 'T',
+        lyrics: 'L',
+        genre: 'pop',
+        mood: 'calm',
+      })
+    );
+    const res = await firstValueFrom(controller.generateMetadata({
       narrative: 'x',
       duration: 30,
       model: 'minstral3',
-    } as any);
+    } as any));
     expect(mockOllama.generateMetadata).toHaveBeenCalledWith(
       'x',
       30,

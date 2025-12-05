@@ -77,7 +77,7 @@ export class SongDslParserService {
           case 'title':
             songTitle = value;
             break;
-          case 'bpm':
+          case 'bpm': {
             const bpmNum = parseInt(value);
             if (isNaN(bpmNum) || bpmNum < 60 || bpmNum > 200) {
               errors.push({
@@ -89,6 +89,7 @@ export class SongDslParserService {
               songBpm = bpmNum;
             }
             break;
+          }
           case 'key':
             songKey = value;
             break;
@@ -398,13 +399,14 @@ export class SongDslParserService {
           case 'lyric':
             lines.push(item.text || '');
             break;
-          case 'cue':
+          case 'cue': {
             const params = item.params || {};
             const paramStr = Object.entries(params)
               .map(([k, v]) => `${k}=${v}`)
               .join(' ');
             lines.push(`<${item.name} ${paramStr}>`.trim());
             break;
+          }
         }
       }
 

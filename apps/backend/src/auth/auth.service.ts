@@ -9,6 +9,8 @@ import { Model } from 'mongoose';
 import { User, UserDocument } from '../schemas/user.schema';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { Observable, from } from 'rxjs';
+import { map, catchError, switchMap } from 'rxjs/operators';
 
 /**
  * Auth Service
@@ -46,47 +48,56 @@ export class AuthService {
    * @returns User object and JWT tokens
    * @throws ConflictException if email or username already exists
    */
-  async register(registerDto: RegisterDto) {
-    // Check if user already exists
-    const existingUser = await this.userModel.findOne({
-      $or: [
-        { email: registerDto.email.toLowerCase() },
-        { username: registerDto.username },
-      ],
-    });
+  register(registerDto: RegisterDto): Observable<any> {
+    return from(
+      this.userModel.findOne({
+        $or: [
+          { email: registerDto.email.toLowerCase() },
+          { username: registerDto.username },
+        ],
+      })
+    ).pipe(
+      map((existingUser) => {
+        if (existingUser) {
+          if (existingUser.email === registerDto.email.toLowerCase()) {
+            throw new ConflictException('Email already registered');
+          }
+          if (existingUser.username === registerDto.username) {
+            throw new ConflictException('Username already taken');
+          }
+        }
 
-    if (existingUser) {
-      if (existingUser.email === registerDto.email.toLowerCase()) {
-        throw new ConflictException('Email already registered');
-      }
-      if (existingUser.username === registerDto.username) {
-        throw new ConflictException('Username already taken');
-      }
-    }
+        // Create new user (password will be hashed by pre-save hook)
+        const user = new this.userModel({
+          email: registerDto.email.toLowerCase(),
+          username: registerDto.username,
+          password: registerDto.password,
+          role: 'user', // Default role
+        });
 
-    // Create new user (password will be hashed by pre-save hook)
-    const user = new this.userModel({
-      email: registerDto.email.toLowerCase(),
-      username: registerDto.username,
-      password: registerDto.password,
-      role: 'user', // Default role
-    });
-
-    await user.save();
-
-    // Generate JWT tokens
-    const tokens = await this.generateTokens(user);
-
-    return {
-      user: {
-        id: user._id.toString(),
-        email: user.email,
-        username: user.username,
-        role: user.role,
-        createdAt: user.createdAt,
-      },
-      ...tokens,
-    };
+        return user;
+      }),
+      switchMap((user) => from(user.save())),
+      switchMap((user) => {
+        return from(this.generateTokens(user)).pipe(
+          map((tokens) => ({ user, tokens }))
+        );
+      }),
+      map(({ user, tokens }) => ({
+        user: {
+          id: user._id.toString(),
+          email: user.email,
+          username: user.username,
+          role: user.role,
+          createdAt: user.createdAt,
+        },
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      })),
+      catchError((error) => {
+        throw error; // Re-throw to maintain error propagation
+      })
+    );
   }
 
   /**
@@ -96,38 +107,52 @@ export class AuthService {
    * @returns User object and JWT tokens
    * @throws UnauthorizedException if credentials invalid
    */
-  async login(loginDto: LoginDto) {
+  login(loginDto: LoginDto): Observable<any> {
     // Find user by email or username
     const identifier = loginDto.emailOrUsername.toLowerCase();
-    const user = await this.userModel.findOne({
-      $or: [
-        { email: identifier },
-        { username: loginDto.emailOrUsername }, // Username is case-sensitive
-      ],
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // Verify password using instance method
-    const isPasswordValid = await user.comparePassword(loginDto.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // Generate JWT tokens
-    const tokens = await this.generateTokens(user);
-
-    return {
-      user: {
-        id: user._id.toString(),
-        email: user.email,
-        username: user.username,
-        role: user.role,
-      },
-      ...tokens,
-    };
+    return from(
+      this.userModel.findOne({
+        $or: [
+          { email: identifier },
+          { username: loginDto.emailOrUsername }, // Username is case-sensitive
+        ],
+      })
+    ).pipe(
+      map((user) => {
+        if (!user) {
+          throw new UnauthorizedException('Invalid credentials');
+        }
+        return user;
+      }),
+      switchMap((user) =>
+        from(user.comparePassword(loginDto.password)).pipe(
+          map((isPasswordValid) => {
+            if (!isPasswordValid) {
+              throw new UnauthorizedException('Invalid credentials');
+            }
+            return user;
+          })
+        )
+      ),
+      switchMap((user) =>
+        from(this.generateTokens(user)).pipe(
+          map((tokens) => ({ user, tokens }))
+        )
+      ),
+      map(({ user, tokens }) => ({
+        user: {
+          id: user._id.toString(),
+          email: user.email,
+          username: user.username,
+          role: user.role,
+        },
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      })),
+      catchError((error) => {
+        throw error; // Re-throw to maintain error propagation
+      })
+    );
   }
 
   /**
@@ -137,14 +162,23 @@ export class AuthService {
    * @returns New access and refresh tokens
    * @throws UnauthorizedException if user not found
    */
-  async refresh(userId: string) {
-    const user = await this.userModel.findById(userId);
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    const tokens = await this.generateTokens(user);
-    return tokens;
+  refresh(userId: string): Observable<{
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+  }> {
+    return from(this.userModel.findById(userId)).pipe(
+      map((user) => {
+        if (!user) {
+          throw new UnauthorizedException('User not found');
+        }
+        return user;
+      }),
+      switchMap((user) => from(this.generateTokens(user))),
+      catchError((error) => {
+        throw error; // Re-throw to maintain error propagation
+      })
+    );
   }
 
   /**
@@ -153,18 +187,24 @@ export class AuthService {
    * @param userId - User ID from JWT token
    * @returns User object if valid, null otherwise
    */
-  async validateSession(userId: string) {
-    const user = await this.userModel.findById(userId);
-    if (!user) {
-      return null;
-    }
+  validateSession(userId: string): Observable<any> {
+    return from(this.userModel.findById(userId)).pipe(
+      map((user) => {
+        if (!user) {
+          return null;
+        }
 
-    return {
-      id: user._id.toString(),
-      email: user.email,
-      username: user.username,
-      role: user.role,
-    };
+        return {
+          id: user._id.toString(),
+          email: user.email,
+          username: user.username,
+          role: user.role,
+        };
+      }),
+      catchError((error) => {
+        throw error; // Re-throw to maintain error propagation
+      })
+    );
   }
 
   /**
@@ -174,23 +214,32 @@ export class AuthService {
    * @returns Object with accessToken and refreshToken
    * @private
    */
-  private async generateTokens(user: UserDocument) {
+  private generateTokens(user: UserDocument): Observable<{
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+  }> {
     const payload = {
       sub: user._id.toString(),
       username: user.username,
       role: user.role,
     };
 
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, { expiresIn: '15m' }),
-      this.jwtService.signAsync(payload, { expiresIn: '7d' }),
-    ]);
-
-    return {
-      accessToken,
-      refreshToken,
-      expiresIn: 900, // 15 minutes in seconds
-    };
+    return from(
+      Promise.all([
+        this.jwtService.signAsync(payload, { expiresIn: '15m' }),
+        this.jwtService.signAsync(payload, { expiresIn: '7d' }),
+      ])
+    ).pipe(
+      map(([accessToken, refreshToken]) => ({
+        accessToken,
+        refreshToken,
+        expiresIn: 900, // 15 minutes in seconds
+      })),
+      catchError((error) => {
+        throw error; // Re-throw to maintain error propagation
+      })
+    );
   }
 
   /**
@@ -201,20 +250,27 @@ export class AuthService {
    * @param email - Email of test user to remove
    * @returns Success message
    */
-  async cleanupTestUser(email: string) {
+  cleanupTestUser(
+    email: string
+  ): Observable<{ message: string; deletedCount: number; success: boolean }> {
     // Only allow in test environment
     if (process.env.NODE_ENV !== 'test') {
       throw new Error('Test user cleanup only allowed in test environment');
     }
 
-    const result = await this.userModel.deleteOne({
-      email: email.toLowerCase(),
-    });
-
-    return {
-      message: `Test user ${email} cleanup completed`,
-      deletedCount: result.deletedCount,
-      success: true,
-    };
+    return from(
+      this.userModel.deleteOne({
+        email: email.toLowerCase(),
+      })
+    ).pipe(
+      map((result: any) => ({
+        message: `Test user ${email} cleanup completed`,
+        deletedCount: result.deletedCount || 0,
+        success: true,
+      })),
+      catchError((error) => {
+        throw error; // Re-throw to maintain error propagation
+      })
+    );
   }
 }

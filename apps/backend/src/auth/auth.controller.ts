@@ -95,7 +95,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 409, description: 'Email or username already exists' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
-  async register(@Body() registerDto: RegisterDto) {
+  register(@Body() registerDto: RegisterDto) {
     // Debug logging in development/test only (mask sensitive fields)
     if (
       process.env.NODE_ENV === 'development' ||
@@ -104,17 +104,7 @@ export class AuthController {
       const safe = { email: registerDto.email, username: registerDto.username };
       console.debug('[AuthController.register] register payload:', safe);
     }
-    const result = await this.authService.register(registerDto);
-    if (
-      process.env.NODE_ENV === 'development' ||
-      process.env.NODE_ENV === 'test'
-    ) {
-      console.debug(
-        '[AuthController.register] result keys:',
-        Object.keys(result)
-      );
-    }
-    return result;
+    return this.authService.register(registerDto);
   }
 
   /**
@@ -151,7 +141,7 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async login(@Body() loginDto: LoginDto) {
+  login(@Body() loginDto: LoginDto) {
     if (
       process.env.NODE_ENV === 'development' ||
       process.env.NODE_ENV === 'test'
@@ -159,14 +149,7 @@ export class AuthController {
       const safe = { emailOrUsername: loginDto.emailOrUsername };
       console.debug('[AuthController.login] login payload:', safe);
     }
-    const result = await this.authService.login(loginDto);
-    if (
-      process.env.NODE_ENV === 'development' ||
-      process.env.NODE_ENV === 'test'
-    ) {
-      console.debug('[AuthController.login] result keys:', Object.keys(result));
-    }
-    return result;
+    return this.authService.login(loginDto);
   }
 
   /**

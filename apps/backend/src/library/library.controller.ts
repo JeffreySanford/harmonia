@@ -13,6 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { map } from 'rxjs/operators';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { LibraryService } from './library.service';
 import {
@@ -27,18 +28,18 @@ export class LibraryController {
   constructor(private readonly libraryService: LibraryService) {}
 
   @Get()
-  async findAll(@Request() req: any, @Query() filters: LibraryFiltersDto) {
+  findAll(@Request() req: any, @Query() filters: LibraryFiltersDto) {
     const page = filters.page || 1;
     return this.libraryService.findByUserId(req.user.userId, filters, page);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Request() req: any) {
+  findOne(@Param('id') id: string, @Request() req: any) {
     return this.libraryService.findById(id, req.user.userId);
   }
 
   @Post()
-  async create(
+  create(
     @Body() createLibraryItemDto: CreateLibraryItemDto,
     @Request() req: any
   ) {
@@ -47,7 +48,7 @@ export class LibraryController {
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(
+  uploadFile(
     @UploadedFile() file: any,
     @Body() body: { title: string; description?: string; type: string },
     @Request() req: any
@@ -56,7 +57,7 @@ export class LibraryController {
   }
 
   @Put(':id')
-  async update(
+  update(
     @Param('id') id: string,
     @Body() updateLibraryItemDto: UpdateLibraryItemDto,
     @Request() req: any
@@ -69,20 +70,23 @@ export class LibraryController {
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string, @Request() req: any) {
-    await this.libraryService.delete(id, req.user.userId);
-    return { message: 'Library item deleted successfully' };
+  remove(@Param('id') id: string, @Request() req: any) {
+    return this.libraryService
+      .delete(id, req.user.userId)
+      .pipe(map(() => ({ message: 'Library item deleted successfully' })));
   }
 
   @Post(':id/play')
-  async incrementPlayCount(@Param('id') id: string) {
-    await this.libraryService.incrementPlayCount(id);
-    return { message: 'Play count incremented' };
+  incrementPlayCount(@Param('id') id: string) {
+    return this.libraryService
+      .incrementPlayCount(id)
+      .pipe(map(() => ({ message: 'Play count incremented' })));
   }
 
   @Post(':id/download')
-  async incrementDownloadCount(@Param('id') id: string) {
-    await this.libraryService.incrementDownloadCount(id);
-    return { message: 'Download count incremented' };
+  incrementDownloadCount(@Param('id') id: string) {
+    return this.libraryService
+      .incrementDownloadCount(id)
+      .pipe(map(() => ({ message: 'Download count incremented' })));
   }
 }

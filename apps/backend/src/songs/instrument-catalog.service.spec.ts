@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { InstrumentCatalogService } from './instrument-catalog.service';
+import { firstValueFrom } from 'rxjs';
 
 describe('InstrumentCatalogService', () => {
   let service: InstrumentCatalogService;
@@ -17,7 +18,7 @@ describe('InstrumentCatalogService', () => {
   });
 
   it('should validate instrument catalog', async () => {
-    const result = await service.loadCatalog();
+    const result = await firstValueFrom(service.loadCatalog());
     expect(result.valid).toBe(true);
     expect(result.errors.length).toBe(0);
 
@@ -29,26 +30,34 @@ describe('InstrumentCatalogService', () => {
   });
 
   it('should validate instrument IDs', async () => {
-    await service.loadCatalog(); // Load catalog first
+    await firstValueFrom(service.loadCatalog()); // Load catalog first
 
-    const validResult = service.validateInstrumentIds(['violin', 'guitar_acoustic']);
+    const validResult = service.validateInstrumentIds([
+      'violin',
+      'guitar_acoustic',
+    ]);
     expect(validResult.valid).toBe(true);
 
-    const invalidResult = service.validateInstrumentIds(['violin', 'nonexistent_instrument']);
+    const invalidResult = service.validateInstrumentIds([
+      'violin',
+      'nonexistent_instrument',
+    ]);
     expect(invalidResult.valid).toBe(false);
-    expect(invalidResult.errors).toContain('Unknown instrument ID: nonexistent_instrument');
+    expect(invalidResult.errors).toContain(
+      'Unknown instrument ID: nonexistent_instrument'
+    );
   });
 
   it('should get instruments by category', async () => {
-    await service.loadCatalog();
+    await firstValueFrom(service.loadCatalog());
 
     const strings = service.getInstrumentsByCategory('strings');
     expect(strings.length).toBeGreaterThan(0);
-    expect(strings.every(inst => inst.category === 'strings')).toBe(true);
+    expect(strings.every((inst) => inst.category === 'strings')).toBe(true);
   });
 
   it('should get fallback instruments', async () => {
-    await service.loadCatalog();
+    await firstValueFrom(service.loadCatalog());
 
     const fallbacks = service.getFallbackInstruments('violin');
     expect(Array.isArray(fallbacks)).toBe(true);

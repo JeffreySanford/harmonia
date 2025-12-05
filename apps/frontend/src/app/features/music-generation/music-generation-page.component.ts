@@ -234,7 +234,7 @@ export class MusicGenerationPageComponent implements OnInit {
    * POST /api/music/generate
    * { title, lyrics, genre, mood, duration, bpm, instrumentation, vocalsStyle }
    */
-  async generateMusic(): Promise<void> {
+  generateMusic(): void {
     if (!this.musicTitle || !this.genre) {
       alert('Please enter a title and select a genre');
       return;

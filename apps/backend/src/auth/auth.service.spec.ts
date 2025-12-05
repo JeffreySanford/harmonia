@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { getModelToken } from '@nestjs/mongoose';
 import { User } from '../schemas/user.schema';
 import { UnauthorizedException } from '@nestjs/common';
+import { firstValueFrom } from 'rxjs';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -38,10 +39,12 @@ describe('AuthService', () => {
     const model = (service as any).userModel;
     model.findOne.mockResolvedValue(mockUser);
 
-    const result = await service.login({
-      emailOrUsername: 'test@example.com',
-      password: 'password',
-    });
+    const result = await firstValueFrom(
+      service.login({
+        emailOrUsername: 'test@example.com',
+        password: 'password',
+      })
+    );
     expect(result).toHaveProperty('accessToken');
     expect(result.user.email).toBe('test@example.com');
   });
@@ -51,10 +54,12 @@ describe('AuthService', () => {
     model.findOne.mockResolvedValue(null);
 
     await expect(
-      service.login({
-        emailOrUsername: 'notfound@example.com',
-        password: 'password',
-      })
+      firstValueFrom(
+        service.login({
+          emailOrUsername: 'notfound@example.com',
+          password: 'password',
+        })
+      )
     ).rejects.toThrow(UnauthorizedException);
   });
 
@@ -71,10 +76,12 @@ describe('AuthService', () => {
     model.findOne.mockResolvedValue(mockUser);
 
     await expect(
-      service.login({
-        emailOrUsername: 'test@example.com',
-        password: 'wrongpassword',
-      })
+      firstValueFrom(
+        service.login({
+          emailOrUsername: 'test@example.com',
+          password: 'wrongpassword',
+        })
+      )
     ).rejects.toThrow(UnauthorizedException);
   });
 
@@ -90,7 +97,9 @@ describe('AuthService', () => {
     const model = (service as any).userModel;
     model.findById = jest.fn().mockResolvedValue(mockUser);
 
-    const result = await service.validateSession('507f1f77bcf86cd799439011');
+    const result = await firstValueFrom(
+      service.validateSession('507f1f77bcf86cd799439011')
+    );
     expect(result).toBeTruthy();
     expect((result as any).password).toBeUndefined();
     // Non-null assertion since we asserted above

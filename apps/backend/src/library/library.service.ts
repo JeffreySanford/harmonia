@@ -7,6 +7,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { promises as fs } from 'fs';
 import * as path from 'path';
+import { Observable, from } from 'rxjs';
+import { map, switchMap, catchError } from 'rxjs/operators';
 import {
   LibraryItem,
   LibraryItemDocument,
@@ -43,7 +45,17 @@ export class LibraryService {
     }
   }
 
-  async findByUserId(userId: string, filters: any, page: number) {
+  findByUserId(
+    userId: string,
+    filters: any,
+    page: number
+  ): Observable<{
+    items: any[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  }> {
     const pageSize = 20;
     const skip = (page - 1) * pageSize;
 
@@ -70,63 +82,92 @@ export class LibraryService {
     }
 
     // Execute query with pagination
-    const [items, total] = await Promise.all([
-      this.libraryItemModel
-        .find(query)
-        .sort(sort)
-        .skip(skip)
-        .limit(pageSize)
-        .exec(),
-      this.libraryItemModel.countDocuments(query),
-    ]);
-
-    return {
-      items: items.map((item) => this.mapToDto(item)),
-      total,
-      page,
-      pageSize,
-      totalPages: Math.ceil(total / pageSize),
-    };
+    return from(
+      Promise.all([
+        this.libraryItemModel
+          .find(query)
+          .sort(sort)
+          .skip(skip)
+          .limit(pageSize)
+          .exec(),
+        this.libraryItemModel.countDocuments(query),
+      ])
+    ).pipe(
+      map(([items, total]) => ({
+        items: items.map((item) => this.mapToDto(item)),
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      })),
+      catchError((error) => {
+        throw error;
+      })
+    );
   }
 
-  async findById(id: string, userId: string) {
-    const item = await this.libraryItemModel.findById(id);
+  findById(id: string, userId: string): Observable<any> {
+    return from(this.libraryItemModel.findById(id)).pipe(
+      map((item) => {
+        if (!item) {
+          throw new NotFoundException('Library item not found');
+        }
 
-    if (!item) {
-      throw new NotFoundException('Library item not found');
-    }
+        // Ensure user owns this item
+        if (item.userId.toString() !== userId) {
+          throw new ForbiddenException('You do not have access to this item');
+        }
 
-    // Ensure user owns this item
-    if (item.userId.toString() !== userId) {
-      throw new ForbiddenException('You do not have access to this item');
-    }
-
-    return this.mapToDto(item);
+        return this.mapToDto(item);
+      }),
+      catchError((error) => {
+        throw error;
+      })
+    );
   }
 
-  async delete(id: string, userId: string) {
-    const item = await this.findById(id, userId);
-
-    // Delete file from storage (S3 or local filesystem)
-    await this.deleteFile(item.fileUrl);
-
-    // Delete from database
-    await this.libraryItemModel.findByIdAndDelete(id);
+  delete(id: string, userId: string): Observable<void> {
+    return this.findById(id, userId).pipe(
+      switchMap((item) => {
+        // Delete file from storage (S3 or local filesystem)
+        return from(this.deleteFile(item.fileUrl)).pipe(
+          switchMap(() => from(this.libraryItemModel.findByIdAndDelete(id))),
+          map(() => undefined)
+        );
+      }),
+      catchError((error) => {
+        throw error;
+      })
+    );
   }
 
-  async incrementPlayCount(id: string) {
-    await this.libraryItemModel.findByIdAndUpdate(id, {
-      $inc: { playCount: 1 },
-    });
+  incrementPlayCount(id: string): Observable<void> {
+    return from(
+      this.libraryItemModel.findByIdAndUpdate(id, {
+        $inc: { playCount: 1 },
+      })
+    ).pipe(
+      map(() => undefined),
+      catchError((error) => {
+        throw error;
+      })
+    );
   }
 
-  async incrementDownloadCount(id: string) {
-    await this.libraryItemModel.findByIdAndUpdate(id, {
-      $inc: { downloadCount: 1 },
-    });
+  incrementDownloadCount(id: string): Observable<void> {
+    return from(
+      this.libraryItemModel.findByIdAndUpdate(id, {
+        $inc: { downloadCount: 1 },
+      })
+    ).pipe(
+      map(() => undefined),
+      catchError((error) => {
+        throw error;
+      })
+    );
   }
 
-  async create(createLibraryItemDto: any, userId: string) {
+  create(createLibraryItemDto: any, userId: string): Observable<any> {
     const libraryItem = new this.libraryItemModel({
       ...createLibraryItemDto,
       userId,
@@ -134,25 +175,41 @@ export class LibraryService {
       downloadCount: 0,
     });
 
-    const savedItem = await libraryItem.save();
-    return this.mapToDto(savedItem);
+    return from(libraryItem.save()).pipe(
+      map((savedItem) => this.mapToDto(savedItem)),
+      catchError((error) => {
+        throw error;
+      })
+    );
   }
 
-  async update(id: string, updateLibraryItemDto: any, userId: string) {
+  update(
+    id: string,
+    updateLibraryItemDto: any,
+    userId: string
+  ): Observable<any> {
     // First check if item exists and belongs to user
-    await this.findById(id, userId);
-
-    const updatedItem = await this.libraryItemModel
-      .findByIdAndUpdate(id, updateLibraryItemDto, { new: true })
-      .exec();
-
-    if (!updatedItem) {
-      throw new NotFoundException('Library item not found after update');
-    }
-    return this.mapToDto(updatedItem);
+    return this.findById(id, userId).pipe(
+      switchMap(() =>
+        from(
+          this.libraryItemModel
+            .findByIdAndUpdate(id, updateLibraryItemDto, { new: true })
+            .exec()
+        )
+      ),
+      map((updatedItem) => {
+        if (!updatedItem) {
+          throw new NotFoundException('Library item not found after update');
+        }
+        return this.mapToDto(updatedItem);
+      }),
+      catchError((error) => {
+        throw error;
+      })
+    );
   }
 
-  async uploadFile(file: UploadedFile, body: any, userId: string) {
+  uploadFile(file: UploadedFile, body: any, userId: string): Observable<any> {
     // Ensure the file object is valid
     if (!file) {
       throw new Error('File is required');
@@ -166,44 +223,52 @@ export class LibraryService {
     const filePath = path.join(this.uploadDir, uniqueFilename);
 
     // Write file to disk - handle both buffer and file path
+    let fileWriteObservable: Observable<void>;
     if (file.buffer) {
       // File is in memory
-      await fs.writeFile(filePath, file.buffer);
+      fileWriteObservable = from(fs.writeFile(filePath, file.buffer));
     } else if (file.path) {
       // File is already on disk, move it
-      await fs.rename(file.path, filePath);
+      fileWriteObservable = from(fs.rename(file.path, filePath));
     } else {
       throw new Error('File buffer or path is required');
     }
 
-    // Generate file URL (relative to server root)
-    const fileUrl = `/uploads/library/${uniqueFilename}`;
+    return fileWriteObservable.pipe(
+      switchMap(() => {
+        // Generate file URL (relative to server root)
+        const fileUrl = `/uploads/library/${uniqueFilename}`;
 
-    // Determine file type based on MIME type
-    const mimeToFileType: { [key: string]: string } = {
-      'audio/wav': 'wav',
-      'audio/wave': 'wav',
-      'audio/mpeg': 'mp3',
-      'audio/mp3': 'mp3',
-      'audio/flac': 'flac',
-      'audio/x-flac': 'flac',
-      'application/json': 'json',
-      'text/json': 'json',
-      'application/octet-stream': 'mp3', // For testing with text files
-    };
+        // Determine file type based on MIME type
+        const mimeToFileType: { [key: string]: string } = {
+          'audio/wav': 'wav',
+          'audio/wave': 'wav',
+          'audio/mpeg': 'mp3',
+          'audio/mp3': 'mp3',
+          'audio/flac': 'flac',
+          'audio/x-flac': 'flac',
+          'application/json': 'json',
+          'text/json': 'json',
+          'application/octet-stream': 'mp3', // For testing with text files
+        };
 
-    const fileType = mimeToFileType[file.mimetype] || 'mp3'; // Default to mp3 for unknown audio types
+        const fileType = mimeToFileType[file.mimetype] || 'mp3'; // Default to mp3 for unknown audio types
 
-    const createDto = {
-      type: body.type,
-      title: body.title,
-      description: body.description,
-      fileUrl,
-      fileType,
-      fileSize: file.size,
-    };
+        const createDto = {
+          type: body.type,
+          title: body.title,
+          description: body.description,
+          fileUrl,
+          fileType,
+          fileSize: file.size,
+        };
 
-    return this.create(createDto, userId);
+        return this.create(createDto, userId);
+      }),
+      catchError((error) => {
+        throw error;
+      })
+    );
   }
 
   private mapToDto(item: LibraryItemDocument) {
@@ -228,18 +293,19 @@ export class LibraryService {
     };
   }
 
-  private async deleteFile(fileUrl: string) {
-    try {
-      // Extract filename from URL
-      const filename = path.basename(fileUrl);
-      const filePath = path.join(this.uploadDir, filename);
+  private deleteFile(fileUrl: string): Observable<void> {
+    // Extract filename from URL
+    const filename = path.basename(fileUrl);
+    const filePath = path.join(this.uploadDir, filename);
 
-      // Check if file exists before attempting to delete
-      await fs.access(filePath);
-      await fs.unlink(filePath);
-    } catch (error) {
-      // Log error but don't throw - file might not exist or deletion might fail
-      console.error('Error deleting file:', fileUrl, error);
-    }
+    return from(fs.access(filePath)).pipe(
+      switchMap(() => from(fs.unlink(filePath))),
+      map(() => undefined),
+      catchError((error) => {
+        // Log error but don't throw - file might not exist or deletion might fail
+        console.error('Error deleting file:', fileUrl, error);
+        return from(Promise.resolve(undefined)); // Still complete successfully
+      })
+    );
   }
 }
