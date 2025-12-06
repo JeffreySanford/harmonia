@@ -85,13 +85,7 @@ if vck:
             if not cfg_found:
                 print('Vocoder companion config not found in', dest_dir, '; attempting to find/download configs into /workspace/models/hifigan')
                 try:
-                    os.makedirs('/workspace/models/hifigan', exist_ok=True)
-                    VOC_URL = 'https://github.com/MoonInTheRiver/DiffSinger/releases/download/pretrain-model/0109_hifigan_bigpopcs_hop128.zip'
-                    zip_path = '/workspace/models/hifigan/0109_hifigan_bigpopcs_hop128.zip'
-                    cmd = f"curl -L -o {zip_path} {VOC_URL} && unzip -o {zip_path} -d /workspace/models/hifigan"
-                    print('Downloading vocoder into workspace models via shell:', cmd)
-                    subprocess.run(cmd, shell=True, check=True)
-                    # copy any config files from extracted area into dest_dir
+                    # First, check if the workspace already contains companion configs (e.g. checked-in or staged by user)
                     for cfg_glob in ('config.json', 'config.yaml', 'config.yml', 'model_config.json', 'generator_config.json'):
                         for src_cfg in sorted(pathlib.Path('/workspace/models/hifigan').rglob(cfg_glob)):
                             try:
@@ -99,10 +93,30 @@ if vck:
                                 import shutil
                                 if not os.path.exists(dst_cfg):
                                     shutil.copy(str(src_cfg), dst_cfg)
-                                    print('Copied extracted vocoder config', src_cfg, '->', dst_cfg)
+                                    print('Copied workspace vocoder config', src_cfg, '->', dst_cfg)
                                     cfg_found = True
                             except Exception:
                                 pass
+                    if not cfg_found:
+                        # Fallback: try to download a packaged vocoder into the workspace and extract
+                        os.makedirs('/workspace/models/hifigan', exist_ok=True)
+                        VOC_URL = 'https://github.com/MoonInTheRiver/DiffSinger/releases/download/pretrain-model/0109_hifigan_bigpopcs_hop128.zip'
+                        zip_path = '/workspace/models/hifigan/0109_hifigan_bigpopcs_hop128.zip'
+                        cmd = f"curl -L -o {zip_path} {VOC_URL} && unzip -o {zip_path} -d /workspace/models/hifigan"
+                        print('Downloading vocoder into workspace models via shell:', cmd)
+                        subprocess.run(cmd, shell=True, check=True)
+                        # copy any config files from extracted area into dest_dir
+                        for cfg_glob in ('config.json', 'config.yaml', 'config.yml', 'model_config.json', 'generator_config.json'):
+                            for src_cfg in sorted(pathlib.Path('/workspace/models/hifigan').rglob(cfg_glob)):
+                                try:
+                                    dst_cfg = os.path.join(dest_dir, os.path.basename(str(src_cfg)))
+                                    import shutil
+                                    if not os.path.exists(dst_cfg):
+                                        shutil.copy(str(src_cfg), dst_cfg)
+                                        print('Copied extracted vocoder config', src_cfg, '->', dst_cfg)
+                                        cfg_found = True
+                                except Exception:
+                                    pass
                     if cfg_found:
                         print('Successfully obtained vocoder companion config')
                 except Exception as e:
