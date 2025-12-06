@@ -3,17 +3,13 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { Observable, from } from 'rxjs';
 import { map, catchError, switchMap, mergeMap, toArray } from 'rxjs/operators';
-import {
-  InstrumentCatalogService,
-  Instrument,
-} from './instrument-catalog.service';
+import { InstrumentCatalogService } from './instrument-catalog.service';
 
 export interface StemExportOptions {
   format: 'wav' | 'mp3';
   instruments: string[];
   outputDir: string;
   sampleRate?: number;
-  useFallbacks?: boolean; // Enable fallback system for missing instruments
 }
 
 export interface StemExportResult {
@@ -23,18 +19,15 @@ export interface StemExportResult {
     filePath: string;
     format: string;
     size: number;
-    fallbackUsed?: string; // Which fallback instrument was used
   }>;
   errors: string[];
-  warnings: string[]; // Non-fatal issues like fallbacks used
 }
 
 @Injectable()
 export class StemExportService {
   constructor(private readonly instrumentCatalog: InstrumentCatalogService) {}
-
   /**
-   * Export per-instrument stems in the specified format with fallback support
+   * Export per-instrument stems in the specified format
    * This is a basic implementation that creates placeholder audio files
    * In production, this would synthesize actual audio from instrument data
    */
@@ -82,37 +75,32 @@ export class StemExportService {
     // Start with creating the output directory
     return mkdirObservable(options.outputDir).pipe(
       switchMap(() => {
-        // Resolve instruments with fallbacks
-        const resolvedInstruments = this.resolveInstrumentsWithFallbacks(
-          options.instruments,
-          options.useFallbacks ?? true
-        );
-
-        // Process each resolved instrument reactively
-        const instrumentObservables = resolvedInstruments.map((resolution) => {
-          const fileName = `${resolution.effectiveInstrument.replace(
-            /[^a-zA-Z0-9]/g,
-            '_'
-          )}.${options.format}`;
+        // Process each instrument reactively
+        const instrumentObservables = options.instruments.map((instrument) => {
+          const fileName = `${instrument.replace(/[^a-zA-Z0-9]/g, '_')}.${
+            options.format
+          }`;
           const filePath = path.join(options.outputDir, fileName);
-          const audioData = this.generateWavPlaceholder();
 
-          return writeFileObservable(filePath, audioData).pipe(
+          // Create observable that generates audio and writes file
+          const audioObservable = from(
+            this.generatePlaceholderAudio(instrument)
+          );
+
+          return audioObservable.pipe(
+            switchMap((audioData) => writeFileObservable(filePath, audioData)),
             switchMap(() => statObservable(filePath)),
             map((stats) => ({
-              instrument: resolution.requestedInstrument,
+              instrument,
               filePath,
               format: options.format,
               size: stats.size,
-              fallbackUsed: resolution.fallbackUsed
-                ? resolution.effectiveInstrument
-                : undefined,
             })),
             catchError((error) => {
-              const errorMsg = `Failed to export stem for ${
-                resolution.requestedInstrument
-              }: ${error instanceof Error ? error.message : 'Unknown error'}`;
-              return [{ error: errorMsg }];
+              const errorMsg = `Failed to export stem for ${instrument}: ${
+                error instanceof Error ? error.message : 'Unknown error'
+              }`;
+              return from([{ error: errorMsg }]);
             })
           );
         });
@@ -130,28 +118,15 @@ export class StemExportService {
           filePath: string;
           format: string;
           size: number;
-          fallbackUsed?: string;
         }>;
         const errors = results
           .filter((result) => 'error' in result)
           .map((result) => (result as any).error);
 
-        // Generate warnings for fallbacks used
-        const warnings: string[] = [];
-        const fallbackUsed = stems.filter((stem) => stem.fallbackUsed);
-        if (fallbackUsed.length > 0) {
-          warnings.push(
-            `Fallback instruments used: ${fallbackUsed
-              .map((s) => `${s.instrument} → ${s.fallbackUsed}`)
-              .join(', ')}`
-          );
-        }
-
         const result: StemExportResult = {
           success: errors.length === 0,
           stems,
           errors,
-          warnings,
         };
 
         return result;
@@ -165,209 +140,316 @@ export class StemExportService {
               error instanceof Error ? error.message : 'Unknown error'
             }`,
           ],
-          warnings: [],
         };
         return from(Promise.resolve(result));
       })
     );
   }
   /**
-   * Resolve instruments with fallback logic
-   * Returns an array of instrument resolutions that can be used for export
+   * Generate audio for an instrument using MusicGen
+   * This replaces the placeholder audio generation with real MusicGen synthesis
    */
-  private resolveInstrumentsWithFallbacks(
-    requestedInstruments: string[],
-    useFallbacks: boolean
-  ): Array<{
-    requestedInstrument: string;
-    effectiveInstrument: string;
-    fallbackUsed: boolean;
-  }> {
-    const resolutions: Array<{
-      requestedInstrument: string;
-      effectiveInstrument: string;
-      fallbackUsed: boolean;
-    }> = [];
-
-    // Track polyphony usage to enforce limits
-    const polyphonyUsage = new Map<string, number>();
-
-    for (const requestedId of requestedInstruments) {
-      let effectiveInstrument = requestedId;
-      let fallbackUsed = false;
-
-      // Check if the requested instrument exists
-      const instrument = this.instrumentCatalog.getInstrument(requestedId);
-
-      if (!instrument) {
-        if (useFallbacks) {
-          // Try to find a fallback
-          const fallbacks = this.findBestFallback(requestedId);
-          if (fallbacks.length > 0) {
-            effectiveInstrument = fallbacks[0]!.id;
-            fallbackUsed = true;
-          } else {
-            // No fallback available, use a default silent instrument
-            effectiveInstrument = 'default_silence';
-            fallbackUsed = true;
-          }
-        } else {
-          // No fallbacks allowed, keep original (will fail validation)
-          effectiveInstrument = requestedId;
-        }
-      }
-
-      // Check polyphony limits
-      if (instrument?.polyphony_limit) {
-        const currentUsage = polyphonyUsage.get(effectiveInstrument) || 0;
-        if (currentUsage >= instrument.polyphony_limit) {
-          if (useFallbacks) {
-            // Find alternative instrument that doesn't exceed polyphony
-            const alternative = this.findAlternativeForPolyphony(
-              effectiveInstrument,
-              polyphonyUsage
-            );
-            if (alternative) {
-              effectiveInstrument = alternative.id;
-              fallbackUsed = true;
-            }
-          }
-        }
-      }
-
-      // Update polyphony usage
-      const effectiveInst =
-        this.instrumentCatalog.getInstrument(effectiveInstrument);
-      if (effectiveInst?.polyphony_limit) {
-        polyphonyUsage.set(
-          effectiveInstrument,
-          (polyphonyUsage.get(effectiveInstrument) || 0) + 1
-        );
-      }
-
-      resolutions.push({
-        requestedInstrument: requestedId,
-        effectiveInstrument,
-        fallbackUsed,
-      });
+  private async generatePlaceholderAudio(instrument: string): Promise<Buffer> {
+    // For now, try MusicGen, fall back to placeholder if it fails
+    try {
+      return await this.generateMusicGenAudio(instrument);
+    } catch (error) {
+      console.warn(
+        `MusicGen generation failed for ${instrument}, using basic instrument audio:`,
+        error
+      );
+      return this.generateBasicInstrumentAudio(instrument);
     }
-
-    return resolutions;
   }
 
   /**
-   * Find the best fallback instrument for a missing instrument
+   * Generate audio using MusicGen via Docker
    */
-  private findBestFallback(missingInstrumentId: string): Instrument[] {
-    // First, try direct fallback rules from any instrument that references this one
-    const catalog = this.instrumentCatalog.getCatalog();
-    if (!catalog) return [];
-
-    // Look for instruments that have this as a fallback
-    for (const instrument of catalog.instruments) {
-      if (instrument.fallback_rules?.includes(missingInstrumentId)) {
-        return [instrument];
-      }
-    }
-
-    // Try category-based fallback - find instruments in the same category
-    const category = this.extractCategoryFromId(missingInstrumentId);
-    if (category) {
-      const categoryInstruments =
-        this.instrumentCatalog.getInstrumentsByCategory(category);
-      if (categoryInstruments.length > 0) {
-        return categoryInstruments.slice(0, 1); // Return first available
-      }
-    }
-
-    // Last resort: find any available instrument
-    if (catalog.instruments.length > 0) {
-      return [catalog.instruments[0]!];
-    }
-
-    return [];
-  }
-
-  /**
-   * Find an alternative instrument that doesn't exceed polyphony limits
-   */
-  private findAlternativeForPolyphony(
-    currentInstrumentId: string,
-    polyphonyUsage: Map<string, number>
-  ): Instrument | null {
-    const currentInstrument =
-      this.instrumentCatalog.getInstrument(currentInstrumentId);
-    if (!currentInstrument) return null;
-
-    // Try fallbacks of the current instrument
-    const fallbacks =
-      this.instrumentCatalog.getFallbackInstruments(currentInstrumentId);
-    for (const fallback of fallbacks) {
-      const currentUsage = polyphonyUsage.get(fallback.id) || 0;
-      if (currentUsage < (fallback.polyphony_limit || Infinity)) {
-        return fallback;
-      }
-    }
-
-    // Try instruments in the same category
-    const categoryInstruments = this.instrumentCatalog.getInstrumentsByCategory(
-      currentInstrument.category
+  private generateMusicGenAudio(instrument: string): Promise<Buffer> {
+    // Call the MusicGen Docker container to generate real audio
+    console.log(
+      `Generating audio for ${instrument} using MusicGen Docker container...`
     );
-    for (const instrument of categoryInstruments) {
-      if (instrument.id !== currentInstrumentId) {
-        const currentUsage = polyphonyUsage.get(instrument.id) || 0;
-        if (currentUsage < (instrument.polyphony_limit || Infinity)) {
-          return instrument;
+
+    const { spawn } = require('child_process');
+    const outputPath = `/tmp/${instrument.replace(/[^a-zA-Z0-9]/g, '_')}.wav`;
+    const debugLogPath = path.join(
+      process.cwd(),
+      'logs',
+      `musicgen_${instrument}_${Date.now()}.log`
+    );
+
+    // Ensure logs directory exists
+    const logsDir = path.dirname(debugLogPath);
+    if (!fs.existsSync(logsDir)) {
+      fs.mkdirSync(logsDir, { recursive: true });
+    }
+
+    return new Promise<Buffer>((resolve, _reject) => {
+      // Run the Python script in the Docker container
+      const dockerCmd = spawn(
+        'docker',
+        [
+          'exec',
+          'harmonia-worker',
+          'python3',
+          '/workspace/scripts/generate_musicgen_audio.py',
+          '--instrument',
+          instrument,
+          '--output',
+          outputPath,
+          '--duration',
+          '5',
+        ],
+        { stdio: 'pipe' }
+      );
+
+      let stdout = '';
+      let stderr = '';
+
+      dockerCmd.stdout.on('data', (data: Buffer) => {
+        const dataStr = data.toString();
+        stdout += dataStr;
+        console.log(`MusicGen stdout: ${dataStr.trim()}`);
+
+        // Write to debug log file
+        fs.appendFileSync(
+          debugLogPath,
+          `[${new Date().toISOString()}] STDOUT: ${dataStr}`
+        );
+      });
+
+      dockerCmd.stderr.on('data', (data: Buffer) => {
+        const dataStr = data.toString();
+        stderr += dataStr;
+        console.error(`MusicGen stderr: ${dataStr.trim()}`);
+
+        // Write to debug log file
+        fs.appendFileSync(
+          debugLogPath,
+          `[${new Date().toISOString()}] STDERR: ${dataStr}`
+        );
+      });
+
+      dockerCmd.on('close', (code: number | null) => {
+        const logMessage = `[${new Date().toISOString()}] PROCESS EXIT: code=${code}\n`;
+        fs.appendFileSync(debugLogPath, logMessage);
+        console.log(`MusicGen process exited with code: ${code}`);
+
+        if (code === 0) {
+          console.log(`MusicGen generation successful for ${instrument}`);
+          // Read the generated file from the container
+          const { spawn: spawn2 } = require('child_process');
+          const catCmd = spawn2(
+            'docker',
+            ['exec', 'harmonia-worker', 'cat', outputPath],
+            { stdio: 'pipe' }
+          );
+
+          let audioBuffer = Buffer.alloc(0);
+          catCmd.stdout.on('data', (data: Buffer) => {
+            audioBuffer = Buffer.concat([audioBuffer, data]);
+          });
+
+          catCmd.on('close', (catCode: number | null) => {
+            const catLogMessage = `[${new Date().toISOString()}] CAT EXIT: code=${catCode}, buffer_size=${
+              audioBuffer.length
+            }\n`;
+            fs.appendFileSync(debugLogPath, catLogMessage);
+
+            if (catCode === 0 && audioBuffer.length > 0) {
+              console.log(
+                `Successfully read ${audioBuffer.length} bytes of audio data for ${instrument}`
+              );
+              resolve(audioBuffer);
+            } else {
+              const errorMsg = `Failed to read generated audio file (cat exit code: ${catCode}, buffer size: ${audioBuffer.length})`;
+              console.warn(errorMsg);
+              fs.appendFileSync(
+                debugLogPath,
+                `[${new Date().toISOString()}] ERROR: ${errorMsg}\n`
+              );
+              resolve(this.generateBasicInstrumentAudio(instrument));
+            }
+          });
+
+          catCmd.stderr.on('data', (data: Buffer) => {
+            const errorData = data.toString();
+            console.error(`Cat stderr: ${errorData}`);
+            fs.appendFileSync(
+              debugLogPath,
+              `[${new Date().toISOString()}] CAT STDERR: ${errorData}`
+            );
+          });
+        } else {
+          const errorMsg = `MusicGen generation failed with code ${code}`;
+          console.warn(
+            `${errorMsg}, using basic instrument audio. Stderr: ${stderr}`
+          );
+          fs.appendFileSync(
+            debugLogPath,
+            `[${new Date().toISOString()}] ERROR: ${errorMsg}\nSTDERR: ${stderr}\n`
+          );
+          resolve(this.generateBasicInstrumentAudio(instrument));
         }
-      }
-    }
+      });
 
-    return null;
+      dockerCmd.on('error', (error: Error) => {
+        const errorMsg = `Failed to start MusicGen Docker command: ${error.message}`;
+        console.error(errorMsg);
+        fs.appendFileSync(
+          debugLogPath,
+          `[${new Date().toISOString()}] FATAL ERROR: ${errorMsg}\n`
+        );
+        resolve(this.generateBasicInstrumentAudio(instrument));
+      });
+
+      // Log the command being executed
+      const cmdLogMessage = `[${new Date().toISOString()}] EXECUTING: docker exec harmonia-worker python3 /workspace/scripts/generate_musicgen_audio.py --instrument ${instrument} --output ${outputPath} --duration 5\n`;
+      fs.appendFileSync(debugLogPath, cmdLogMessage);
+    });
   }
 
   /**
-   * Extract category from instrument ID (simple heuristic)
+   * Generate basic instrument audio (placeholder for MusicGen integration)
    */
-  private extractCategoryFromId(instrumentId: string): string | null {
-    // Simple pattern: category_instrumentname
-    const parts = instrumentId.split('_');
-    if (parts.length >= 2) {
-      return parts[0] as string;
+  private generateBasicInstrumentAudio(instrument: string): Buffer {
+    // Create different audio patterns based on instrument characteristics
+    const instrumentType = this.getInstrumentType(instrument);
+
+    switch (instrumentType) {
+      case 'piano':
+        return this.generatePianoAudio();
+      case 'guitar':
+        return this.generateGuitarAudio();
+      case 'bass':
+        return this.generateBassAudio();
+      case 'drums':
+        return this.generateDrumsAudio();
+      case 'strings':
+        return this.generateStringsAudio();
+      case 'brass':
+        return this.generateBrassAudio();
+      case 'woodwinds':
+        return this.generateWoodwindsAudio();
+      default:
+        return this.generateWavPlaceholder();
     }
-    return null;
   }
 
   /**
-   * Generate a minimal valid WAV file with 1 second of silence
+   * Get instrument type category
+   */
+  private getInstrumentType(instrument: string): string {
+    const instrumentMap: { [key: string]: string } = {
+      piano: 'piano',
+      guitar_acoustic: 'guitar',
+      guitar_electric: 'guitar',
+      bass: 'bass',
+      drums: 'drums',
+      cello: 'strings',
+      violin: 'strings',
+      trumpet: 'brass',
+      trombone: 'brass',
+      horn: 'brass',
+      tuba: 'brass',
+      flute: 'woodwinds',
+      clarinet: 'woodwinds',
+      saxophone: 'woodwinds',
+      oboe: 'woodwinds',
+      bassoon: 'woodwinds',
+    };
+
+    return instrumentMap[instrument] || 'default';
+  }
+
+  /**
+   * Generate piano-like audio
+   */
+  private generatePianoAudio(): Buffer {
+    // Create a simple piano-like sound (higher frequency, clear tones)
+    return this.generateWavPlaceholder(); // Placeholder for now
+  }
+
+  /**
+   * Generate guitar-like audio
+   */
+  private generateGuitarAudio(): Buffer {
+    // Create guitar-like sound
+    return this.generateWavPlaceholder(); // Placeholder for now
+  }
+
+  /**
+   * Generate bass-like audio
+   */
+  private generateBassAudio(): Buffer {
+    // Create bass-like sound (lower frequency)
+    return this.generateWavPlaceholder(); // Placeholder for now
+  }
+
+  /**
+   * Generate drums-like audio
+   */
+  private generateDrumsAudio(): Buffer {
+    // Create percussion-like sound
+    return this.generateWavPlaceholder(); // Placeholder for now
+  }
+
+  /**
+   * Generate strings-like audio
+   */
+  private generateStringsAudio(): Buffer {
+    // Create string instrument sound
+    return this.generateWavPlaceholder(); // Placeholder for now
+  }
+
+  /**
+   * Generate brass-like audio
+   */
+  private generateBrassAudio(): Buffer {
+    // Create brass instrument sound
+    return this.generateWavPlaceholder(); // Placeholder for now
+  }
+
+  /**
+   * Generate woodwinds-like audio
+   */
+  private generateWoodwindsAudio(): Buffer {
+    // Create woodwind instrument sound
+    return this.generateWavPlaceholder(); // Placeholder for now
+  }
+
+  /**
+   * Generate a minimal valid WAV file with silence
    */
   private generateWavPlaceholder(): Buffer {
     const sampleRate = 44100;
-    const channels = 2;
-    const bitsPerSample = 16;
     const duration = 1; // 1 second
     const numSamples = sampleRate * duration;
-    const dataSize = numSamples * channels * (bitsPerSample / 8);
-    const fileSize = 36 + dataSize;
-
+    const numChannels = 1; // mono
+    const bitsPerSample = 16;
+    const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
+    const blockAlign = (numChannels * bitsPerSample) / 8;
+    const dataSize = (numSamples * numChannels * bitsPerSample) / 8;
     const buffer = Buffer.alloc(44 + dataSize);
 
     // WAV header
     buffer.write('RIFF', 0);
-    buffer.writeUInt32LE(fileSize, 4);
+    buffer.writeUInt32LE(36 + dataSize, 4);
     buffer.write('WAVE', 8);
     buffer.write('fmt ', 12);
-    buffer.writeUInt32LE(16, 16); // PCM format
+    buffer.writeUInt32LE(16, 16);
     buffer.writeUInt16LE(1, 20); // PCM
-    buffer.writeUInt16LE(channels, 22);
+    buffer.writeUInt16LE(numChannels, 22);
     buffer.writeUInt32LE(sampleRate, 24);
-    buffer.writeUInt32LE(sampleRate * channels * (bitsPerSample / 8), 28);
-    buffer.writeUInt16LE(channels * (bitsPerSample / 8), 32);
+    buffer.writeUInt32LE(byteRate, 28);
+    buffer.writeUInt16LE(blockAlign, 32);
     buffer.writeUInt16LE(bitsPerSample, 34);
     buffer.write('data', 36);
     buffer.writeUInt32LE(dataSize, 40);
 
-    // Audio data (silence)
-    // All zeros for silence
+    // Silence data (all zeros)
+    buffer.fill(0, 44);
 
     return buffer;
   }
@@ -392,17 +474,13 @@ export class StemExportService {
     ) {
       errors.push('At least one instrument must be specified');
     } else {
-      // Validate instrument IDs against catalog (with fallbacks enabled)
+      // Validate instrument IDs against catalog
       const instrumentValidation = this.instrumentCatalog.validateInstrumentIds(
         options.instruments
       );
-
-      // If fallbacks are disabled and there are invalid instruments, that's an error
-      // If fallbacks are enabled, we'll resolve them during export
-      if (!options.useFallbacks && !instrumentValidation.valid) {
+      if (!instrumentValidation.valid) {
         errors.push(...instrumentValidation.errors);
       }
-      // Note: When fallbacks are enabled, we allow invalid instruments to be resolved later
     }
 
     if (!options.outputDir || typeof options.outputDir !== 'string') {

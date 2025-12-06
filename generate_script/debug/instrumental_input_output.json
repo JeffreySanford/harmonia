@@ -1,0 +1,28 @@
+{
+  "input": {
+    "title": "City Lights",
+    "narrative": "A wistful, mid-tempo pop ballad about late-night city lights and longing for someone gone.",
+    "lyrics": "Verse 1:\nUnder neon skies, I wander slow\nThrough alleys of memory where the streetlights glow\n\nChorus:\nHold me in the silence, let the city glow\nWe were once a story everyone used to know\n\nVerse 2:\nEmpty trains and coffee cups, echoes of your name\nI trace the corners of our past, nothing feels the same",
+    "genre": "pop",
+    "duration": 30,
+    "vocalSynthesisModel": "diffsinger",
+    "vocals": "DiffSinger output file: C:\\repos\\harmonia\\generated\\songs\\City Lights_vocals-2025-12-06T2120.wav",
+    "instrumental": "Generated instrumental for: lyrics",
+    "mix": "Mixed: Synthesized vocals for: Verse 1:\nUnder neon skies, I wander slow\nThrough alleys of memory where the streetlights glow\n\nChorus:\nHold me in the silence, let the city glow\nWe were once a story everyone used to know\n\nVerse 2:\nEmpty trains and coffee cups, echoes of your name\nI trace the corners of our past, nothing feels the same + Generated instrumental for: lyrics"
+  },
+  "output": {
+    "title": "City Lights",
+    "narrative": "A wistful, mid-tempo pop ballad about late-night city lights and longing for someone gone.",
+    "lyrics": "Verse 1:\nUnder neon skies, I wander slow\nThrough alleys of memory where the streetlights glow\n\nChorus:\nHold me in the silence, let the city glow\nWe were once a story everyone used to know\n\nVerse 2:\nEmpty trains and coffee cups, echoes of your name\nI trace the corners of our past, nothing feels the same",
+    "genre": "pop",
+    "duration": 30,
+    "vocalSynthesisModel": "diffsinger",
+    "vocals": "DiffSinger output file: C:\\repos\\harmonia\\generated\\songs\\City Lights_vocals-2025-12-06T2120.wav",
+    "instrumental": "Generated instrumental for: lyrics",
+    "mix": "Mixed: Synthesized vocals for: Verse 1:\nUnder neon skies, I wander slow\nThrough alleys of memory where the streetlights glow\n\nChorus:\nHold me in the silence, let the city glow\nWe were once a story everyone used to know\n\nVerse 2:\nEmpty trains and coffee cups, echoes of your name\nI trace the corners of our past, nothing feels the same + Generated instrumental for: lyrics"
+  },
+  "artifact": {
+    "path": "C:\\repos\\harmonia\\generated\\songs\\City Lights_instrumental-2025-12-06T2120.wav",
+    "size": 34
+  }
+}

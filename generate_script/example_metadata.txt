@@ -1,0 +1,6 @@
+{
+  "title": "Test Song",
+  "narrative": "A story about a coder who learns to love music.",
+  "duration": 30,
+  "genre": "pop"
+}

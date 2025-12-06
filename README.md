@@ -9,6 +9,8 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-8.0.6-green)](https://www.mongodb.com)
 [![Docker](https://img.shields.io/badge/Docker-29.0.1-blue)](https://www.docker.com)
 
+[![CI](https://github.com/jeffreysanford/harmonia/actions/workflows/ci.yml/badge.svg)](https://github.com/jeffreysanford/harmonia/actions/workflows/ci.yml)
+
 ---
 
 ## 🚀 Quick Start
@@ -198,6 +200,25 @@ See [DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) for comprehensive de
 ---
 
 ## 📚 Documentation
+
+---
+
+## **CI**
+
+- **Workflow**: GitHub Actions workflow `ci.yml` runs unit tests across a small matrix and includes an optional Docker build job.
+- **Badge**: The build status badge is at the top of this README and links to the workflow run history.
+- **Run optional Docker build**: In the GitHub Actions UI, open the **Actions** tab → select the `CI` workflow → **Run workflow** → set `run_docker_build: true` and run. This will build the `Dockerfile.worker` image in CI (cached via buildx).
+- **Local smoke recommended**: Locally you can verify the worker image quickly after building:
+
+```bash
+# build locally (may be slow)
+docker build -f Dockerfile.worker -t harmonia/worker:local-ci .
+
+# run a smoke script inside the image
+docker run --rm harmonia/worker:local-ci bash -lc "python3 - <<'PY'\nimport json,sys\nout={}\ntry:\n  import torch\n  out['torch']=getattr(torch,'__version__',str(torch))\nexcept Exception as e:\n  out['torch_error']=str(e)\nprint(json.dumps(out))\nPY"
+```
+
+If you want, I can open a branch and PR with these README updates and the workflow changes; confirm the branch name to use.
 
 ### Getting Started
 

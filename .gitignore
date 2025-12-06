@@ -40,3 +40,6 @@ seeds/*-backup-*.json
 **/*.png
 **/*.jpg
 **/*.jpeg
+
+# MusicGen debug logs
+logs/

@@ -5,11 +5,33 @@ huggingface_hub>=0.16.0
 # Audio libraries
 soundfile>=0.12.1
 torchaudio>=2.1.0
+av
 # Audiocraft (Facebook/Audiocraft toolkit). Install only if you plan to run MusicGen code.
 # If unavailable on your platform, skip and use low-level torch loading instead.
 audiocraft>=0.2.0
+# TTS for vocal generation
+TTS>=0.22.0
 # Utilities
 numpy>=1.24
+
+# --- Multi-modal vocal synthesis ---
+git+https://github.com/openvpi/DiffSinger.git
+so-vits-svc
+
+# Pinned runtime deps to improve compatibility with DiffSinger's `infer.py`.
+# These pins aim to avoid import-time errors (numba/librosa/torchmetrics).
+# Review and adjust versions for your platform (CPU vs GPU) before use.
+coverage==6.5.0
+setuptools<81
+numba==0.57.5
+librosa==0.10.1
+torchmetrics==0.11.4
+lightning==2.0.2
+
+# Added by tests and helper utilities
+pyyaml>=6.0
+requests>=2.30.0
+scipy>=1.10.1
 
 # Notes:
 # - On Windows prefer installing a pre-built torch wheel for your CUDA/toolkit.

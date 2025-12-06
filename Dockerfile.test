@@ -1,0 +1,25 @@
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1
+WORKDIR /workspace
+
+# Install minimal system deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    ffmpeg \
+    pkg-config \
+    libavformat-dev \
+    libavcodec-dev \
+    libavutil-dev \
+    libswscale-dev \
+    libavdevice-dev \
+    libavfilter-dev \
+    libswresample-dev \
+    libpostproc-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install verbosely
+COPY requirements-simple.txt /workspace/requirements.txt
+RUN pip install --upgrade pip
+RUN pip install -v -r /workspace/requirements.txt

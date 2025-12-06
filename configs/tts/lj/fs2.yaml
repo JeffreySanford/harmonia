@@ -1,0 +1,12 @@
+base_config:
+  - configs/base.yaml
+  - configs/acoustic.yaml
+
+# Minimal fs2 config fallback used when a checkpoint references
+# `configs/tts/lj/fs2.yaml` but the file is not present in the cloned repo.
+# This small file points to the general base and acoustic configs so
+# `utils.hparams.set_hparams` can resolve includes.
+
+audio_sample_rate: 24000
+hop_size: 128
+audio_num_mel_bins: 80
