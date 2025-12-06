@@ -35,11 +35,15 @@ async function synthesizeVocals(metadata) {
       const metaArg = process.argv[2] || '';
       const metaRel = path.relative(repoRoot, metaArg).replace(/\\/g, '/');
       const outRel = path.relative(repoRoot, outPath).replace(/\\/g, '/');
+      // Ensure the repo root is mounted and also explicitly mount models/hifigan
+      const modelsHifiganHost = path.join(repoRoot, 'models', 'hifigan').replace(/\\/g, '/');
       const dockerArgs = [
         'run',
         '--rm',
         '-v',
         `${repoRoot}:/workspace`,
+        '-v',
+        `${modelsHifiganHost}:/workspace/models/hifigan`,
         '-w',
         '/workspace',
         'harmonia/worker:dev',
