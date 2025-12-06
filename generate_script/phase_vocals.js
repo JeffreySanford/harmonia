@@ -36,7 +36,14 @@ async function synthesizeVocals(metadata) {
       const metaRel = path.relative(repoRoot, metaArg).replace(/\\/g, '/');
       const outRel = path.relative(repoRoot, outPath).replace(/\\/g, '/');
       // Ensure the repo root is mounted and also explicitly mount models/hifigan
-      const modelsHifiganHost = path.join(repoRoot, 'models', 'hifigan').replace(/\\/g, '/');
+      let modelsHifiganHost = path.join(repoRoot, 'models', 'hifigan').replace(/\\/g, '/');
+      // On Windows Docker, convert drive-letter absolute paths (C:/...) to /c/... form so Docker bind-mounts work reliably
+      if (process.platform === 'win32') {
+        const m = modelsHifiganHost.match(/^([A-Za-z]):\/(.*)/);
+        if (m) {
+          modelsHifiganHost = `/${m[1].toLowerCase()}/${m[2]}`;
+        }
+      }
       const dockerArgs = [
         'run',
         '--rm',
