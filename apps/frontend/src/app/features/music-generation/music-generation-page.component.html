@@ -16,7 +16,10 @@
         <mat-icon class="banner-icon">check_circle</mat-icon>
         <div class="banner-content">
           <h4>Song Imported Successfully</h4>
-          <p>Title, lyrics, genre, and mood have been pre-filled from your approved song.</p>
+          <p>
+            Title, lyrics, genre, and mood have been pre-filled from your
+            approved song.
+          </p>
         </div>
       </div>
 
@@ -25,8 +28,10 @@
         <mat-icon class="banner-icon">info</mat-icon>
         <div class="banner-content">
           <p>
-            Start from scratch or 
-            <a (click)="backToSongGeneration()" class="link">generate a song first</a> 
+            Start from scratch or
+            <a (click)="backToSongGeneration()" class="link"
+              >generate a song first</a
+            >
             to import metadata automatically.
           </p>
         </div>
@@ -60,12 +65,10 @@
 
         <!-- Collapsible Lyrics -->
         <div class="lyrics-section">
-          <button 
-            mat-button 
-            (click)="toggleLyrics()" 
-            class="lyrics-toggle"
-          >
-            <mat-icon>{{ lyricsExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+          <button mat-button (click)="toggleLyrics()" class="lyrics-toggle">
+            <mat-icon>{{
+              lyricsExpanded ? 'expand_less' : 'expand_more'
+            }}</mat-icon>
             {{ lyricsExpanded ? 'Hide' : 'Show' }} Lyrics
           </button>
           <div class="lyrics-content" *ngIf="lyricsExpanded">
@@ -82,9 +85,17 @@
         </h3>
 
         <!-- Title (editable even if imported) -->
-        <mat-form-field appearance="outline" class="full-width" *ngIf="!hasImportedSong">
+        <mat-form-field
+          appearance="outline"
+          class="full-width"
+          *ngIf="!hasImportedSong"
+        >
           <mat-label>Music Title</mat-label>
-          <input matInput [(ngModel)]="musicTitle" placeholder="Enter music title">
+          <input
+            matInput
+            [(ngModel)]="musicTitle"
+            placeholder="Enter music title"
+          />
           <mat-icon matPrefix>title</mat-icon>
         </mat-form-field>
 
@@ -92,8 +103,8 @@
         <div class="form-row">
           <mat-form-field appearance="outline" class="half-width">
             <mat-label>Genre</mat-label>
-            <mat-select 
-              [(ngModel)]="genre" 
+            <mat-select
+              [(ngModel)]="genre"
               (ngModelChange)="onGenreChange()"
               [disabled]="hasImportedSong"
             >
@@ -107,14 +118,15 @@
 
           <mat-form-field appearance="outline" class="half-width">
             <mat-label>Duration (seconds)</mat-label>
-            <input 
-              matInput 
-              type="number" 
-              [(ngModel)]="duration" 
-              [min]="15" 
+            <input
+              matInput
+              type="number"
+              [(ngModel)]="duration"
+              [min]="15"
               [max]="120"
               [disabled]="hasImportedSong"
-            >
+              aria-label="Song duration in seconds"
+            />
             <mat-icon matPrefix>timer</mat-icon>
             <mat-hint *ngIf="hasImportedSong">From imported song</mat-hint>
           </mat-form-field>
@@ -124,17 +136,19 @@
         <div class="slider-container">
           <label class="slider-label">
             Tempo (BPM): {{ bpm }}
-            <span class="slider-info">Default for {{ genre }}: {{ bpm }} BPM</span>
+            <span class="slider-info"
+              >Default for {{ genre }}: {{ bpm }} BPM</span
+            >
           </label>
-          <mat-slider 
-            [min]="60" 
-            [max]="180" 
-            [step]="5" 
-            showTickMarks 
+          <mat-slider
+            [min]="60"
+            [max]="180"
+            [step]="5"
+            showTickMarks
             discrete
             class="full-width"
           >
-            <input matSliderThumb [(ngModel)]="bpm">
+            <input matSliderThumb [(ngModel)]="bpm" aria-label="Tempo in BPM" />
           </mat-slider>
         </div>
 
@@ -145,7 +159,10 @@
             Instrumentation
           </h4>
           <p class="subsection-description">
-            Select instruments for your composition ({{ selectedInstruments.length }} selected)
+            Select instruments for your composition ({{
+              selectedInstruments.length
+            }}
+            selected)
           </p>
           <div class="instrument-chips">
             <mat-chip-option
@@ -163,7 +180,10 @@
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Vocals Style</mat-label>
           <mat-select [(ngModel)]="vocalsStyle">
-            <mat-option *ngFor="let style of vocalsStyles" [value]="style.value">
+            <mat-option
+              *ngFor="let style of vocalsStyles"
+              [value]="style.value"
+            >
               {{ style.label }}
             </mat-option>
           </mat-select>
@@ -174,14 +194,16 @@
 
       <!-- Generate Section -->
       <section class="generate-section">
-        <button 
-          mat-raised-button 
-          color="primary" 
+        <button
+          mat-raised-button
+          color="primary"
           (click)="generateMusic()"
           [disabled]="isGenerating || !musicTitle || !genre"
           class="generate-button"
         >
-          <mat-icon>{{ isGenerating ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
+          <mat-icon>{{
+            isGenerating ? 'hourglass_empty' : 'play_arrow'
+          }}</mat-icon>
           {{ isGenerating ? 'Generating...' : 'Generate Music' }}
         </button>
         <p class="helper-text">
@@ -196,12 +218,18 @@
           <mat-icon>autorenew</mat-icon>
           Generating Audio...
         </h3>
-        <mat-progress-bar mode="determinate" [value]="progress"></mat-progress-bar>
+        <mat-progress-bar
+          mode="determinate"
+          [value]="progress"
+        ></mat-progress-bar>
         <p class="progress-text">{{ progress }}% complete</p>
       </section>
 
       <!-- Completed Section -->
-      <section class="completed-section" *ngIf="generatedAudioUrl && !isGenerating">
+      <section
+        class="completed-section"
+        *ngIf="generatedAudioUrl && !isGenerating"
+      >
         <h3 class="section-title">
           <mat-icon>check_circle</mat-icon>
           Generation Complete!

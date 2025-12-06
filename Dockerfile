@@ -19,5 +19,10 @@ COPY . /workspace
 # If project has requirements.txt, install them at build time.
 RUN if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
 
+# --- DiffSinger and So-VITS-SVC dependencies ---
+RUN pip install torch torchaudio
+RUN pip install git+https://github.com/openvpi/DiffSinger.git
+RUN pip install so-vits-svc
+
 # Default to an interactive shell so users can attach and explore.
 CMD ["bash"]

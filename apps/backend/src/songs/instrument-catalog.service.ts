@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Observable } from 'rxjs';
@@ -30,7 +30,7 @@ export interface ValidationResult {
 }
 
 @Injectable()
-export class InstrumentCatalogService {
+export class InstrumentCatalogService implements OnModuleInit {
   private readonly logger = new Logger(InstrumentCatalogService.name);
   private ajv: Ajv;
   private schema: any;
@@ -38,6 +38,24 @@ export class InstrumentCatalogService {
 
   constructor() {
     this.ajv = new Ajv({ allErrors: true });
+  }
+
+  async onModuleInit() {
+    // Load the instrument catalog during module initialization
+    this.loadCatalog().subscribe({
+      next: (result) => {
+        if (!result.valid) {
+          this.logger.error(
+            `Failed to load instrument catalog: ${result.errors.join(', ')}`
+          );
+        } else {
+          this.logger.log('Instrument catalog loaded successfully');
+        }
+      },
+      error: (error) => {
+        this.logger.error(`Error loading instrument catalog: ${error.message}`);
+      },
+    });
   }
 
   /**

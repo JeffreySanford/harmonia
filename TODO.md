@@ -1,14 +1,18 @@
 # Harmonia - Project TODO List
 
-**Last Updated**: December 4, 2025 - 9:15 PM
+**Last Updated**: December 6, 2025 - 8:30 PM
 **Project**: Harmonia Music Generation Platform
-**Phase**: MVP Validation Phase (🎉 COMPLETE - 100% Ready for Production)
-**Status**: 🟢 **FULLY REACTIVE ARCHITECTURE + NGRX INTEGRATION COMPLETE** - All 28+ async methods converted to RxJS observables across 7 services and all controllers. Hot data streams enabled for NGRX integration. NGRX store implemented with reactive effects for production-ready state management. UI components fully integrated with reactive state management!
+**Phase**: Audio Generation Pipeline Fixes
+**Status**: 🔄 **AUDIO GENERATION IN PROGRESS** - Fixing vocal/instrumental generation and mixing pipeline. Song generation script enhanced with FFmpeg mixing, working on Docker path resolution issues.
 **Servers**: Backend (3000) ✅ | Frontend (4200) ✅ | MongoDB (27017) ✅ | Docker ✅
 **Start Date**: November 30, 2025
-**Hours Invested**: ~115 hours (estimated based on authentication system, UI development, API documentation, reactive programming implementation, NGRX integration)
+**Hours Invested**: ~120 hours (estimated based on full stack development, reactive architecture, NGRX integration, audio pipeline work)
 
 ---
+
+## 🔁 Recent Changes (automated)
+
+- **2025-12-06**: CI smoke script moved into repository at `scripts/ci/smoke.py` and workflow `.github/workflows/ci.yml` simplified to mount and run it. Changes committed and pushed to `master` to reduce YAML complexity and editor warnings.
 
 ## 📅 **REALISTIC TIMELINE & SCOPE ADJUSTMENT**
 
@@ -44,9 +48,39 @@
 
 ## 🔥 **CURRENT PRIORITIES** (What We're Working On NOW)
 
-**Progress: 100% Complete** | **Visual Indicator:** ████████████████████████████████████
+**Progress: 85% Complete** | **Visual Indicator:** ████████████████████████████████░░
 
-### **🚀 RAPID PROGRESS UPDATE** (December 4, 2025)
+### **🎵 AUDIO GENERATION PIPELINE FIXES** (December 5, 2025)
+
+**Status**: 🔄 **IN PROGRESS** - Fixing vocal and instrumental generation in Docker container
+**Goal**: Get complete song generation working with proper vocals + instrumental mixing
+**Current Issues**:
+
+- ✅ **Song Generation Script**: Enhanced with FFmpeg mixing for vocals + instrumental
+- ✅ **Vocal Generation**: MusicGen integration working, but files not saving correctly
+- ✅ **Instrumental Generation**: Working correctly with proper file output
+- ✅ **Instrument Library**: 15 instrument samples successfully generated and saved
+- 🔄 **Path Resolution**: Docker container using incorrect Windows paths instead of Unix paths
+- ⏳ **File Copy Operations**: Need to verify Docker cp commands work properly
+
+**Technical Details**:
+
+- **Vocal Generation**: `generate_musicgen_audio.py` with custom prompts for lyrics
+- **Instrumental Generation**: Separate MusicGen calls for backing tracks
+- **Audio Mixing**: FFmpeg container commands for combining vocal + instrumental WAVs
+- **Path Issue**: Container resolving `/workspace/generated/songs/` to Windows paths
+
+**Next Steps**:
+
+- [x] Implement FFmpeg mixing in song generation script
+- [x] Test individual vocal and instrumental generation
+- [x] Generate instrument library samples
+- [x] Fix Python script path handling for Docker container
+- [ ] Verify file copy operations from container to host
+- [ ] Test complete E2E song generation with playback
+- [ ] Update documentation with audio generation fixes
+
+**Timeline**: **TARGET COMPLETION TODAY** - Audio pipeline fixes before moving to next priority
 
 **13 Major Features Completed Today:**
 
@@ -69,7 +103,16 @@
 
 **Timeline Acceleration:** From 12-18 months → 2-3 weeks for MVP validation phase! 🎯
 
-**Final Status:** **MVP VALIDATION PHASE COMPLETE** - Production-ready reactive architecture with full NGRX state management integration. All core features implemented and tested. Ready for production deployment!
+**Audio Generation Progress (December 5, 2025):**
+
+- ✅ **FFmpeg Integration**: Song generation script now mixes vocals + instrumental using FFmpeg
+- ✅ **Separate Generation**: Vocals and instrumental tracks generated independently with MusicGen
+- ✅ **File Management**: Docker container file operations for copying generated audio
+- ✅ **Instrument Library**: Successfully generated 15 instrument samples (piano, guitar, bass, drums, etc.)
+- 🔄 **Path Resolution**: Working on fixing Docker container path handling (Windows vs Unix paths)
+- 🎯 **Target**: Complete E2E song generation with audible vocals and instrumental backing
+
+**Final Status:** **AUDIO GENERATION PIPELINE ACTIVE** - Core reactive architecture complete. Now focusing on audio generation fixes before production deployment.
 
 ---
 
@@ -120,20 +163,19 @@
 - Integrate Mistral3 model into Ollama for enhanced song generation — Planned
 - Implement actual song generation with Mistral3 and DeepSeek models — Planned
 
-### **Current Status Overview** ✅ UPDATED
+### **Current Status Overview** ✅ UPDATED (December 5, 2025)
 
 - Health Check (backend + frontend indicator): ✅ Completed
 - E2E Navigation tests for guest redirect & session invalidation: ✅ Completed
 - Ollama Integration (metadata generation): ✅ Completed (100%)
-- Mistral3 Integration for Song Generation: ⚠️ In progress (30% → 50% with service ready)
-- CI-friendly mock server and E2E stabilization: ⏳ In progress (75%)
-- **API Documentation**: ✅ Completed (comprehensive docs + Swagger integration)
-- **User Library & Profile**: ✅ Completed (full CRUD operations, file uploads, NGRX state management)
-- **Song Generation E2E**: ✅ Completed (comprehensive E2E test suite implemented)
+- **Song Generation E2E**: ✅ Completed (lyrics generation working)
+- **Audio Generation Pipeline**: 🔄 In Progress (85% - vocals/instrumental generation, FFmpeg mixing implemented, path resolution issues)
 - **Demo CLI with Hot Observables**: ✅ Completed (full reactive pipeline DSL → IR → events.json → WAV stems)
 - **InstrumentCatalogService Observable Conversion**: ✅ Completed (Promise → RxJS Observable)
 - **StemExportService Observable Conversion**: ✅ Completed (Promise → RxJS Observable)
 - **Observable Conversion Plan**: ✅ Completed (28+ methods across 6 services identified) - Document archived to `docs/archive/ASYNC_TO_OBSERVABLE_CONVERSION_PLAN.md`
+- **NGRX State Management**: ✅ Completed (store, effects, selectors, UI integration)
+- **Audio File Generation**: 🔄 In Progress (MusicGen vocal/instrumental generation, Docker path issues)
 
 ---
 

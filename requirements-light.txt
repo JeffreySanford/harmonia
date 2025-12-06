@@ -1,3 +1,0 @@
-# Minimal runtime for CI and lightweight tooling
-jsonschema>=4.0.0
-pytest>=7.0.0

@@ -7,6 +7,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { map, catchError, of } from 'rxjs';
+import * as path from 'path';
 import { GenerateMetadataDto } from './dto/generate-metadata.dto';
 import { AnalyzeLyricsDto } from './dto/analyze-lyrics.dto';
 import { OllamaService } from '../llm/ollama.service';
@@ -79,46 +80,52 @@ export class SongsController {
     schema: {
       type: 'object',
       properties: {
-        title: { type: 'string', example: 'Discovering Passion' },
-        lyrics: {
-          type: 'string',
-          example: '[Verse 1]\nIn the quiet of the night...',
-        },
-        genre: { type: 'string', example: 'folk' },
-        mood: { type: 'string', example: 'melancholic' },
-        melody: {
-          type: 'string',
-          example: 'Upbeat acoustic guitar melody with vocal harmonies',
-        },
+        title: { type: 'string', example: 'Java and JavaScript' },
+        artist: { type: 'string', example: 'AI Composer' },
+        genre: { type: 'string', example: 'Nerd Pop' },
         tempo: { type: 'number', example: 120 },
-        key: { type: 'string', example: 'G major' },
+        time_signature: { type: 'string', example: '4/4' },
+        key: { type: 'string', example: 'C major' },
+        mood: { type: 'string', example: 'energetic' },
         instrumentation: {
           type: 'array',
           items: { type: 'string' },
-          example: ['acoustic guitar', 'piano', 'drums'],
+          example: ['synthesizer', 'drums', 'bass', 'male_voice'],
         },
-        intro: {
+        verse_1: {
           type: 'object',
           properties: {
-            enabled: { type: 'boolean', example: true },
-            style: {
-              type: 'string',
-              enum: ['with-music', 'sung', 'no-music'],
-              example: 'with-music',
+            lyrics: {
+              type: 'array',
+              items: { type: 'string' },
+              example: [
+                "Java, oh Java, you're a staple of the old,",
+                'Your syntax elegant, standing tall and bold.',
+              ],
             },
-            content: { type: 'string', example: 'Soft guitar intro' },
+            chords: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['C', 'G', 'Am', 'F'],
+            },
           },
         },
-        outro: {
+        chorus: {
           type: 'object',
           properties: {
-            enabled: { type: 'boolean', example: false },
-            style: {
-              type: 'string',
-              enum: ['with-music', 'sung', 'no-music'],
-              example: 'no-music',
+            lyrics: {
+              type: 'array',
+              items: { type: 'string' },
+              example: [
+                'Together they unite to create harmony.',
+                'JavaScript in the browser, Java on the server side,',
+              ],
             },
-            content: { type: 'string', example: null },
+            chords: {
+              type: 'array',
+              items: { type: 'string' },
+              example: ['C', 'G', 'Am', 'F'],
+            },
           },
         },
         syllableCount: { type: 'number', example: 245 },
@@ -444,7 +451,37 @@ export class SongsController {
       return of({ success: false, errors: validation.errors });
     }
     return this.stemExport.exportStems(body).pipe(
-      map((result) => result),
+      map((result) => {
+        if (!result.success) {
+          return { success: false, errors: result.errors };
+        }
+
+        // Transform stems to API response format
+        const files = result.stems.map((stem) => ({
+          instrument: stem.instrument,
+          filename: path.basename(stem.filePath),
+          size: stem.size,
+          url: `/downloads/${path.basename(
+            path.dirname(stem.filePath)
+          )}/${path.basename(stem.filePath)}`,
+        }));
+
+        const exportId = `exp_${Date.now().toString(36)}`;
+        const firstStemPath = result.stems?.[0]?.filePath;
+        const zipUrl =
+          files.length > 0 && firstStemPath
+            ? `/downloads/${path.basename(
+                path.dirname(firstStemPath)
+              )}/stems.zip`
+            : null;
+
+        return {
+          success: true,
+          exportId,
+          files: files,
+          zipUrl,
+        };
+      }),
       catchError((error) => of({ success: false, errors: [error.message] }))
     );
   }

@@ -1,0 +1,12 @@
+Title: male vocal solo, rock style, powerful vocals
+Genre: rock
+Tempo: 120 BPM
+Key: C major
+Instrumentation: piano, guitar, bass, drums
+Syllable Count: 8
+
+Lyrics:
+male vocal solo, rock style, powerful vocals
+
+Generated on: 2025-12-06T16:26:47.490Z
+AI Model: codellama:13b

@@ -39,6 +39,10 @@ import { ProfileModule } from '../profile/profile.module';
       rootPath: path.join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
+    ServeStaticModule.forRoot({
+      rootPath: path.join(process.cwd(), 'exports'),
+      serveRoot: '/downloads',
+    }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
