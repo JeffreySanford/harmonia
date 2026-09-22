@@ -26,7 +26,6 @@ import {
 import {
   HardwareProfile,
   MusicModelCatalogEntry,
-  MusicProviderDefinition,
   MusicRuntimeStatus,
 } from '../../store/music-runtime/music-runtime.state';
 
