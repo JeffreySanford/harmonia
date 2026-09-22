@@ -1,13 +1,17 @@
 // MongoDB initialization script - runs on first container start only
 // Creates harmonia database, application user, collections with validation, and indexes
 
+const appPassword = process.env.MONGO_HARMONIA_PASSWORD;
+if (!appPassword) {
+  throw new Error('MONGO_HARMONIA_PASSWORD is required to initialize Harmonia');
+}
+
 db = db.getSiblingDB('harmonia');
 
-// Create application user with limited permissions
-// Password comes from MONGO_HARMONIA_PASSWORD env var set in docker-compose
+// Create application user with limited permissions.
 db.createUser({
   user: 'harmonia_app',
-  pwd: process.env.MONGO_HARMONIA_PASSWORD || 'changeme',
+  pwd: appPassword,
   roles: [
     {
       role: 'readWrite',
@@ -18,7 +22,6 @@ db.createUser({
 
 print('Created harmonia_app user');
 
-// Create collections with JSON schema validation
 db.createCollection('model_artifacts', {
   validator: {
     $jsonSchema: {
@@ -98,23 +101,17 @@ db.createCollection('events', {
 
 print('Created collections with validation schemas');
 
-// Create indexes
 db.model_artifacts.createIndex({ name: 1, version: 1 }, { unique: true });
 db.model_artifacts.createIndex({ tags: 1 });
 db.model_artifacts.createIndex({ 'hashes.sha256': 1 });
-
 db.jobs.createIndex({ status: 1, worker_id: 1 });
 db.jobs.createIndex({ type: 1, created_at: -1 });
-
 db.inventory_versions.createIndex({ version_tag: 1 }, { unique: true });
 db.inventory_versions.createIndex({ created_at: -1 });
-
-// TTL index for events - auto-delete after 30 days
 db.events.createIndex({ created_at: 1 }, { expireAfterSeconds: 2592000 });
 
 print('Created indexes');
 
-// Insert example document to verify setup
 db.model_artifacts.insertOne({
   name: '_setup_test',
   version: 'v0',

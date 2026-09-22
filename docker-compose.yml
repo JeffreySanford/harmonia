@@ -1,24 +1,100 @@
-version: "3.8"
-
 services:
-  harmonia:
-    build: .
-    container_name: harmonia-dev
-    volumes:
-      - ./:/workspace:rw
-      - ./models:/workspace/models:rw
-    working_dir: /workspace
-    tty: true
-    environment:
-      - PYTHONUNBUFFERED=1
+  mongo:
+    image: mongo:7.0
+    container_name: harmonia-mongo-i9
+    restart: unless-stopped
     ports:
-      - "8000:8000"
-    # For GPU usage with NVIDIA Container Toolkit, run Docker with the nvidia runtime
-    # and uncomment the following (requires host setup):
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
+      - "127.0.0.1:27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in .env}
+      MONGO_HARMONIA_PASSWORD: ${MONGO_HARMONIA_PASSWORD:?Set MONGO_HARMONIA_PASSWORD in .env}
+      MONGO_INITDB_DATABASE: harmonia
+    volumes:
+      - mongo-data:/data/db
+      - mongo-config:/data/configdb
+      - ./backups/mongo:/backups
+      - ./scripts/mongo-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - harmonia-net
+    command:
+      - mongod
+      - --auth
+      - --wiredTigerCacheSizeGB
+      - "${MONGO_WIREDTIGER_CACHE_GB:-2}"
+      - --maxConns
+      - "${MONGO_MAX_CONNS:-500}"
+      - --bind_ip_all
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "const admin = db.getSiblingDB('admin'); admin.auth(process.env.MONGO_INITDB_ROOT_USERNAME, process.env.MONGO_INITDB_ROOT_PASSWORD); quit(admin.runCommand({ping: 1}).ok ? 0 : 1)"
+      start_period: 60s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo-express:
+    image: mongo-express:1.0-20
+    container_name: harmonia-mongo-ui
+    restart: unless-stopped
+    profiles:
+      - tools
+    ports:
+      - "127.0.0.1:8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in .env}
+      ME_CONFIG_BASICAUTH_USERNAME: harmonia
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_HARMONIA_PASSWORD:?Set MONGO_HARMONIA_PASSWORD in .env}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - harmonia-net
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    image: harmonia/worker:dev
+    container_name: harmonia-worker
+    restart: unless-stopped
+    profiles:
+      - worker
+    environment:
+      HUGGINGFACE_HUB_TOKEN: ${HUGGINGFACE_HUB_TOKEN:-}
+      HARMONIA_MODELS_ROOT: /workspace/models
+    volumes:
+      - ./models:/workspace/models:ro
+      - ./artifacts:/workspace/artifacts
+      - ./scripts:/workspace/scripts:ro
+    command:
+      - sleep
+      - infinity
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)"
+      start_period: 10s
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - harmonia-net
+
+networks:
+  harmonia-net:
+    driver: bridge
+
+volumes:
+  mongo-data:
+  mongo-config:

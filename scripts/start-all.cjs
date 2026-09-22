@@ -24,77 +24,170 @@ function applicationEnvironment(env) {
   for (const key of ['MONGO_ROOT_PASSWORD', 'MONGO_HARMONIA_PASSWORD', 'JWT_SECRET']) {
     if (!env[key]?.trim()) throw new Error(`Set ${key} in .env before starting. See .env.example.`);
   }
-  if (env.PORT && env.PORT !== '3000') throw new Error('start:all requires PORT=3000 to match the frontend API configuration.');
+  if (env.PORT && env.PORT !== '3000') {
+    throw new Error('start:all requires PORT=3000 to match the frontend API configuration.');
+  }
   return {
     ...env,
     PORT: env.PORT || '3000',
-    MONGODB_URI: env.MONGODB_URI || `mongodb://harmonia_app:${encodeURIComponent(env.MONGO_HARMONIA_PASSWORD)}@127.0.0.1:27017/harmonia?authSource=harmonia`,
-    MONGO_EXPRESS_URL: `mongodb://admin:${encodeURIComponent(env.MONGO_ROOT_PASSWORD)}@mongo:27017/`,
+    MONGODB_URI:
+      env.MONGODB_URI ||
+      `mongodb://harmonia_app:${encodeURIComponent(env.MONGO_HARMONIA_PASSWORD)}@127.0.0.1:27017/harmonia?authSource=harmonia`,
   };
 }
 
-function reconcileDocker(docker, compose) {
-  // BuildKit provenance contains timestamps, which can change an otherwise cached
-  // image's digest. Local dev builds omit it so clean containers keep their IDs.
-  docker([...compose, 'build', '--provenance=false']);
+function parseOptions(args) {
+  if (args.includes('--help')) return { help: true, worker: true, tools: true, gpu: false };
+  const known = new Set(['--no-worker', '--no-tools', '--gpu']);
+  const unknown = args.find((arg) => !known.has(arg));
+  if (unknown) throw new Error(`Unknown option: ${unknown}. Use --help for usage.`);
+  const options = {
+    help: false,
+    worker: !args.includes('--no-worker'),
+    tools: !args.includes('--no-tools'),
+    gpu: args.includes('--gpu'),
+  };
+  if (options.gpu && !options.worker) throw new Error('--gpu cannot be combined with --no-worker.');
+  return options;
+}
+
+function composeArguments(options) {
+  const compose = ['compose', '-f', 'docker-compose.yml'];
+  if (options.gpu) compose.push('-f', 'docker-compose.gpu.yml');
+  if (options.worker) compose.push('--profile', 'worker');
+  if (options.tools) compose.push('--profile', 'tools');
+  return compose;
+}
+
+function reconcileDocker(docker, compose, { build = true } = {}) {
+  if (build) {
+    // BuildKit provenance contains timestamps, which can change an otherwise cached
+    // image's digest. Local dev builds omit it so clean containers keep their IDs.
+    docker([...compose, 'build', '--provenance=false']);
+  }
+
   // Recover unhealthy dependencies before Compose waits on depends_on conditions.
-  const ids = docker([...compose, 'ps', '--all', '--quiet', '--orphans=false'], true).trim().split(/\s+/).filter(Boolean);
+  const ids = docker([...compose, 'ps', '--all', '--quiet', '--orphans=false'], true)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
   for (const id of ids) {
-    const state = JSON.parse(docker(['inspect', '--format', '{{json .State}}', id], true));
+    const state = JSON.parse(
+      docker(['inspect', '--format', '{{json .State}}', id], true)
+    );
     if (state.Running && state.Health?.Status === 'unhealthy') {
       console.log(`Restarting unhealthy container ${id.slice(0, 12)}...`);
       docker(['restart', id]);
     }
   }
+
   // Cached builds detect changed build inputs. Up creates/starts/recreates only as needed.
-  // --wait requires healthchecks to pass (or running state for interactive ML containers).
-  docker([...compose, 'up', '--detach', '--no-build', '--wait', '--wait-timeout', '120']);
+  docker([
+    ...compose,
+    'up',
+    '--detach',
+    '--no-build',
+    '--wait',
+    '--wait-timeout',
+    '120',
+  ]);
 }
 
 function checkPort(port, name) {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
-    server.once('error', () => reject(new Error(`${name} port ${port} is unavailable. Stop the conflicting service before starting Harmonia.`)));
-    server.listen({ port: Number(port), host: '0.0.0.0', exclusive: true }, () => server.close(resolve));
+    server.once('error', () =>
+      reject(
+        new Error(
+          `${name} port ${port} is unavailable. Stop the conflicting service before starting Harmonia.`
+        )
+      )
+    );
+    server.listen(
+      { port: Number(port), host: '0.0.0.0', exclusive: true },
+      () => server.close(resolve)
+    );
   });
 }
 
+async function checkOllama(env, fetchImpl = globalThis.fetch) {
+  if (String(env.USE_OLLAMA || 'false').toLowerCase() !== 'true') return;
+  if (typeof fetchImpl !== 'function') throw new Error('Ollama check requires Node.js 20+ with fetch support.');
+  const base = new URL(env.OLLAMA_URL || 'http://localhost:11434');
+  const url = new URL('/api/tags', base);
+  try {
+    const response = await fetchImpl(url, { signal: AbortSignal.timeout(3000) });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  } catch (error) {
+    throw new Error(
+      `USE_OLLAMA=true but Ollama is not reachable at ${base.origin}: ${error.message}`
+    );
+  }
+}
+
 async function main(args = process.argv.slice(2)) {
-  if (args.includes('--help')) {
-    console.log('Usage: pnpm start:all [--no-worker]\nStarts MongoDB, Mongo Express, ML container, NVIDIA worker, backend and frontend.\n--no-worker omits the NVIDIA-only worker. Docker must already be running.');
+  const options = parseOptions(args);
+  if (options.help) {
+    console.log(
+      [
+        'Usage: pnpm start:all [--gpu] [--no-worker] [--no-tools]',
+        'Starts MongoDB, optional Mongo Express, optional ML worker, backend, and frontend.',
+        '--gpu enables the NVIDIA runtime for harmonia-worker.',
+        '--no-worker omits the ML worker.',
+        '--no-tools omits Mongo Express.',
+        'Docker must already be running.',
+      ].join('\n')
+    );
     return;
   }
-  if (args.some((arg) => arg !== '--no-worker')) throw new Error('Unknown option. Use --help for usage.');
+
   const envFile = path.join(root, '.env');
-  const env = applicationEnvironment({ ...(existsSync(envFile) ? parseEnv(readFileSync(envFile, 'utf8')) : {}), ...process.env });
+  const env = applicationEnvironment({
+    ...(existsSync(envFile) ? parseEnv(readFileSync(envFile, 'utf8')) : {}),
+    ...process.env,
+  });
   const nx = path.join(root, 'node_modules', 'nx', 'bin', 'nx.js');
   if (!existsSync(nx)) throw new Error('Dependencies are missing. Run pnpm install first.');
+
   await checkPort(env.PORT, 'Backend');
   await checkPort(4200, 'Frontend');
+
   const docker = (dockerArgs, capture) => run('docker', dockerArgs, env, capture);
   docker(['info', '--format', '{{.ServerVersion}}'], true);
   docker(['compose', 'version'], true);
-  const compose = ['compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.mongo.yml'];
-  if (!args.includes('--no-worker')) compose.push('-f', 'docker-compose.dev.yml');
+
+  const compose = composeArguments(options);
   docker([...compose, 'config', '--quiet']);
-  console.log('Reconciling Docker services (first ML builds may take a while)...');
-  reconcileDocker(docker, compose);
+
+  console.log('Reconciling Docker services (first ML build may take a while)...');
+  reconcileDocker(docker, compose, { build: options.worker });
 
   // Test the actual application credentials, not only the container's root healthcheck.
   const mongoose = require('mongoose');
-  const connection = mongoose.createConnection(env.MONGODB_URI, { serverSelectionTimeoutMS: 10000 });
+  const connection = mongoose.createConnection(env.MONGODB_URI, {
+    serverSelectionTimeoutMS: 10000,
+  });
   try {
     await connection.asPromise();
     await connection.db.admin().ping();
   } catch {
-    throw new Error('MongoDB application connection failed. Check MONGODB_URI and existing database credentials; changing .env does not update users in an existing volume.');
+    throw new Error(
+      'MongoDB application connection failed. Check MONGODB_URI and existing database credentials; changing .env does not update users in an existing volume.'
+    );
   } finally {
     await connection.close();
   }
 
-  console.log(`Database ready. Starting backend on ${env.PORT} and frontend on 4200.\nCtrl+C stops the app servers; Docker services remain running.`);
-  // Launch Nx with Node directly so Windows does not require a Bash or cmd wrapper.
-  run(process.execPath, [nx, 'run-many', '--target=serve', '--projects=frontend,backend', '--parallel=2'], env);
+  await checkOllama(env);
+
+  console.log(
+    `Database ready. Starting backend on ${env.PORT} and frontend on 4200.\nCtrl+C stops the app servers; Docker services remain running.`
+  );
+  run(
+    process.execPath,
+    [nx, 'run-many', '--target=serve', '--projects=frontend,backend', '--parallel=2'],
+    env
+  );
 }
 
 if (require.main === module) {
@@ -104,4 +197,13 @@ if (require.main === module) {
   });
 }
 
-module.exports = { applicationEnvironment, checkPort, main, reconcileDocker, run };
+module.exports = {
+  applicationEnvironment,
+  checkOllama,
+  checkPort,
+  composeArguments,
+  main,
+  parseOptions,
+  reconcileDocker,
+  run,
+};
