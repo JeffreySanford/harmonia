@@ -175,10 +175,10 @@ test('Ollama is checked only when enabled', async () => {
 test('occupied app ports fail without stopping the existing server', async () => {
   const { checkPort } = require(script);
   const server = require('node:net').createServer();
-  await new Promise((resolve) => server.listen(0, '0.0.0', resolve));
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   try {
     await assert.rejects(
-      checkPort(server.address().port, 'Frontend'),
+      checkPort(server.address().port, 'Frontend', '127.0.0.1'),
       /Frontend port .* unavailable/
     );
     assert.equal(server.listening, true);
