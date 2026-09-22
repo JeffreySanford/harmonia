@@ -15,15 +15,6 @@ else
   ls -la "$MODELS_ROOT" || true
 fi
 
-# Local DiffSinger checkpoints are optional. They are intentionally gitignored
-# and mounted at runtime instead of being required during docker build.
-if [ -d "$MODELS_ROOT/diffsinger" ]; then
-  echo "Syncing local DiffSinger checkpoints from $MODELS_ROOT/diffsinger"
-  mkdir -p /opt/DiffSinger/checkpoints
-  cp -a "$MODELS_ROOT/diffsinger/." /opt/DiffSinger/checkpoints/
-else
-  echo "No local DiffSinger checkpoints found; worker will start without them."
-fi
 
 if [ "${INSTALL_ML_DEPS:-0}" = "1" ]; then
   echo "INSTALL_ML_DEPS=1: installing heavy ML deps from requirements.txt (this may take time)"
