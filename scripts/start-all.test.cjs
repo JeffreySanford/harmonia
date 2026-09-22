@@ -183,7 +183,9 @@ test('occupied app ports fail without stopping the existing server', async () =>
 
 test('managed Docker port preflight allows Harmonia owner and rejects conflicts', async () => {
   const { checkManagedDockerPort } = require(script);
-  const unavailable = async () => {
+  const probedHosts = [];
+  const unavailable = async (_port, _name, host) => {
+    probedHosts.push(host);
     throw new Error('occupied');
   };
 
@@ -204,6 +206,7 @@ test('managed Docker port preflight allows Harmonia owner and rejects conflicts'
       capture: true,
     },
   ]);
+  assert.equal(probedHosts[0], '127.0.0.1');
 
   await assert.rejects(
     checkManagedDockerPort(
@@ -236,7 +239,9 @@ test('managed Docker port preflight allows Harmonia owner and rejects conflicts'
       calledForFreePort = true;
       return '';
     },
-    async () => {}
+    async (_port, _name, host) => {
+      assert.equal(host, '127.0.0.1');
+    }
   );
   assert.equal(calledForFreePort, false);
 });
