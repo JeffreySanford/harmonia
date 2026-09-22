@@ -15,7 +15,7 @@ TTS>=0.22.0
 numpy>=1.24
 
 # --- Multi-modal vocal synthesis ---
-git+https://github.com/openvpi/DiffSinger.git
+# DiffSinger is cloned explicitly by Dockerfile.worker because the upstream repo is not pip-installable.
 so-vits-svc
 
 # Pinned runtime deps to improve compatibility with DiffSinger's `infer.py`.
