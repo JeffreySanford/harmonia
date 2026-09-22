@@ -91,6 +91,37 @@ services:
     networks:
       - harmonia-net
 
+  diffsinger:
+    build:
+      context: .
+      dockerfile: Dockerfile.diffsinger
+    image: harmonia/diffsinger:dev
+    container_name: harmonia-diffsinger
+    restart: unless-stopped
+    profiles:
+      - model-diffsinger
+    environment:
+      HARMONIA_DIFFSINGER_MODELS_ROOT: /workspace/models/diffsinger
+    volumes:
+      - ./models/diffsinger:/workspace/models/diffsinger
+      - ./artifacts:/workspace/artifacts
+      - ./generated:/workspace/generated
+      - ./generate_script:/workspace/generate_script
+      - ./scripts:/workspace/scripts:ro
+    command:
+      - sleep
+      - infinity
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "test -f /tmp/harmonia-runtime-ready && python3 -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)'"
+      start_period: 180s
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      - harmonia-net
+
 networks:
   harmonia-net:
     driver: bridge
