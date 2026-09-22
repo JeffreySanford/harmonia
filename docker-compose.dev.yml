@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile.worker
     image: harmonia/worker:dev
     runtime: "nvidia"
+    stdin_open: true
+    tty: true
     environment:
       - HUGGINGFACE_HUB_TOKEN=${HUGGINGFACE_HUB_TOKEN}
       - HARMONIA_MODELS_ROOT=/workspace/models

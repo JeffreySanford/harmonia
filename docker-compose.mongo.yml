@@ -9,7 +9,8 @@ services:
       - "127.0.0.1:27017:27017"  # Bind to localhost only for security
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?Set MONGO_ROOT_PASSWORD in .env}
+      MONGO_HARMONIA_PASSWORD: ${MONGO_HARMONIA_PASSWORD:?Set MONGO_HARMONIA_PASSWORD in .env}
       MONGO_INITDB_DATABASE: harmonia
     volumes:
       - mongo-data:/data/db
@@ -24,7 +25,8 @@ services:
       --maxConns 1000
       --bind_ip_all
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "const admin = db.getSiblingDB('admin'); admin.auth(process.env.MONGO_INITDB_ROOT_USERNAME, process.env.MONGO_INITDB_ROOT_PASSWORD); quit(admin.runCommand({ping: 1}).ok ? 0 : 1)"]
+      start_period: 60s
       interval: 10s
       timeout: 5s
       retries: 5
@@ -38,7 +40,7 @@ services:
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: admin
       ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD}
-      ME_CONFIG_MONGODB_URL: mongodb://admin:${MONGO_ROOT_PASSWORD}@mongo:27017/
+      ME_CONFIG_MONGODB_URL: ${MONGO_EXPRESS_URL:-mongodb://admin:${MONGO_ROOT_PASSWORD}@mongo:27017/}
       ME_CONFIG_BASICAUTH_USERNAME: harmonia
       ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_HARMONIA_PASSWORD}
     depends_on:

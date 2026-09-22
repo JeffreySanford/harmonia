@@ -25,25 +25,55 @@ cd harmonia
 # 2. Install dependencies
 pnpm install
 
-# 3. Configure MongoDB (see docs/MONGODB_SECURITY.md)
-# Native MongoDB runs as Windows Service on localhost:27017
+# 3. Copy .env.example to .env and set both MongoDB passwords and JWT_SECRET
+# Start Docker Desktop (NVIDIA runtime required for the GPU worker)
 
-# 4. Run development servers (frontend + backend)
-pnpm dev
+# 4. Start Docker infrastructure and both development servers
+pnpm start:all
+# Without the NVIDIA-only worker: pnpm start:all --no-worker
 ```
 
 **Access Points:**
 
 - **Frontend:** <http://localhost:4200>
-- **Backend API:** <http://localhost:3333/api>
-- **MongoDB:** `mongodb://localhost:27017/harmonia`
+- **Backend API:** <http://localhost:3000/api>
+- **MongoDB:** `127.0.0.1:27017` (authenticated)
+- **Mongo Express:** <http://localhost:8081>
+- **ML container:** published port `8000` (interactive workspace, no HTTP server by default)
+
+`pnpm start` also runs `start:all`, implemented in `scripts/start-all.cjs`.
+It combines `docker-compose.yml`, `docker-compose.mongo.yml`, and
+`docker-compose.dev.yml`. Missing containers are created, stopped containers are
+started, and unhealthy containers are restarted. Docker's cached builds and
+Compose configuration comparison recreate **dirty** containers when their image
+or configuration changes; unchanged healthy containers stay running. Dirty does
+not mean uncommitted Git changes or files written inside a running container.
+Bind-mounted source changes are already visible inside the container.
+
+Startup waits up to 120 seconds for container readiness after builds, checks the
+application's database credentials, then starts the backend and frontend with Nx.
+The interactive ML containers are checked for running state, not model readiness.
+Database volumes are preserved. Changing passwords in `.env` does not change users
+in an existing database; use its existing credentials or update its users explicitly.
+Ctrl+C stops the app servers and leaves Docker running. Startup failures return a
+nonzero exit code. Other projects using the same ports must be stopped separately.
+`start:all` requires `PORT=3000` because the frontend API configuration uses that
+port. It URI-encodes both database passwords when constructing connection URLs.
+
+Run startup unit tests with `pnpm test:startup`. To include the isolated Docker
+lifecycle test, set `RUN_DOCKER_START_TESTS=1` first (PowerShell:
+`$env:RUN_DOCKER_START_TESTS='1'`). The test uses a temporary Compose project with
+no host ports or persistent volumes and removes its containers and image afterward.
+
+`pnpm dev` remains the app-only flow with its existing native MongoDB port check.
+Ollama (`11434`) and Redis (`6379`) are not provisioned by these Compose files.
 
 ### Prerequisites
 
-- **Node.js 20+** (LTS)
+- **Node.js 20.19+** (LTS)
 - **pnpm 10.23.0+** (`npm install -g pnpm`)
-- **MongoDB 8.0+** (Windows Service with authentication)
-- **Docker Desktop** (for ML/music generation container)
+- **Docker Desktop with Compose supporting `build --provenance` and `up --wait`** (MongoDB 7, database UI, and ML containers)
+- **NVIDIA container runtime** for the GPU worker (or use `--no-worker`)
 - **Git** for version control
 - **16GB+ RAM** recommended for AI model inference
 
