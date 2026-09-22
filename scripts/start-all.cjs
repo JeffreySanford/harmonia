@@ -93,18 +93,18 @@ function reconcileDocker(docker, compose, { build = true } = {}) {
   ]);
 }
 
-function checkPort(port, name) {
+function checkPort(port, name, host = '0.0.0.0') {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
     server.once('error', () =>
       reject(
         new Error(
-          `${name} port ${port} is unavailable. Stop the conflicting service before starting Harmonia.`
+          `${name} port ${port} is unavailable on ${host}. Stop the conflicting service before starting Harmonia.`
         )
       )
     );
     server.listen(
-      { port: Number(port), host: '0.0.0.0', exclusive: true },
+      { port: Number(port), host, exclusive: true },
       () => server.close(resolve)
     );
   });
@@ -119,7 +119,10 @@ async function checkManagedDockerPort(
   probe = checkPort
 ) {
   try {
-    await probe(port, name);
+    // Docker publishes these services on loopback, so probe the exact
+    // address rather than 0.0.0.0. Windows can otherwise allow the wildcard
+    // probe even while a native service owns 127.0.0.1:<port>.
+    await probe(port, name, '127.0.0.1');
     return;
   } catch {
     const owners = docker(
