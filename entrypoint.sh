@@ -16,10 +16,4 @@ else
 fi
 
 
-if [ "${INSTALL_ML_DEPS:-0}" = "1" ]; then
-  echo "INSTALL_ML_DEPS=1: installing heavy ML deps from requirements.txt (this may take time)"
-  python -m pip install --upgrade pip
-  pip install -r /workspace/requirements.txt || true
-fi
-
 exec "$@"
