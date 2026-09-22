@@ -5,6 +5,8 @@
 **Implementation branch:** Create `feat/music-provider-catalog` only after the runtime lifecycle work is merged.  
 **Primary product constraint:** Normal music creation must work without per-generation API charges.
 
+> **Database/runtime companion plan:** Docker Mongo ownership, bootstrap vs development seeding, persistent volumes, and future seed-state handling are documented in [MongoDB Runtime and Seeding Plan](./MONGODB_RUNTIME_AND_SEEDING_PLAN.md).
+
 ## 1. Goal
 
 Harmonia should support multiple free/local music-generation families instead of hard-coding one model.
