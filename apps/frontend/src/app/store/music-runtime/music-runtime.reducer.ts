@@ -31,10 +31,7 @@ export const musicRuntimeReducer = createReducer<MusicRuntimeFeatureState>(
   on(MusicRuntimeActions.chooseProvider, (state, { providerId }) => ({
     ...state,
     selectedProviderId: providerId,
-    selectedModelId:
-      state.models.find(
-        (model) => model.providerId === providerId && model.selectable
-      )?.id || null,
+    selectedModelId: null,
     error: null,
   })),
   on(MusicRuntimeActions.selectModel, (state, { modelId }) => {
