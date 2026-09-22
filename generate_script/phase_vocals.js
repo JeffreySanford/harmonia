@@ -55,7 +55,7 @@ async function synthesizeVocals(metadata) {
         `${modelsHifiganHost}:/workspace/models/hifigan`,
         '-w',
         '/workspace',
-        'harmonia/worker:dev',
+        'harmonia/diffsinger:dev',
         'python3',
         'scripts/run_diffsinger.py',
         `/workspace/${metaRel}`,
