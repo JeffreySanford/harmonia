@@ -187,18 +187,23 @@ test('managed Docker port preflight allows Harmonia owner and rejects conflicts'
     throw new Error('occupied');
   };
 
-  let dockerCalls = 0;
+  const dockerCalls = [];
   await checkManagedDockerPort(
     27017,
     'MongoDB',
     'harmonia-mongo-i9',
-    () => {
-      dockerCalls++;
+    (args, capture) => {
+      dockerCalls.push({ args, capture });
       return 'harmonia-mongo-i9\n';
     },
     unavailable
   );
-  assert.equal(dockerCalls, 1);
+  assert.deepEqual(dockerCalls, [
+    {
+      args: ['ps', '--filter', 'publish=27017', '--format', '{{.Names}}'],
+      capture: true,
+    },
+  ]);
 
   await assert.rejects(
     checkManagedDockerPort(
