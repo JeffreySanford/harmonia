@@ -1,0 +1,65 @@
+FROM ubuntu:22.04
+
+LABEL org.opencontainers.image.title="harmonia-diffsinger"
+LABEL org.opencontainers.image.description="Isolated DiffSinger provider runtime for Harmonia."
+
+ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=America/Chicago
+ENV TMPDIR=/tmp
+ENV TEMP=/tmp
+ENV TMP=/tmp
+ENV PYTHONPATH=/opt/DiffSinger
+WORKDIR /workspace
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    software-properties-common gnupg curl unzip git build-essential ffmpeg \
+    pkg-config libavformat-dev libavcodec-dev libavutil-dev libswscale-dev \
+    libavdevice-dev libavfilter-dev libswresample-dev libpostproc-dev \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    python3.11 python3.11-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -sSL https://bootstrap.pypa.io/get-pip.py | python3.11
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1 \
+    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+
+RUN pip install --upgrade pip \
+    && pip install torch torchaudio \
+    && pip install --no-cache-dir 'coverage==6.5.0'
+
+RUN python3 - <<'PY'
+import os
+site_pkg = '/usr/local/lib/python3.11/dist-packages'
+cov_pkg = os.path.join(site_pkg, 'coverage')
+os.makedirs(cov_pkg, exist_ok=True)
+types_py = os.path.join(cov_pkg, 'types.py')
+if not os.path.exists(types_py):
+    with open(types_py, 'w', encoding='utf-8') as f:
+        f.write('from typing import Any, Callable, Dict, Optional\n')
+        f.write('class Tracer:\n    def __init__(self, *args, **kwargs):\n        pass\n')
+        f.write('TTraceData = Dict[str, Any]\nTFileDisposition = Any\n')
+        f.write('TShouldTraceFn = Callable[[str, Optional[str]], Any]\n')
+        f.write('TShouldStartContextFn = Callable[[str], Any]\n')
+        f.write('TWarnFn = Callable[[str], None]\nTTraceFn = Callable[..., Any]\n')
+        f.write('TTrace = Any\nTShouldTraceResult = Any\nTTraceFuncReturn = Any\n')
+init_py = os.path.join(cov_pkg, '__init__.py')
+if os.path.exists(init_py):
+    with open(init_py, 'a', encoding='utf-8') as f:
+        f.write('\ntry:\n    import importlib\n    types = importlib.import_module("coverage.types")\nexcept Exception:\n    types = None\n')
+PY
+
+RUN git clone --depth=1 https://github.com/openvpi/DiffSinger.git /opt/DiffSinger \
+    && pip install -r /opt/DiffSinger/requirements.txt
+
+COPY configs/tts /opt/DiffSinger/configs/tts/
+COPY entrypoint.diffsinger.sh /workspace/entrypoint.diffsinger.sh
+RUN sed -i 's/\r$//' /workspace/entrypoint.diffsinger.sh \
+    && chmod +x /workspace/entrypoint.diffsinger.sh
+
+COPY scripts/*.py /workspace/scripts/
+RUN chmod +x /workspace/scripts/*.py || true
+
+ENTRYPOINT ["/workspace/entrypoint.diffsinger.sh"]
+CMD ["sleep", "infinity"]
