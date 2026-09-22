@@ -10,6 +10,7 @@ import { JobsState } from './jobs/jobs.state';
 import { LibraryState } from './library/library.state';
 import { ProfileState } from './profile/profile.state';
 import { SongGenerationState } from './song-generation/song-generation.state';
+import { MusicRuntimeFeatureState } from './music-runtime/music-runtime.state';
 
 export interface AppState {
   auth: AuthState;
@@ -19,4 +20,5 @@ export interface AppState {
   library: LibraryState;
   profile: ProfileState;
   songGeneration: SongGenerationState;
+  musicRuntime: MusicRuntimeFeatureState;
 }
