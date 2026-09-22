@@ -69,3 +69,14 @@ test('worker build does not require gitignored local model checkpoints', () => {
   assert.match(entrypoint, /MODELS_ROOT\/diffsinger/);
   assert.match(entrypoint, /No local DiffSinger checkpoints found/);
 });
+
+test('worker image copies only Python worker scripts after heavy ML setup', () => {
+  const dockerfile = read('Dockerfile.worker');
+  assert.doesNotMatch(dockerfile, /COPY\s+scripts\s+\/workspace\/scripts/);
+  assert.match(dockerfile, /COPY\s+scripts\/\*\.py\s+\/workspace\/scripts\//);
+
+  const heavyLayer = dockerfile.indexOf('Downloading HiFi-GAN vocoder');
+  const scriptCopy = dockerfile.indexOf('COPY scripts/*.py /workspace/scripts/');
+  assert.ok(heavyLayer >= 0);
+  assert.ok(scriptCopy > heavyLayer);
+});
