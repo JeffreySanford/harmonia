@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { MatSnackBar, MatSnackBarRef, TextOnlySnackBar } from '@angular/material/snack-bar';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { tap } from 'rxjs/operators';
 import * as MusicRuntimeActions from './music-runtime.actions';
@@ -10,7 +10,7 @@ export class MusicRuntimeNotificationEffects {
   private readonly actions$ = inject(Actions);
   private readonly snackBar = inject(MatSnackBar);
 
-  private activeRef: MatSnackBarRef<TextOnlySnackBar> | null = null;
+  private activeRef: ReturnType<MatSnackBar['open']> | null = null;
   private lastStatusKey = '';
 
   runtimeStatus$ = createEffect(
