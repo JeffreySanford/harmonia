@@ -101,3 +101,62 @@ test('Linux container entrypoints normalize Windows line endings', () => {
     /sed -i 's\/\\r\$\/\/' \/workspace\/entrypoint\.diffsinger\.sh/
   );
 });
+
+
+test('music generation UI exposes real runtime state and never fakes an audio artifact', () => {
+  const component = read(
+    'apps/frontend/src/app/features/music-generation/music-generation-page.component.ts'
+  );
+  const template = read(
+    'apps/frontend/src/app/features/music-generation/music-generation-page.component.html'
+  );
+
+  assert.doesNotMatch(component, /sample-audio\.mp3/);
+  assert.doesNotMatch(component, /setInterval\(/);
+  assert.match(component, /MusicRuntimeActions\.selectModel/);
+  assert.match(template, /Generation Engine/);
+  assert.match(template, /disabledReason/);
+  assert.match(template, /runtimeStatus/);
+});
+
+test('music model catalog includes local and higher-capacity disabled tiers', () => {
+  const catalog = read(
+    'apps/backend/src/music-runtime/music-model.catalog.ts'
+  );
+
+  assert.match(catalog, /acestep-v15-turbo-06b/);
+  assert.match(catalog, /acestep-v15-xl-4b/);
+  assert.match(catalog, /stable-audio-3-medium/);
+  assert.match(catalog, /songgeneration-v2-large/);
+  assert.match(catalog, /yue2-3b/);
+  assert.match(catalog, /muse-long-form/);
+});
+
+test('provider runtime lifecycle is driven by backend events and NgRx', () => {
+  const backend = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+  const gateway = read(
+    'apps/backend/src/music-runtime/music-runtime.gateway.ts'
+  );
+  const websocket = read(
+    'apps/frontend/src/app/services/websocket.service.ts'
+  );
+  const effects = read(
+    'apps/frontend/src/app/store/music-runtime/music-runtime-notification.effects.ts'
+  );
+
+  for (const state of [
+    'building',
+    'starting',
+    'health-checking',
+    'healthy',
+    'ready',
+    'stopping',
+  ]) {
+    assert.match(backend, new RegExp(`'${state}'`));
+  }
+  assert.match(gateway, /music-runtime:status/);
+  assert.match(websocket, /music-runtime:status/);
+  assert.match(effects, /MatSnackBar/);
+});
