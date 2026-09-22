@@ -5,6 +5,8 @@
 
 > This document is intentionally descriptive. The immediate priority is to restore and qualify the existing MusicGen-based Harmonia pipeline before replacing it.
 
+> **Free/local implementation plan:** Harmonia's planned provider/model-size selector, hardware-fit catalog, NgRx design, and current free model priorities are documented in [Free Local Music Model Catalog and Frontend Selector Plan](./FREE_LOCAL_MUSIC_MODEL_CATALOG.md). The initial active local families are MusicGen, Stable Audio 3.0, ACE-Step 1.5, DiffRhythm, and HeartMuLa. Paid hosted providers remain optional and hidden by default while free-only mode is enabled.
+
 ## 1. Current Harmonia Strategy
 
 Harmonia uses a two-stage generation model:
