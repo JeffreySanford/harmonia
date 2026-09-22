@@ -1,7 +1,7 @@
 FROM ubuntu:22.04
 
 LABEL org.opencontainers.image.title="harmonia-worker"
-LABEL org.opencontainers.image.description="Worker image for Harmonia model inference (dev-friendly)."
+LABEL org.opencontainers.image.description="Generic Harmonia orchestration/utility worker. Model frameworks run in provider-specific images."
 
 ENV PYTHONUNBUFFERED=1
 ENV DEBIAN_FRONTEND=noninteractive
@@ -11,183 +11,30 @@ ENV TEMP=/tmp
 ENV TMP=/tmp
 WORKDIR /workspace
 
-# Install Python 3.11 and system deps
-RUN echo "Step 1/5: Installing system dependencies..." && \
-    apt-get update && apt-get install -y --no-install-recommends \
-    software-properties-common \
-    gnupg \
-    curl \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    software-properties-common gnupg curl \
     && add-apt-repository ppa:deadsnakes/ppa \
     && apt-get update && apt-get install -y --no-install-recommends \
-    python3.11 \
-    python3.11-dev \
-    build-essential \
-    git \
-    unzip \
-    ffmpeg \
-    pkg-config \
-    libavformat-dev \
-    libavcodec-dev \
-    libavutil-dev \
-    libswscale-dev \
-    libavdevice-dev \
-    libavfilter-dev \
-    libswresample-dev \
-    libpostproc-dev \
+    python3.11 python3.11-dev build-essential git ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Install pip for Python 3.11
-RUN echo "Step 2/5: Installing pip..." && \
-    curl -sSL https://bootstrap.pypa.io/get-pip.py | python3.11
-
-# Set Python 3.11 as default
-RUN echo "Step 3/5: Setting Python 3.11 as default..." && \
-    update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1 \
+RUN curl -sSL https://bootstrap.pypa.io/get-pip.py | python3.11
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1 \
     && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
 
-# Copy a lightweight requirements file; heavy ML deps should be installed manually
-COPY requirements.txt /workspace/requirements.txt
-RUN echo "Step 4/5: Installing Python requirements..." && \
-    pip install --upgrade pip --progress-bar=on && pip install -v --progress-bar=on -r /workspace/requirements.txt || true
+COPY requirements.worker.txt /workspace/requirements.worker.txt
+RUN pip install --upgrade pip --progress-bar=on \
+    && pip install --progress-bar=on -r /workspace/requirements.worker.txt
 
-# Add entrypoint. Worker Python scripts are copied after the heavy ML layers so
-# edits to host-side Node orchestration do not invalidate expensive dependencies.
 COPY entrypoint.sh /workspace/entrypoint.sh
-RUN chmod +x /workspace/entrypoint.sh || true
+RUN sed -i 's/\r$//' /workspace/entrypoint.sh && chmod +x /workspace/entrypoint.sh
 
-# --- DiffSinger and So-VITS-SVC dependencies ---
-# Ensure numpy is available before torch (some torch imports trigger numpy use)
-RUN pip install numpy || true
-RUN pip install torch torchaudio || true
-
-# Pin coverage to avoid AttributeError from `coverage`/`numba` import chain
-# (fixes: "module 'coverage' has no attribute 'types'")
-RUN pip install --no-cache-dir 'coverage==6.5.0' || true
-
-# Create a tiny compatibility shim for `coverage.types.Tracer` expected by
-# older numba/librosa integration. This provides a minimal `Tracer` class
-# so import-time AttributeError is avoided.
-RUN python3 - <<'PY' || true
-import os
-site_pkg = '/usr/local/lib/python3.11/dist-packages'
-cov_pkg = os.path.join(site_pkg, 'coverage')
-os.makedirs(cov_pkg, exist_ok=True)
-types_py = os.path.join(cov_pkg, 'types.py')
-if not os.path.exists(types_py):
-    with open(types_py, 'w', encoding='utf-8') as f:
-        f.write('"""Compatibility shim for coverage.types used by numba.\n'
-                'This file provides minimal type aliases and a Tracer base\n'
-                'so numba.coverage_support can import the expected symbols.\n'
-                '"""\n\n')
-        f.write('from typing import Any, Callable, Dict, Mapping, Optional, Set, Tuple\n\n')
-        f.write('class Tracer:\n')
-        f.write('    """Minimal Tracer base class placeholder."""\n')
-        f.write('    def __init__(self, *args, **kwargs):\n')
-        f.write('        pass\n\n')
-        f.write('TTraceData = Dict[str, Any]\n')
-        f.write('TFileDisposition = Any\n')
-        f.write('TShouldTraceFn = Callable[[str, Optional[str]], Any]\n')
-        f.write('TShouldStartContextFn = Callable[[str], Any]\n')
-        f.write('TWarnFn = Callable[[str], None]\n')
-        f.write('TTraceFn = Callable[..., Any]\n')
-        f.write('TTrace = Any\n')
-        f.write('TShouldTraceResult = Any\n')
-        f.write('TTraceFuncReturn = Any\n')
-        f.write('\n')
-    print('Wrote coverage.types shim at', types_py)
-else:
-    print('coverage.types shim already present at', types_py)
-PY
-
-# Patch coverage package __init__ to expose `types` attribute at import time
-RUN python3 - <<'PY' || true
-import os
-init_py = '/usr/local/lib/python3.11/dist-packages/coverage/__init__.py'
-if os.path.exists(init_py):
-    with open(init_py, 'a', encoding='utf-8') as f:
-        f.write('\n# Shim: ensure coverage.types is importable as attribute\ntry:\n    import importlib\n    types = importlib.import_module("coverage.types")\nexcept Exception:\n    types = None\n')
-    print('Patched', init_py)
-else:
-    print('coverage __init__.py not found; skipping patch')
-PY
-
-# Clone the official DiffSinger repo into /opt/DiffSinger and install its requirements.
-# This ensures the upstream `scripts/infer.py` CLI is available for inference.
-RUN if [ ! -d /opt/DiffSinger ]; then \
-            git clone --depth=1 https://github.com/openvpi/DiffSinger.git /opt/DiffSinger; \
-        else \
-            echo "/opt/DiffSinger already exists, skipping clone"; \
-        fi \
-        && if [ -f /opt/DiffSinger/requirements.txt ]; then \
-                 pip install -r /opt/DiffSinger/requirements.txt || echo "Warning: installing /opt/DiffSinger/requirements.txt failed"; \
-             else \
-                 echo "Warning: /opt/DiffSinger/requirements.txt not found"; \
-             fi
-
-# Local acoustic checkpoints are intentionally not copied into the image.
-# models/ is gitignored and mounted read-only at /workspace/models at runtime.
-# entrypoint.sh mirrors /workspace/models/diffsinger into the cloned DiffSinger
-# checkpoints directory when local checkpoints are actually present.
-
-# Copy local config fallbacks (so includes like configs/tts/lj/fs2.yaml resolve)
-COPY configs/tts /opt/DiffSinger/configs/tts/
-
-# Download a pretrained HiFi-GAN vocoder and place it under the cloned repo's checkpoints.
-# This provides a vocoder checkpoint the acoustic model can use to synthesize waveforms.
-RUN set -eux; \
-        VOCODER_URL="https://github.com/MoonInTheRiver/DiffSinger/releases/download/pretrain-model/0109_hifigan_bigpopcs_hop128.zip"; \
-        mkdir -p /opt/DiffSinger/checkpoints/hifigan; \
-        cd /opt/DiffSinger/checkpoints; \
-        if [ ! -f "0109_hifigan_bigpopcs_hop128.zip" ]; then \
-            echo "Downloading HiFi-GAN vocoder (~900MB)"; \
-            curl -L -o 0109_hifigan_bigpopcs_hop128.zip "$VOCODER_URL"; \
-        else \
-            echo "vocoder zip already present"; \
-        fi; \
-        unzip -o 0109_hifigan_bigpopcs_hop128.zip -d hifigan || true; \
-        echo "Downloaded and extracted vocoder files"; \
-        # Find a checkpoint file and set it into the acoustic config if possible
-        ckpt=$(find hifigan -type f -name '*.ckpt' -print -quit || true); \
-        if [ -n "$ckpt" ]; then \
-            echo "Found vocoder ckpt: $ckpt"; \
-            # If an acoustic checkpoint config exists under checkpoints, update its vocoder_ckpt
-            for cfg in /opt/DiffSinger/checkpoints/*/config.yaml; do \
-                if [ -f "$cfg" ]; then \
-                    echo "Patching $cfg to point to vocoder: $ckpt"; \
-                    if grep -q "^vocoder_ckpt:" "$cfg"; then \
-                        sed -i "s|^vocoder_ckpt: .*|vocoder_ckpt: $ckpt|" "$cfg" || true; \
-                    else \
-                        echo "vocoder_ckpt: $ckpt" >> "$cfg" || true; \
-                    fi; \
-                fi; \
-            done; \
-        else \
-            echo "No vocoder ckpt found in hifigan/ after extraction"; \
-        fi
-
-# Add the cloned DiffSinger repo to PYTHONPATH so its modules can be imported directly.
-ENV PYTHONPATH="/opt/DiffSinger"
-
-# Try the PyPI package as a convenience, but prefer the cloned repo for a reproducible install.
-RUN pip install diffsinger || echo "pip install diffsinger failed; using cloned repo at /opt/DiffSinger"
-
-# Attempt to install so-vits-svc via pip (may require additional steps for full functionality).
-RUN pip install so-vits-svc || echo "so-vits-svc pip install failed; install manually in container if required"
-
-# Only Python worker scripts belong in the ML image. Copying the whole scripts/
-# directory would make changes to start-all.cjs and other host tooling invalidate
-# the expensive DiffSinger / vocoder layers.
 COPY scripts/*.py /workspace/scripts/
 RUN chmod +x /workspace/scripts/*.py || true
-
-# Windows checkouts may present shell files with CRLF despite the Linux runtime.
-# Normalize the already-copied entrypoint here, after expensive ML layers, so a
-# line-ending fix does not invalidate Torch / DiffSinger / vocoder caches.
-RUN sed -i 's/\r$//' /workspace/entrypoint.sh && chmod +x /workspace/entrypoint.sh
 
 ENTRYPOINT ["/workspace/entrypoint.sh"]
 
 ENV HARMONIA_MODELS_ROOT=/workspace/models
 VOLUME ["/workspace/models", "/workspace/artifacts"]
 
-CMD ["/bin/bash"]
+CMD ["sleep", "infinity"]
