@@ -66,12 +66,12 @@ jobs:
           key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-${{ matrix.python-version }}-
-      - name: Install Python requirements
+      - name: Install Python test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install pytest pyyaml
       - name: Run pytest
-        run: python -m pytest -q scripts/tests -k "not test_environment_packages"
+        run: python -m pytest -q scripts/tests -k "not test_environment_packages and not test_docker_build_worker_image"
 
   docker_build:
     name: Optional worker Docker build
