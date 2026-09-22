@@ -12,7 +12,7 @@
 
     <mat-card-content>
       <!-- Generate Button (when no palette exists) -->
-      <div class="generate-section" *ngIf="!(palette$ | async)">
+      <div class="generate-section" *ngIf="(palette$ | async) === null">
         <p class="description">
           Get AI-powered instrument suggestions that match your song's genre, mood, and narrative.
           The system analyzes your story to recommend the perfect combination of instruments.
@@ -101,8 +101,8 @@
             >
               <mat-card-content class="instrument-content">
                 <div class="instrument-header">
-                  <div class="role-indicator" [style.background-color]="getRoleColor(selection.instrument.role)">
-                    <mat-icon [style.color]="'white'">{{ getRoleIcon(selection.instrument.role) }}</mat-icon>
+                  <div class="role-indicator" [ngClass]="getRoleClass(selection.instrument.role)">
+                    <mat-icon class="role-icon">{{ getRoleIcon(selection.instrument.role) }}</mat-icon>
                   </div>
                   <div class="instrument-info">
                     <h6 class="instrument-name">{{ selection.instrument.name }}</h6>
@@ -116,7 +116,7 @@
                 </div>
 
                 <div class="instrument-details">
-                  <span class="role-badge" [style.background-color]="getRoleColor(selection.instrument.role)">
+                  <span class="role-badge" [ngClass]="getRoleClass(selection.instrument.role)">
                     {{ selection.instrument.role }}
                   </span>
                   <p class="reasoning">{{ selection.instrument.reasoning }}</p>
