@@ -25,12 +25,15 @@ test('application port contract is 4200 frontend and 3000 backend', () => {
   const backend = read('apps/backend/src/main.ts');
   const playwright = read('playwright.config.ts');
   const workflow = read('docs/DEVELOPMENT_WORKFLOW.md');
+  const websocket = read('apps/frontend/src/app/services/websocket.service.ts');
 
   assert.match(env, /^PORT=3000$/m);
   assert.match(proxy, /localhost:3000/);
   assert.match(backend, /process\.env\.PORT \|\| 3000/);
   assert.match(playwright, /localhost:3000\/api\/__health/);
   assert.match(playwright, /localhost:4200/);
+  assert.match(websocket, /localhost:3000/);
+  assert.doesNotMatch(websocket, /localhost:3333/);
   assert.doesNotMatch(workflow, /localhost:3333/);
 });
 
