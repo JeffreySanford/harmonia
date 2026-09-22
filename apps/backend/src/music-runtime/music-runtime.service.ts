@@ -135,6 +135,10 @@ export class MusicRuntimeService {
         true
       );
 
+      // Give the client enough time to visibly acknowledge the successful
+      // health milestone before the terminal ready notification replaces it.
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
       await this.transition(
         provider,
         model,
