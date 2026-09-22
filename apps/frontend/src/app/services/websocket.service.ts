@@ -11,6 +11,8 @@ import { takeUntil } from 'rxjs/operators';
 import { AppState } from '../store/app.state';
 import { Job, JobStatus, JobProgress } from '../store/jobs/jobs.state';
 import * as JobsActions from '../store/jobs/jobs.actions';
+import { MusicRuntimeStatus } from '../store/music-runtime/music-runtime.state';
+import * as MusicRuntimeActions from '../store/music-runtime/music-runtime.actions';
 
 export interface JobStatusEvent {
   id: string;
@@ -124,6 +126,17 @@ export class WebSocketService {
           );
         });
       });
+
+    // Music provider/runtime lifecycle updates
+    this.getMusicRuntimeStatusUpdates()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((status) => {
+        this.ngZone.run(() => {
+          this.store.dispatch(
+            MusicRuntimeActions.runtimeStatusReceived({ status })
+          );
+        });
+      });
   }
 
   disconnect(): void {
@@ -161,6 +174,16 @@ export class WebSocketService {
       throw new Error('Socket not connected');
     }
     return fromEvent<JobFailedEvent>(this.socket, 'job:failed');
+  }
+
+  private getMusicRuntimeStatusUpdates(): Observable<MusicRuntimeStatus> {
+    if (!this.socket) {
+      throw new Error('Socket not connected');
+    }
+    return fromEvent<MusicRuntimeStatus>(
+      this.socket,
+      'music-runtime:status'
+    );
   }
 
   // Subscribe to specific job updates
