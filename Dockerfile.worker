@@ -126,11 +126,13 @@ RUN if [ ! -d /opt/DiffSinger ]; then \
                  echo "Warning: /opt/DiffSinger/requirements.txt not found"; \
              fi
 
-# Copy any acoustic checkpoint folders from the workspace into the image so infer.py can find them by --exp
-COPY models/diffsinger /opt/DiffSinger/checkpoints/
+# Local acoustic checkpoints are intentionally not copied into the image.
+# models/ is gitignored and mounted read-only at /workspace/models at runtime.
+# entrypoint.sh mirrors /workspace/models/diffsinger into the cloned DiffSinger
+# checkpoints directory when local checkpoints are actually present.
 
-    # Copy any local config fallbacks (so includes like configs/tts/lj/fs2.yaml resolve)
-    COPY configs/tts /opt/DiffSinger/configs/tts/
+# Copy local config fallbacks (so includes like configs/tts/lj/fs2.yaml resolve)
+COPY configs/tts /opt/DiffSinger/configs/tts/
 
 # Download a pretrained HiFi-GAN vocoder and place it under the cloned repo's checkpoints.
 # This provides a vocoder checkpoint the acoustic model can use to synthesize waveforms.
