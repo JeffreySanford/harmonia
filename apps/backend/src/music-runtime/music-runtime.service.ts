@@ -312,7 +312,10 @@ export class MusicRuntimeService {
       'docker-compose.yml',
     ];
 
-    if (process.env['HARMONIA_GPU_ENABLED'] === 'true') {
+    if (
+      process.env['HARMONIA_GPU_ENABLED'] === 'true' ||
+      this.status.hardware.gpuAvailable
+    ) {
       args.push('-f', 'docker-compose.gpu.yml');
     }
 
@@ -322,6 +325,7 @@ export class MusicRuntimeService {
     await execFileAsync('docker', args, {
       cwd: process.cwd(),
       windowsHide: true,
+      maxBuffer: 100 * 1024 * 1024,
     });
   }
 
@@ -384,7 +388,11 @@ export class MusicRuntimeService {
     model: MusicModelDefinition,
     hardware: HardwareProfile
   ): HardwareFit {
-    const min = model.minVramGb ?? 0;
+    if (model.minVramGb === undefined) {
+      return 'experimental';
+    }
+
+    const min = model.minVramGb;
     const recommended = model.recommendedVramGb ?? min;
 
     if (min === 0) {
