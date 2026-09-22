@@ -643,6 +643,19 @@ Do this first.
 - make `start:all` reliable;
 - merge the runtime lifecycle PR.
 
+### Phase 0.5 — database/reference seed foundation
+
+Create `feat/database-seeding`.
+
+- add `seed_state`;
+- add idempotent reference-data seeding;
+- add `seed:status` and `seed:reference`;
+- keep demo-user seeding optional and environment-driven;
+- preserve disaster recovery as an explicit operation;
+- prepare Mongo to record installed-model artifacts and benchmark metadata.
+
+This phase is intentionally small. Canonical provider/model definitions still begin in version-controlled application configuration rather than being sourced from an old database snapshot.
+
 ### Phase 1 — catalog architecture
 
 Create `feat/music-provider-catalog`.
