@@ -6,7 +6,7 @@
 [![Nx](https://img.shields.io/badge/Nx-22.1.3-blue)](https://nx.dev)
 [![Angular](https://img.shields.io/badge/Angular-21.0.2-red)](https://angular.io)
 [![NestJS](https://img.shields.io/badge/NestJS-11.1.9-e0234e)](https://nestjs.com)
-[![MongoDB](https://img.shields.io/badge/MongoDB-8.0.6-green)](https://www.mongodb.com)
+[![MongoDB](https://img.shields.io/badge/MongoDB-7.0-green)](https://www.mongodb.com)
 [![Docker](https://img.shields.io/badge/Docker-29.0.1-blue)](https://www.docker.com)
 
 [![CI](https://github.com/jeffreysanford/harmonia/actions/workflows/ci.yml/badge.svg)](https://github.com/jeffreysanford/harmonia/actions/workflows/ci.yml)
@@ -30,7 +30,8 @@ pnpm install
 
 # 4. Start Docker infrastructure and both development servers
 pnpm start:all
-# Without the NVIDIA-only worker: pnpm start:all --no-worker
+# Optional NVIDIA acceleration: pnpm start:all --gpu
+# Optional omissions: pnpm start:all --no-worker / --no-tools
 ```
 
 **Access Points:**
@@ -92,7 +93,7 @@ startup lifecycle test.
 - **Nx 22.1.3 Monorepo** - Build caching, parallel execution, dependency graph
 - **pnpm Workspace** - Fast installs (3x faster than npm), disk space efficiency
 - **Docker MongoDB 7.0** - Authenticated local database with persistent volumes
-- **Docker ML Container** - Python 3.11, PyTorch, MusicGen for music generation
+- **Docker ML Worker** - Python 3.11, PyTorch, MusicGen for music generation
 - **Automated Backups** - MongoDB dump scripts with cron/Task Scheduler
 - **CI/CD Pipelines** - GitHub Actions with smoke tests and license validation
 
