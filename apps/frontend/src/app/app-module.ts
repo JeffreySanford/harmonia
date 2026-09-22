@@ -29,6 +29,9 @@ import { JobsEffects } from './store/jobs/jobs.effects';
 import { LibraryEffects } from './store/library/library.effects';
 import { ProfileEffects } from './store/profile/profile.effects';
 import { SongGenerationEffects } from './store/song-generation/song-generation.effects';
+import { musicRuntimeReducer } from './store/music-runtime/music-runtime.reducer';
+import { MusicRuntimeEffects } from './store/music-runtime/music-runtime.effects';
+import { MusicRuntimeNotificationEffects } from './store/music-runtime/music-runtime-notification.effects';
 
 @NgModule({
   declarations: [App],
@@ -48,6 +51,7 @@ import { SongGenerationEffects } from './store/song-generation/song-generation.e
         library: libraryReducer,
         profile: profileReducer,
         songGeneration: songGenerationReducer,
+        musicRuntime: musicRuntimeReducer,
       },
       {
         runtimeChecks: {
@@ -68,6 +72,8 @@ import { SongGenerationEffects } from './store/song-generation/song-generation.e
       LibraryEffects,
       ProfileEffects,
       SongGenerationEffects,
+      MusicRuntimeEffects,
+      MusicRuntimeNotificationEffects,
     ]),
     StoreDevtoolsModule.instrument({
       maxAge: 25,
