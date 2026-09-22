@@ -11,7 +11,7 @@ test('reconciles all services without forcing healthy containers to restart', ()
   const calls = [];
   const run = (args) => {
     calls.push(args);
-    if (args.includes('ps')) return 'healthy\\nsick\\nstopped\\n';
+    if (args.includes('ps')) return 'healthy\nsick\nstopped\n';
     if (args[0] === 'inspect') {
       const id = args.at(-1);
       return JSON.stringify({
