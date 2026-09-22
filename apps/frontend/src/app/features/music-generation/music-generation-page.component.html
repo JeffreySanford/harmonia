@@ -6,7 +6,7 @@
         {{ title }}
       </mat-card-title>
       <mat-card-subtitle>
-        Generate audio music files from song metadata using MusicGen model
+        Choose a music-generation runtime and model, then generate from your song metadata
       </mat-card-subtitle>
     </mat-card-header>
 
@@ -36,6 +36,132 @@
           </p>
         </div>
       </div>
+
+      <!-- Music Runtime / Provider Selection -->
+      <section class="runtime-section">
+        <h3 class="section-title">
+          <mat-icon>memory</mat-icon>
+          Generation Engine
+        </h3>
+
+        <div class="hardware-banner" *ngIf="hardware">
+          <mat-icon>developer_board</mat-icon>
+          <div>
+            <strong>{{ hardware.gpuName || 'CPU runtime' }}</strong>
+            <span *ngIf="hardware.gpuAvailable">
+              {{ formatVram(hardware.vramTotalGb) }} VRAM detected
+            </span>
+            <span *ngIf="!hardware.gpuAvailable">
+              No NVIDIA GPU detected by the backend
+            </span>
+          </div>
+        </div>
+
+        <div class="form-row runtime-selectors">
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Provider</mat-label>
+            <mat-select
+              [ngModel]="selectedProviderId"
+              (ngModelChange)="onProviderChange($event)"
+              [disabled]="runtimeLoading || runtimeSwitching"
+            >
+              <mat-option
+                *ngFor="let provider of providers$ | async"
+                [value]="provider.id"
+              >
+                {{ provider.name }}
+                <span class="runtime-option-note" *ngIf="!provider.runtimeInstalled">
+                  — runtime planned
+                </span>
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>hub</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Model / Size</mat-label>
+            <mat-select
+              [ngModel]="selectedModelId"
+              (ngModelChange)="onModelChange($event)"
+              [disabled]="runtimeLoading || runtimeSwitching || !selectedProviderId"
+            >
+              <mat-option
+                *ngFor="let model of models$ | async"
+                [value]="model.id"
+                [disabled]="!model.selectable"
+              >
+                <span>{{ modelOptionLabel(model) }}</span>
+                <span
+                  class="runtime-option-reason"
+                  *ngIf="model.disabledReason"
+                >
+                  — {{ model.disabledReason }}
+                </span>
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>tune</mat-icon>
+            <mat-hint>
+              Higher-capacity models remain visible when this GPU cannot run them
+            </mat-hint>
+          </mat-form-field>
+        </div>
+
+        <div
+          class="runtime-status-card"
+          *ngIf="runtimeStatus as status"
+          [class.runtime-ready]="status.state === 'ready'"
+          [class.runtime-error]="status.state === 'error'"
+        >
+          <div class="runtime-status-header">
+            <div class="runtime-status-title">
+              <mat-icon>{{ runtimeStateIcon }}</mat-icon>
+              <div>
+                <strong>
+                  {{ status.modelName || status.providerName || 'Music runtime' }}
+                </strong>
+                <span class="runtime-state">{{ status.state | titlecase }}</span>
+              </div>
+            </div>
+
+            <button
+              mat-stroked-button
+              type="button"
+              *ngIf="status.providerId && status.state !== 'stopped'"
+              (click)="stopRuntime()"
+              [disabled]="runtimeSwitching"
+            >
+              <mat-icon>stop</mat-icon>
+              Stop Runtime
+            </button>
+          </div>
+
+          <p class="runtime-message">{{ status.message }}</p>
+
+          <mat-progress-bar
+            *ngIf="status.progress !== null && runtimeSwitching"
+            mode="determinate"
+            [value]="status.progress"
+          ></mat-progress-bar>
+
+          <div class="runtime-badges" *ngIf="selectedRuntimeModel as selectedModel">
+            <span class="runtime-badge">{{ selectedModel.hardwareFit | titlecase }}</span>
+            <span class="runtime-badge">{{ selectedModel.runtimeCost }}</span>
+            <span class="runtime-badge" *ngIf="selectedModel.modelSize">
+              {{ selectedModel.modelSize }}
+            </span>
+            <span
+              class="runtime-badge"
+              *ngFor="let capability of selectedModel.capabilities"
+            >
+              {{ capability }}
+            </span>
+          </div>
+
+          <p class="runtime-error-message" *ngIf="status.error">
+            {{ status.error }}
+          </p>
+        </div>
+      </section>
 
       <!-- Song Details (if imported) -->
       <section class="song-details" *ngIf="hasImportedSong">
@@ -123,7 +249,7 @@
               type="number"
               [(ngModel)]="duration"
               [min]="15"
-              [max]="120"
+              [max]="maxDurationSeconds"
               [disabled]="hasImportedSong"
               aria-label="Song duration in seconds"
             />
@@ -198,17 +324,28 @@
           mat-raised-button
           color="primary"
           (click)="generateMusic()"
-          [disabled]="isGenerating || !musicTitle || !genre"
+          [disabled]="isGenerating || runtimeSwitching || !musicTitle || !genre"
           class="generate-button"
         >
           <mat-icon>{{
             isGenerating ? 'hourglass_empty' : 'play_arrow'
           }}</mat-icon>
-          {{ isGenerating ? 'Generating...' : 'Generate Music' }}
+          {{
+            isGenerating
+              ? 'Generating...'
+              : runtimeReady
+                ? 'Generate Music'
+                : 'Select / Start Model'
+          }}
         </button>
         <p class="helper-text">
           <mat-icon class="info-icon">schedule</mat-icon>
-          Estimated generation time: {{ estimatedGenerationTime }}
+          <ng-container *ngIf="runtimeReady; else runtimeHelp">
+            Estimated generation time: {{ estimatedGenerationTime }}
+          </ng-container>
+          <ng-template #runtimeHelp>
+            Select a compatible model and wait for its runtime to report Ready.
+          </ng-template>
         </p>
       </section>
 
