@@ -43,7 +43,16 @@ test('package exposes authoritative start, test, lint, and build commands', () =
   assert.equal(pkg.scripts['start:all'], 'node scripts/start-all.cjs');
   assert.ok(pkg.scripts['test:all']);
   assert.ok(pkg.scripts['lint:all']);
-  assert.ok(pkg.scripts['build:all']);
+  assert.equal(
+    pkg.scripts.test,
+    'nx run-many --target=test --projects=frontend,backend'
+  );
+  assert.equal(
+    pkg.scripts['build:all'],
+    'nx run-many --target=build --projects=frontend,backend'
+  );
+  assert.doesNotMatch(pkg.scripts.test, /--all/);
+  assert.doesNotMatch(pkg.scripts['build:all'], /--all/);
   assert.equal(pkg.scripts['docker:build'], undefined);
   assert.equal(pkg.scripts['docker:run'], undefined);
   assert.equal(pkg.scripts.predev, undefined);
