@@ -14,6 +14,8 @@ test('runtime uses one canonical Compose definition plus an optional GPU overrid
 
   const compose = read('docker-compose.yml');
   assert.match(compose, /container_name:\s*harmonia-worker/);
+  assert.match(compose, /container_name:\s*harmonia-diffsinger/);
+  assert.match(compose, /model-diffsinger/);
   assert.match(compose, /127\.0\.0\.1:27017:27017/);
   assert.match(compose, /127\.0\.0\.1:8081:8081/);
   assert.doesNotMatch(compose, /8000:8000/);
@@ -62,37 +64,40 @@ test('backend Docker execution target matches the canonical worker name', () => 
 });
 
 
-test('worker build does not require gitignored local model checkpoints', () => {
-  const dockerfile = read('Dockerfile.worker');
-  const entrypoint = read('entrypoint.sh');
-  assert.doesNotMatch(dockerfile, /COPY\s+models\/diffsinger/);
-  assert.match(entrypoint, /MODELS_ROOT\/diffsinger/);
-  assert.match(entrypoint, /No local DiffSinger checkpoints found/);
-});
+test('DiffSinger is isolated from the generic worker image', () => {
+  const worker = read('Dockerfile.worker');
+  const diffsinger = read('Dockerfile.diffsinger');
+  const compose = read('docker-compose.yml');
 
-test('worker image copies only Python worker scripts after heavy ML setup', () => {
-  const dockerfile = read('Dockerfile.worker');
-  assert.doesNotMatch(dockerfile, /COPY\s+scripts\s+\/workspace\/scripts/);
-  assert.match(dockerfile, /COPY\s+scripts\/\*\.py\s+\/workspace\/scripts\//);
-
-  const heavyLayer = dockerfile.indexOf('Downloading HiFi-GAN vocoder');
-  const scriptCopy = dockerfile.indexOf('COPY scripts/*.py /workspace/scripts/');
-  assert.ok(heavyLayer >= 0);
-  assert.ok(scriptCopy > heavyLayer);
-});
-
-
-test('worker normalizes shell entrypoint for Linux containers', () => {
-  const dockerfile = read('Dockerfile.worker');
-  const attributes = read('.gitattributes');
-  assert.match(attributes, /\*\.sh\s+text\s+eol=lf/);
+  assert.doesNotMatch(worker, /\/opt\/DiffSinger|HiFi-GAN|openvpi\/DiffSinger/);
+  assert.match(diffsinger, /openvpi\/DiffSinger/);
+  assert.match(diffsinger, /entrypoint\.diffsinger\.sh/);
+  assert.match(compose, /profiles:\s*\n\s*- model-diffsinger/);
   assert.match(
-    dockerfile,
-    /sed -i 's\/\\r\$\/\/' \/workspace\/entrypoint\.sh/
+    compose,
+    /\.\/models\/diffsinger:\/workspace\/models\/diffsinger/
   );
+});
 
-  const heavyLayer = dockerfile.indexOf('Downloading HiFi-GAN vocoder');
-  const normalization = dockerfile.indexOf("sed -i 's/\\r$//' /workspace/entrypoint.sh");
-  assert.ok(heavyLayer >= 0);
-  assert.ok(normalization > heavyLayer);
+test('DiffSinger vocoder is cached outside the provider image', () => {
+  const dockerfile = read('Dockerfile.diffsinger');
+  const entrypoint = read('entrypoint.diffsinger.sh');
+
+  assert.doesNotMatch(dockerfile, /0109_hifigan_bigpopcs_hop128\.zip/);
+  assert.match(entrypoint, /0109_hifigan_bigpopcs_hop128\.zip/);
+  assert.match(entrypoint, /Using cached DiffSinger vocoder/);
+  assert.match(entrypoint, /harmonia-runtime-ready/);
+});
+
+test('Linux container entrypoints normalize Windows line endings', () => {
+  const worker = read('Dockerfile.worker');
+  const diffsinger = read('Dockerfile.diffsinger');
+  const attributes = read('.gitattributes');
+
+  assert.match(attributes, /\*\.sh\s+text\s+eol=lf/);
+  assert.match(worker, /sed -i 's\/\\r\$\/\/' \/workspace\/entrypoint\.sh/);
+  assert.match(
+    diffsinger,
+    /sed -i 's\/\\r\$\/\/' \/workspace\/entrypoint\.diffsinger\.sh/
+  );
 });
