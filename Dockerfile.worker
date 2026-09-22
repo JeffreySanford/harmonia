@@ -50,10 +50,8 @@ COPY requirements.txt /workspace/requirements.txt
 RUN echo "Step 4/5: Installing Python requirements..." && \
     pip install --upgrade pip --progress-bar=on && pip install -v --progress-bar=on -r /workspace/requirements.txt || true
 
-# Add entrypoint and scripts
-COPY scripts /workspace/scripts
-RUN echo "Step 5/5: Setting up scripts..." && \
-    chmod +x /workspace/scripts/*.py || true
+# Add entrypoint. Worker Python scripts are copied after the heavy ML layers so
+# edits to host-side Node orchestration do not invalidate expensive dependencies.
 COPY entrypoint.sh /workspace/entrypoint.sh
 RUN chmod +x /workspace/entrypoint.sh || true
 
@@ -175,6 +173,12 @@ RUN pip install diffsinger || echo "pip install diffsinger failed; using cloned 
 
 # Attempt to install so-vits-svc via pip (may require additional steps for full functionality).
 RUN pip install so-vits-svc || echo "so-vits-svc pip install failed; install manually in container if required"
+
+# Only Python worker scripts belong in the ML image. Copying the whole scripts/
+# directory would make changes to start-all.cjs and other host tooling invalidate
+# the expensive DiffSinger / vocoder layers.
+COPY scripts/*.py /workspace/scripts/
+RUN chmod +x /workspace/scripts/*.py || true
 
 ENTRYPOINT ["/workspace/entrypoint.sh"]
 
