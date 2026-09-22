@@ -4,7 +4,7 @@
 **Purpose:** Record the current Harmonia music-generation stack, what is actually running today, current upstream options, and deferred provider experiments without changing the active runtime architecture.
 
 > This document is intentionally descriptive. The immediate priority is to restore and qualify the existing MusicGen-based Harmonia pipeline before replacing it.
-
+>
 > **Free/local implementation plan:** Harmonia's planned provider/model-size selector, hardware-fit catalog, NgRx design, and current free model priorities are documented in [Free Local Music Model Catalog and Frontend Selector Plan](./FREE_LOCAL_MUSIC_MODEL_CATALOG.md). The initial active local families are MusicGen, Stable Audio 3.0, ACE-Step 1.5, DiffRhythm, and HeartMuLa. Paid hosted providers remain optional and hidden by default while free-only mode is enabled.
 
 ## 1. Current Harmonia Strategy
@@ -76,10 +76,10 @@ The official MusicGen documentation continues to describe `musicgen-medium` and 
 
 Official references:
 
-- https://github.com/facebookresearch/audiocraft
-- https://github.com/facebookresearch/audiocraft/blob/main/docs/MUSICGEN.md
-- https://github.com/facebookresearch/audiocraft/blob/main/model_cards/MUSICGEN_MODEL_CARD.md
-- https://ai.meta.com/resources/models-and-libraries/audiocraft
+- <https://github.com/facebookresearch/audiocraft>
+- <https://github.com/facebookresearch/audiocraft/blob/main/docs/MUSICGEN.md>
+- <https://github.com/facebookresearch/audiocraft/blob/main/model_cards/MUSICGEN_MODEL_CARD.md>
+- <https://ai.meta.com/resources/models-and-libraries/audiocraft>
 
 ### 2.3 AudioCraft version
 
@@ -97,7 +97,7 @@ Meta's current official installation guidance still documents Python 3.9 and PyT
 
 Official stable package:
 
-- https://pypi.org/project/audiocraft/
+- <https://pypi.org/project/audiocraft/>
 
 ### 2.4 Known worker dependency problem discovered September 22, 2026
 
@@ -177,9 +177,9 @@ Google describes Lyria 3.5 full songs as lasting a **couple of minutes**, with d
 
 Official references:
 
-- https://ai.google.dev/gemini-api/docs/music-generation
-- https://ai.google.dev/gemini-api/docs/models/lyria-3.5
-- https://ai.google.dev/gemini-api/docs/lyria-prompt-guide
+- <https://ai.google.dev/gemini-api/docs/music-generation>
+- <https://ai.google.dev/gemini-api/docs/models/lyria-3.5>
+- <https://ai.google.dev/gemini-api/docs/lyria-prompt-guide>
 
 ### 3.2 API methodology
 
@@ -252,7 +252,7 @@ As of September 22, 2026, Google's Gemini API pricing page lists:
 
 Official pricing:
 
-- https://ai.google.dev/gemini-api/docs/pricing
+- <https://ai.google.dev/gemini-api/docs/pricing>
 
 This is inexpensive enough to be useful as an optional comparison provider, but it should not be described in Harmonia as a free local/public replacement for MusicGen.
 
@@ -291,9 +291,9 @@ Useful controls include BPM, key/scale, time signature and target duration. The 
 
 Official references:
 
-- https://github.com/ace-step/ACE-Step-1.5
-- https://github.com/ace-step/ACE-Step-1.5/blob/main/docs/en/API.md
-- https://github.com/ace-step/ACE-Step-1.5/blob/main/docker-compose.yml
+- <https://github.com/ace-step/ACE-Step-1.5>
+- <https://github.com/ace-step/ACE-Step-1.5/blob/main/docs/en/API.md>
+- <https://github.com/ace-step/ACE-Step-1.5/blob/main/docker-compose.yml>
 
 ### Deferred Harmonia design
 
@@ -330,9 +330,9 @@ ElevenLabs documents generated music up to **five minutes** in its current produ
 
 Official references:
 
-- https://elevenlabs.io/docs/overview/capabilities/music
-- https://elevenlabs.io/docs/api-reference/music/compose
-- https://elevenlabs.io/docs/eleven-api/guides/how-to/music/composition-plans
+- <https://elevenlabs.io/docs/overview/capabilities/music>
+- <https://elevenlabs.io/docs/api-reference/music/compose>
+- <https://elevenlabs.io/docs/eleven-api/guides/how-to/music/composition-plans>
 
 This is a hosted/paid provider and should remain optional rather than becoming a dependency of the local Harmonia development stack.
 
@@ -385,7 +385,7 @@ Provider integration should happen **after** the current runtime, tests and Musi
 
 ## 7. Decision Record
 
-**September 22, 2026**
+### September 22, 2026
 
 - Continue restoring Harmonia with its existing MusicGen architecture.
 - Do not replace MusicGen during the current runtime-recovery work.
