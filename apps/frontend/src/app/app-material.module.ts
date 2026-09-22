@@ -3,6 +3,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 /**
  * Material Design modules used in the root App component.
@@ -31,12 +32,14 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
     MatIconModule,
     MatButtonModule,
     MatButtonToggleModule,
+    MatSnackBarModule,
   ],
   exports: [
     MatCardModule,
     MatIconModule,
     MatButtonModule,
     MatButtonToggleModule,
+    MatSnackBarModule,
   ],
 })
 export class AppMaterialModule {}
