@@ -80,3 +80,19 @@ test('worker image copies only Python worker scripts after heavy ML setup', () =
   assert.ok(heavyLayer >= 0);
   assert.ok(scriptCopy > heavyLayer);
 });
+
+
+test('worker normalizes shell entrypoint for Linux containers', () => {
+  const dockerfile = read('Dockerfile.worker');
+  const attributes = read('.gitattributes');
+  assert.match(attributes, /\*\.sh\s+text\s+eol=lf/);
+  assert.match(
+    dockerfile,
+    /sed -i 's\/\\r\$\/\/' \/workspace\/entrypoint\.sh/
+  );
+
+  const heavyLayer = dockerfile.indexOf('Downloading HiFi-GAN vocoder');
+  const normalization = dockerfile.indexOf("sed -i 's/\\r$//' /workspace/entrypoint.sh");
+  assert.ok(heavyLayer >= 0);
+  assert.ok(normalization > heavyLayer);
+});
