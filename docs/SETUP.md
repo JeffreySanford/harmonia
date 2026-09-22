@@ -1,530 +1,129 @@
 # Harmonia Development Setup Guide
 
-Complete setup guide for Harmonia development environment
-
-## Overview
-
-This guide covers the complete setup process for developing Harmonia locally, including prerequisites, development environment configuration, Docker services, and deployment options.
+This is the canonical local setup for Harmonia.
 
 ## Prerequisites
 
-### System Requirements
+- Windows 10/11, macOS, or Linux
+- Node.js 20.19+
+- pnpm 10.23+
+- Git
+- Docker Desktop with Docker Compose
+- 16 GB RAM minimum; 32 GB is recommended for local AI workloads
+- Optional NVIDIA runtime for GPU acceleration
+- Optional Ollama when `USE_OLLAMA=true`
 
-- **OS**: Windows 10/11, macOS, or Linux with administrative access
-- **RAM**: 16GB minimum, 32GB recommended for AI/ML workloads
-- **Storage**: 200GB+ free space (AI models are large)
-- **Network**: Stable internet connection for downloading dependencies
+MongoDB does not need to be installed as a native Windows service. The normal
+development flow runs MongoDB through Docker.
 
-### Required Software
-
-- **Node.js 18+**: Runtime for frontend and backend
-- **pnpm**: Package manager for dependency management
-- **Git**: Version control
-- **MongoDB 8.0+**: Database (native or Docker)
-- **Docker Desktop**: Containerized services (optional but recommended)
-
-## Quick Start (15 minutes)
-
-### 1. Clone Repository
+## Initial setup
 
 ```bash
 git clone https://github.com/jeffreysanford/harmonia.git
 cd harmonia
-```
-
-### 2. Install Node.js and pnpm
-
-**Windows/macOS:**
-
-- Download Node.js 18+ LTS from [nodejs.org](https://nodejs.org/)
-- Install pnpm globally:
-
-```bash
-corepack enable
-corepack prepare pnpm@latest --activate
-```
-
-**Linux (Ubuntu/Debian):**
-
-```bash
-# Install Node.js 18+
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Install pnpm
-corepack enable
-corepack prepare pnpm@latest --activate
-```
-
-**Verify installations:**
-
-```bash
-node --version  # Should show v18.x.x
-pnpm --version  # Should show 8.x.x
-```
-
-### 3. Install Dependencies
-
-```bash
 pnpm install
+cp .env.example .env
 ```
 
-### 4. Setup Database
+Set at least:
 
-### Option A: Native MongoDB (Recommended for Windows)
-
-1. Download MongoDB 8.0+ from [mongodb.com](https://www.mongodb.com/try/download/community)
-2. Install as Windows service
-3. Create database and user (see `docs/MONGODB_SETUP.md`)
-
-### Option B: Docker MongoDB
-
-```bash
-# Install Docker Desktop from docker.com
-# Then run:
-docker run -d --name mongodb -p 27017:27017 mongo:8.0
+```dotenv
+MONGO_ROOT_PASSWORD=choose-a-strong-local-password
+MONGO_HARMONIA_PASSWORD=choose-a-different-local-password
+JWT_SECRET=replace-with-a-long-random-secret
 ```
 
-### 5. Start Development Environment
+Normal workstation defaults:
 
-```bash
-# Start both frontend and backend with hot reload
-pnpm run dev
-
-# Or start services individually:
-pnpm run backend:dev    # Backend on http://localhost:3000
-pnpm run frontend:dev   # Frontend on http://localhost:4200
-```
-
-### 6. Verify Setup
-
-Open browser to:
-
-- **Frontend**: [http://localhost:4200](http://localhost:4200)
-- **Backend API**: [http://localhost:3000/api/health](http://localhost:3000/api/health)
-
-## Detailed Setup
-
-### Python Setup (For ML Development)
-
-If working on AI/ML features:
-
-**Windows:**
-
-1. Download Python 3.11+ from [python.org](https://python.org/downloads/)
-2. Install with PATH option enabled
-3. Verify: `python --version`
-
-**Linux/macOS:**
-
-```bash
-# Install Python 3.11+
-sudo apt-get install python3.11 python3.11-venv  # Ubuntu/Debian
-# or
-brew install python@3.11  # macOS with Homebrew
-```
-
-### MongoDB Setup
-
-#### Native Installation (Windows)
-
-1. **Download**: Get MongoDB 8.0+ Community Server
-2. **Install**: Run installer, select "Complete" setup
-3. **Service**: Install as Windows service
-4. **Configuration**: Use default settings
-
-#### Database Initialization
-
-```javascript
-// Run in MongoDB shell or create init script
-use harmonia
-db.createUser({
-  user: "harmonia_app",
-  pwd: "secure_password",
-  roles: ["readWrite"]
-})
-```
-
-#### Docker Installation
-
-```bash
-# Pull and run MongoDB
-docker pull mongo:8.0
-docker run -d \
-  --name harmonia-mongo \
-  -p 27017:27017 \
-  -v mongodb_data:/data/db \
-  -e MONGO_INITDB_ROOT_USERNAME=admin \
-  -e MONGO_INITDB_ROOT_PASSWORD=password \
-  mongo:8.0
-
-# Create application database
-docker exec -it harmonia-mongo mongosh
-use harmonia
-db.createUser({user: "harmonia_app", pwd: "app_password", roles: ["readWrite"]})
-```
-
-## Docker Services
-
-### ML/Music Generation Container
-
-Harmonia uses Docker for AI/ML workloads:
-
-```bash
-# Start ML container
-pnpm run docker:ml:start
-
-# Access container shell
-pnpm run docker:ml:shell
-
-# Stop container
-pnpm run docker:ml:stop
-```
-
-**Container Details:**
-
-- **Image**: `harmonia-harmonia` (618MB)
-- **Purpose**: Python/MusicGen for audio generation
-- **Port**: 8000 (internal)
-- **Mounts**: Models, datasets, artifacts
-
-### Docker Compose Setup
-
-For production-like local development:
-
-```yaml
-version: '3.8'
-services:
-  mongodb:
-    image: mongo:8.0
-    ports:
-      - '27017:27017'
-    volumes:
-      - mongodb_data:/data/db
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
-
-  ml-service:
-    image: harmonia-harmonia:latest
-    ports:
-      - '8000:8000'
-    volumes:
-      - ./models:/workspace/models:ro
-      - ./artifacts:/workspace/artifacts
-    environment:
-      - PYTHONPATH=/workspace
-```
-
-## WSL2 Development (Windows)
-
-### WSL2 Setup
-
-For GPU-accelerated development on Windows:
-
-1. **Install WSL2**:
-
-   ```powershell
-   wsl --install
-   wsl --set-default-version 2
-   ```
-
-2. **Install Ubuntu**:
-
-   ```powershell
-   wsl --install -d Ubuntu
-   ```
-
-3. **Configure GPU Support**:
-   - Install NVIDIA drivers in Windows
-   - Install CUDA toolkit in WSL2
-   - Verify: `nvidia-smi` in WSL2 terminal
-
-### Docker in WSL2
-
-```bash
-# Install Docker in WSL2
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-
-# Add user to docker group
-sudo usermod -aG docker $USER
-
-# Configure Docker to use WSL2
-# In Docker Desktop: Settings > General > Use WSL2
-```
-
-### Development Workflow
-
-```bash
-# In WSL2 terminal
-cd /mnt/c/repos/harmonia
-pnpm install
-pnpm run dev
-
-# GPU workloads run in Docker containers
-pnpm run docker:ml:start
-```
-
-## Environment Configuration
-
-### .env Setup
-
-Create `.env` file in project root:
-
-```bash
-# Database
-MONGODB_URI=mongodb://localhost:27017/harmonia
-MONGODB_USER=harmonia_app
-MONGODB_PASS=your_password
-
-# Backend
-NODE_ENV=development
+```dotenv
 PORT=3000
-JWT_SECRET=your_jwt_secret
-
-# Frontend
-API_BASE_URL=http://localhost:3000/api
-
-# AI/ML (Optional)
+CORS_ORIGIN=http://localhost:4200
+MONGO_WIREDTIGER_CACHE_GB=2
+MONGO_MAX_CONNS=500
+USE_OLLAMA=false
 OLLAMA_URL=http://localhost:11434
-USE_OLLAMA=true
 ```
 
-### Development vs Production
-
-**Development**:
-
-- Hot reload enabled
-- Debug logging
-- Local services
-- Mock data fallbacks
-
-**Production**:
-
-- Optimized builds
-- External databases
-- CDN assets
-- Security hardening
-
-## Troubleshooting
-
-### Common Issues
-
-**Port Conflicts**:
+## Start Harmonia
 
 ```bash
-# Check what's using ports
-netstat -ano | findstr :3000
-netstat -ano | findstr :4200
-netstat -ano | findstr :27017
-
-# Kill process or change ports in .env
+pnpm start:all
 ```
 
-**MongoDB Connection Issues**:
+Access points:
+
+- Frontend: `http://localhost:4200`
+- Backend API: `http://localhost:3000/api`
+- Swagger: `http://localhost:3000/api/docs`
+- MongoDB: `127.0.0.1:27017`
+- Mongo Express: `http://localhost:8081`
+- ML worker: `harmonia-worker` with no published HTTP port
+
+Optional modes:
 
 ```bash
-# Test connection
-mongosh mongodb://localhost:27017/harmonia
-
-# Check service status (Windows)
-services.msc  # Look for MongoDB Server
-
-# Check Docker container
-docker ps | grep mongo
-docker logs harmonia-mongo
+pnpm start:all --gpu
+pnpm start:all --no-worker
+pnpm start:all --no-tools
 ```
 
-**Node.js/Python Version Issues**:
+See [DOCKER_SETUP.md](DOCKER_SETUP.md) for lifecycle details.
+
+## App-only development
+
+If Docker infrastructure is already healthy:
 
 ```bash
-# Check versions
-node --version
-python --version
-pnpm --version
-
-# Clear caches
-pnpm store prune
-rm -rf node_modules
-pnpm install
+pnpm dev
 ```
 
-**Docker Issues**:
+Or individually:
 
 ```bash
-# Check Docker status
-docker --version
-docker ps
-
-# Restart Docker service
-# Windows: Restart Docker Desktop
-# Linux: sudo systemctl restart docker
+pnpm dev:backend
+pnpm dev:frontend
 ```
 
-### Performance Optimization
+`pnpm start:all` is the preferred entry point from a stopped environment.
 
-**For Large Projects**:
+## Ollama
 
-- Use SSD storage
-- Increase Node.js memory: `export NODE_OPTIONS="--max-old-space-size=4096"`
-- Use Docker for isolated services
-- Monitor resource usage with Task Manager/Activity Monitor
+Ollama is external to Compose. When `USE_OLLAMA=false`, startup does not require
+it. When `USE_OLLAMA=true`, `start:all` checks `OLLAMA_URL` before starting
+the app servers.
 
-**For AI/ML Development**:
-
-- Use GPU acceleration when available
-- Cache model downloads
-- Use smaller models for development
-- Monitor GPU memory usage
-
-## Development Workflow
-
-### Daily Development
+## Qualification
 
 ```bash
-# Start development servers
-pnpm run dev
-
-# Run tests
-pnpm test
-pnpm test:e2e
-
-# Lint and format code
-pnpm lint
-pnpm format
-
-# Build for production
-pnpm build
+pnpm lint:all
+pnpm test:all
+pnpm build:all
+pnpm test:all:e2e
 ```
 
-### Code Quality
-
-- **Linting**: ESLint for TypeScript/JavaScript
-- **Formatting**: Prettier for consistent code style
-- **Testing**: Jest for unit tests, Playwright for E2E
-- **Type Checking**: TypeScript strict mode
-
-### Git Workflow
+For the real isolated Docker lifecycle test:
 
 ```bash
-# Create feature branch
-git checkout -b feature/new-feature
-
-# Make changes, test, commit
-git add .
-git commit -m "Add new feature"
-
-# Push and create PR
-git push origin feature/new-feature
+RUN_DOCKER_START_TESTS=1 pnpm test:startup
 ```
 
-## Deployment
+## Ports
 
-### Local Production Testing
+| Port | Service |
+| ---: | --- |
+| 4200 | Angular frontend |
+| 3000 | NestJS API and WebSocket server |
+| 27017 | MongoDB |
+| 8081 | Mongo Express |
+| 11434 | Ollama, external and optional |
+| 6379 | Redis, reserved/optional and not provisioned |
 
-```bash
-# Build and serve production version
-pnpm build
-pnpm serve
+Port 8000 is not part of the runtime contract. The ML worker is currently used via
+`docker exec`.
 
-# Test production build
-curl http://localhost:8080
-```
+## MongoDB password changes
 
-### Docker Deployment
-
-```bash
-# Build production images
-docker build -t harmonia-app:latest .
-
-# Run with Docker Compose
-docker-compose up -d
-```
-
-### Cloud Deployment
-
-**Supported Platforms**:
-
-- Vercel (Frontend)
-- Railway/DigitalOcean (Backend)
-- MongoDB Atlas (Database)
-- Docker containers for AI services
-
-## Advanced Configuration
-
-### Custom Model Setup
-
-For AI/ML development:
-
-```bash
-# Download models to local directory
-mkdir models
-# Download your models here
-
-# Configure model paths
-export HARMONIA_MODELS_ROOT=./models
-```
-
-### Multi-Environment Setup
-
-```bash
-# Development
-cp .env.example .env.development
-
-# Staging
-cp .env.example .env.staging
-
-# Production
-cp .env.example .env.production
-```
-
-### CI/CD Pipeline
-
-GitHub Actions workflow includes:
-
-- Dependency installation
-- Linting and type checking
-- Unit and integration tests
-- Build verification
-- Docker image creation
-
-## Support
-
-### Getting Help
-
-1. **Check Documentation**: This guide and related docs
-2. **Search Issues**: GitHub issues for known problems
-3. **Community**: Discord/GitHub Discussions
-4. **Logs**: Check application logs for error details
-
-### Useful Commands
-
-```bash
-# Health checks
-curl http://localhost:3000/api/health
-curl http://localhost:4200
-
-# Database status
-mongosh --eval "db.stats()"
-
-# Docker status
-docker ps
-docker stats
-
-# Application logs
-pnpm run backend:logs
-pnpm run frontend:logs
-```
-
-## Next Steps
-
-After setup completion:
-
-1. **Explore the codebase** in `apps/frontend/` and `apps/backend/`
-2. **Run the test suite** to verify everything works
-3. **Check out documentation** in `docs/` directory
-4. **Start development** on your assigned tasks
-5. **Join the team** for code reviews and collaboration
-
-Welcome to Harmonia development! 🎵
+The application user is created during first initialization of the MongoDB volume.
+Changing the password in `.env` later does not change that existing user. Update
+the user in MongoDB or intentionally recreate the local volume after backing up
+data you need to keep.
