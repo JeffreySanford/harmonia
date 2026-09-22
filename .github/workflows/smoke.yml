@@ -10,6 +10,10 @@ name: "Smoke Checks"
   schedule:
     - cron: '0 6 * * 1' # weekly on Monday 06:00 UTC - adjust as needed
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   smoke:
     name: "Run environment smoke checks"
@@ -18,7 +22,7 @@ jobs:
       - name: "Checkout"
         uses: actions/checkout@v4
       - name: "Set up Python"
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: "Restore manifests cache"
@@ -49,8 +53,10 @@ jobs:
           # Run the smoke check (it returns specific non-zero codes):
           # 3 = recorded checksums present but mismatched (we want to fail CI)
           # 4 = missing files and no recorded checksums (do not fail CI; likely run without large artifacts)
-          python tests/env_tests/smoke_check.py || true
+          set +e
+          python tests/env_tests/smoke_check.py
           rc=$?
+          set -e
           echo "Smoke check exit code: $rc"
           # Fail the workflow explicitly when recorded checksums mismatch (rc==3)
           if [ "$rc" -eq 3 ]; then
