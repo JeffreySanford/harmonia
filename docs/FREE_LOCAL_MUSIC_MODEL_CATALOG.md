@@ -92,7 +92,7 @@ Recommended model choices to expose in the UI:
 
 Official project:
 
-- https://github.com/ace-step/ACE-Step-1.5
+- <https://github.com/ace-step/ACE-Step-1.5>
 
 ### 3.2 Stable Audio 3.0 — preferred current instrumental path
 
@@ -128,8 +128,8 @@ Important limitation:
 
 Official references:
 
-- https://stability.ai/stable-audio
-- https://stability.ai/news-updates/meet-stable-audio-3-the-model-family-built-for-artistic-experimentation-with-open-weight-models
+- <https://stability.ai/stable-audio>
+- <https://stability.ai/news-updates/meet-stable-audio-3-the-model-family-built-for-artistic-experimentation-with-open-weight-models>
 
 ### 3.3 DiffRhythm v1.2 — free full-length vocal/song alternative
 
@@ -160,7 +160,7 @@ Harmonia should expose the model family as experimental until we measure the ful
 
 Official project:
 
-- https://github.com/ASLP-lab/DiffRhythm
+- <https://github.com/ASLP-lab/DiffRhythm>
 
 ### 3.4 HeartMuLa 3B — current 2026 open vocal model
 
@@ -193,7 +193,7 @@ Harmonia classification:
 
 Official project:
 
-- https://github.com/HeartMuLa/heartlib
+- <https://github.com/HeartMuLa/heartlib>
 
 ### 3.5 Meta MusicGen — existing baseline
 
@@ -235,7 +235,7 @@ Important licensing note:
 
 Official project:
 
-- https://github.com/facebookresearch/audiocraft
+- <https://github.com/facebookresearch/audiocraft>
 
 ## 4. Default Model Order for the 10 GB Workstation
 
