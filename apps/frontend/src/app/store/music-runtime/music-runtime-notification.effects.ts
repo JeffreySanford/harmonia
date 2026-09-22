@@ -10,7 +10,7 @@ export class MusicRuntimeNotificationEffects {
   private readonly actions$ = inject(Actions);
   private readonly snackBar = inject(MatSnackBar);
 
-  private activeRef: ReturnType<MatSnackBar['open']> | null = null;
+  private activeRef: { dismiss(): void } | null = null;
   private lastStatusKey = '';
 
   runtimeStatus$ = createEffect(
