@@ -45,8 +45,14 @@ export const MUSIC_PROVIDERS: MusicProviderDefinition[] = [
   },
   {
     id: 'songgeneration',
-    name: 'SongGeneration',
+    name: 'SongGeneration / LeVo 2',
     description: 'Tencent full-song vocal and accompaniment generation.',
+    runtimeInstalled: false,
+  },
+  {
+    id: 'muse',
+    name: 'Muse',
+    description: 'ACL 2026 long-form song generation with fine-grained style control.',
     runtimeInstalled: false,
   },
   {
@@ -316,6 +322,32 @@ export const MUSIC_MODELS: MusicModelDefinition[] = [
     capabilities: ['vocals', 'lyrics', 'instrumental', 'multilingual', 'long-form'],
     runtimeCost: 'local-free',
     commercialUse: 'review-required',
+  },
+
+
+  {
+    id: 'songgeneration-v2-medium',
+    providerId: 'songgeneration',
+    name: 'v2 Medium',
+    availability: 'unreleased',
+    minVramGb: 12,
+    recommendedVramGb: 18,
+    maxDurationSeconds: 270,
+    capabilities: ['vocals', 'lyrics', 'instrumental', 'multilingual', 'long-form'],
+    runtimeCost: 'local-free',
+    commercialUse: 'review-required',
+    notes: 'Listed from the official roadmap; public weights are still marked coming soon.',
+  },
+
+  {
+    id: 'muse-long-form',
+    providerId: 'muse',
+    name: 'Muse Long-form',
+    availability: 'planned',
+    capabilities: ['vocals', 'lyrics', 'full-song', 'long-form', 'style-control'],
+    runtimeCost: 'local-free',
+    commercialUse: 'allowed',
+    notes: 'Fully open-sourced ACL 2026 model; local VRAM qualification is pending.',
   },
 
   {
