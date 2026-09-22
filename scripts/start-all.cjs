@@ -66,7 +66,18 @@ function reconcileDocker(docker, compose, { build = true } = {}) {
     docker([...compose, 'build', '--provenance=false']);
   }
 
-  // Recover unhealthy dependencies before Compose waits on depends_on conditions.
+  // Let Compose reconcile image/config changes before attempting health recovery.
+  // This is important when an existing container is unhealthy AND its image was
+  // just rebuilt: restarting the stale container first would keep it on the old image.
+  docker([
+    ...compose,
+    'up',
+    '--detach',
+    '--no-build',
+  ]);
+
+  // Recover only containers that are still unhealthy after Compose has had the
+  // opportunity to recreate changed services.
   const ids = docker([...compose, 'ps', '--all', '--quiet', '--orphans=false'], true)
     .trim()
     .split(/\s+/)
@@ -81,7 +92,7 @@ function reconcileDocker(docker, compose, { build = true } = {}) {
     }
   }
 
-  // Cached builds detect changed build inputs. Up creates/starts/recreates only as needed.
+  // Final readiness gate.
   docker([
     ...compose,
     'up',
