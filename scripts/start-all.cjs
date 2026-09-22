@@ -110,6 +110,38 @@ function checkPort(port, name) {
   });
 }
 
+
+async function checkManagedDockerPort(
+  port,
+  name,
+  managedContainer,
+  docker,
+  probe = checkPort
+) {
+  try {
+    await probe(port, name);
+    return;
+  } catch {
+    const owners = docker(
+      ['ps', '--filter', `publish=${port}`, '--format', '{{.Names}}'],
+      true
+    )
+      .trim()
+      .split(/\r?\n/)
+      .filter(Boolean);
+
+    if (owners.includes(managedContainer)) return;
+
+    const ownerDetails = owners.length
+      ? ` Conflicting Docker container(s): ${owners.join(', ')}.`
+      : ' The owner appears to be a host process or service.';
+
+    throw new Error(
+      `${name} port ${port} is occupied outside Harmonia.${ownerDetails} Stop or remap it before starting Harmonia.`
+    );
+  }
+}
+
 async function checkOllama(env, fetchImpl = globalThis.fetch) {
   if (String(env.USE_OLLAMA || 'false').toLowerCase() !== 'true') return;
   if (typeof fetchImpl !== 'function') throw new Error('Ollama check requires Node.js 20+ with fetch support.');
@@ -156,6 +188,23 @@ async function main(args = process.argv.slice(2)) {
   docker(['info', '--format', '{{.ServerVersion}}'], true);
   docker(['compose', 'version'], true);
 
+  // Fail before an expensive ML reconciliation if a host service or unrelated
+  // container already owns Harmonia's published database/tooling ports.
+  await checkManagedDockerPort(
+    27017,
+    'MongoDB',
+    'harmonia-mongo-i9',
+    docker
+  );
+  if (options.tools) {
+    await checkManagedDockerPort(
+      8081,
+      'Mongo Express',
+      'harmonia-mongo-ui',
+      docker
+    );
+  }
+
   const compose = composeArguments(options);
   docker([...compose, 'config', '--quiet']);
 
@@ -199,6 +248,7 @@ if (require.main === module) {
 
 module.exports = {
   applicationEnvironment,
+  checkManagedDockerPort,
   checkOllama,
   checkPort,
   composeArguments,
