@@ -1,5 +1,34 @@
-import { Component, inject, OnInit } from '@angular/core';
+import {
+  Component,
+  inject,
+  OnDestroy,
+  OnInit,
+} from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
+import { Subject } from 'rxjs';
+import { filter, take, takeUntil } from 'rxjs/operators';
+import { WebSocketService } from '../../services/websocket.service';
+import { AppState } from '../../store/app.state';
+import { selectAuthToken } from '../../store/auth/auth.selectors';
+import * as MusicRuntimeActions from '../../store/music-runtime/music-runtime.actions';
+import {
+  selectModelsForSelectedProvider,
+  selectRuntimeHardware,
+  selectRuntimeLoading,
+  selectRuntimeProviders,
+  selectRuntimeStatus,
+  selectRuntimeSwitching,
+  selectSelectedRuntimeModelId,
+  selectSelectedRuntimeProviderId,
+} from '../../store/music-runtime/music-runtime.selectors';
+import {
+  HardwareProfile,
+  MusicModelCatalogEntry,
+  MusicProviderDefinition,
+  MusicRuntimeStatus,
+} from '../../store/music-runtime/music-runtime.state';
 
 interface ImportedSong {
   title: string;
@@ -18,23 +47,9 @@ interface InstrumentOption {
 /**
  * Music Generation Page Component
  *
- * Generates audio music files from song metadata using MusicGen model.
- *
- * Features:
- * - Import approved song metadata from Song Generation
- * - Pre-filled fields from imported song (title, lyrics, genre, duration)
- * - BPM slider with genre-based defaults
- * - Instrumentation multi-select
- * - Vocals style selection
- * - Audio generation with progress tracking
- *
- * Workflow:
- * 1. Import song from Song Generation (optional)
- * 2. Review/adjust music parameters (BPM, instrumentation)
- * 3. Click "Generate Music"
- * 4. Backend creates async job
- * 5. WebSocket tracks progress (0-100%)
- * 6. Download audio file on completion
+ * Music-generation workstation surface with an explicit provider/model runtime
+ * selector. Provider lifecycle is managed by NgRx + NestJS and streamed over
+ * Socket.IO; fake audio generation is intentionally not used.
  */
 @Component({
   selector: 'harmonia-music-generation-page',
@@ -42,17 +57,19 @@ interface InstrumentOption {
   templateUrl: './music-generation-page.component.html',
   styleUrls: ['./music-generation-page.component.scss'],
 })
-export class MusicGenerationPageComponent implements OnInit {
+export class MusicGenerationPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
+  private readonly store = inject(Store<AppState>);
+  private readonly websocket = inject(WebSocketService);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly destroy$ = new Subject<void>();
 
   title = 'Music Generation';
 
-  // Imported song data
   importedSong: ImportedSong | null = null;
   hasImportedSong = false;
   lyricsExpanded = false;
 
-  // Form fields
   musicTitle = '';
   lyrics = '';
   genre = 'pop';
@@ -62,12 +79,21 @@ export class MusicGenerationPageComponent implements OnInit {
   vocalsStyle = 'clean';
   selectedInstruments: string[] = [];
 
-  // UI state
   isGenerating = false;
   progress = 0;
   generatedAudioUrl: string | null = null;
 
-  // Genre options (12 standard genres with default BPM)
+  selectedProviderId: string | null = null;
+  selectedModelId: string | null = null;
+  runtimeModels: MusicModelCatalogEntry[] = [];
+  runtimeStatus: MusicRuntimeStatus | null = null;
+  hardware: HardwareProfile | null = null;
+  runtimeSwitching = false;
+  runtimeLoading = false;
+
+  readonly providers$ = this.store.select(selectRuntimeProviders);
+  readonly models$ = this.store.select(selectModelsForSelectedProvider);
+
   readonly genres = [
     { value: 'pop', label: 'Pop', defaultBpm: 120 },
     { value: 'rock', label: 'Rock', defaultBpm: 140 },
@@ -83,7 +109,6 @@ export class MusicGenerationPageComponent implements OnInit {
     { value: 'alternative', label: 'Alternative', defaultBpm: 125 },
   ];
 
-  // Mood options
   readonly moods = [
     'energetic',
     'melancholic',
@@ -95,7 +120,6 @@ export class MusicGenerationPageComponent implements OnInit {
     'nostalgic',
   ];
 
-  // Vocals style options
   readonly vocalsStyles = [
     { value: 'clean', label: 'Clean' },
     { value: 'raspy', label: 'Raspy' },
@@ -104,7 +128,6 @@ export class MusicGenerationPageComponent implements OnInit {
     { value: 'breathy', label: 'Breathy' },
   ];
 
-  // Instrumentation options
   readonly instruments: InstrumentOption[] = [
     { value: 'electric-guitar', label: 'Electric Guitar', icon: 'music_note' },
     { value: 'acoustic-guitar', label: 'Acoustic Guitar', icon: 'music_note' },
@@ -118,7 +141,6 @@ export class MusicGenerationPageComponent implements OnInit {
   ];
 
   constructor() {
-    // Check for imported song data from navigation state
     const navigation = this.router.getCurrentNavigation();
     if (navigation?.extras?.state?.['importedSong']) {
       this.importedSong = navigation.extras.state['importedSong'];
@@ -127,7 +149,6 @@ export class MusicGenerationPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Pre-fill form if song was imported
     if (this.importedSong) {
       this.musicTitle = this.importedSong.title;
       this.lyrics = this.importedSong.lyrics;
@@ -135,20 +156,173 @@ export class MusicGenerationPageComponent implements OnInit {
       this.mood = this.importedSong.mood;
       this.duration = this.importedSong.duration;
 
-      // Set BPM based on genre
       const genreData = this.genres.find((g) => g.value === this.genre);
       if (genreData) {
         this.bpm = genreData.defaultBpm;
       }
-
-      // Set default instrumentation based on genre
       this.selectedInstruments = this.getDefaultInstruments(this.genre);
+    }
+
+    this.store.dispatch(MusicRuntimeActions.loadCatalog());
+
+    this.store
+      .select(selectAuthToken)
+      .pipe(
+        filter((token): token is string => Boolean(token)),
+        take(1)
+      )
+      .subscribe((token) => this.websocket.connect(token));
+
+    this.store
+      .select(selectSelectedRuntimeProviderId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((providerId) => {
+        this.selectedProviderId = providerId;
+      });
+
+    this.store
+      .select(selectSelectedRuntimeModelId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((modelId) => {
+        this.selectedModelId = modelId;
+      });
+
+    this.models$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((models) => {
+        this.runtimeModels = models;
+      });
+
+    this.store
+      .select(selectRuntimeStatus)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((status) => {
+        this.runtimeStatus = status;
+      });
+
+    this.store
+      .select(selectRuntimeHardware)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((hardware) => {
+        this.hardware = hardware;
+      });
+
+    this.store
+      .select(selectRuntimeSwitching)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((switching) => {
+        this.runtimeSwitching = switching;
+      });
+
+    this.store
+      .select(selectRuntimeLoading)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((loading) => {
+        this.runtimeLoading = loading;
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  onProviderChange(providerId: string): void {
+    this.store.dispatch(
+      MusicRuntimeActions.chooseProvider({ providerId })
+    );
+  }
+
+  onModelChange(modelId: string): void {
+    const model = this.runtimeModels.find(
+      (candidate) => candidate.id === modelId
+    );
+
+    if (!model) {
+      return;
+    }
+
+    if (!model.selectable) {
+      this.snackBar.open(
+        model.disabledReason || 'This model is not available on this runtime.',
+        'Close',
+        { duration: 5000 }
+      );
+      return;
+    }
+
+    this.generatedAudioUrl = null;
+    this.store.dispatch(MusicRuntimeActions.selectModel({ modelId }));
+  }
+
+  stopRuntime(): void {
+    this.store.dispatch(MusicRuntimeActions.stopRuntime());
+  }
+
+  modelOptionLabel(model: MusicModelCatalogEntry): string {
+    const size = model.modelSize ? ` · ${model.modelSize}` : '';
+    const fit =
+      model.hardwareFit === 'recommended'
+        ? 'Recommended'
+        : model.hardwareFit === 'supported'
+          ? 'Supported'
+          : model.hardwareFit === 'experimental'
+            ? 'Experimental'
+            : 'Unavailable';
+
+    return `${model.name}${size} · ${fit}`;
+  }
+
+  get selectedRuntimeModel(): MusicModelCatalogEntry | null {
+    if (!this.selectedModelId) {
+      return null;
+    }
+    return (
+      this.runtimeModels.find(
+        (model) => model.id === this.selectedModelId
+      ) || null
+    );
+  }
+
+  get maxDurationSeconds(): number {
+    return this.selectedRuntimeModel?.maxDurationSeconds || 120;
+  }
+
+  get runtimeReady(): boolean {
+    return Boolean(
+      this.runtimeStatus?.state === 'ready' &&
+        this.runtimeStatus.healthy &&
+        this.runtimeStatus.modelId === this.selectedModelId
+    );
+  }
+
+  get runtimeStateIcon(): string {
+    switch (this.runtimeStatus?.state) {
+      case 'ready':
+      case 'healthy':
+        return 'check_circle';
+      case 'error':
+        return 'error';
+      case 'stopped':
+        return 'stop_circle';
+      case 'building':
+      case 'starting':
+      case 'health-checking':
+      case 'loading-model':
+      case 'unloading-model':
+      case 'stopping':
+        return 'sync';
+      default:
+        return 'memory';
     }
   }
 
-  /**
-   * Get default instruments for a genre
-   */
+  formatVram(value: number | null | undefined): string {
+    return value === null || value === undefined
+      ? 'Unknown'
+      : `${value.toFixed(1)} GB`;
+  }
+
   private getDefaultInstruments(genre: string): string[] {
     const defaults: Record<string, string[]> = {
       pop: ['electric-guitar', 'drums', 'bass', 'synth'],
@@ -167,30 +341,20 @@ export class MusicGenerationPageComponent implements OnInit {
     return defaults[genre] || ['electric-guitar', 'drums', 'bass'];
   }
 
-  /**
-   * Update BPM when genre changes
-   */
   onGenreChange(): void {
     const genreData = this.genres.find((g) => g.value === this.genre);
     if (genreData) {
       this.bpm = genreData.defaultBpm;
     }
-    // Update default instruments
     if (!this.hasImportedSong) {
       this.selectedInstruments = this.getDefaultInstruments(this.genre);
     }
   }
 
-  /**
-   * Format BPM value for display
-   */
   formatBpm(value: number): string {
     return `${value} BPM`;
   }
 
-  /**
-   * Toggle instrument selection
-   */
   toggleInstrument(instrument: string): void {
     const index = this.selectedInstruments.indexOf(instrument);
     if (index >= 0) {
@@ -200,26 +364,16 @@ export class MusicGenerationPageComponent implements OnInit {
     }
   }
 
-  /**
-   * Check if instrument is selected
-   */
   isInstrumentSelected(instrument: string): boolean {
     return this.selectedInstruments.includes(instrument);
   }
 
-  /**
-   * Toggle lyrics expansion
-   */
   toggleLyrics(): void {
     this.lyricsExpanded = !this.lyricsExpanded;
   }
 
-  /**
-   * Estimate generation time based on duration
-   * Approximation: 10-20 seconds per second of audio
-   */
   get estimatedGenerationTime(): string {
-    const seconds = this.duration * 15; // Average 15s per audio second
+    const seconds = this.duration * 15;
     if (seconds < 60) {
       return `${seconds} seconds`;
     }
@@ -228,69 +382,45 @@ export class MusicGenerationPageComponent implements OnInit {
   }
 
   /**
-   * Generate music from parameters
-   *
-   * TODO: Replace with actual backend call:
-   * POST /api/music/generate
-   * { title, lyrics, genre, mood, duration, bpm, instrumentation, vocalsStyle }
+   * Audio generation remains intentionally disabled until a provider adapter
+   * returns a real artifact. This avoids the previous fake sample-audio success.
    */
   generateMusic(): void {
     if (!this.musicTitle || !this.genre) {
-      alert('Please enter a title and select a genre');
+      this.snackBar.open(
+        'Please enter a title and select a genre.',
+        'Close',
+        { duration: 4000 }
+      );
       return;
     }
 
-    this.isGenerating = true;
-    this.progress = 0;
+    if (!this.runtimeReady) {
+      this.snackBar.open(
+        'Select a compatible model and wait for its runtime to become ready.',
+        'Close',
+        { duration: 5000 }
+      );
+      return;
+    }
+
     this.generatedAudioUrl = null;
+    this.progress = 0;
+    this.isGenerating = false;
 
-    // Simulate progress (in production, use WebSocket)
-    const interval = setInterval(() => {
-      this.progress += 5;
-      if (this.progress >= 100) {
-        clearInterval(interval);
-        this.isGenerating = false;
-
-        // Simulated audio URL (in production, from backend)
-        this.generatedAudioUrl = '/assets/sample-audio.mp3';
-      }
-    }, 500);
-
-    // In production:
-    // const job = await this.musicService.generate({
-    //   title: this.musicTitle,
-    //   lyrics: this.lyrics,
-    //   genre: this.genre,
-    //   mood: this.mood,
-    //   duration: this.duration,
-    //   bpm: this.bpm,
-    //   instrumentation: this.selectedInstruments,
-    //   vocalsStyle: this.vocalsStyle
-    // });
-    //
-    // this.websocketService.on(`job:${job.jobId}:progress`, (data) => {
-    //   this.progress = data.progress;
-    // });
-    //
-    // this.websocketService.on(`job:${job.jobId}:completed`, (data) => {
-    //   this.generatedAudioUrl = data.audioUrl;
-    //   this.isGenerating = false;
-    // });
+    this.snackBar.open(
+      `${this.runtimeStatus?.modelName || 'Selected model'} is ready. Audio generation wiring is the next provider-adapter step; Harmonia will not create a fake audio file.`,
+      'OK',
+      { duration: 7000 }
+    );
   }
 
-  /**
-   * Download generated audio file
-   */
   downloadAudio(): void {
     if (this.generatedAudioUrl) {
-      // In production, trigger download from URL
       window.open(this.generatedAudioUrl, '_blank');
     }
   }
 
-  /**
-   * Navigate back to Song Generation
-   */
   backToSongGeneration(): void {
     this.router.navigate(['/generate/song']);
   }
