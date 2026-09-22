@@ -84,3 +84,125 @@
     }
   }
 }
+
+
+.runtime-section {
+  margin: mixins.spacing(3) 0;
+  padding: mixins.spacing(2);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+
+  .hardware-banner {
+    display: flex;
+    align-items: center;
+    gap: mixins.spacing(1.5);
+    margin-bottom: mixins.spacing(2);
+    padding: mixins.spacing(1.5);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.04);
+
+    div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    span {
+      @include typography.body-medium;
+      color: colors.$on-surface-variant;
+    }
+  }
+
+  .runtime-selectors {
+    display: flex;
+    gap: mixins.spacing(2);
+
+    .half-width {
+      flex: 1;
+    }
+  }
+
+  .runtime-status-card {
+    margin-top: mixins.spacing(1);
+    padding: mixins.spacing(2);
+    border: 1px solid rgba(0, 0, 0, 0.14);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.025);
+
+    &.runtime-ready {
+      border-color: rgba(46, 125, 50, 0.45);
+      background: rgba(46, 125, 50, 0.06);
+    }
+
+    &.runtime-error {
+      border-color: rgba(179, 38, 30, 0.5);
+      background: rgba(179, 38, 30, 0.06);
+    }
+  }
+
+  .runtime-status-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: mixins.spacing(2);
+  }
+
+  .runtime-status-title {
+    display: flex;
+    align-items: center;
+    gap: mixins.spacing(1);
+
+    > div {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  .runtime-state {
+    @include typography.body-medium;
+    color: colors.$on-surface-variant;
+  }
+
+  .runtime-message {
+    margin: mixins.spacing(1.5) 0;
+    color: colors.$on-surface-variant;
+  }
+
+  .runtime-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: mixins.spacing(0.75);
+    margin-top: mixins.spacing(1.5);
+  }
+
+  .runtime-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.07);
+    font-size: 0.78rem;
+  }
+
+  .runtime-error-message {
+    margin-top: mixins.spacing(1);
+    color: #b3261e;
+    font-weight: 600;
+  }
+}
+
+.runtime-option-note,
+.runtime-option-reason {
+  color: colors.$on-surface-variant;
+  font-size: 0.82em;
+}
+
+@media (max-width: 720px) {
+  .runtime-section {
+    .runtime-selectors,
+    .runtime-status-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+}
