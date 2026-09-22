@@ -11,6 +11,7 @@ import { AuthModule } from '../auth/auth.module';
 import { SongsModule } from '../songs/songs.module';
 import { LibraryModule } from '../library/library.module';
 import { ProfileModule } from '../profile/profile.module';
+import { MusicRuntimeModule } from '../music-runtime/music-runtime.module';
 
 /**
  * App Module
@@ -56,6 +57,7 @@ import { ProfileModule } from '../profile/profile.module';
     SongsModule,
     LibraryModule,
     ProfileModule,
+    MusicRuntimeModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService, JobsGateway],
