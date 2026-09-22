@@ -60,3 +60,12 @@ test('backend Docker execution target matches the canonical worker name', () => 
   assert.match(service, /harmonia-worker/);
   assert.doesNotMatch(service, /harmonia-dev/);
 });
+
+
+test('worker build does not require gitignored local model checkpoints', () => {
+  const dockerfile = read('Dockerfile.worker');
+  const entrypoint = read('entrypoint.sh');
+  assert.doesNotMatch(dockerfile, /COPY\s+models\/diffsinger/);
+  assert.match(entrypoint, /MODELS_ROOT\/diffsinger/);
+  assert.match(entrypoint, /No local DiffSinger checkpoints found/);
+});
