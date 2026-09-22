@@ -4,6 +4,8 @@
 
 This document describes the complete workflow for generating music from narrative descriptions using a two-stage AI pipeline:
 
+> **2026 provider status:** For the current MusicGen runtime, current Meta model family, Google Lyria 3.5 public API methodology, and deferred ACE-Step/Eleven Music options, see [Music Generation Provider Status and Roadmap](./MUSIC_GENERATION_PROVIDER_STATUS_2026.md).
+
 1. **Stage 1 - Song Metadata Generation**: User narrative → AI-generated title, lyrics, genre, mood (via Ollama/Deepseek)
 2. **Stage 2 - Audio Generation**: Song metadata → Generated audio file (via MusicGen model)
 
