@@ -273,7 +273,7 @@ export class MusicRuntimeService {
           '{{json .State}}',
           provider.containerName,
         ]);
-        const state = JSON.parse(stdout.trim()) as {
+        const state = JSON.parse(String(stdout).trim()) as {
           Running?: boolean;
           Health?: { Status?: string };
         };
@@ -431,7 +431,7 @@ export class MusicRuntimeService {
         '--query-gpu=name,memory.total',
         '--format=csv,noheader,nounits',
       ]);
-      const line = stdout.trim().split(/\r?\n/)[0] || '';
+      const line = String(stdout).trim().split(/\r?\n/)[0] || '';
       const lastComma = line.lastIndexOf(',');
       const name = lastComma >= 0 ? line.slice(0, lastComma).trim() : line;
       const memoryMb =
