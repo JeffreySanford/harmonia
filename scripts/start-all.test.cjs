@@ -179,3 +179,59 @@ test('occupied app ports fail without stopping the existing server', async () =>
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+
+test('managed Docker port preflight allows Harmonia owner and rejects conflicts', async () => {
+  const { checkManagedDockerPort } = require(script);
+  const unavailable = async () => {
+    throw new Error('occupied');
+  };
+
+  let dockerCalls = 0;
+  await checkManagedDockerPort(
+    27017,
+    'MongoDB',
+    'harmonia-mongo-i9',
+    () => {
+      dockerCalls++;
+      return 'harmonia-mongo-i9\n';
+    },
+    unavailable
+  );
+  assert.equal(dockerCalls, 1);
+
+  await assert.rejects(
+    checkManagedDockerPort(
+      27017,
+      'MongoDB',
+      'harmonia-mongo-i9',
+      () => 'other-mongo\n',
+      unavailable
+    ),
+    /other-mongo/
+  );
+
+  await assert.rejects(
+    checkManagedDockerPort(
+      27017,
+      'MongoDB',
+      'harmonia-mongo-i9',
+      () => '',
+      unavailable
+    ),
+    /host process or service/
+  );
+
+  let calledForFreePort = false;
+  await checkManagedDockerPort(
+    27017,
+    'MongoDB',
+    'harmonia-mongo-i9',
+    () => {
+      calledForFreePort = true;
+      return '';
+    },
+    async () => {}
+  );
+  assert.equal(calledForFreePort, false);
+});
