@@ -186,18 +186,18 @@ export class PaletteSuggestionComponent {
   }
 
   /**
-   * Get role color for UI display
+   * Get the CSS class used to display an instrument role.
    */
-  getRoleColor(role: string): string {
-    const colors: { [key: string]: string } = {
-      primary: '#1976d2',    // Blue
-      secondary: '#388e3c',  // Green
-      accent: '#f57c00',     // Orange
-      bass: '#7b1fa2',       // Purple
-      drums: '#d32f2f',      // Red
-      melody: '#0097a7',     // Cyan
-    };
-    return colors[role] || '#757575';
+  getRoleClass(role: string): string {
+    const knownRoles = new Set([
+      'primary',
+      'secondary',
+      'accent',
+      'bass',
+      'drums',
+      'melody',
+    ]);
+    return knownRoles.has(role) ? `role-${role}` : 'role-default';
   }
 
   /**
