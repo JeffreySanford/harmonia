@@ -191,6 +191,7 @@ async function main(args = process.argv.slice(2)) {
   const env = applicationEnvironment({
     ...(existsSync(envFile) ? parseEnv(readFileSync(envFile, 'utf8')) : {}),
     ...process.env,
+    HARMONIA_GPU_ENABLED: options.gpu ? 'true' : 'false',
   });
   const nx = path.join(root, 'node_modules', 'nx', 'bin', 'nx.js');
   if (!existsSync(nx)) throw new Error('Dependencies are missing. Run pnpm install first.');
