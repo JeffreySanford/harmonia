@@ -3,7 +3,12 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 const ModelArtifact = require('../src/models-js/modelArtifact');
 
 async function run() {
-  const mongod = await MongoMemoryServer.create();
+  const mongod = await MongoMemoryServer.create({
+    binary: {
+      // MongoDB 7 uses OpenSSL 3 and runs cleanly on current Ubuntu/Windows CI.
+      version: process.env.MONGOMS_VERSION || '7.0.14',
+    },
+  });
   const uri = mongod.getUri();
   console.log('Started in-memory mongo at', uri);
   await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
