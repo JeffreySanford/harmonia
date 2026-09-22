@@ -12,6 +12,9 @@ jobs:
   test-mongoose:
     name: Run memory-server test
     runs-on: ubuntu-latest
+    env:
+      MONGOMS_VERSION: "7.0.14"
+      MONGOMS_DISTRO: "ubuntu-22.04"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
