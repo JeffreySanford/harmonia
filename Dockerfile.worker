@@ -180,6 +180,11 @@ RUN pip install so-vits-svc || echo "so-vits-svc pip install failed; install man
 COPY scripts/*.py /workspace/scripts/
 RUN chmod +x /workspace/scripts/*.py || true
 
+# Windows checkouts may present shell files with CRLF despite the Linux runtime.
+# Normalize the already-copied entrypoint here, after expensive ML layers, so a
+# line-ending fix does not invalidate Torch / DiffSinger / vocoder caches.
+RUN sed -i 's/\r$//' /workspace/entrypoint.sh && chmod +x /workspace/entrypoint.sh
+
 ENTRYPOINT ["/workspace/entrypoint.sh"]
 
 ENV HARMONIA_MODELS_ROOT=/workspace/models
