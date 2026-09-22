@@ -13,9 +13,9 @@ test('runtime uses one canonical Compose definition plus an optional GPU overrid
   assert.equal(existsSync(path.join(root, 'docker-compose.dev.yml')), false);
 
   const compose = read('docker-compose.yml');
-  assert.match(compose, /container_name:\\s*harmonia-worker/);
-  assert.match(compose, /127\\.0\\.0\\.1:27017:27017/);
-  assert.match(compose, /127\\.0\\.0\\.1:8081:8081/);
+  assert.match(compose, /container_name:\s*harmonia-worker/);
+  assert.match(compose, /127\.0\.0\.1:27017:27017/);
+  assert.match(compose, /127\.0\.0\.1:8081:8081/);
   assert.doesNotMatch(compose, /8000:8000/);
 });
 
@@ -28,8 +28,8 @@ test('application port contract is 4200 frontend and 3000 backend', () => {
 
   assert.match(env, /^PORT=3000$/m);
   assert.match(proxy, /localhost:3000/);
-  assert.match(backend, /process\\.env\\.PORT \\|\\| 3000/);
-  assert.match(playwright, /localhost:3000\\/api\\/__health/);
+  assert.match(backend, /process\.env\.PORT \|\| 3000/);
+  assert.match(playwright, /localhost:3000\/api\/__health/);
   assert.match(playwright, /localhost:4200/);
   assert.doesNotMatch(workflow, /localhost:3333/);
 });
