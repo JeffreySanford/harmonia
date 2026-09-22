@@ -16,7 +16,7 @@ numpy>=1.24
 
 # --- Multi-modal vocal synthesis ---
 # DiffSinger is cloned explicitly by Dockerfile.worker because the upstream repo is not pip-installable.
-so-vits-svc
+# so-vits-svc is installed separately by Dockerfile.worker when available.
 
 # Pinned runtime deps to improve compatibility with DiffSinger's `infer.py`.
 # These pins aim to avoid import-time errors (numba/librosa/torchmetrics).
