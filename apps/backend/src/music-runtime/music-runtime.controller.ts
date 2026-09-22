@@ -1,5 +1,12 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
+import { IsNotEmpty, IsString } from 'class-validator';
 import { MusicRuntimeService } from './music-runtime.service';
+
+class SelectMusicModelDto {
+  @IsString()
+  @IsNotEmpty()
+  modelId!: string;
+}
 
 @Controller('music/runtime')
 export class MusicRuntimeController {
@@ -16,7 +23,7 @@ export class MusicRuntimeController {
   }
 
   @Post('select')
-  selectModel(@Body() body: { modelId: string }) {
+  selectModel(@Body() body: SelectMusicModelDto) {
     return this.runtime.selectModel(body.modelId);
   }
 
