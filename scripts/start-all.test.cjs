@@ -26,16 +26,23 @@ test('reconciles all services without forcing healthy containers to restart', ()
     calls.filter((args) => args[0] === 'restart'),
     [['restart', 'sick']]
   );
-  const up = calls.find((args) => args.includes('up'));
+  const upCalls = calls.filter((args) => args.includes('up'));
+  assert.equal(upCalls.length, 2);
+
+  const reconcileUp = upCalls[0];
+  assert.ok(reconcileUp.includes('--no-build'));
+  assert.ok(!reconcileUp.includes('--wait'));
+
+  const readinessUp = upCalls[1];
   for (const flag of ['--no-build', '--wait', '--wait-timeout']) {
-    assert.ok(up.includes(flag));
+    assert.ok(readinessUp.includes(flag));
   }
   assert.ok(
     calls.some(
       (args) => args.includes('build') && args.includes('--provenance=false')
     )
   );
-  assert.ok(!up.includes('--force-recreate'));
+  assert.ok(!readinessUp.includes('--force-recreate'));
 });
 
 test('can reconcile image-only services without invoking a build', () => {
