@@ -137,10 +137,15 @@ test('startup options select canonical profiles and optional GPU override', () =
     '--profile',
     'tools',
   ]);
-  assert.throws(
-    () => parseOptions(['--gpu', '--no-worker']),
-    /cannot be combined/
-  );
+  assert.deepEqual(composeArguments(parseOptions(['--gpu', '--no-worker'])), [
+    'compose',
+    '-f',
+    'docker-compose.yml',
+    '-f',
+    'docker-compose.gpu.yml',
+    '--profile',
+    'tools',
+  ]);
   assert.throws(() => parseOptions(['--wat']), /Unknown option/);
 });
 
