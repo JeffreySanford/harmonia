@@ -66,7 +66,20 @@ test('package exposes authoritative start, test, lint, and build commands', () =
   assert.equal(pkg.scripts.predev, undefined);
 });
 
-test('dependency build scripts are explicitly reviewed and version-scoped', () => {
+test('CI reads the pinned pnpm version from packageManager', () => {
+  const pkg = JSON.parse(read('package.json'));
+  const ci = read('.github/workflows/ci.yml');
+  const mongooseWorkflow = read('.github/workflows/test_mongoose.yml');
+
+  assert.equal(pkg.packageManager, 'pnpm@10.23.0');
+
+  for (const workflow of [ci, mongooseWorkflow]) {
+    assert.match(workflow, /uses: pnpm\/action-setup@v4/);
+    assert.doesNotMatch(workflow, /version:\s*10\.23\.0/);
+  }
+});
+
+test('dependency build scripts are explicitly reviewed and strict', () => {
   const workspace = read('pnpm-workspace.yaml');
 
   assert.match(workspace, /^strictDepBuilds:\s*true$/m);
