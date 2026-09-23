@@ -71,7 +71,7 @@ test('CI reads the pinned pnpm version from packageManager', () => {
   const ci = read('.github/workflows/ci.yml');
   const mongooseWorkflow = read('.github/workflows/test_mongoose.yml');
 
-  assert.equal(pkg.packageManager, 'pnpm@10.23.0');
+  assert.equal(pkg.packageManager, 'pnpm@12.6.0');
 
   for (const workflow of [ci, mongooseWorkflow]) {
     assert.match(workflow, /uses: pnpm\/action-setup@v4/);
@@ -79,18 +79,14 @@ test('CI reads the pinned pnpm version from packageManager', () => {
   }
 });
 
-test('dependency build scripts are explicitly reviewed and strict', () => {
+test('dependency build scripts use pnpm 12 allowBuilds policy', () => {
   const workspace = read('pnpm-workspace.yaml');
 
+  assert.match(workspace, /^allowBuilds:$/m);
+  assert.match(workspace, /'@parcel\/watcher@2\.5\.1 \|\| 2\.6\.0': true/);
+  assert.match(workspace, /'unrs-resolver@1\.11\.1 \|\| 1\.12\.2': true/);
   assert.match(workspace, /^strictDepBuilds:\s*true$/m);
-  assert.match(
-    workspace,
-    /'@parcel\/watcher'/
-  );
-  assert.match(
-    workspace,
-    /- unrs-resolver/
-  );
+  assert.doesNotMatch(workspace, /onlyBuiltDependencies:/);
   assert.doesNotMatch(workspace, /dangerouslyAllowAllBuilds:\s*true/);
 });
 
