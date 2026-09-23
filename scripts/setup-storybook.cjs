@@ -52,7 +52,8 @@ function ensureScripts() {
   const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
 
   pkg.scripts ||= {};
-  pkg.scripts.storybook = 'nx storybook frontend';
+  pkg.scripts.storybook =
+    'nx storybook frontend --ci=true --noOpen=true --host=127.0.0.1 --port=4400';
   pkg.scripts['storybook:build'] = 'nx build-storybook frontend';
   pkg.scripts['storybook:test'] = 'nx run frontend:test-storybook';
 
