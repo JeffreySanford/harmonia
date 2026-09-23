@@ -76,6 +76,24 @@ pnpm test:all:e2e
 Set `RUN_DOCKER_START_TESTS=1` when you explicitly want the isolated real-Docker
 startup lifecycle test.
 
+### WSL / Linux CI parity gate
+
+For Docker/runtime-sensitive changes, use a WSL-native Linux checkout when possible and run:
+
+```bash
+pnpm qualify:wsl-ci
+```
+
+This qualification disables Nx Cloud/daemon behavior, performs a frozen pnpm install,
+runs script/Compose validation, unit tests, the real isolated Docker startup lifecycle
+(`RUN_DOCKER_START_TESTS=1`), application builds, and the lightweight environment
+smoke check. The Docker lifecycle test uses a temporary Compose project with no host
+ports or development volumes, so it does not manipulate the normal Harmonia stack.
+
+A checkout under `/mnt/c` or `/mnt/d` is supported but less representative of native
+Linux filesystem behavior. For native-module and filesystem parity, prefer a separate
+clone under the WSL home directory such as `~/repos/harmonia`.
+
 #### Linting
 
 ```bash
