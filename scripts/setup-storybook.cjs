@@ -98,7 +98,7 @@ function main() {
   console.log('STORYBOOK_SETUP_OK');
   console.log('Run Storybook with: pnpm storybook');
   console.log(
-    'With Storybook running on port 6006, run interaction tests with: pnpm storybook:test'
+    'With Storybook running on port 4400, run interaction tests with: pnpm storybook:test'
   );
 }
 
