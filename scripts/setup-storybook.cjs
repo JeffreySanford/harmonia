@@ -68,6 +68,11 @@ function main() {
     run(['add', '-D', '-w', '@nx/storybook@22.1.3']);
   }
 
+  if (!pkg.devDependencies?.['@storybook/test-runner']) {
+    console.log('Installing Storybook 10-compatible interaction test runner...');
+    run(['add', '-D', '-w', '@storybook/test-runner@^0.24.0']);
+  }
+
   if (!existsSync(storybookMain)) {
     console.log('Generating Angular Storybook configuration with interaction tests...');
     run([
