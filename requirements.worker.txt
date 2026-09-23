@@ -1,11 +1,4 @@
-# Generic Harmonia worker runtime.
-# Provider-specific frameworks belong in their own provider images.
-torch>=2.0.0
-torchaudio>=2.1.0
-huggingface_hub>=0.16.0
-soundfile>=0.12.1
-av
-numpy>=1.24
+# Generic Harmonia utility worker runtime.
+# Heavy model frameworks belong exclusively in provider-specific images.
 pyyaml>=6.0
 requests>=2.30.0
-scipy>=1.10.1
