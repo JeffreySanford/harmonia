@@ -351,6 +351,7 @@ test('MusicGen generation reuses a resident provider model', () => {
   assert.match(client, /127\.0\.0\.1:8765\/generate/);
   assert.match(stems, /musicgen_provider_client\.py/);
   assert.match(stems, /concatMap/);
+  assert.match(stems, /defer\(\(\) =>/);
   assert.match(runtime, /'busy'/);
   assert.match(runtime, /beginGeneration/);
   assert.match(runtime, /finishGeneration/);
