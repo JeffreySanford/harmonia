@@ -209,6 +209,19 @@ test('MusicGen Small qualification exercises persistent generation and downloads
   assert.match(qualify, /MUSICGEN_SMALL_QUALIFICATION_OK/);
 });
 
+test('MusicGen Stereo Small qualification requires two-channel audio', () => {
+  const qualifier = read('scripts/qualify-musicgen-stereo-small.cjs');
+  const pkg = JSON.parse(read('package.json'));
+
+  assert.equal(
+    pkg.scripts['qualify:musicgen-stereo-small'],
+    'node scripts/qualify-musicgen-stereo-small.cjs'
+  );
+  assert.match(qualifier, /musicgen-stereo-small/);
+  assert.match(qualifier, /wav\.channels !== 2/);
+  assert.match(qualifier, /MUSICGEN_STEREO_SMALL_QUALIFICATION_OK/);
+});
+
 test('Storybook bootstrap covers actual login and music-generation UI', () => {
   const pkg = JSON.parse(read('package.json'));
   const setup = read('scripts/setup-storybook.cjs');
