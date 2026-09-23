@@ -72,6 +72,74 @@ export class MusicRuntimeService {
     return this.status;
   }
 
+  async beginGeneration(providerId: string): Promise<{
+    modelId: string;
+    modelName: string;
+    runtimeModelId: string;
+  }> {
+    await this.reconcileRuntimeOwnership();
+    const hardware = await this.detectHardware();
+
+    if (this.status.providerId !== providerId || this.status.state !== 'ready') {
+      throw new BadRequestException(
+        `${providerId} runtime must be ready before generation.`
+      );
+    }
+
+    const provider = this.getProvider(providerId);
+    const model = this.status.modelId
+      ? MUSIC_MODELS.find((candidate) => candidate.id === this.status.modelId)
+      : null;
+
+    if (!model || !model.runtimeModelId) {
+      throw new BadRequestException(
+        `${provider.name} has no selected provider-native model id.`
+      );
+    }
+
+    await this.transition(
+      provider,
+      model,
+      hardware,
+      'busy',
+      `Generating with ${model.name}…`,
+      100,
+      true
+    );
+
+    return {
+      modelId: model.id,
+      modelName: model.name,
+      runtimeModelId: model.runtimeModelId,
+    };
+  }
+
+  async finishGeneration(providerId: string): Promise<MusicRuntimeStatus> {
+    const hardware = await this.detectHardware();
+
+    if (this.status.providerId !== providerId) {
+      return this.status;
+    }
+
+    const provider = this.getProvider(providerId);
+    const model = this.status.modelId
+      ? MUSIC_MODELS.find((candidate) => candidate.id === this.status.modelId) ||
+        null
+      : null;
+
+    return this.transition(
+      provider,
+      model,
+      hardware,
+      'ready',
+      model
+        ? `${model.name} runtime is ready. Model remains resident until provider stop or model switch.`
+        : `${provider.name} runtime is ready.`,
+      100,
+      true
+    );
+  }
+
   async selectModel(modelId: string): Promise<MusicRuntimeStatus> {
     await this.reconcileRuntimeOwnership();
     const hardware = await this.detectHardware();
@@ -82,6 +150,12 @@ export class MusicRuntimeService {
 
     const provider = this.getProvider(model.providerId);
     const entry = this.toCatalogEntry(model, hardware);
+
+    if (this.status.state === 'busy') {
+      throw new BadRequestException(
+        'Cannot switch music models while generation is in progress.'
+      );
+    }
 
     if (!entry.selectable) {
       throw new BadRequestException(
