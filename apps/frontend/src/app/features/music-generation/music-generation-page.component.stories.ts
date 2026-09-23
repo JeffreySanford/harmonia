@@ -1,4 +1,4 @@
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
@@ -6,6 +6,7 @@ import { BehaviorSubject, map, Observable } from 'rxjs';
 import {
   Meta,
   StoryObj,
+  applicationConfig,
   moduleMetadata,
 } from '@storybook/angular';
 import { expect, fn } from 'storybook/test';
@@ -245,8 +246,11 @@ const meta: Meta<MusicGenerationPageComponent> = {
   component: MusicGenerationPageComponent,
   tags: ['autodocs'],
   decorators: [
+    applicationConfig({
+      providers: [provideNoopAnimations()],
+    }),
     moduleMetadata({
-      imports: [MusicGenerationModule, NoopAnimationsModule],
+      imports: [MusicGenerationModule],
       providers: [
         { provide: Router, useValue: router },
         { provide: WebSocketService, useValue: websocket },
