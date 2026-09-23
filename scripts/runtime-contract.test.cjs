@@ -298,6 +298,9 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
 
   assert.match(musicStory, /MusicGenerationPageComponent/);
   assert.match(musicStory, /GenerateMusicDispatchesPersistentJob/);
+  assert.match(musicStory, /DiffSingerScoreDispatchesPersistentJob/);
+  assert.match(musicStory, /diffsinger-acoustic-hifigan/);
+  assert.match(musicStory, /notesDuration/);
   assert.match(musicStory, /JobsActions\.createJob/);
   assert.match(musicStory, /CompletedGenerationShowsAudioPlayer/);
   assert.match(musicStory, /applicationConfig/);
@@ -313,6 +316,32 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
   assert.match(testRunnerJest, /<rootDir>\/\.nx\/cache\//);
 });
 
+
+test('music generation UI switches to score-native DiffSinger inputs', () => {
+  const component = read(
+    'apps/frontend/src/app/features/music-generation/music-generation-page.component.ts'
+  );
+  const template = read(
+    'apps/frontend/src/app/features/music-generation/music-generation-page.component.html'
+  );
+  const state = read(
+    'apps/frontend/src/app/store/music-runtime/music-runtime.state.ts'
+  );
+
+  assert.match(component, /isDiffSingerSelected/);
+  assert.match(component, /diffsingerNotes/);
+  assert.match(component, /diffsingerNotesDuration/);
+  assert.match(component, /hasRequiredGenerationInputs/);
+  assert.match(component, /lyrics: this\.lyrics\.trim\(\)/);
+  assert.match(component, /notesDuration: this\.diffsingerNotesDuration\.trim\(\)/);
+  assert.match(component, /inputType: 'word'/);
+  assert.match(template, /DiffSinger Score/);
+  assert.match(template, /DiffSinger lyrics or score text/);
+  assert.match(template, /DiffSinger notes/);
+  assert.match(template, /DiffSinger note durations/);
+  assert.match(template, /isDiffSingerSelected; else musicGenParameters/);
+  assert.match(state, /runtimeModelId\?: string/);
+});
 
 test('backend MusicGen execution targets the isolated provider container', () => {
   const service = read('apps/backend/src/songs/stem-export.service.ts');
