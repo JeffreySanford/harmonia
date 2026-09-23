@@ -157,6 +157,30 @@ AudioCraft code is MIT licensed. Meta's published MusicGen model weights are CC-
 
 That non-commercial model-weight license must remain part of any future Harmonia commercialization decision.
 
+### 2.8 September 23, 2026 qualification result
+
+The restored Harmonia MusicGen path is now product-qualified through the real persistent-job workflow.
+
+Qualified local models:
+
+- `musicgen-small` / `facebook/musicgen-small`
+  - persistent authenticated job completed successfully
+  - 8.00-second WAV artifact
+  - mono, 32 kHz, 16-bit PCM
+  - backend download HTTP 200
+  - frontend-proxied download HTTP 200
+- `musicgen-stereo-small` / `facebook/musicgen-stereo-small`
+  - runtime switched through the provider lifecycle rather than a pre-started container
+  - persistent authenticated job completed successfully
+  - 8.00-second WAV artifact
+  - stereo (2 channels), 32 kHz, 16-bit PCM
+  - backend download HTTP 200
+  - frontend-proxied download HTTP 200
+
+The provider container is intentionally started on demand through the backend music-runtime selector. It is not part of the default `start:all` Compose profiles.
+
+This establishes MusicGen Small and Stereo Small as the current known-good local baselines before moving to DiffSinger and the remaining provider roadmap.
+
 ## 3. Google Music Generation: Lyria Is Now Public
 
 When Harmonia was originally designed, Google's higher-end music generation work was not exposed as a normal developer API. That has changed.
