@@ -27,8 +27,13 @@ function applicationEnvironment(env) {
   if (env.PORT && env.PORT !== '3000') {
     throw new Error('start:all requires PORT=3000 to match the frontend API configuration.');
   }
+  const nxIsolatePlugins =
+    env.NX_ISOLATE_PLUGINS?.trim() ||
+    (process.platform === 'win32' ? 'false' : undefined);
+
   return {
     ...env,
+    ...(nxIsolatePlugins ? { NX_ISOLATE_PLUGINS: nxIsolatePlugins } : {}),
     PORT: env.PORT || '3000',
     MONGODB_URI:
       env.MONGODB_URI ||
