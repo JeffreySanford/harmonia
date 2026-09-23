@@ -145,7 +145,6 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
   assert.match(setup, /--generateStories=false/);
   assert.match(setup, /build-storybook/);
   assert.match(setup, /node scripts\/run-storybook-tests\.cjs/);
-  assert.match(setup, /playwright install chromium/);
   assert.match(setup, /storybookPort = 4401/);
   assert.match(setup, /--ci=true/);
   assert.doesNotMatch(setup, /--noOpen=true/);
@@ -157,6 +156,7 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
   assert.match(storybookRunner, /\/index\.json/);
   assert.match(storybookRunner, /--no-cache/);
   assert.match(storybookRunner, /playwright/);
+  assert.match(storybookRunner, /'playwright', 'install', 'chromium'/);
   assert.match(storybookRunner, /STORYBOOK_INTERACTIONS_OK/);
   assert.match(setup, /127\.0\.0\.1:\$\{storybookPort\}/);
   assert.match(setup, /normalizeGeneratedStorybookConfig/);
