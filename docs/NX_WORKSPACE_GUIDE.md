@@ -2,7 +2,7 @@
 
 ## Overview
 
-Harmonia uses **Nx 22.1.3** as a monorepo orchestration tool with pnpm workspace integration. This guide covers Nx commands, workspace structure, and best practices for Phase 1 development.
+Harmonia uses **Nx 22.7.12** as a monorepo orchestration tool with pnpm workspace integration. This guide covers Nx commands, workspace structure, and best practices for Phase 1 development.
 
 ## Workspace Structure
 
