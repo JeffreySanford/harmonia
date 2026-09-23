@@ -130,8 +130,8 @@ function main() {
   const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
 
   if (!pkg.devDependencies?.['@nx/storybook']) {
-    console.log('Installing @nx/storybook for the Nx 22 workspace...');
-    run(['add', '-D', '-w', '@nx/storybook@22.1.3']);
+    console.log('Installing @nx/storybook for the Nx 22.7 workspace...');
+    run(['add', '-D', '-w', '@nx/storybook@22.7.12']);
   }
 
   if (!pkg.devDependencies?.['@storybook/test-runner']) {
