@@ -24,7 +24,7 @@ mkdir -p "${MODELS_ROOT}" /opt/DiffSinger/checkpoints
 has_checkpoint_package() {
   local dir="$1"
   test -f "${dir}/config.yaml" &&
-    find "${dir}" -maxdepth 2 -type f -name 'model_ckpt_steps_*.ckpt' -print -quit |
+    find -L "${dir}" -maxdepth 2 -type f -name 'model_ckpt_steps_*.ckpt' -print -quit |
       grep -q .
 }
 
@@ -91,9 +91,9 @@ test -f "/opt/DiffSinger/checkpoints/${ACOUSTIC_NAME}/config.yaml"
 test -f "/opt/DiffSinger/checkpoints/${PITCH_NAME}/config.yaml"
 test -f "/opt/DiffSinger/checkpoints/${VOCODER_NAME}/config.yaml"
 
-find "/opt/DiffSinger/checkpoints/${ACOUSTIC_NAME}"   -type f -name 'model_ckpt_steps_*.ckpt' -print -quit | grep -q .
-find "/opt/DiffSinger/checkpoints/${PITCH_NAME}"   -type f -name 'model_ckpt_steps_*.ckpt' -print -quit | grep -q .
-find "/opt/DiffSinger/checkpoints/${VOCODER_NAME}"   -type f -name 'model_ckpt_steps_*.ckpt' -print -quit | grep -q .
+find -L "/opt/DiffSinger/checkpoints/${ACOUSTIC_NAME}" -type f -name 'model_ckpt_steps_*.ckpt' -print -quit | grep -q .
+find -L "/opt/DiffSinger/checkpoints/${PITCH_NAME}" -type f -name 'model_ckpt_steps_*.ckpt' -print -quit | grep -q .
+find -L "/opt/DiffSinger/checkpoints/${VOCODER_NAME}" -type f -name 'model_ckpt_steps_*.ckpt' -print -quit | grep -q .
 
 echo "DiffSinger acoustic, pitch-estimator, and vocoder caches are ready"
 touch /tmp/harmonia-runtime-ready
