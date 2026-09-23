@@ -18,7 +18,7 @@ Use one image/runtime per provider family, not one image per model size.
 Examples:
 
 - `harmonia/diffsinger:dev`
-- future `harmonia/musicgen:dev`
+- `harmonia/musicgen:dev`
 - future `harmonia/stable-audio:dev`
 - future `harmonia/acestep:dev`
 - future `harmonia/diffrhythm:dev`
@@ -79,6 +79,12 @@ workspace and is mounted into the provider container. For example, the
 DiffSinger HiFi-GAN vocoder is cached under `models/diffsinger/hifigan` and
 downloaded only when it is missing.
 
+## Build progress
+
+First-time provider image builds stream Docker BuildKit output through NestJS.
+The UI receives step updates plus a 10-second heartbeat for long-running build
+steps, so model startup never appears frozen while dependencies are installing.
+
 ## DiffSinger reference implementation
 
 DiffSinger is the first extracted provider runtime:
@@ -115,3 +121,33 @@ a provider adapter returns a real artifact URL. The former
 
 Provider-specific generation adapters are the next implementation layer after
 runtime orchestration.
+
+
+## MusicGen reference implementation
+
+MusicGen is the second isolated provider runtime:
+
+- image: `harmonia/musicgen:dev`;
+- Compose service: `musicgen`;
+- Compose profile: `model-musicgen`;
+- container: `harmonia-musicgen`;
+- Python: 3.9;
+- PyTorch: 2.1.0;
+- AudioCraft: 1.3.0;
+- persistent model/cache root: `models/musicgen`.
+
+The provider container validates AudioCraft, CUDA and the selected GPU before
+marking itself healthy. Model weights are intentionally not loaded during the
+container health check; they are cached under the persistent model root on
+first inference.
+
+For the current 10 GB RTX 3080 target:
+
+- MusicGen Small (300M) is selectable;
+- MusicGen Stereo Small (300M) is selectable;
+- MusicGen Medium and Stereo Medium remain visible but disabled at the
+  catalog's 16 GB VRAM threshold.
+
+The existing stem-generation code now targets `harmonia-musicgen` instead of
+the generic worker. MusicGen weights remain CC-BY-NC 4.0, so the catalog marks
+them as commercially restricted.
