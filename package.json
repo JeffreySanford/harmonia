@@ -69,7 +69,8 @@
     "storybook:test": "node scripts/run-storybook-tests.cjs",
     "storybook:browser": "playwright install chromium",
     "qualify:musicgen-stereo-small": "node scripts/qualify-musicgen-stereo-small.cjs",
-    "qualify:diffsinger-runtime": "node scripts/qualify-diffsinger-runtime.cjs"
+    "qualify:diffsinger-runtime": "node scripts/qualify-diffsinger-runtime.cjs",
+    "qualify:wsl-ci": "bash scripts/qualify-wsl-ci.sh"
   },
   "keywords": [],
   "author": "",
