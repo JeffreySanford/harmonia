@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     software-properties-common gnupg curl \
     && add-apt-repository ppa:deadsnakes/ppa \
     && apt-get update && apt-get install -y --no-install-recommends \
-    python3.11 python3.11-dev build-essential git ffmpeg \
+    python3.11 git \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -sSL https://bootstrap.pypa.io/get-pip.py | python3.11
