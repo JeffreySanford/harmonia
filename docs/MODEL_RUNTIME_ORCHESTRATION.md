@@ -122,7 +122,6 @@ a provider adapter returns a real artifact URL. The former
 Provider-specific generation adapters are the next implementation layer after
 runtime orchestration.
 
-
 ## MusicGen reference implementation
 
 MusicGen is the second isolated provider runtime:
