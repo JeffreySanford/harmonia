@@ -133,6 +133,7 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
     'node scripts/setup-storybook.cjs'
   );
   assert.match(setup, /@nx\/storybook@22\.1\.3/);
+  assert.match(setup, /@storybook\/test-runner@\^0\.24\.0/);
   assert.match(setup, /run\(\['add', '-D', '-w', '@nx\/storybook@22\.1\.3'\]\)/);
   assert.match(setup, /const pnpm = 'pnpm'/);
   assert.match(setup, /shell: process\.platform === 'win32'/);
