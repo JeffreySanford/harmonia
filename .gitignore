@@ -45,3 +45,6 @@ seeds/*-backup-*.json
 
 # MusicGen debug logs
 logs/
+
+# Generated environment smoke reports
+/tests/env_tests/smoke_report_*.json
