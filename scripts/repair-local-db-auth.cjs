@@ -51,7 +51,7 @@ function upsertEnvValue(source, key, value) {
 }
 
 function maskedUri(uri) {
-  return uri.replace(/:\/\/([^:]+):[^@]+@/, '//$1:***@');
+  return uri.replace(/:\/\/([^:]+):[^@]+@/, '://$1:***@');
 }
 
 function ensureMongoContainer() {
