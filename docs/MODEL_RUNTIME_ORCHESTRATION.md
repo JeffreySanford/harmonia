@@ -151,7 +151,6 @@ The existing stem-generation code now targets `harmonia-musicgen` instead of
 the generic worker. MusicGen weights remain CC-BY-NC 4.0, so the catalog marks
 them as commercially restricted.
 
-
 ## Persistent MusicGen inference
 
 MusicGen runs a container-local provider server on `127.0.0.1:8765`. The port
