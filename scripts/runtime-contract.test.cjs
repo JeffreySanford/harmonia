@@ -142,6 +142,7 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
   assert.match(setup, /--generateStories=false/);
   assert.match(setup, /build-storybook/);
   assert.match(setup, /nx run frontend:test-storybook/);
+  assert.match(setup, /playwright install chromium/);
   assert.match(setup, /storybookPort = 4401/);
   assert.match(setup, /--ci=true/);
   assert.doesNotMatch(setup, /--noOpen=true/);
@@ -163,6 +164,13 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
   assert.match(musicStory, /JobsActions\.createJob/);
   assert.match(musicStory, /CompletedGenerationShowsAudioPlayer/);
   assert.match(musicStory, /\/downloads\/jobs\/storybook-musicgen-job\/music\.wav/);
+
+  const testRunnerJest = read(
+    'apps/frontend/.storybook/test-runner-jest.config.js'
+  );
+  assert.match(testRunnerJest, /getJestConfig/);
+  assert.match(testRunnerJest, /<rootDir>\/dist\//);
+  assert.match(testRunnerJest, /<rootDir>\/\.nx\/cache\//);
 });
 
 
