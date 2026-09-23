@@ -141,12 +141,12 @@ services:
       - ./generated:/workspace/generated
       - ./artifacts:/workspace/artifacts
     command:
-      - sleep
-      - infinity
+      - python3.9
+      - /workspace/scripts/musicgen_provider_server.py
     healthcheck:
       test:
         - CMD-SHELL
-        - "test -f /tmp/harmonia-runtime-ready"
+        - "test -f /tmp/harmonia-runtime-ready && python3.9 -c \"import urllib.request; r=urllib.request.urlopen('http://127.0.0.1:8765/health', timeout=2); raise SystemExit(0 if r.status == 200 else 1)\""
       start_period: 120s
       interval: 10s
       timeout: 5s
