@@ -50,6 +50,7 @@ export class MusicRuntimeService {
   constructor(private readonly gateway: MusicRuntimeGateway) {}
 
   async getCatalog(): Promise<MusicRuntimeCatalogResponse> {
+    await this.reconcileRuntimeOwnership();
     const hardware = await this.detectHardware();
     this.status = { ...this.status, hardware };
 
@@ -64,12 +65,14 @@ export class MusicRuntimeService {
   }
 
   async getStatus(): Promise<MusicRuntimeStatus> {
+    await this.reconcileRuntimeOwnership();
     const hardware = await this.detectHardware();
     this.status = { ...this.status, hardware };
     return this.status;
   }
 
   async selectModel(modelId: string): Promise<MusicRuntimeStatus> {
+    await this.reconcileRuntimeOwnership();
     const hardware = await this.detectHardware();
     const model = MUSIC_MODELS.find((candidate) => candidate.id === modelId);
     if (!model) {
@@ -389,6 +392,138 @@ export class MusicRuntimeService {
         );
       });
     });
+  }
+
+  private async reconcileRuntimeOwnership(): Promise<void> {
+    if (
+      ['building', 'starting', 'health-checking', 'stopping'].includes(
+        this.status.state
+      )
+    ) {
+      return;
+    }
+
+    const runtimeProviders = MUSIC_PROVIDERS.filter(
+      (provider) =>
+        provider.runtimeInstalled &&
+        provider.containerName &&
+        provider.dockerService
+    );
+
+    const running: Array<{
+      provider: MusicProviderDefinition;
+      healthy: boolean;
+    }> = [];
+
+    for (const provider of runtimeProviders) {
+      try {
+        const { stdout } = await execFileAsync('docker', [
+          'inspect',
+          '--format',
+          '{{json .State}}',
+          provider.containerName!,
+        ]);
+        const state = JSON.parse(String(stdout).trim()) as {
+          Running?: boolean;
+          Health?: { Status?: string };
+        };
+
+        if (state.Running) {
+          running.push({
+            provider,
+            healthy: state.Health?.Status === 'healthy',
+          });
+        }
+      } catch {
+        // A provider that has never been started has no container yet.
+      }
+    }
+
+    const hardware = await this.detectHardware();
+
+    if (running.length > 1) {
+      this.logger.warn(
+        `Multiple model runtimes were running after state recovery: ${running
+          .map(({ provider }) => provider.id)
+          .join(', ')}. Stopping all providers to protect GPU ownership.`
+      );
+
+      await Promise.all(
+        running.map(({ provider }) =>
+          execFileAsync('docker', ['stop', provider.containerName!], {
+            cwd: process.cwd(),
+            windowsHide: true,
+          }).catch(() => undefined)
+        )
+      );
+
+      this.status = {
+        providerId: null,
+        providerName: null,
+        modelId: null,
+        modelName: null,
+        state: 'stopped',
+        message:
+          'Recovered multiple active model runtimes; all were stopped to protect GPU ownership.',
+        healthy: false,
+        progress: 0,
+        hardware,
+        updatedAt: new Date().toISOString(),
+        error: null,
+      };
+      this.gateway.emitRuntimeStatus(this.status);
+      return;
+    }
+
+    if (running.length === 1) {
+      const recovered = running[0]!;
+      const sameProvider = this.status.providerId === recovered.provider.id;
+      const recoveredState = recovered.healthy ? 'ready' : 'health-checking';
+
+      if (
+        !sameProvider ||
+        this.status.state === 'stopped' ||
+        this.status.healthy !== recovered.healthy
+      ) {
+        this.status = {
+          providerId: recovered.provider.id,
+          providerName: recovered.provider.name,
+          modelId: sameProvider ? this.status.modelId : null,
+          modelName: sameProvider ? this.status.modelName : null,
+          state: recoveredState,
+          message: recovered.healthy
+            ? `Recovered running ${recovered.provider.name} runtime after backend restart.`
+            : `Recovered ${recovered.provider.name} runtime; waiting for health.`,
+          healthy: recovered.healthy,
+          progress: recovered.healthy ? 100 : 65,
+          hardware,
+          updatedAt: new Date().toISOString(),
+          error: null,
+        };
+        this.gateway.emitRuntimeStatus(this.status);
+      }
+      return;
+    }
+
+    if (
+      this.status.providerId &&
+      ['ready', 'healthy', 'error'].includes(this.status.state)
+    ) {
+      this.status = {
+        providerId: null,
+        providerName: null,
+        modelId: null,
+        modelName: null,
+        state: 'stopped',
+        message: 'No model provider runtime is currently running.',
+        healthy: false,
+        progress: 0,
+        hardware,
+        updatedAt: new Date().toISOString(),
+        error: null,
+      };
+      this.gateway.emitRuntimeStatus(this.status);
+    }
   }
 
   private async waitForHealthy(
