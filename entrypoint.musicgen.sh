@@ -24,5 +24,4 @@ print(f"GPU: {torch.cuda.get_device_name(0)}")
 PY
 
 echo "MusicGen runtime dependencies and GPU are ready"
-touch /tmp/harmonia-runtime-ready
 exec "$@"
