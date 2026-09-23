@@ -57,7 +57,7 @@ Access points:
 - Swagger: `http://localhost:3000/api/docs`
 - MongoDB: `127.0.0.1:27017`
 - Mongo Express: `http://localhost:8081`
-- ML worker: `harmonia-worker` with no published HTTP port
+- Utility worker: `harmonia-worker` with no published HTTP port
 
 Optional modes:
 
@@ -85,6 +85,10 @@ pnpm dev:frontend
 ```
 
 `pnpm start:all` is the preferred entry point from a stopped environment.
+
+The utility worker is deliberately lightweight. MusicGen, DiffSinger, and future
+model families are isolated in provider-specific images and are started only when
+selected through the runtime orchestrator.
 
 ## Ollama
 
@@ -118,8 +122,8 @@ RUN_DOCKER_START_TESTS=1 pnpm test:startup
 | 11434 | Ollama, external and optional |
 | 6379 | Redis, reserved/optional and not provisioned |
 
-Port 8000 is not part of the runtime contract. The ML worker is currently used via
-`docker exec`.
+Port 8000 is not part of the runtime contract. Provider runtimes currently use
+container-local execution and do not publish model-serving ports to the host.
 
 ## MongoDB password changes
 
