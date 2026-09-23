@@ -9,6 +9,38 @@ const root = path.resolve(__dirname, '..');
 const envPath = path.join(root, '.env');
 const mongoContainer = 'harmonia-mongo-i9';
 
+const jobsCollectionValidator = {
+  $jsonSchema: {
+    bsonType: 'object',
+    required: ['userId', 'jobType', 'status'],
+    properties: {
+      userId: { bsonType: 'objectId' },
+      jobType: { enum: ['generate', 'convert', 'analyze', 'train'] },
+      status: {
+        enum: [
+          'pending',
+          'queued',
+          'processing',
+          'completed',
+          'failed',
+          'cancelled',
+        ],
+      },
+      priority: { bsonType: 'number' },
+      modelId: { bsonType: 'string' },
+      datasetId: { bsonType: 'string' },
+      parameters: { bsonType: 'object' },
+      progress: { bsonType: ['object', 'null'] },
+      result: { bsonType: ['object', 'null'] },
+      startedAt: { bsonType: ['date', 'null'] },
+      completedAt: { bsonType: ['date', 'null'] },
+      estimatedDuration: { bsonType: ['number', 'null'] },
+      createdAt: { bsonType: 'date' },
+      updatedAt: { bsonType: 'date' },
+    },
+  },
+};
+
 function fail(message) {
   console.error(`Repair failed: ${message}`);
   process.exitCode = 1;
@@ -92,6 +124,61 @@ function synchronizeApplicationUser(appPassword) {
     'exec',
     '-e',
     `NEW_HARMONIA_APP_PASSWORD=${appPassword}`,
+    mongoContainer,
+    'mongosh',
+    '--quiet',
+    '--eval',
+    mongoScript,
+  ]);
+}
+
+
+function synchronizeJobsCollectionSchema() {
+  const validatorJson = JSON.stringify(jobsCollectionValidator);
+  const mongoScript = [
+    'const admin = db.getSiblingDB("admin");',
+    'if (!admin.auth(process.env.MONGO_INITDB_ROOT_USERNAME, process.env.MONGO_INITDB_ROOT_PASSWORD)) {',
+    '  print("ROOT_AUTH_FAILED");',
+    '  quit(2);',
+    '}',
+    'const h = db.getSiblingDB("harmonia");',
+    `const validator = ${validatorJson};`,
+    'if (h.getCollectionNames().includes("jobs")) {',
+    '  const result = h.runCommand({',
+    '    collMod: "jobs",',
+    '    validator,',
+    '    validationLevel: "strict",',
+    '    validationAction: "error"',
+    '  });',
+    '  if (!result.ok) {',
+    '    printjson(result);',
+    '    quit(3);',
+    '  }',
+    '  print("JOBS_VALIDATOR_UPDATED");',
+    '} else {',
+    '  h.createCollection("jobs", {',
+    '    validator,',
+    '    validationLevel: "strict",',
+    '    validationAction: "error"',
+    '  });',
+    '  print("JOBS_COLLECTION_CREATED");',
+    '}',
+    'const jobs = h.getCollection("jobs");',
+    'const indexNames = jobs.getIndexes().map((index) => index.name);',
+    'if (indexNames.includes("status_1_worker_id_1")) {',
+    '  jobs.dropIndex("status_1_worker_id_1");',
+    '}',
+    'if (indexNames.includes("type_1_created_at_-1")) {',
+    '  jobs.dropIndex("type_1_created_at_-1");',
+    '}',
+    'jobs.createIndex({ userId: 1, createdAt: -1 });',
+    'jobs.createIndex({ userId: 1, status: 1, createdAt: -1 });',
+    'jobs.createIndex({ userId: 1, jobType: 1, createdAt: -1 });',
+    'print("JOBS_SCHEMA_SYNC_OK");',
+  ].join('\n');
+
+  run('docker', [
+    'exec',
     mongoContainer,
     'mongosh',
     '--quiet',
@@ -188,6 +275,7 @@ function main() {
   console.log('Test password is stored in .env and is not echoed here.');
 
   synchronizeApplicationUser(appPassword);
+  synchronizeJobsCollectionSchema();
   verifyApplicationUser(appPassword);
   seedTestUser(env, mongoUri);
 
