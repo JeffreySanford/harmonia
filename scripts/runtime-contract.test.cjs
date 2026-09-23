@@ -127,6 +127,9 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
   const musicStory = read(
     'apps/frontend/src/app/features/music-generation/music-generation-page.component.stories.ts'
   );
+  const musicModule = read(
+    'apps/frontend/src/app/features/music-generation/music-generation.module.ts'
+  );
 
   assert.equal(
     pkg.scripts['storybook:setup'],
@@ -158,11 +161,16 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
   assert.match(loginStory, /ValidLoginDispatchesRealAuthAction/);
   assert.match(loginStory, /AuthActions\.login/);
   assert.match(loginStory, /PasswordValidation/);
+  assert.match(loginStory, /applicationConfig/);
+  assert.match(loginStory, /provideNoopAnimations/);
 
   assert.match(musicStory, /MusicGenerationPageComponent/);
   assert.match(musicStory, /GenerateMusicDispatchesPersistentJob/);
   assert.match(musicStory, /JobsActions\.createJob/);
   assert.match(musicStory, /CompletedGenerationShowsAudioPlayer/);
+  assert.match(musicStory, /applicationConfig/);
+  assert.match(musicStory, /provideNoopAnimations/);
+  assert.match(musicModule, /exports: \[MusicGenerationPageComponent\]/);
   assert.match(musicStory, /\/downloads\/jobs\/storybook-musicgen-job\/music\.wav/);
 
   const testRunnerJest = read(
