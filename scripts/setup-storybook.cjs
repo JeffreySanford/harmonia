@@ -92,7 +92,9 @@ function ensureScripts() {
   pkg.scripts.storybook =
     `nx storybook frontend --ci=true --host=127.0.0.1 --port=${storybookPort}`;
   pkg.scripts['storybook:build'] = 'nx build-storybook frontend';
-  pkg.scripts['storybook:test'] = 'nx run frontend:test-storybook';
+  pkg.scripts['storybook:browser'] = 'playwright install chromium';
+  pkg.scripts['storybook:test'] =
+    'pnpm storybook:browser && nx run frontend:test-storybook';
 
   writeFileSync(packagePath, JSON.stringify(pkg, null, 2) + '\n');
 }
