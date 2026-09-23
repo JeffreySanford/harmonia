@@ -28,6 +28,7 @@ export class MusicRuntimeService {
   private readonly logger = new Logger(MusicRuntimeService.name);
   private hardwareCache: HardwareProfile | null = null;
   private hardwareCacheAt = 0;
+  private readonly validatedProviderImages = new Set<string>();
 
   private status: MusicRuntimeStatus = {
     providerId: null,
@@ -229,6 +230,10 @@ export class MusicRuntimeService {
       throw new Error(`${provider.name} has no Docker image configured.`);
     }
 
+    if (this.validatedProviderImages.has(provider.id)) {
+      return;
+    }
+
     const imageExists = await this.tryDocker([
       'image',
       'inspect',
@@ -237,20 +242,22 @@ export class MusicRuntimeService {
       '{{.Id}}',
     ]);
 
-    if (imageExists) {
-      return;
-    }
-
     await this.transition(
       provider,
       model,
       hardware,
       'building',
-      `Building ${provider.name} runtime image…`,
+      imageExists
+        ? `Checking ${provider.name} runtime image for source changes…`
+        : `Building ${provider.name} runtime image…`,
       10
     );
 
+    // Compose/BuildKit performs the source/config freshness check. If the
+    // image is current this is a cache-only reconciliation; if Dockerfile or
+    // provider inputs changed, only invalidated layers rebuild.
     await this.buildProviderImage(provider, model, hardware);
+    this.validatedProviderImages.add(provider.id);
   }
 
   private async buildProviderImage(
