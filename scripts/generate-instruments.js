@@ -50,7 +50,7 @@ async function generateInstrument(instrument) {
   return new Promise((resolve, reject) => {
     log(`🎵 Generating ${instrument}...`, colors.blue);
 
-    const dockerCmd = `docker exec harmonia-worker bash -c "cd /workspace && python3 scripts/generate_musicgen_audio.py --instrument ${instrument} --duration ${DURATION}"`;
+    const dockerCmd = `docker exec harmonia-musicgen bash -c "cd /workspace && python3 scripts/generate_musicgen_audio.py --instrument ${instrument} --duration ${DURATION}"`;
 
     exec(dockerCmd, (error, stdout, stderr) => {
       if (error) {
@@ -105,7 +105,7 @@ async function generateAllInstruments() {
       // Copy file from container to host
       const hostFilename = path.basename(result.containerPath);
       const hostPath = path.join(OUTPUT_DIR, hostFilename);
-      const dockerPath = `harmonia-worker:${result.containerPath}`;
+      const dockerPath = `harmonia-musicgen:${result.containerPath}`;
 
       exec(`docker cp "${dockerPath}" "${hostPath}"`, (copyError) => {
         if (copyError) {
@@ -150,8 +150,8 @@ ${colors.blue}Instruments Generated:${colors.reset}
   ${INSTRUMENTS.join(', ')}
 
 ${colors.blue}Requirements:${colors.reset}
-  - Docker container 'harmonia-worker' must be running
-  - MusicGen model must be available in container
+  - Docker container 'harmonia-musicgen' must be running
+  - MusicGen provider runtime must be selected and running
 
 ${colors.blue}Output:${colors.reset}
   - Files saved as: YYYY-MM-DDTHH-MM-SS_instrument.wav
