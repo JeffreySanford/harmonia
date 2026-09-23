@@ -5,7 +5,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import * as path from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { JobsGateway } from './gateways/jobs.gateway';
+import { JobsModule } from '../jobs/jobs.module';
 import { HealthController } from '../health/health.controller';
 import { AuthModule } from '../auth/auth.module';
 import { SongsModule } from '../songs/songs.module';
@@ -58,8 +58,9 @@ import { MusicRuntimeModule } from '../music-runtime/music-runtime.module';
     LibraryModule,
     ProfileModule,
     MusicRuntimeModule,
+    JobsModule,
   ],
   controllers: [AppController, HealthController],
-  providers: [AppService, JobsGateway],
+  providers: [AppService],
 })
 export class AppModule {}
