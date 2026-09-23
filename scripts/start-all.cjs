@@ -47,7 +47,7 @@ function parseOptions(args) {
     tools: !args.includes('--no-tools'),
     gpu: args.includes('--gpu'),
   };
-    return options;
+  return options;
 }
 
 function composeArguments(options) {
@@ -176,9 +176,9 @@ async function main(args = process.argv.slice(2)) {
     console.log(
       [
         'Usage: pnpm start:all [--gpu] [--no-worker] [--no-tools]',
-        'Starts MongoDB, optional Mongo Express, optional ML worker, backend, and frontend.',
+        'Starts MongoDB, optional Mongo Express, optional utility worker, backend, and frontend.',
         '--gpu enables NVIDIA runtime for selected model providers.',
-        '--no-worker omits the ML worker.',
+        '--no-worker omits the utility worker.',
         '--no-tools omits Mongo Express.',
         'Docker must already be running.',
       ].join('\n')
