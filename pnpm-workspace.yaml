@@ -7,7 +7,7 @@ onlyBuiltDependencies:
   - '@scarf/scarf'
   - bcrypt
   - mongodb-memory-server
-  - '@parcel/watcher@2.5.1 || 2.6.0'
-  - 'unrs-resolver@1.11.1 || 1.12.2'
+  - '@parcel/watcher'
+  - unrs-resolver
 
 strictDepBuilds: true
