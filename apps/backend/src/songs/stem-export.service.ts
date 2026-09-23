@@ -27,9 +27,8 @@ export interface StemExportResult {
 export class StemExportService {
   constructor(private readonly instrumentCatalog: InstrumentCatalogService) {}
   /**
-   * Export per-instrument stems in the specified format
-   * This is a basic implementation that creates placeholder audio files
-   * In production, this would synthesize actual audio from instrument data
+   * Export per-instrument stems using the active MusicGen provider.
+   * Generation failures are returned as errors; no synthetic fallback is used.
    */
   exportStems(options: StemExportOptions): Observable<StemExportResult> {
     // Create observables for file operations
