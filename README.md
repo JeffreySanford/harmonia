@@ -3,7 +3,7 @@
 **Enterprise-grade AI music and video generation platform with full-stack architecture, real-time collaboration, and persistent data management.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Nx](https://img.shields.io/badge/Nx-22.1.3-blue)](https://nx.dev)
+[![Nx](https://img.shields.io/badge/Nx-22.7.12-blue)](https://nx.dev)
 [![Angular](https://img.shields.io/badge/Angular-21.0.2-red)](https://angular.io)
 [![NestJS](https://img.shields.io/badge/NestJS-11.1.9-e0234e)](https://nestjs.com)
 [![MongoDB](https://img.shields.io/badge/MongoDB-7.0-green)](https://www.mongodb.com)
@@ -58,7 +58,7 @@ startup lifecycle test.
 ### Prerequisites
 
 - **Node.js 20.19+** (LTS)
-- **pnpm 10.23.0+** (`npm install -g pnpm`)
+- **pnpm 12.6.0** (`npm install -g pnpm`)
 - **Docker Desktop with Compose supporting `build --provenance` and `up --wait`**
 - **NVIDIA container runtime** only when using `pnpm start:all --gpu`
 - **Git** for version control
@@ -90,7 +90,7 @@ startup lifecycle test.
 
 ### 🏗️ Infrastructure
 
-- **Nx 22.1.3 Monorepo** - Build caching, parallel execution, dependency graph
+- **Nx 22.7.12 Monorepo** - Build caching, parallel execution, dependency graph
 - **pnpm Workspace** - Fast installs (3x faster than npm), disk space efficiency
 - **Docker MongoDB 7.0** - Authenticated local database with persistent volumes
 - **Docker ML Worker** - Python 3.11, PyTorch, MusicGen for music generation
@@ -263,7 +263,7 @@ If you want, I can open a branch and PR with these README updates and the workfl
 
 - **Angular 21.0.2** + **NGRX 20.1.0** + **Material Design 3**
 - **NestJS 11.1.9** + **Socket.IO 4.8.1** + **Mongoose 8.9**
-- **Nx 22.1.3** + **pnpm 10.23.0** + **TypeScript 5.9.3**
+- **Nx 22.7.12** + **pnpm 12.6.0** + **TypeScript 5.9.3**
 - **MongoDB 7.0 (Docker)** + **Docker 29.0.1 (ML Worker)** + **Jest/Playwright**
 - **Ollama (DeepSeek-Coder, Mistral3)** + **MusicGen (Small/Medium/Large)**
 
@@ -274,7 +274,7 @@ If you want, I can open a branch and PR with these README updates and the workfl
 ### Phase 0: Foundation (✅ Complete)
 
 - MongoDB 7.0 Docker runtime with authenticated application user
-- PNPM 10.23.0 workspace
+- PNPM 12.6.0 workspace
 - Docker ML worker setup (harmonia-worker)
 - 27 documentation files
 
