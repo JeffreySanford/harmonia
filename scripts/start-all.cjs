@@ -127,21 +127,32 @@ function reconcileDocker(docker, compose, { build = true } = {}) {
   ]);
 }
 
-function checkPort(port, name, host = '0.0.0.0') {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.once('error', () =>
-      reject(
-        new Error(
-          `${name} port ${port} is unavailable on ${host}. Stop the conflicting service before starting Harmonia.`
-        )
-      )
-    );
-    server.listen(
-      { port: Number(port), host, exclusive: true },
-      () => server.close(resolve)
-    );
-  });
+async function checkPort(port, name, host) {
+  const hosts = host ? [host] : ['127.0.0.1', '::1'];
+
+  for (const candidate of hosts) {
+    await new Promise((resolve, reject) => {
+      const server = net.createServer();
+
+      server.once('error', (error) => {
+        if (candidate === '::1' && error?.code === 'EADDRNOTAVAIL') {
+          resolve();
+          return;
+        }
+
+        reject(
+          new Error(
+            `${name} port ${port} is unavailable on ${candidate}. Stop the conflicting service before starting Harmonia.`
+          )
+        );
+      });
+
+      server.listen(
+        { port: Number(port), host: candidate, exclusive: true },
+        () => server.close(resolve)
+      );
+    });
+  }
 }
 
 
