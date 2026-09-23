@@ -40,6 +40,7 @@ export interface MusicModelCatalogEntry {
   providerId: string;
   providerName: string;
   name: string;
+  runtimeModelId?: string;
   modelSize?: string;
   availability: 'installed' | 'planned' | 'api-only' | 'unreleased';
   minVramGb?: number;
