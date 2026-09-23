@@ -80,7 +80,11 @@ RUN sed -i 's/\r$//' /workspace/entrypoint.musicgen.sh \
     && chmod +x /workspace/entrypoint.musicgen.sh
 
 COPY scripts/generate_musicgen_audio.py /workspace/scripts/generate_musicgen_audio.py
-RUN chmod +x /workspace/scripts/generate_musicgen_audio.py
+COPY scripts/musicgen_provider_server.py /workspace/scripts/musicgen_provider_server.py
+COPY scripts/musicgen_provider_client.py /workspace/scripts/musicgen_provider_client.py
+RUN chmod +x /workspace/scripts/generate_musicgen_audio.py \
+    /workspace/scripts/musicgen_provider_server.py \
+    /workspace/scripts/musicgen_provider_client.py
 
 ENTRYPOINT ["/workspace/entrypoint.musicgen.sh"]
 CMD ["sleep", "infinity"]
