@@ -82,6 +82,8 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
   bpm = 120;
   vocalsStyle = 'clean';
   selectedInstruments: string[] = [];
+  diffsingerNotes = '';
+  diffsingerNotesDuration = '';
 
   isGenerating = false;
   progress = 0;
@@ -355,6 +357,56 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
     return this.selectedRuntimeModel?.maxDurationSeconds || 120;
   }
 
+  get isDiffSingerSelected(): boolean {
+    return (
+      this.selectedProviderId === 'diffsinger' ||
+      this.selectedRuntimeModel?.providerId === 'diffsinger'
+    );
+  }
+
+  get diffsingerScoreDurationSeconds(): number {
+    const durations = this.diffsingerNotesDuration
+      .split(/[|\s]+/)
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .map(Number);
+
+    if (
+      durations.length === 0 ||
+      durations.some((value) => !Number.isFinite(value) || value <= 0)
+    ) {
+      return 0;
+    }
+
+    return durations.reduce((sum, value) => sum + value, 0);
+  }
+
+  get hasRequiredGenerationInputs(): boolean {
+    if (!this.musicTitle.trim()) {
+      return false;
+    }
+
+    if (this.isDiffSingerSelected) {
+      const noteGroups = this.diffsingerNotes
+        .split('|')
+        .map((value) => value.trim())
+        .filter(Boolean);
+      const durationGroups = this.diffsingerNotesDuration
+        .split('|')
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+      return Boolean(
+        this.lyrics.trim() &&
+          noteGroups.length > 0 &&
+          noteGroups.length === durationGroups.length &&
+          this.diffsingerScoreDurationSeconds > 0
+      );
+    }
+
+    return Boolean(this.genre);
+  }
+
   get runtimeReady(): boolean {
     return Boolean(
       this.runtimeStatus?.state === 'ready' &&
@@ -450,7 +502,23 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
   }
 
   generateMusic(): void {
-    if (!this.musicTitle || !this.genre) {
+    if (!this.musicTitle.trim()) {
+      this.snackBar.open('Please enter a title.', 'Close', {
+        duration: 4000,
+      });
+      return;
+    }
+
+    if (this.isDiffSingerSelected && !this.hasRequiredGenerationInputs) {
+      this.snackBar.open(
+        'DiffSinger requires lyrics, pipe-separated notes, and matching note durations.',
+        'Close',
+        { duration: 5000 }
+      );
+      return;
+    }
+
+    if (!this.isDiffSingerSelected && !this.genre) {
       this.snackBar.open(
         'Please enter a title and select a genre.',
         'Close',
@@ -478,12 +546,16 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
     this.progress = 0;
     this.isGenerating = true;
 
-    this.store.dispatch(
-      JobsActions.createJob({
-        jobType: 'generate',
-        modelId: this.selectedModelId,
-        parameters: {
-          title: this.musicTitle,
+    const parameters = this.isDiffSingerSelected
+      ? {
+          title: this.musicTitle.trim(),
+          lyrics: this.lyrics.trim(),
+          notes: this.diffsingerNotes.trim(),
+          notesDuration: this.diffsingerNotesDuration.trim(),
+          inputType: 'word',
+        }
+      : {
+          title: this.musicTitle.trim(),
           prompt: this.buildMusicPrompt(),
           duration: this.duration,
           genre: this.genre,
@@ -491,7 +563,13 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
           bpm: this.bpm,
           instruments: [...this.selectedInstruments],
           vocalsStyle: this.vocalsStyle,
-        },
+        };
+
+    this.store.dispatch(
+      JobsActions.createJob({
+        jobType: 'generate',
+        modelId: this.selectedModelId,
+        parameters,
       })
     );
   }
