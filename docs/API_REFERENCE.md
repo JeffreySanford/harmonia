@@ -350,39 +350,41 @@ Authorization: Bearer <access_token>
 
 ```json
 {
-  "songId": "507f1f77bcf86cd799439011",
   "format": "wav",
-  "instruments": ["guitar", "drums", "bass"],
-  "sampleRate": 44100,
-  "bitDepth": 16
+  "instruments": ["piano", "guitar_electric"],
+  "outputDir": "generated/api-resident-smoke"
 }
 ```
 
 **Parameters**:
 
-- `songId` (string, required): Unique song identifier
-- `format` (string, optional): Export format ("wav", "mp3", "flac") - default: "wav"
-- `instruments` (array, optional): Specific instruments to export - default: all
-- `sampleRate` (number, optional): Sample rate in Hz (22050, 44100, 48000) - default: 44100
-- `bitDepth` (number, optional): Bit depth (16, 24, 32) - default: 16
+- `format` (string, required): Current stem format (`wav` or `mp3`)
+- `instruments` (array, required): Instrument IDs from the Harmonia catalog
+- `outputDir` (string, required): Output directory under Harmonia `generated/` or `exports/`
+- `sampleRate` (number, optional): Reserved export option
 
 **Response (200 OK)**:
 
 ```json
 {
   "success": true,
-  "exportId": "exp_507f1f77bcf86cd799439011",
+  "exportId": "exp_muec327h",
   "files": [
     {
-      "instrument": "guitar",
-      "filename": "guitar_stem.wav",
-      "size": 2457600,
-      "url": "/downloads/exp_507f1f77/guitar_stem.wav"
+      "instrument": "piano",
+      "filename": "piano.wav",
+      "size": 320044,
+      "url": null
     }
   ],
-  "zipUrl": "/downloads/exp_507f1f77/stems.zip"
+  "zipUrl": null
 }
 ```
+
+Files written under `exports/` receive a real `/downloads/...` URL because that
+directory is served by the backend. Files written under `generated/` remain
+local artifacts and return `url: null`. ZIP packaging is not implemented yet,
+so `zipUrl` remains `null` rather than advertising a nonexistent file.
 
 ---
 
