@@ -122,6 +122,38 @@ services:
     networks:
       - harmonia-net
 
+  musicgen:
+    build:
+      context: .
+      dockerfile: Dockerfile.musicgen
+    image: harmonia/musicgen:dev
+    container_name: harmonia-musicgen
+    restart: unless-stopped
+    profiles:
+      - model-musicgen
+    environment:
+      HF_HOME: /workspace/models/musicgen/huggingface
+      TORCH_HOME: /workspace/models/musicgen/torch
+      HARMONIA_MUSICGEN_MODEL: facebook/musicgen-small
+      HUGGINGFACE_HUB_TOKEN: ${HUGGINGFACE_HUB_TOKEN:-}
+    volumes:
+      - ./models/musicgen:/workspace/models/musicgen
+      - ./generated:/workspace/generated
+      - ./artifacts:/workspace/artifacts
+    command:
+      - sleep
+      - infinity
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "test -f /tmp/harmonia-runtime-ready && python3.9 -c 'import torch, audiocraft; raise SystemExit(0 if torch.cuda.is_available() else 1)'"
+      start_period: 120s
+      interval: 10s
+      timeout: 8s
+      retries: 6
+    networks:
+      - harmonia-net
+
 networks:
   harmonia-net:
     driver: bridge
