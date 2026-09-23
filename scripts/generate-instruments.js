@@ -50,7 +50,13 @@ async function generateInstrument(instrument) {
   return new Promise((resolve, reject) => {
     log(`🎵 Generating ${instrument}...`, colors.blue);
 
-    const dockerCmd = `docker exec harmonia-musicgen bash -c "cd /workspace && python3 scripts/generate_musicgen_audio.py --instrument ${instrument} --duration ${DURATION}"`;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const containerPath =
+      `/workspace/generated/instruments/${timestamp}_${instrument}.wav`;
+    const dockerCmd =
+      `docker exec harmonia-musicgen python3.9 /workspace/scripts/musicgen_provider_client.py ` +
+      `--instrument ${instrument} --output ${containerPath} --duration ${DURATION} ` +
+      '--model facebook/musicgen-small';
 
     exec(dockerCmd, (error, stdout, stderr) => {
       if (error) {
@@ -68,13 +74,20 @@ async function generateInstrument(instrument) {
 
       log(`✅ Generated ${instrument} successfully`, colors.green);
 
-      // Extract the full container path from output
-      const pathMatch = stdout.match(/Audio generation completed: (.+)/);
-      const containerPath = pathMatch
-        ? pathMatch[1]
-        : `/workspace/generated/instruments/${instrument}.wav`;
+      let result;
+      try {
+        result = JSON.parse(stdout.trim().split(/\r?\n/).at(-1));
+      } catch {
+        reject(new Error(`Invalid MusicGen provider response: ${stdout}`));
+        return;
+      }
 
-      resolve({ instrument, containerPath });
+      if (!result?.ok || !result?.output) {
+        reject(new Error(result?.error || 'MusicGen provider generation failed'));
+        return;
+      }
+
+      resolve({ instrument, containerPath: result.output });
     });
   });
 }
@@ -102,21 +115,14 @@ async function generateAllInstruments() {
       results.push(result);
       successCount++;
 
-      // Copy file from container to host
       const hostFilename = path.basename(result.containerPath);
-      const hostPath = path.join(OUTPUT_DIR, hostFilename);
-      const dockerPath = `harmonia-musicgen:${result.containerPath}`;
-
-      exec(`docker cp "${dockerPath}" "${hostPath}"`, (copyError) => {
-        if (copyError) {
-          log(
-            `⚠️  Failed to copy ${instrument} to host: ${copyError.message}`,
-            colors.yellow
-          );
-        } else {
-          log(`📋 Copied ${instrument} to host: ${hostFilename}`, colors.green);
-        }
-      });
+      log(
+        `📁 ${instrument} available on host: ${path.join(
+          OUTPUT_DIR,
+          hostFilename
+        )}`,
+        colors.green
+      );
     } catch (error) {
       failCount++;
       log(`❌ Failed ${instrument}: ${error.message}`, colors.red);
