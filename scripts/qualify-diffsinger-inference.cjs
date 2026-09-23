@@ -156,7 +156,7 @@ function diagnostics() {
         containerName,
         'bash',
         '-lc',
-        "echo revision=$(git -C /opt/DiffSinger rev-parse HEAD 2>/dev/null); find /opt/DiffSinger/checkpoints /workspace/models/diffsinger -maxdepth 4 -type f \\( -name '*.ckpt' -o -name '*.yaml' -o -name '*.json' \\) 2>/dev/null | sort | sed -n '1,240p'",
+        "echo revision=$(git -C /opt/DiffSinger rev-parse HEAD 2>/dev/null); find -L /opt/DiffSinger/checkpoints /workspace/models/diffsinger -maxdepth 4 -type f \\( -name '*.ckpt' -o -name '*.yaml' -o -name '*.json' \\) 2>/dev/null | sort | sed -n '1,240p'",
       ])
     );
   } catch (error) {
@@ -211,11 +211,11 @@ async function main() {
     [
       "test -f /tmp/harmonia-runtime-ready",
       "test -f /opt/DiffSinger/checkpoints/0228_opencpop_ds100_rel/config.yaml",
-      "find /opt/DiffSinger/checkpoints/0228_opencpop_ds100_rel -maxdepth 2 -type f -name 'model_ckpt_steps_*.ckpt' -print -quit | grep -q .",
+      "find -L /opt/DiffSinger/checkpoints/0228_opencpop_ds100_rel -maxdepth 2 -type f -name 'model_ckpt_steps_*.ckpt' -print -quit | grep -q .",
       "test -f /opt/DiffSinger/checkpoints/0102_xiaoma_pe/config.yaml",
-      "find /opt/DiffSinger/checkpoints/0102_xiaoma_pe -maxdepth 2 -type f -name 'model_ckpt_steps_*.ckpt' -print -quit | grep -q .",
+      "find -L /opt/DiffSinger/checkpoints/0102_xiaoma_pe -maxdepth 2 -type f -name 'model_ckpt_steps_*.ckpt' -print -quit | grep -q .",
       "test -f /opt/DiffSinger/checkpoints/0109_hifigan_bigpopcs_hop128/config.yaml",
-      "find /opt/DiffSinger/checkpoints/0109_hifigan_bigpopcs_hop128 -maxdepth 2 -type f -name 'model_ckpt_steps_*.ckpt' -print -quit | grep -q .",
+      "find -L /opt/DiffSinger/checkpoints/0109_hifigan_bigpopcs_hop128 -maxdepth 2 -type f -name 'model_ckpt_steps_*.ckpt' -print -quit | grep -q .",
       "test \"$(git -C /opt/DiffSinger rev-parse HEAD)\" = 017bd488a61ebdb8909a8d272ec6211076fa4a7e",
     ].join(' && '),
   ]);
