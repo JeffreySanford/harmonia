@@ -15,5 +15,6 @@ import { MusicGenerationMaterialModule } from './music-generation-material.modul
     MusicGenerationRoutingModule,
     MusicGenerationMaterialModule,
   ],
+  exports: [MusicGenerationPageComponent],
 })
 export class MusicGenerationModule {}
