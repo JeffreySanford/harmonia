@@ -42,7 +42,7 @@ export interface LogoutResponse {
   providedIn: 'root',
 })
 export class AuthService {
-  private readonly apiUrl = 'http://localhost:3000/api/auth';
+  private readonly apiUrl = '/api/auth';
   private readonly http = inject(HttpClient);
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
