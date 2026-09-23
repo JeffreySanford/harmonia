@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Observable, from } from 'rxjs';
-import { map, catchError, switchMap, mergeMap, toArray } from 'rxjs/operators';
+import { map, catchError, switchMap, concatMap, toArray } from 'rxjs/operators';
 import { InstrumentCatalogService } from './instrument-catalog.service';
+import { MusicRuntimeService } from '../music-runtime/music-runtime.service';
 
 export interface StemExportOptions {
   format: 'wav' | 'mp3';
@@ -25,7 +26,10 @@ export interface StemExportResult {
 
 @Injectable()
 export class StemExportService {
-  constructor(private readonly instrumentCatalog: InstrumentCatalogService) {}
+  constructor(
+    private readonly instrumentCatalog: InstrumentCatalogService,
+    private readonly musicRuntime: MusicRuntimeService
+  ) {}
   /**
    * Export per-instrument stems using the active MusicGen provider.
    * Generation failures are returned as errors; no synthetic fallback is used.
@@ -84,7 +88,7 @@ export class StemExportService {
           // Generate real provider audio. Provider failures propagate and are
           // reported to the caller; Harmonia must never substitute fake audio.
           const audioObservable = from(
-            this.generateMusicGenAudio(instrument)
+            this.generateProviderAudio(instrument)
           );
 
           return audioObservable.pipe(
@@ -106,7 +110,7 @@ export class StemExportService {
         });
 
         return from(instrumentObservables).pipe(
-          mergeMap((obs) => obs),
+          concatMap((obs) => obs),
           toArray()
         );
       }),
@@ -145,17 +149,36 @@ export class StemExportService {
       })
     );
   }
+  private async generateProviderAudio(
+    instrument: string
+  ): Promise<Buffer> {
+    const selection = await this.musicRuntime.beginGeneration('musicgen');
+
+    try {
+      return await this.generateMusicGenAudio(
+        instrument,
+        selection.runtimeModelId
+      );
+    } finally {
+      await this.musicRuntime.finishGeneration('musicgen');
+    }
+  }
+
   /**
-   * Generate audio using MusicGen via Docker
+   * Generate audio using the persistent MusicGen provider process.
    */
-  private generateMusicGenAudio(instrument: string): Promise<Buffer> {
+  private generateMusicGenAudio(
+    instrument: string,
+    runtimeModelId: string
+  ): Promise<Buffer> {
     // Call the MusicGen Docker container to generate real audio
     console.log(
       `Generating audio for ${instrument} using MusicGen Docker container...`
     );
 
     const { spawn } = require('child_process');
-    const outputPath = `/tmp/${instrument.replace(/[^a-zA-Z0-9]/g, '_')}.wav`;
+    const safeInstrument = instrument.replace(/[^a-zA-Z0-9]/g, '_');
+    const outputPath = `/tmp/harmonia-${Date.now()}-${safeInstrument}.wav`;
     const debugLogPath = path.join(
       process.cwd(),
       'logs',
@@ -175,14 +198,16 @@ export class StemExportService {
         [
           'exec',
           'harmonia-musicgen',
-          'python3',
-          '/workspace/scripts/generate_musicgen_audio.py',
+          'python3.9',
+          '/workspace/scripts/musicgen_provider_client.py',
           '--instrument',
           instrument,
           '--output',
           outputPath,
           '--duration',
           '5',
+          '--model',
+          runtimeModelId,
         ],
         { stdio: 'pipe' }
       );
@@ -286,7 +311,7 @@ export class StemExportService {
       });
 
       // Log the command being executed
-      const cmdLogMessage = `[${new Date().toISOString()}] EXECUTING: docker exec harmonia-musicgen python3 /workspace/scripts/generate_musicgen_audio.py --instrument ${instrument} --output ${outputPath} --duration 5\n`;
+      const cmdLogMessage = `[${new Date().toISOString()}] EXECUTING: docker exec harmonia-musicgen python3.9 /workspace/scripts/musicgen_provider_client.py --instrument ${instrument} --output ${outputPath} --duration 5 --model ${runtimeModelId}\n`;
       fs.appendFileSync(debugLogPath, cmdLogMessage);
     });
   }
