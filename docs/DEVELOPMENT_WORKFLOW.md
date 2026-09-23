@@ -23,6 +23,13 @@ pnpm install
 > as Administrator. Run the pinned package manager directly with
 > `corepack pnpm@12.6.0 <command>` (for example,
 > `corepack pnpm@12.6.0 install`).
+
+> **pnpm 12 user config migration:** older user-level pnpm configuration may
+> contain `trustPolicy: ignore`. pnpm 12 accepts only `off` or
+> `no-downgrade`. To preserve the old disabled-policy behavior, change
+> `trustPolicy: ignore` to `trustPolicy: off` in
+> `%LOCALAPPDATA%\\pnpm\\config\\config.yaml`. This is a per-user file and
+> does not require Administrator privileges.
 cp .env.example .env
 # Set MONGO_ROOT_PASSWORD, MONGO_HARMONIA_PASSWORD, and JWT_SECRET.
 pnpm start:all
