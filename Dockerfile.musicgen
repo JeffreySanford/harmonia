@@ -48,6 +48,14 @@ RUN python3.9 -m pip install \
     torchvision==0.16.0 \
     torchaudio==2.1.0
 
+# AudioCraft 1.3.0 has a frozen Python 3.9-era dependency stack. Pin
+# spaCy/Thinc explicitly so modern package indexes do not resolve to Thinc
+# releases that require Python >=3.10.
+RUN python3.9 -m pip install \
+    "numpy<2.0.0" \
+    "thinc==8.2.5" \
+    "spacy==3.7.6"
+
 RUN python3.9 -m pip install audiocraft==1.3.0
 
 COPY entrypoint.musicgen.sh /workspace/entrypoint.musicgen.sh
