@@ -101,6 +101,23 @@ test('local auth repair synchronizes app credentials and seeds the test user', (
   assert.doesNotMatch(repair, /MONGO_HARMONIA_PASSWORD=.*password/i);
 });
 
+
+test('MusicGen Small qualification exercises persistent generation and downloads', () => {
+  const pkg = JSON.parse(read('package.json'));
+  const qualify = read('scripts/qualify-musicgen-small.cjs');
+
+  assert.equal(
+    pkg.scripts['qualify:musicgen-small'],
+    'node scripts/qualify-musicgen-small.cjs'
+  );
+  assert.match(qualify, /modelId: 'musicgen-small'/);
+  assert.match(qualify, /\/api\/jobs/);
+  assert.match(qualify, /\/downloads\/jobs\//);
+  assert.match(qualify, /RIFF/);
+  assert.match(qualify, /WAVE/);
+  assert.match(qualify, /MUSICGEN_SMALL_QUALIFICATION_OK/);
+});
+
 test('backend MusicGen execution targets the isolated provider container', () => {
   const service = read('apps/backend/src/songs/stem-export.service.ts');
   assert.match(service, /harmonia-musicgen/);
