@@ -72,6 +72,17 @@ test('Mongo initialization never falls back to a default application password', 
   assert.doesNotMatch(init, /changeme/);
 });
 
+
+test('backend never falls back to unauthenticated MongoDB access', () => {
+  const appModule = read('apps/backend/src/app/app.module.ts');
+
+  assert.match(appModule, /MONGO_HARMONIA_PASSWORD/);
+  assert.match(appModule, /harmonia_app/);
+  assert.match(appModule, /authSource=harmonia/);
+  assert.match(appModule, /encodeURIComponent\(appPassword\)/);
+  assert.doesNotMatch(appModule, /mongodb:\/\/localhost:27017\/harmonia/);
+});
+
 test('backend MusicGen execution targets the isolated provider container', () => {
   const service = read('apps/backend/src/songs/stem-export.service.ts');
   assert.match(service, /harmonia-musicgen/);
