@@ -17,6 +17,8 @@ def test_generic_worker_excludes_provider_specific_model_runtimes():
     assert 'openvpi/DiffSinger' not in worker
     assert 'HiFi-GAN' not in worker
     assert 'audiocraft' not in worker.lower()
+    assert 'torch' not in worker.lower()
+    assert 'torchaudio' not in worker.lower()
     assert 'requirements.worker.txt' in worker
 
     assert 'openvpi/DiffSinger' in diffsinger
