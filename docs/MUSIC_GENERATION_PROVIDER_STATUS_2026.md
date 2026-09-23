@@ -181,6 +181,43 @@ The provider container is intentionally started on demand through the backend mu
 
 This establishes MusicGen Small and Stereo Small as the current known-good local baselines before moving to DiffSinger and the remaining provider roadmap.
 
+### 2.9 September 23, 2026 DiffSinger qualification result
+
+The isolated DiffSinger provider is now qualified through the same durable product
+boundary used by MusicGen.
+
+Qualified runtime stack:
+
+- OpenVPI DiffSinger pinned to `017bd488a61ebdb8909a8d272ec6211076fa4a7e`
+- Python 3.8.10
+- PyTorch 1.8.2+cu111
+- CUDA available
+- `0228_opencpop_ds100_rel` acoustic model
+- `0102_xiaoma_pe` pitch estimator
+- `0109_hifigan_bigpopcs_hop128` HiFi-GAN vocoder
+
+Qualified inference result:
+
+- real RIFF/WAVE output, no placeholder path
+- 8.75-second mono vocal artifact
+- 24 kHz, 16-bit PCM
+- isolated provider remains healthy after inference
+
+Qualified persistent-job result:
+
+- authenticated `POST /api/jobs`
+- durable MongoDB job lifecycle
+- provider-native runtime model id `0228_opencpop_ds100_rel`
+- durable score request persisted beside the job output
+- score duration 8.75 seconds and generated WAV duration 8.75 seconds
+- backend download HTTP 200
+- frontend-proxied download HTTP 200
+
+The Angular music-generation surface is being separated into provider-native forms:
+MusicGen retains prompt/duration controls, while DiffSinger exposes lyrics/text,
+notes, and note durations. This avoids treating score-based singing synthesis as
+prompt-to-music generation.
+
 ## 3. Google Music Generation: Lyria Is Now Public
 
 When Harmonia was originally designed, Google's higher-end music generation work was not exposed as a normal developer API. That has changed.
