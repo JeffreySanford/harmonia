@@ -54,8 +54,7 @@ function ensureScripts() {
   pkg.scripts ||= {};
   pkg.scripts.storybook = 'nx storybook frontend';
   pkg.scripts['storybook:build'] = 'nx build-storybook frontend';
-  pkg.scripts['storybook:test'] =
-    'test-storybook --url http://127.0.0.1:6006';
+  pkg.scripts['storybook:test'] = 'nx run frontend:test-storybook';
 
   writeFileSync(packagePath, JSON.stringify(pkg, null, 2) + '\n');
 }
