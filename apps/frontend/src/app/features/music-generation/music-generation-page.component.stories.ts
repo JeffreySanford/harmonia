@@ -133,12 +133,12 @@ const readyStatus: MusicRuntimeStatus = {
   error: null,
 };
 
-const buildingStatus: MusicRuntimeStatus = {
+const stoppedStatus: MusicRuntimeStatus = {
   ...readyStatus,
-  state: 'building',
-  message: 'Building MusicGen runtime image...',
+  state: 'stopped',
+  message: 'MusicGen runtime is stopped.',
   healthy: false,
-  progress: 42,
+  progress: 0,
 };
 
 function storyState(
@@ -178,7 +178,7 @@ function jobsWith(job: Job): JobsState {
 }
 
 const readyStore = new MusicStoryStore(storyState(readyStatus));
-const buildingStore = new MusicStoryStore(storyState(buildingStatus));
+const notReadyStore = new MusicStoryStore(storyState(stoppedStatus));
 
 const completedStore = new MusicStoryStore(
   storyState(readyStatus),
@@ -319,9 +319,9 @@ export const GenerateMusicDispatchesPersistentJob: Story = {
 };
 
 export const RuntimeNotReadyPreventsGeneration: Story = {
-  decorators: [withStore(buildingStore)],
+  decorators: [withStore(notReadyStore)],
   play: async ({ canvas, userEvent }) => {
-    buildingStore.dispatchSpy.mockClear();
+    notReadyStore.dispatchSpy.mockClear();
     snackBar.open.mockClear();
 
     await userEvent.type(
@@ -342,7 +342,7 @@ export const RuntimeNotReadyPreventsGeneration: Story = {
       { duration: 5000 }
     );
 
-    await expect(buildingStore.dispatchSpy).not.toHaveBeenCalledWith(
+    await expect(notReadyStore.dispatchSpy).not.toHaveBeenCalledWith(
       expect.objectContaining({
         type: JobsActions.createJob.type,
       })
