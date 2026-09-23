@@ -1,41 +1,113 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Harmonia Inventory Manifest",
+  "title": "Harmonia Combined Inventory Manifest",
   "type": "object",
   "properties": {
-    "version": {"type":"string"},
-    "generated_at": {"type":"string","format":"date-time"},
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
     "models": {
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "name": {"type":"string"},
-          "path": {"type":"string"},
-          "sha256": {"type":"string"},
-          "size_bytes": {"type":"integer"},
-          "source_url": {"type":"string"},
-          "variant": {"type":"string"},
-          "notes": {"type":"string"},
-          "license": {
-            "type": "object",
-            "properties": {
-              "name": {"type": "string"},
-              "url": {"type": "string"},
-              "file_path": {"type": "string"},
-              "commercial_use": {"type": "string", "enum": ["allowed","restricted","prohibited","unknown"]},
-              "redistribution": {"type": "string", "enum": ["allowed","restricted","prohibited","unknown"]},
-              "notes": {"type": "string"}
-            }
-          }
-        },
-        "required": ["name","path"]
+        "$ref": "#/definitions/inventoryEntry"
       }
     },
     "datasets": {
       "type": "array",
-      "items": {"type":"object"}
+      "items": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/inventoryEntry"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "readme_excerpt": {
+                "type": ["string", "null"]
+              },
+              "top_files": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "size_bytes": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": ["path", "size_bytes"]
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "totals": {
+      "type": "object",
+      "properties": {
+        "models_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "models_files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "datasets_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "datasets_files": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "models_bytes",
+        "models_files",
+        "datasets_bytes",
+        "datasets_files"
+      ]
     }
   },
-  "required": ["version","generated_at"]
+  "definitions": {
+    "inventoryEntry": {
+      "type": "object",
+      "properties": {
+        "folder_name": {
+          "type": "string"
+        },
+        "repo_id": {
+          "type": "string"
+        },
+        "local_path": {
+          "type": "string"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "files_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "snapshot": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": [
+        "folder_name",
+        "repo_id",
+        "local_path",
+        "size_bytes",
+        "files_count"
+      ]
+    }
+  },
+  "required": ["generated_at", "models", "datasets", "totals"]
 }
