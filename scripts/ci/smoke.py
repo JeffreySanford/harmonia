@@ -2,30 +2,25 @@
 import json
 import sys
 
-out = {}
-try:
-    import torch
-    out['torch'] = getattr(torch, '__version__', str(torch))
-except Exception as e:
-    out['torch_error'] = str(e)
+out = {
+    'python': sys.version.split()[0],
+}
 
 try:
-    import utils
-    out['utils'] = 'ok'
-except Exception as e:
-    out['utils_error'] = str(e)
+    import yaml
+    out['pyyaml'] = getattr(yaml, '__version__', 'ok')
+except Exception as exc:
+    out['pyyaml_error'] = str(exc)
 
 try:
-    from utils.hparams import set_hparams, hparams
-    cfg = '/opt/DiffSinger/checkpoints/0102_xiaoma_pe/config.yaml'
-    try:
-        set_hparams(config=cfg, exp_name='0102_xiaoma_pe', hparams_str='')
-        out['hparams_sample'] = list(hparams.keys())[:10]
-    except Exception as e:
-        out['hparams_error'] = str(e)
-except Exception as e:
-    out['hparams_import_error'] = str(e)
+    import requests
+    out['requests'] = getattr(requests, '__version__', 'ok')
+except Exception as exc:
+    out['requests_error'] = str(exc)
+
+if sys.version_info < (3, 11):
+    out['python_error'] = 'Generic worker requires Python 3.11+'
 
 print(json.dumps(out))
-if any(k.endswith('_error') for k in out):
+if any(key.endswith('_error') for key in out):
     sys.exit(1)
