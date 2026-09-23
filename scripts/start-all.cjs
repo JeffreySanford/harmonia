@@ -20,6 +20,25 @@ function run(command, args, env, capture = false) {
   return result.stdout || '';
 }
 
+function resolvePackageBin(packageName, binName = packageName) {
+  const packageJsonPath = require.resolve(`${packageName}/package.json`, {
+    paths: [root],
+  });
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+  const bin =
+    typeof packageJson.bin === 'string'
+      ? packageJson.bin
+      : packageJson.bin?.[binName];
+
+  if (!bin) {
+    throw new Error(
+      `Package ${packageName} does not expose a ${binName} executable.`
+    );
+  }
+
+  return path.resolve(path.dirname(packageJsonPath), bin);
+}
+
 function applicationEnvironment(env) {
   for (const key of ['MONGO_ROOT_PASSWORD', 'MONGO_HARMONIA_PASSWORD', 'JWT_SECRET']) {
     if (!env[key]?.trim()) throw new Error(`Set ${key} in .env before starting. See .env.example.`);
@@ -197,7 +216,7 @@ async function main(args = process.argv.slice(2)) {
     ...process.env,
     HARMONIA_GPU_ENABLED: options.gpu ? 'true' : 'false',
   });
-  const nx = path.join(root, 'node_modules', 'nx', 'bin', 'nx.js');
+  const nx = resolvePackageBin('nx', 'nx');
   if (!existsSync(nx)) throw new Error('Dependencies are missing. Run pnpm install first.');
 
   await checkPort(env.PORT, 'Backend');
@@ -274,5 +293,6 @@ module.exports = {
   main,
   parseOptions,
   reconcileDocker,
+  resolvePackageBin,
   run,
 };
