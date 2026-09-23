@@ -475,6 +475,64 @@ export class MusicRuntimeService {
     });
   }
 
+  private async recoverProviderRuntimeSnapshot(
+    provider: MusicProviderDefinition
+  ): Promise<{
+    model: MusicModelDefinition | null;
+    busy: boolean;
+  }> {
+    if (provider.id !== 'musicgen' || !provider.containerName) {
+      return { model: null, busy: false };
+    }
+
+    try {
+      const { stdout } = await execFileAsync(
+        'docker',
+        [
+          'exec',
+          provider.containerName,
+          'python3.9',
+          '-c',
+          [
+            'import json, urllib.request',
+            "body = urllib.request.urlopen('http://127.0.0.1:8765/health', timeout=3).read().decode('utf-8')",
+            'print(body)',
+          ].join('; '),
+        ],
+        {
+          cwd: process.cwd(),
+          windowsHide: true,
+          timeout: 5_000,
+        }
+      );
+
+      const snapshot = JSON.parse(String(stdout).trim()) as {
+        model?: string | null;
+        busy?: boolean;
+      };
+
+      const model = snapshot.model
+        ? MUSIC_MODELS.find(
+            (candidate) =>
+              candidate.providerId === provider.id &&
+              candidate.runtimeModelId === snapshot.model
+          ) || null
+        : null;
+
+      return {
+        model,
+        busy: Boolean(snapshot.busy),
+      };
+    } catch (error) {
+      this.logger.warn(
+        `Could not recover ${provider.name} provider model state: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+      return { model: null, busy: false };
+    }
+  }
+
   private async reconcileRuntimeOwnership(): Promise<void> {
     if (
       ['building', 'starting', 'health-checking', 'stopping'].includes(
@@ -559,21 +617,47 @@ export class MusicRuntimeService {
     if (running.length === 1) {
       const recovered = running[0]!;
       const sameProvider = this.status.providerId === recovered.provider.id;
-      const recoveredState = recovered.healthy ? 'ready' : 'health-checking';
+      const snapshot = await this.recoverProviderRuntimeSnapshot(
+        recovered.provider
+      );
+      const rememberedModel =
+        sameProvider && this.status.modelId
+          ? MUSIC_MODELS.find(
+              (candidate) => candidate.id === this.status.modelId
+            ) || null
+          : null;
+      const recoveredModel = snapshot.model || rememberedModel;
+      const recoveredState: MusicRuntimeState = recovered.healthy
+        ? snapshot.busy
+          ? 'busy'
+          : 'ready'
+        : 'health-checking';
+
+      const modelChanged =
+        this.status.modelId !== (recoveredModel?.id || null);
+      const stateChanged = this.status.state !== recoveredState;
 
       if (
         !sameProvider ||
         this.status.state === 'stopped' ||
-        this.status.healthy !== recovered.healthy
+        this.status.healthy !== recovered.healthy ||
+        modelChanged ||
+        stateChanged
       ) {
+        const recoveredModelLabel = recoveredModel
+          ? ` with resident ${recoveredModel.name}`
+          : '';
+
         this.status = {
           providerId: recovered.provider.id,
           providerName: recovered.provider.name,
-          modelId: sameProvider ? this.status.modelId : null,
-          modelName: sameProvider ? this.status.modelName : null,
+          modelId: recoveredModel?.id || null,
+          modelName: recoveredModel?.name || null,
           state: recoveredState,
           message: recovered.healthy
-            ? `Recovered running ${recovered.provider.name} runtime after backend restart.`
+            ? snapshot.busy
+              ? `Recovered running ${recovered.provider.name}${recoveredModelLabel}; generation is in progress.`
+              : `Recovered running ${recovered.provider.name}${recoveredModelLabel} after backend restart.`
             : `Recovered ${recovered.provider.name} runtime; waiting for health.`,
           healthy: recovered.healthy,
           progress: recovered.healthy ? 100 : 65,
@@ -668,7 +752,8 @@ export class MusicRuntimeService {
       } catch (error) {
         if (
           error instanceof Error &&
-          error.message.includes('exited before')
+          (error.message.includes('exited before') ||
+            error.message.includes('became unhealthy'))
         ) {
           throw error;
         }
