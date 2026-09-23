@@ -303,6 +303,21 @@ test('backend MusicGen execution targets the isolated provider container', () =>
 });
 
 
+test('DiffSinger runtime qualification requires a healthy isolated container', () => {
+  const qualifier = read('scripts/qualify-diffsinger-runtime.cjs');
+  const pkg = JSON.parse(read('package.json'));
+
+  assert.equal(
+    pkg.scripts['qualify:diffsinger-runtime'],
+    'node scripts/qualify-diffsinger-runtime.cjs'
+  );
+  assert.match(qualifier, /diffsinger-acoustic-hifigan/);
+  assert.match(qualifier, /harmonia-diffsinger/);
+  assert.match(qualifier, /state\.Health\?\.Status !== 'healthy'/);
+  assert.match(qualifier, /harmonia-runtime-ready/);
+  assert.match(qualifier, /DIFFSINGER_RUNTIME_QUALIFICATION_OK/);
+});
+
 test('DiffSinger is isolated from the generic worker image', () => {
   const worker = read('Dockerfile.worker');
   const diffsinger = read('Dockerfile.diffsinger');
