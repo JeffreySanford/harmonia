@@ -100,6 +100,35 @@ const musicGenSmall: MusicModelCatalogEntry = {
   disabledReason: null,
 };
 
+const diffSingerProvider: MusicProviderDefinition = {
+  id: 'diffsinger',
+  name: 'DiffSinger',
+  description: 'Pinned OpenCpop singing-synthesis runtime',
+  runtimeInstalled: true,
+  imageName: 'harmonia/diffsinger:dev',
+  dockerService: 'diffsinger',
+  containerName: 'harmonia-diffsinger',
+  composeProfile: 'model-diffsinger',
+};
+
+const diffSingerModel: MusicModelCatalogEntry = {
+  id: 'diffsinger-acoustic-hifigan',
+  providerId: 'diffsinger',
+  providerName: 'DiffSinger',
+  name: 'Acoustic + HiFi-GAN',
+  runtimeModelId: '0228_opencpop_ds100_rel',
+  availability: 'installed',
+  minVramGb: 6,
+  recommendedVramGb: 8,
+  capabilities: ['vocals', 'lyrics', 'singing-synthesis'],
+  runtimeCost: 'local-free',
+  commercialUse: 'review-required',
+  notes: 'Pinned OpenCpop score synthesis fixture',
+  hardwareFit: 'recommended',
+  selectable: true,
+  disabledReason: null,
+};
+
 const musicGenMedium: MusicModelCatalogEntry = {
   id: 'musicgen-medium',
   providerId: 'musicgen',
@@ -130,6 +159,20 @@ const readyStatus: MusicRuntimeStatus = {
   progress: 100,
   hardware,
   updatedAt: '2026-09-23T18:30:13.692Z',
+  error: null,
+};
+
+const diffSingerReadyStatus: MusicRuntimeStatus = {
+  providerId: 'diffsinger',
+  providerName: 'DiffSinger',
+  modelId: 'diffsinger-acoustic-hifigan',
+  modelName: 'Acoustic + HiFi-GAN',
+  state: 'ready',
+  message: 'DiffSinger runtime is ready.',
+  healthy: true,
+  progress: 100,
+  hardware,
+  updatedAt: '2026-09-23T23:30:00.000Z',
   error: null,
 };
 
@@ -166,6 +209,28 @@ function storyState(
   };
 }
 
+function diffSingerStoryState(): MusicStoryState {
+  return {
+    auth: {
+      ...initialAuthState,
+      token: 'storybook-test-token',
+      isAuthenticated: true,
+    },
+    musicRuntime: {
+      providers: [diffSingerProvider],
+      models: [diffSingerModel],
+      hardware,
+      status: diffSingerReadyStatus,
+      selectedProviderId: 'diffsinger',
+      selectedModelId: 'diffsinger-acoustic-hifigan',
+      loading: false,
+      switching: false,
+      error: null,
+    },
+    jobs: initialJobsState,
+  };
+}
+
 function jobsWith(job: Job): JobsState {
   return {
     ...initialJobsState,
@@ -179,6 +244,7 @@ function jobsWith(job: Job): JobsState {
 
 const readyStore = new MusicStoryStore(storyState(readyStatus));
 const notReadyStore = new MusicStoryStore(storyState(stoppedStatus));
+const diffSingerReadyStore = new MusicStoryStore(diffSingerStoryState());
 
 const completedStore = new MusicStoryStore(
   storyState(readyStatus),
@@ -315,6 +381,54 @@ export const GenerateMusicDispatchesPersistentJob: Story = {
     await expect(
       canvas.getByRole('button', { name: /generating/i })
     ).toBeDisabled();
+  },
+};
+
+export const DiffSingerScoreDispatchesPersistentJob: Story = {
+  decorators: [withStore(diffSingerReadyStore)],
+  play: async ({ canvas, userEvent }) => {
+    diffSingerReadyStore.dispatchSpy.mockClear();
+
+    await userEvent.type(
+      canvas.getByPlaceholderText('Enter music title'),
+      'Storybook DiffSinger Demo'
+    );
+    await userEvent.type(
+      canvas.getByLabelText('DiffSinger lyrics or score text'),
+      'SP一闪一闪亮晶晶'
+    );
+    await userEvent.type(
+      canvas.getByLabelText('DiffSinger notes'),
+      'rest|C4|C4|G4'
+    );
+    await userEvent.type(
+      canvas.getByLabelText('DiffSinger note durations'),
+      '1|0.5|0.5|0.75'
+    );
+
+    await expect(canvas.getByText('DiffSinger Score')).toBeVisible();
+
+    const generate = canvas.getByRole('button', {
+      name: /generate music/i,
+    });
+
+    await expect(generate).toBeEnabled();
+    await userEvent.click(generate);
+
+    await expect(diffSingerReadyStore.dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: JobsActions.createJob.type,
+        jobType: 'generate',
+        modelId: 'diffsinger-acoustic-hifigan',
+        parameters: {
+          title: 'Storybook DiffSinger Demo',
+          lyrics: 'SP一闪一闪亮晶晶',
+          notes: 'rest|C4|C4|G4',
+          notesDuration: '1|0.5|0.5|0.75',
+          inputType: 'word',
+        },
+      })
+    );
   },
 };
 
