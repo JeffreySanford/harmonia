@@ -243,14 +243,17 @@ test('runtime ownership is recovered from Docker before model switching', () => 
 test('MusicGen startup validates dependencies once and healthcheck uses readiness sentinel', () => {
   const compose = read('docker-compose.yml');
   const entrypoint = read('entrypoint.musicgen.sh');
+  const server = read('scripts/musicgen_provider_server.py');
   const backend = read(
     'apps/backend/src/music-runtime/music-runtime.service.ts'
   );
 
   assert.match(entrypoint, /import torch/);
   assert.match(entrypoint, /import audiocraft/);
-  assert.match(entrypoint, /touch \/tmp\/harmonia-runtime-ready/);
+  assert.match(server, /READY_FILE\.touch\(\)/);
+  assert.match(server, /ThreadingHTTPServer/);
   assert.match(compose, /test -f \/tmp\/harmonia-runtime-ready/);
+  assert.match(compose, /127\.0\.0\.1:8765\/health/);
   assert.doesNotMatch(
     compose,
     /python3\.9 -c 'import torch, audiocraft/
@@ -323,4 +326,37 @@ test('generic worker excludes heavyweight model frameworks', () => {
   assert.doesNotMatch(gpu, /^\s*worker:\s*$/m);
   assert.doesNotMatch(startup, /--gpu cannot be combined with --no-worker/);
   assert.match(startup, /--gpu enables NVIDIA runtime for selected model providers/);
+});
+
+
+test('MusicGen generation reuses a resident provider model', () => {
+  const dockerfile = read('Dockerfile.musicgen');
+  const compose = read('docker-compose.yml');
+  const server = read('scripts/musicgen_provider_server.py');
+  const client = read('scripts/musicgen_provider_client.py');
+  const stems = read('apps/backend/src/songs/stem-export.service.ts');
+  const runtime = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+  const catalog = read(
+    'apps/backend/src/music-runtime/music-model.catalog.ts'
+  );
+
+  assert.match(dockerfile, /musicgen_provider_server\.py/);
+  assert.match(dockerfile, /musicgen_provider_client\.py/);
+  assert.match(compose, /musicgen_provider_server\.py/);
+  assert.doesNotMatch(compose, /musicgen:[\s\S]{0,600}sleep[\s\S]{0,20}infinity/);
+  assert.match(server, /Reusing resident MusicGen model/);
+  assert.match(server, /torch\.cuda\.empty_cache\(\)/);
+  assert.match(client, /127\.0\.0\.1:8765\/generate/);
+  assert.match(stems, /musicgen_provider_client\.py/);
+  assert.match(stems, /concatMap/);
+  assert.match(runtime, /'busy'/);
+  assert.match(runtime, /beginGeneration/);
+  assert.match(runtime, /finishGeneration/);
+  assert.match(catalog, /runtimeModelId: 'facebook\/musicgen-small'/);
+  assert.match(
+    catalog,
+    /runtimeModelId: 'facebook\/musicgen-stereo-small'/
+  );
 });
