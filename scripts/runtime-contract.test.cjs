@@ -281,3 +281,15 @@ test('MusicGen pins Transformers to a PyTorch 2.1-compatible release', () => {
   assert.match(musicgen, /MusicGen Python stack import check passed/);
   assert.match(musicgen, /torch\.__version__\.startswith\("2\.1\.0"\)/);
 });
+
+
+test('provider selection reconciles stale images once per backend process', () => {
+  const backend = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+
+  assert.match(backend, /validatedProviderImages = new Set<string>\(\)/);
+  assert.match(backend, /validatedProviderImages\.has\(provider\.id\)/);
+  assert.match(backend, /Checking \${provider\.name} runtime image for source changes/);
+  assert.match(backend, /validatedProviderImages\.add\(provider\.id\)/);
+});
