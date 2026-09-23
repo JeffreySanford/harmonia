@@ -6,13 +6,16 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const packagePath = path.join(root, 'package.json');
 const storybookMain = path.join(root, 'apps', 'frontend', '.storybook', 'main.ts');
-const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+const pnpm = 'pnpm';
 
 function run(args) {
   const result = spawnSync(pnpm, args, {
     cwd: root,
     stdio: 'inherit',
     env: process.env,
+    // Windows cannot reliably spawn the pnpm.cmd shim directly from Node
+    // (spawnSync can return EINVAL). Let cmd.exe resolve the shim instead.
+    shell: process.platform === 'win32',
   });
 
   if (result.error) {
