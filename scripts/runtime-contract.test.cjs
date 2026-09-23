@@ -85,6 +85,14 @@ test('dependency build scripts use pnpm 12 allowBuilds policy', () => {
   assert.match(workspace, /^allowBuilds:$/m);
   assert.match(workspace, /'@parcel\/watcher@2\.5\.1 \|\| 2\.6\.0': true/);
   assert.match(workspace, /'unrs-resolver@1\.11\.1 \|\| 1\.12\.2': true/);
+  assert.match(workspace, /'@swc\/core@1\.5\.29': true/);
+  assert.match(
+    workspace,
+    /'esbuild@0\.25\.9 \|\| 0\.25\.12 \|\| 0\.27\.0 \|\| 0\.28\.1': true/
+  );
+  assert.match(workspace, /'lmdb@3\.4\.2': true/);
+  assert.match(workspace, /'msgpackr-extract@3\.0\.3': true/);
+  assert.match(workspace, /'nx@22\.1\.3': true/);
   assert.match(workspace, /^strictDepBuilds:\s*true$/m);
   assert.doesNotMatch(workspace, /onlyBuiltDependencies:/);
   assert.doesNotMatch(workspace, /dangerouslyAllowAllBuilds:\s*true/);
