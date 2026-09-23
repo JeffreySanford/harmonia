@@ -409,6 +409,8 @@ test('DiffSinger pretrained inference stack is cached outside the provider image
   assert.match(entrypoint, /Using cached DiffSinger acoustic model/);
   assert.match(entrypoint, /Using cached DiffSinger pitch estimator/);
   assert.match(entrypoint, /Using cached DiffSinger vocoder/);
+  assert.match(entrypoint, /find -L "\$\{dir\}"/);
+  assert.match(entrypoint, /find -L "\/opt\/DiffSinger\/checkpoints/);
   assert.match(entrypoint, /harmonia-runtime-ready/);
   assert.match(compose, /torch\.__version__\.startswith\(\\?"1\.8\.2\\?"\)/);
 });
