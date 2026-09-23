@@ -98,6 +98,13 @@ test('dependency build scripts use pnpm 12 allowBuilds policy', () => {
   assert.doesNotMatch(workspace, /dangerouslyAllowAllBuilds:\s*true/);
 });
 
+test('Windows startup disables Nx plugin isolation to avoid plugin worker hangs', () => {
+  const startup = read('scripts/start-all.cjs');
+
+  assert.match(startup, /process\.platform === 'win32' \? 'false' : undefined/);
+  assert.match(startup, /NX_ISOLATE_PLUGINS/);
+});
+
 test('Mongo initialization never falls back to a default application password', () => {
   const init = read('scripts/mongo-init/01-init-harmonia-db.js');
   assert.match(init, /MONGO_HARMONIA_PASSWORD is required/);
