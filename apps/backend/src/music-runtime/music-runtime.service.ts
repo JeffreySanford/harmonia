@@ -617,9 +617,16 @@ export class MusicRuntimeService {
     if (running.length === 1) {
       const recovered = running[0]!;
       const sameProvider = this.status.providerId === recovered.provider.id;
-      const snapshot = await this.recoverProviderRuntimeSnapshot(
-        recovered.provider
-      );
+      const shouldRecoverSnapshot =
+        !sameProvider ||
+        !this.status.modelId ||
+        this.status.state === 'busy';
+      const snapshot = shouldRecoverSnapshot
+        ? await this.recoverProviderRuntimeSnapshot(recovered.provider)
+        : {
+            model: null,
+            busy: this.status.state === 'busy',
+          };
       const rememberedModel =
         sameProvider && this.status.modelId
           ? MUSIC_MODELS.find(
