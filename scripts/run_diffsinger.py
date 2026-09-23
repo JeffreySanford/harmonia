@@ -46,6 +46,7 @@ def run_diffsinger(meta_path, out_path):
             "/workspace/scripts/diffsinger_infer_helper.py",
             out_dir,
             title,
+            meta_path,
         ]
         print("Running pinned DiffSinger compatibility inference:", command)
         completed = subprocess.run(command, check=False)
