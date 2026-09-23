@@ -87,6 +87,32 @@ test('Mongo initialization never falls back to a default application password', 
   assert.doesNotMatch(init, /changeme/);
 });
 
+test('Mongo jobs validator matches the persistent JobRecord contract', () => {
+  const init = read('scripts/mongo-init/01-init-harmonia-db.js');
+  const repair = read('scripts/repair-local-db-auth.cjs');
+  const schema = read('apps/backend/src/schemas/job-record.schema.ts');
+
+  for (const source of [init, repair]) {
+    assert.match(source, /required: \['userId', 'jobType', 'status'\]/);
+    assert.match(source, /'generate'.*'convert'.*'analyze'.*'train'/s);
+    assert.match(
+      source,
+      /'pending'.*'queued'.*'processing'.*'completed'.*'failed'.*'cancelled'/s
+    );
+    assert.doesNotMatch(source, /required: \['type', 'status'\]/);
+    assert.doesNotMatch(source, /'running'.*'success'/s);
+  }
+
+  assert.match(schema, /jobType: JobRecordType/);
+  assert.match(schema, /status: JobRecordStatus/);
+  assert.match(repair, /collMod: "jobs"/);
+  assert.match(repair, /JOBS_SCHEMA_SYNC_OK/);
+  assert.match(repair, /status_1_worker_id_1/);
+  assert.match(repair, /type_1_created_at_-1/);
+  assert.match(init, /userId: 1, status: 1, createdAt: -1/);
+  assert.match(init, /userId: 1, jobType: 1, createdAt: -1/);
+});
+
 
 test('backend never falls back to unauthenticated MongoDB access', () => {
   const appModule = read('apps/backend/src/app/app.module.ts');
@@ -113,6 +139,8 @@ test('local auth repair synchronizes app credentials and seeds the test user', (
   assert.match(repair, /E2E_TEST_USER_USERNAME/);
   assert.match(repair, /E2E_TEST_USER_PASSWORD/);
   assert.match(repair, /LOCAL_DB_AUTH_REPAIR_OK/);
+  assert.match(repair, /synchronizeJobsCollectionSchema\(\)/);
+  assert.match(repair, /JOBS_SCHEMA_SYNC_OK/);
   assert.doesNotMatch(repair, /MONGO_HARMONIA_PASSWORD=.*password/i);
 });
 
