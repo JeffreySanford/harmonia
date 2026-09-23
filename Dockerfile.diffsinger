@@ -16,7 +16,7 @@ ENV HARMONIA_DIFFSINGER_REF=${DIFFSINGER_REF}
 WORKDIR /workspace
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl unzip git build-essential ffmpeg \
+    ca-certificates curl unzip git build-essential cmake ffmpeg \
     python3.8 python3.8-dev python3-pip \
     libsndfile1 libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
