@@ -25,7 +25,8 @@ import { MusicRuntimeModule } from '../music-runtime/music-runtime.module';
  * - JobsGateway - WebSocket for real-time updates
  *
  * **Environment Variables Required**:
- * - MONGODB_URI - MongoDB connection string
+ * - MONGO_HARMONIA_PASSWORD - Application database password
+ * - MONGODB_URI - Optional explicit MongoDB connection string override
  * - JWT_SECRET - Secret key for JWT tokens
  * - REDIS_HOST - Redis server host (optional)
  * - REDIS_PORT - Redis server port (optional)
@@ -46,11 +47,28 @@ import { MusicRuntimeModule } from '../music-runtime/music-runtime.module';
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        uri:
-          configService.get<string>('MONGODB_URI') ||
-          'mongodb://localhost:27017/harmonia',
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const explicitUri = configService.get<string>('MONGODB_URI')?.trim();
+        if (explicitUri) {
+          return { uri: explicitUri };
+        }
+
+        const appPassword = configService
+          .get<string>('MONGO_HARMONIA_PASSWORD')
+          ?.trim();
+
+        if (!appPassword) {
+          throw new Error(
+            'MONGO_HARMONIA_PASSWORD is required when MONGODB_URI is not set.'
+          );
+        }
+
+        return {
+          uri:
+            `mongodb://harmonia_app:${encodeURIComponent(appPassword)}` +
+            '@127.0.0.1:27017/harmonia?authSource=harmonia',
+        };
+      },
       inject: [ConfigService],
     }),
     AuthModule,
