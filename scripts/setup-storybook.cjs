@@ -66,15 +66,14 @@ function normalizeGeneratedStorybookTargets() {
     changed = true;
   }
 
-  if (testStorybookTarget?.options?.command) {
-    const normalized = testStorybookTarget.options.command
-      .replace(/http:\/\/localhost:\d+/g, `http://127.0.0.1:${storybookPort}`)
-      .replace(/http:\/\/127\.0\.0\.1:\d+/g, `http://127.0.0.1:${storybookPort}`);
-
-    if (normalized !== testStorybookTarget.options.command) {
-      testStorybookTarget.options.command = normalized;
-      changed = true;
-    }
+  if (
+    testStorybookTarget?.options &&
+    testStorybookTarget.options.command !==
+      'node scripts/run-storybook-tests.cjs'
+  ) {
+    testStorybookTarget.options.command =
+      'node scripts/run-storybook-tests.cjs';
+    changed = true;
   }
 
   if (changed) {
@@ -92,9 +91,7 @@ function ensureScripts() {
   pkg.scripts.storybook =
     `nx storybook frontend --ci=true --host=127.0.0.1 --port=${storybookPort}`;
   pkg.scripts['storybook:build'] = 'nx build-storybook frontend';
-  pkg.scripts['storybook:browser'] = 'playwright install chromium';
-  pkg.scripts['storybook:test'] =
-    'pnpm storybook:browser && nx run frontend:test-storybook';
+  pkg.scripts['storybook:test'] = 'node scripts/run-storybook-tests.cjs';
 
   writeFileSync(packagePath, JSON.stringify(pkg, null, 2) + '\n');
 }
