@@ -11,6 +11,22 @@ function getFileSizeBytes(p) {
   }
 }
 
+function isValidWav(p) {
+  try {
+    const fd = fs.openSync(p, 'r');
+    const header = Buffer.alloc(12);
+    const bytes = fs.readSync(fd, header, 0, 12, 0);
+    fs.closeSync(fd);
+    return (
+      bytes === 12 &&
+      header.toString('ascii', 0, 4) === 'RIFF' &&
+      header.toString('ascii', 8, 12) === 'WAVE'
+    );
+  } catch {
+    return false;
+  }
+}
+
 function logDebug(phase, data) {
   const debugPath = path.join(__dirname, 'debug', `${phase}_input_output.json`);
   fs.writeFileSync(debugPath, JSON.stringify(data, null, 2));
@@ -62,7 +78,7 @@ async function synthesizeVocals(metadata) {
         `/workspace/${outRel}`,
       ];
       const dock = spawnSync('docker', dockerArgs, { stdio: 'inherit' });
-      if (dock.status === 0) {
+      if (dock.status === 0 && isValidWav(outPath)) {
         const vocals = `DiffSinger output file: ${outPath}`;
         const result = { ...metadata, vocals };
         const size = getFileSizeBytes(outPath);
@@ -100,17 +116,10 @@ async function synthesizeVocals(metadata) {
           { stdio: 'inherit' }
         );
       }
-      if (py.status !== 0) {
-        const vocals = `DiffSinger failed; placeholder for: ${metadata.lyrics}`;
-        const result = { ...metadata, vocals };
-        fs.writeFileSync(outPath, vocals);
-        const size = getFileSizeBytes(outPath);
-        logDebug('vocals', {
-          input: metadata,
-          output: result,
-          artifact: { path: outPath, size },
-        });
-        return result;
+      if (py.status !== 0 || !isValidWav(outPath)) {
+        throw new Error(
+          `DiffSinger failed to produce a valid WAV (exit=${py.status ?? 'unknown'})`
+        );
       }
       const vocals = `DiffSinger output file: ${outPath}`;
       const result = { ...metadata, vocals };
@@ -122,16 +131,12 @@ async function synthesizeVocals(metadata) {
       });
       return result;
     } catch (err) {
-      const vocals = `Error invoking DiffSinger wrapper: ${err}`;
-      const result = { ...metadata, vocals };
-      fs.writeFileSync(outPath, vocals);
-      const size = getFileSizeBytes(outPath);
       logDebug('vocals', {
         input: metadata,
-        output: result,
-        artifact: { path: outPath, size },
+        error: String(err),
+        artifact: { path: outPath, size: getFileSizeBytes(outPath) },
       });
-      return result;
+      throw err;
     }
   } else {
     // Simulate vocal synthesis (replace with real logic or subprocess call)
