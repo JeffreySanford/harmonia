@@ -94,6 +94,7 @@ export const jobsReducer = createReducer(
     jobsAdapter.addOne(job, {
       ...state,
       loading: false,
+      selectedJobId: job.id,
     })
   ),
 
