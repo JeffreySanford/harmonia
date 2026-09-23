@@ -142,6 +142,9 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
   assert.match(setup, /build-storybook/);
   assert.match(setup, /nx run frontend:test-storybook/);
   assert.match(setup, /port 4400/);
+  assert.match(setup, /--ci=true/);
+  assert.match(setup, /--noOpen=true/);
+  assert.match(setup, /--host=127\.0\.0\.1/);
   assert.match(setup, /normalizeGeneratedStorybookConfig/);
   assert.match(setup, /fileURLToPath/);
   assert.match(setup, /dirname/);
