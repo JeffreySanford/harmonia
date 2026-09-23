@@ -66,6 +66,21 @@ test('package exposes authoritative start, test, lint, and build commands', () =
   assert.equal(pkg.scripts.predev, undefined);
 });
 
+test('dependency build scripts are explicitly reviewed and version-scoped', () => {
+  const workspace = read('pnpm-workspace.yaml');
+
+  assert.match(workspace, /^strictDepBuilds:\s*true$/m);
+  assert.match(
+    workspace,
+    /'@parcel\/watcher@2\.5\.1 \|\| 2\.6\.0'/
+  );
+  assert.match(
+    workspace,
+    /'unrs-resolver@1\.11\.1 \|\| 1\.12\.2'/
+  );
+  assert.doesNotMatch(workspace, /dangerouslyAllowAllBuilds:\s*true/);
+});
+
 test('Mongo initialization never falls back to a default application password', () => {
   const init = read('scripts/mongo-init/01-init-harmonia-db.js');
   assert.match(init, /MONGO_HARMONIA_PASSWORD is required/);
