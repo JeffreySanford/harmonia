@@ -15,7 +15,10 @@ describe('SongsController', () => {
   let controller: SongsController;
   const mockOllama = { generateMetadata: jest.fn() } as any;
   const mockMmslParser = { parse: jest.fn(), validate: jest.fn() } as any;
-  const mockStemExport = { export: jest.fn() } as any;
+  const mockStemExport = {
+    validateOptions: jest.fn(),
+    exportStems: jest.fn(),
+  } as any;
   const mockDslParser = { parse: jest.fn() } as any;
   const mockInstrumentCatalog = {
     loadCatalog: jest.fn(),
@@ -73,4 +76,70 @@ describe('SongsController', () => {
     );
     expect(res.title).toBe('T');
   });
+  it('returns no download URLs for generated-only stem artifacts', async () => {
+    mockStemExport.validateOptions.mockReturnValueOnce({
+      valid: true,
+      errors: [],
+    });
+    mockStemExport.exportStems.mockReturnValueOnce(
+      of({
+        success: true,
+        stems: [
+          {
+            instrument: 'piano',
+            filePath: 'generated/smoke/piano.wav',
+            format: 'wav',
+            size: 320044,
+          },
+        ],
+        errors: [],
+      })
+    );
+
+    const result = await firstValueFrom(
+      controller.exportStems({
+        format: 'wav',
+        instruments: ['piano'],
+        outputDir: 'generated/smoke',
+      })
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.files?.[0]?.url).toBeNull();
+    expect(result.zipUrl).toBeNull();
+  });
+
+  it('returns download URLs only for files under exports/', async () => {
+    mockStemExport.validateOptions.mockReturnValueOnce({
+      valid: true,
+      errors: [],
+    });
+    mockStemExport.exportStems.mockReturnValueOnce(
+      of({
+        success: true,
+        stems: [
+          {
+            instrument: 'piano',
+            filePath: 'exports/smoke/piano.wav',
+            format: 'wav',
+            size: 320044,
+          },
+        ],
+        errors: [],
+      })
+    );
+
+    const result = await firstValueFrom(
+      controller.exportStems({
+        format: 'wav',
+        instruments: ['piano'],
+        outputDir: 'exports/smoke',
+      })
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.files?.[0]?.url).toBe('/downloads/smoke/piano.wav');
+    expect(result.zipUrl).toBeNull();
+  });
+
 });
