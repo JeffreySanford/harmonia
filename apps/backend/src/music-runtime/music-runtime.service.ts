@@ -220,12 +220,10 @@ export class MusicRuntimeService {
       throw new Error(`${provider.name} has no Docker runtime configured.`);
     }
 
-    const imageName = provider.id === 'diffsinger'
-      ? 'harmonia/diffsinger:dev'
-      : null;
+    const imageName = provider.imageName;
 
     if (!imageName) {
-      return;
+      throw new Error(`${provider.name} has no Docker image configured.`);
     }
 
     const imageExists = await this.tryDocker([
