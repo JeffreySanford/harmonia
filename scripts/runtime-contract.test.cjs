@@ -354,6 +354,41 @@ test('DiffSinger real inference qualification rejects placeholder audio', () => 
   );
 });
 
+test('DiffSinger persistent jobs execute score-native synthesis', () => {
+  const jobs = read('apps/backend/src/jobs/jobs.service.ts');
+  const catalog = read('apps/backend/src/music-runtime/music-model.catalog.ts');
+  const compose = read('docker-compose.yml');
+  const helper = read('scripts/diffsinger_infer_helper.py');
+  const wrapper = read('scripts/run_diffsinger.py');
+  const qualifier = read('scripts/qualify-diffsinger-job.cjs');
+  const pkg = JSON.parse(read('package.json'));
+
+  assert.equal(
+    pkg.scripts['qualify:diffsinger-job'],
+    'node scripts/qualify-diffsinger-job.cjs'
+  );
+  assert.match(
+    catalog,
+    /runtimeModelId:\s*'0228_opencpop_ds100_rel'/
+  );
+  assert.match(jobs, /\['musicgen', 'diffsinger'\]/);
+  assert.match(jobs, /parseDiffSingerScore/);
+  assert.match(jobs, /runDiffSingerClient/);
+  assert.match(jobs, /request\.json/);
+  assert.match(jobs, /harmonia-diffsinger/);
+  assert.match(jobs, /\/workspace\/scripts\/run_diffsinger\.py/);
+  assert.match(jobs, /notesDuration/);
+  assert.match(jobs, /expectedDurationSeconds/);
+  assert.match(compose, /\.\/exports:\/workspace\/exports/);
+  assert.match(helper, /score_json/);
+  assert.match(helper, /provided\.get\("notes_duration"\)/);
+  assert.match(wrapper, /meta_path/);
+  assert.match(qualifier, /diffsinger-acoustic-hifigan/);
+  assert.match(qualifier, /0228_opencpop_ds100_rel/);
+  assert.match(qualifier, /request\.json/);
+  assert.match(qualifier, /DIFFSINGER_JOB_QUALIFICATION_OK/);
+});
+
 test('DiffSinger runtime qualification requires a healthy isolated container', () => {
   const qualifier = read('scripts/qualify-diffsinger-runtime.cjs');
   const pkg = JSON.parse(read('package.json'));
