@@ -239,7 +239,7 @@ export class JobsService {
       return;
     }
 
-    if (model.providerId !== 'musicgen') {
+    if (!['musicgen', 'diffsinger'].includes(model.providerId)) {
       await this.fail(
         jobId,
         userId,
@@ -248,9 +248,8 @@ export class JobsService {
       return;
     }
 
-    const duration = Number(job.parameters?.['duration']);
-    const prompt = this.buildGenerationPrompt(job.parameters || {});
-    const title = String(job.parameters?.['title'] || 'generated-music');
+    const parameters = job.parameters || {};
+    const title = String(parameters['title'] || 'generated-music');
 
     try {
       await this.updateStatus(jobId, userId, 'processing', {
@@ -269,7 +268,10 @@ export class JobsService {
         current: 20,
         total: 100,
         percentage: 20,
-        message: 'Starting music generation',
+        message:
+          model.providerId === 'diffsinger'
+            ? 'Starting singing synthesis'
+            : 'Starting music generation',
       });
 
       const runtime = await this.musicRuntime.beginGeneration(model.providerId);
@@ -279,13 +281,62 @@ export class JobsService {
 
       await fs.mkdir(hostDir, { recursive: true });
 
+      let requestedDurationSeconds: number;
+      let providerMetadata: Record<string, unknown>;
+
       try {
-        await this.runMusicGenClient({
-          runtimeModelId: runtime.runtimeModelId,
-          prompt,
-          duration,
-          outputPath: containerPath,
-        });
+        if (model.providerId === 'musicgen') {
+          const duration = Number(parameters['duration']);
+          const prompt = this.buildGenerationPrompt(parameters);
+
+          await this.runMusicGenClient({
+            runtimeModelId: runtime.runtimeModelId,
+            prompt,
+            duration,
+            outputPath: containerPath,
+          });
+
+          requestedDurationSeconds = duration;
+          providerMetadata = {
+            prompt,
+            requestedDurationSeconds: duration,
+          };
+        } else {
+          const score = this.parseDiffSingerScore(parameters);
+          const hostRequestPath = path.join(hostDir, 'request.json');
+          const containerRequestPath =
+            `/workspace/exports/jobs/${jobId}/request.json`;
+
+          await fs.writeFile(
+            hostRequestPath,
+            JSON.stringify(
+              {
+                title,
+                text: score.text,
+                notes: score.notes,
+                notes_duration: score.notesDuration,
+                input_type: score.inputType,
+              },
+              null,
+              2
+            ),
+            'utf8'
+          );
+
+          await this.runDiffSingerClient({
+            metadataPath: containerRequestPath,
+            outputPath: containerPath,
+          });
+
+          requestedDurationSeconds = score.expectedDurationSeconds;
+          providerMetadata = {
+            text: score.text,
+            notes: score.notes,
+            notesDuration: score.notesDuration,
+            inputType: score.inputType,
+            requestedDurationSeconds: score.expectedDurationSeconds,
+          };
+        }
       } finally {
         await this.musicRuntime.finishGeneration(model.providerId);
       }
@@ -297,7 +348,10 @@ export class JobsService {
         message: 'Validating generated audio',
       });
 
-      const wav = await this.validateWav(hostPath, duration);
+      const wav = await this.validateWav(
+        hostPath,
+        requestedDurationSeconds
+      );
       const downloadUrl = `/downloads/jobs/${jobId}/music.wav`;
 
       await this.complete(jobId, userId, {
@@ -307,8 +361,7 @@ export class JobsService {
           providerId: model.providerId,
           modelId: model.id,
           runtimeModelId: runtime.runtimeModelId,
-          prompt,
-          requestedDurationSeconds: duration,
+          ...providerMetadata,
           actualDurationSeconds: wav.durationSeconds,
           channels: wav.channels,
           sampleRate: wav.sampleRate,
@@ -335,6 +388,17 @@ export class JobsService {
       throw new BadRequestException(`Unknown music model: ${dto.modelId}`);
     }
 
+    if (model.providerId === 'diffsinger') {
+      this.parseDiffSingerScore(dto.parameters || {});
+      return;
+    }
+
+    if (model.providerId !== 'musicgen') {
+      throw new BadRequestException(
+        `${model.providerId} generation jobs are not implemented yet.`
+      );
+    }
+
     const duration = Number(dto.parameters?.['duration']);
     if (!Number.isFinite(duration) || duration < 1) {
       throw new BadRequestException(
@@ -357,6 +421,83 @@ export class JobsService {
         'Generation requires a prompt or descriptive music parameters.'
       );
     }
+  }
+
+  private parseDiffSingerScore(parameters: Record<string, unknown>): {
+    text: string;
+    notes: string;
+    notesDuration: string;
+    inputType: 'word';
+    expectedDurationSeconds: number;
+  } {
+    const text = String(
+      parameters['text'] || parameters['lyrics'] || ''
+    ).trim();
+    const notes = String(parameters['notes'] || '').trim();
+    const notesDuration = String(
+      parameters['notesDuration'] || parameters['notes_duration'] || ''
+    ).trim();
+    const inputType = String(
+      parameters['inputType'] || parameters['input_type'] || 'word'
+    ).trim();
+
+    if (!text || !notes || !notesDuration) {
+      throw new BadRequestException(
+        'DiffSinger generation requires text/lyrics, notes, and notesDuration.'
+      );
+    }
+
+    if (inputType !== 'word') {
+      throw new BadRequestException(
+        'The pinned DiffSinger OpenCpop runtime currently supports word-level score input only.'
+      );
+    }
+
+    const noteGroups = notes
+      .split('|')
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const durationGroups = notesDuration
+      .split('|')
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    if (
+      noteGroups.length === 0 ||
+      noteGroups.length !== durationGroups.length
+    ) {
+      throw new BadRequestException(
+        'DiffSinger notes and notesDuration must contain the same number of pipe-separated word groups.'
+      );
+    }
+
+    const durations = notesDuration
+      .split(/[|\s]+/)
+      .map((value) => value.trim())
+      .filter(Boolean)
+      .map(Number);
+
+    if (
+      durations.length === 0 ||
+      durations.some((value) => !Number.isFinite(value) || value <= 0)
+    ) {
+      throw new BadRequestException(
+        'DiffSinger notesDuration must contain only positive numeric durations.'
+      );
+    }
+
+    const expectedDurationSeconds = durations.reduce(
+      (sum, value) => sum + value,
+      0
+    );
+
+    return {
+      text,
+      notes,
+      notesDuration,
+      inputType: 'word',
+      expectedDurationSeconds,
+    };
   }
 
   private buildGenerationPrompt(
@@ -451,6 +592,60 @@ export class JobsService {
             )
               .trim()
               .slice(-2000)}`
+          )
+        );
+      });
+    });
+  }
+
+  private runDiffSingerClient(options: {
+    metadataPath: string;
+    outputPath: string;
+  }): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const child = spawn(
+        'docker',
+        [
+          'exec',
+          'harmonia-diffsinger',
+          'python3',
+          '/workspace/scripts/run_diffsinger.py',
+          options.metadataPath,
+          options.outputPath,
+        ],
+        {
+          cwd: process.cwd(),
+          windowsHide: true,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }
+      );
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout.on('data', (chunk: Buffer) => {
+        stdout += chunk.toString();
+      });
+      child.stderr.on('data', (chunk: Buffer) => {
+        stderr += chunk.toString();
+      });
+
+      child.once('error', reject);
+      child.once('close', (code) => {
+        if (code === 0) {
+          resolve();
+          return;
+        }
+
+        reject(
+          new Error(
+            `DiffSinger provider exited with code ${code ?? 'unknown'}: ${(
+              stderr ||
+              stdout ||
+              'no provider output'
+            )
+              .trim()
+              .slice(-3000)}`
           )
         );
       });
