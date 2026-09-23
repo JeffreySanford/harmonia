@@ -160,6 +160,9 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
   assert.match(storybookRunner, /STORYBOOK_INTERACTIONS_OK/);
   assert.match(setup, /127\.0\.0\.1:\$\{storybookPort\}/);
   assert.match(setup, /normalizeGeneratedStorybookConfig/);
+  assert.match(setup, /normalizeGeneratedStorybookWhitespace/);
+  assert.match(setup, /storybookTsconfig/);
+  assert.match(setup, /replace\(\/\[ \\t\]\+\$\/gm, ''\)/);
   assert.match(setup, /fileURLToPath/);
   assert.match(setup, /dirname/);
 
