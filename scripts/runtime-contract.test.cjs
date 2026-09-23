@@ -322,6 +322,31 @@ test('backend MusicGen execution targets the isolated provider container', () =>
 });
 
 
+test('DiffSinger real inference qualification rejects placeholder audio', () => {
+  const qualifier = read('scripts/qualify-diffsinger-inference.cjs');
+  const wrapper = read('scripts/run_diffsinger.py');
+  const vocalPhase = read('generate_script/phase_vocals.js');
+  const pkg = JSON.parse(read('package.json'));
+
+  assert.equal(
+    pkg.scripts['qualify:diffsinger-inference'],
+    'node scripts/qualify-diffsinger-inference.cjs'
+  );
+  assert.match(qualifier, /diffsinger_infer_helper\.py/);
+  assert.match(qualifier, /model_ckpt_steps_\*\.ckpt/);
+  assert.match(qualifier, /HARMONIA_DIFFSINGER_PLACEHOLDER/);
+  assert.match(qualifier, /DIFFSINGER_INFERENCE_QUALIFICATION_OK/);
+  assert.doesNotMatch(wrapper, /write_placeholder_wav/);
+  assert.doesNotMatch(wrapper, /placeholder written/);
+  assert.match(wrapper, /is_valid_wav/);
+  assert.match(vocalPhase, /isValidWav/);
+  assert.match(vocalPhase, /throw new Error/);
+  assert.doesNotMatch(
+    vocalPhase,
+    /DiffSinger failed; placeholder/
+  );
+});
+
 test('DiffSinger runtime qualification requires a healthy isolated container', () => {
   const qualifier = read('scripts/qualify-diffsinger-runtime.cjs');
   const pkg = JSON.parse(read('package.json'));
