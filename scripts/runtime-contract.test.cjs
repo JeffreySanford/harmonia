@@ -238,3 +238,23 @@ test('runtime ownership is recovered from Docker before model switching', () => 
   assert.match(backend, /all were stopped to protect GPU ownership/);
   assert.match(backend, /await this\.reconcileRuntimeOwnership\(\)/);
 });
+
+
+test('MusicGen startup validates dependencies once and healthcheck uses readiness sentinel', () => {
+  const compose = read('docker-compose.yml');
+  const entrypoint = read('entrypoint.musicgen.sh');
+  const backend = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+
+  assert.match(entrypoint, /import torch/);
+  assert.match(entrypoint, /import audiocraft/);
+  assert.match(entrypoint, /touch \/tmp\/harmonia-runtime-ready/);
+  assert.match(compose, /test -f \/tmp\/harmonia-runtime-ready/);
+  assert.doesNotMatch(
+    compose,
+    /python3\.9 -c 'import torch, audiocraft/
+  );
+  assert.match(backend, /failingStreak=/);
+  assert.match(backend, /docker', \['logs', '--tail', '40'/);
+});
