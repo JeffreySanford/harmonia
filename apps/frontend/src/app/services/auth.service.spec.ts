@@ -49,7 +49,7 @@ describe('AuthService', () => {
       done();
     });
 
-    const req = httpMock.expectOne('http://localhost:3000/api/auth/login');
+    const req = httpMock.expectOne('/api/auth/login');
     expect(req.request.method).toBe('POST');
     req.flush(mockResponse);
   });
@@ -71,7 +71,7 @@ describe('AuthService', () => {
       },
     });
 
-    const req = httpMock.expectOne('http://localhost:3000/api/auth/login');
+    const req = httpMock.expectOne('/api/auth/login');
     expect(req.request.method).toBe('POST');
     req.flush(
       { message: 'Invalid credentials' },
