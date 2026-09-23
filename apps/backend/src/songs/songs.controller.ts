@@ -556,6 +556,7 @@ export class SongsController {
               size: { type: 'number', example: 2457600 },
               url: {
                 type: 'string',
+                nullable: true,
                 example: '/downloads/exp_507f1f77/guitar_stem.wav',
               },
             },
@@ -563,7 +564,8 @@ export class SongsController {
         },
         zipUrl: {
           type: 'string',
-          example: '/downloads/exp_507f1f77/stems.zip',
+          nullable: true,
+          example: null,
         },
       },
     },
@@ -579,30 +581,42 @@ export class SongsController {
           return { success: false, errors: result.errors };
         }
 
-        // Transform stems to API response format
-        const files = result.stems.map((stem) => ({
-          instrument: stem.instrument,
-          filename: path.basename(stem.filePath),
-          size: stem.size,
-          url: `/downloads/${path.basename(
-            path.dirname(stem.filePath)
-          )}/${path.basename(stem.filePath)}`,
-        }));
+        const exportsRoot = path.resolve(process.cwd(), 'exports');
+
+        // Only advertise a /downloads URL when the file is actually under
+        // ServeStatic's exports/ root. generated/ files remain local artifacts.
+        const files = result.stems.map((stem) => {
+          const absoluteStemPath = path.resolve(stem.filePath);
+          const relativeToExports = path.relative(
+            exportsRoot,
+            absoluteStemPath
+          );
+          const downloadable =
+            relativeToExports !== '' &&
+            !relativeToExports.startsWith('..') &&
+            !path.isAbsolute(relativeToExports);
+
+          return {
+            instrument: stem.instrument,
+            filename: path.basename(stem.filePath),
+            size: stem.size,
+            url: downloadable
+              ? `/downloads/${relativeToExports
+                  .split(path.sep)
+                  .join('/')}`
+              : null,
+          };
+        });
 
         const exportId = `exp_${Date.now().toString(36)}`;
-        const firstStemPath = result.stems?.[0]?.filePath;
-        const zipUrl =
-          files.length > 0 && firstStemPath
-            ? `/downloads/${path.basename(
-                path.dirname(firstStemPath)
-              )}/stems.zip`
-            : null;
 
         return {
           success: true,
           exportId,
-          files: files,
-          zipUrl,
+          files,
+          // ZIP packaging is not implemented yet. Never advertise an artifact
+          // that does not exist.
+          zipUrl: null,
         };
       }),
       catchError((error) => of({ success: false, errors: [error.message] }))
