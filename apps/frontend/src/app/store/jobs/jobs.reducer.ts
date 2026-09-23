@@ -88,12 +88,14 @@ export const jobsReducer = createReducer(
   on(JobsActions.createJob, (state) => ({
     ...state,
     loading: true,
+    error: null,
   })),
 
   on(JobsActions.createJobSuccess, (state, { job }) =>
     jobsAdapter.addOne(job, {
       ...state,
       loading: false,
+      error: null,
       selectedJobId: job.id,
     })
   ),
