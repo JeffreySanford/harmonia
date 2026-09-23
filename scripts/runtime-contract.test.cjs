@@ -203,6 +203,9 @@ test('MusicGen is isolated in its AudioCraft-compatible provider image', () => {
   assert.doesNotMatch(musicgen, /bootstrap\.pypa\.io\/get-pip\.py/);
   assert.match(musicgen, /torch==2\.1\.0/);
   assert.match(musicgen, /audiocraft==1\.3\.0/);
+  assert.match(musicgen, /numpy<2\.0\.0/);
+  assert.match(musicgen, /thinc==8\.2\.5/);
+  assert.match(musicgen, /spacy==3\.7\.6/);
   assert.match(compose, /profiles:\s*\n\s*- model-musicgen/);
   assert.match(compose, /harmonia\/musicgen:dev/);
   assert.match(catalog, /musicgen-stereo-small/);
