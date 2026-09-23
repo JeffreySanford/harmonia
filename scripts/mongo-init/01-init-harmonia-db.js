@@ -72,17 +72,43 @@ db.createCollection('jobs', {
   validator: {
     $jsonSchema: {
       bsonType: 'object',
-      required: ['type', 'status'],
+      required: ['userId', 'jobType', 'status'],
       properties: {
-        type: { enum: ['download', 'validate', 'inference', 'export'], description: 'Job type' },
-        status: { enum: ['pending', 'running', 'success', 'failed'], description: 'Job status' },
-        worker_id: { bsonType: 'string' },
-        params: { bsonType: 'object' },
-        started_at: { bsonType: 'date' },
-        finished_at: { bsonType: 'date' }
+        userId: {
+          bsonType: 'objectId',
+          description: 'Owning user - required'
+        },
+        jobType: {
+          enum: ['generate', 'convert', 'analyze', 'train'],
+          description: 'Job type - required'
+        },
+        status: {
+          enum: [
+            'pending',
+            'queued',
+            'processing',
+            'completed',
+            'failed',
+            'cancelled'
+          ],
+          description: 'Job status - required'
+        },
+        priority: { bsonType: 'number' },
+        modelId: { bsonType: 'string' },
+        datasetId: { bsonType: 'string' },
+        parameters: { bsonType: 'object' },
+        progress: { bsonType: ['object', 'null'] },
+        result: { bsonType: ['object', 'null'] },
+        startedAt: { bsonType: ['date', 'null'] },
+        completedAt: { bsonType: ['date', 'null'] },
+        estimatedDuration: { bsonType: ['number', 'null'] },
+        createdAt: { bsonType: 'date' },
+        updatedAt: { bsonType: 'date' }
       }
     }
-  }
+  },
+  validationLevel: 'strict',
+  validationAction: 'error'
 });
 
 db.createCollection('events', {
@@ -104,8 +130,9 @@ print('Created collections with validation schemas');
 db.model_artifacts.createIndex({ name: 1, version: 1 }, { unique: true });
 db.model_artifacts.createIndex({ tags: 1 });
 db.model_artifacts.createIndex({ 'hashes.sha256': 1 });
-db.jobs.createIndex({ status: 1, worker_id: 1 });
-db.jobs.createIndex({ type: 1, created_at: -1 });
+db.jobs.createIndex({ userId: 1, createdAt: -1 });
+db.jobs.createIndex({ userId: 1, status: 1, createdAt: -1 });
+db.jobs.createIndex({ userId: 1, jobType: 1, createdAt: -1 });
 db.inventory_versions.createIndex({ version_tag: 1 }, { unique: true });
 db.inventory_versions.createIndex({ created_at: -1 });
 db.events.createIndex({ created_at: 1 }, { expireAfterSeconds: 2592000 });
