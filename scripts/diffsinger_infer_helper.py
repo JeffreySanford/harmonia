@@ -2,7 +2,7 @@
 """Run Harmonia's pinned DiffSinger compatibility inference.
 
 Arguments:
-  diffsinger_infer_helper.py <out_dir> <title>
+  diffsinger_infer_helper.py <out_dir> <title> [score_json]
 
 This adapter intentionally targets OpenVPI DiffSinger commit
 017bd488a61ebdb8909a8d272ec6211076fa4a7e and the official pretrained
@@ -12,6 +12,7 @@ OpenCpop stack:
   - 0109_hifigan_bigpopcs_hop128 (vocoder)
 """
 
+import json
 import os
 import pathlib
 import re
@@ -57,10 +58,11 @@ def validate_wav(path):
 
 
 if len(sys.argv) < 3:
-    fail("Usage: diffsinger_infer_helper.py <out_dir> <title>", 2)
+    fail("Usage: diffsinger_infer_helper.py <out_dir> <title> [score_json]", 2)
 
 out_dir = pathlib.Path(sys.argv[1])
 raw_title = sys.argv[2]
+score_json = pathlib.Path(sys.argv[3]) if len(sys.argv) >= 4 else None
 safe_title = re.sub(r"[^A-Za-z0-9._-]+", "-", raw_title).strip("-") or "diffsinger"
 target = out_dir / f"{safe_title}.wav"
 
@@ -103,6 +105,36 @@ try:
         ),
         "input_type": "word",
     }
+
+    if score_json is not None:
+        if not score_json.is_file():
+            fail(f"DiffSinger score JSON does not exist: {score_json}", 5)
+
+        with score_json.open("r", encoding="utf-8") as stream:
+            provided = json.load(stream)
+
+        sample = {
+            "text": str(provided.get("text") or provided.get("lyrics") or "").strip(),
+            "notes": str(provided.get("notes") or "").strip(),
+            "notes_duration": str(
+                provided.get("notes_duration")
+                or provided.get("notesDuration")
+                or ""
+            ).strip(),
+            "input_type": str(provided.get("input_type") or "word").strip() or "word",
+        }
+
+        missing = [
+            key
+            for key in ("text", "notes", "notes_duration")
+            if not sample[key]
+        ]
+        if missing:
+            fail(
+                "DiffSinger score JSON is missing required fields: "
+                + ", ".join(missing),
+                5,
+            )
 
     DiffSingerE2EInfer.example_run(sample, target=str(target))
 except Exception as exc:
