@@ -325,6 +325,7 @@ test('backend MusicGen execution targets the isolated provider container', () =>
 test('DiffSinger real inference qualification rejects placeholder audio', () => {
   const qualifier = read('scripts/qualify-diffsinger-inference.cjs');
   const wrapper = read('scripts/run_diffsinger.py');
+  const helper = read('scripts/diffsinger_infer_helper.py');
   const vocalPhase = read('generate_script/phase_vocals.js');
   const pkg = JSON.parse(read('package.json'));
 
@@ -336,6 +337,12 @@ test('DiffSinger real inference qualification rejects placeholder audio', () => 
   assert.match(qualifier, /model_ckpt_steps_\*\.ckpt/);
   assert.match(qualifier, /HARMONIA_DIFFSINGER_PLACEHOLDER/);
   assert.match(qualifier, /DIFFSINGER_INFERENCE_QUALIFICATION_OK/);
+  assert.match(helper, /017bd488a61ebdb8909a8d272ec6211076fa4a7e/);
+  assert.match(helper, /0228_opencpop_ds100_rel/);
+  assert.match(helper, /0102_xiaoma_pe/);
+  assert.match(helper, /0109_hifigan_bigpopcs_hop128/);
+  assert.match(helper, /DiffSingerE2EInfer\.example_run/);
+  assert.doesNotMatch(helper, /CategorizedModule|_loose_load_ckpt/);
   assert.doesNotMatch(wrapper, /write_placeholder_wav/);
   assert.doesNotMatch(wrapper, /placeholder written/);
   assert.match(wrapper, /is_valid_wav/);
@@ -369,6 +376,11 @@ test('DiffSinger is isolated from the generic worker image', () => {
 
   assert.doesNotMatch(worker, /\/opt\/DiffSinger|HiFi-GAN|openvpi\/DiffSinger/);
   assert.match(diffsinger, /openvpi\/DiffSinger/);
+  assert.match(diffsinger, /017bd488a61ebdb8909a8d272ec6211076fa4a7e/);
+  assert.match(diffsinger, /python3\.8/);
+  assert.match(diffsinger, /torch==1\.8\.2/);
+  assert.doesNotMatch(diffsinger, /git clone --depth=1/);
+  assert.match(diffsinger, /git checkout --detach/);
   assert.match(diffsinger, /entrypoint\.diffsinger\.sh/);
   assert.match(compose, /profiles:\s*\n\s*- model-diffsinger/);
   assert.match(
@@ -377,14 +389,28 @@ test('DiffSinger is isolated from the generic worker image', () => {
   );
 });
 
-test('DiffSinger vocoder is cached outside the provider image', () => {
+test('DiffSinger pretrained inference stack is cached outside the provider image', () => {
   const dockerfile = read('Dockerfile.diffsinger');
   const entrypoint = read('entrypoint.diffsinger.sh');
+  const downloader = read('scripts/download_diffsinger_pretrained.sh');
+  const compose = read('docker-compose.yml');
 
+  assert.doesNotMatch(dockerfile, /0228_opencpop_ds100_rel\.zip/);
+  assert.doesNotMatch(dockerfile, /0102_xiaoma_pe\.zip/);
   assert.doesNotMatch(dockerfile, /0109_hifigan_bigpopcs_hop128\.zip/);
-  assert.match(entrypoint, /0109_hifigan_bigpopcs_hop128\.zip/);
+
+  for (const source of [entrypoint, downloader]) {
+    assert.match(source, /0228_opencpop_ds100_rel/);
+    assert.match(source, /0102_xiaoma_pe/);
+    assert.match(source, /0109_hifigan_bigpopcs_hop128/);
+    assert.match(source, /--fail/);
+  }
+
+  assert.match(entrypoint, /Using cached DiffSinger acoustic model/);
+  assert.match(entrypoint, /Using cached DiffSinger pitch estimator/);
   assert.match(entrypoint, /Using cached DiffSinger vocoder/);
   assert.match(entrypoint, /harmonia-runtime-ready/);
+  assert.match(compose, /torch\.__version__\.startswith\(\\?"1\.8\.2\\?"\)/);
 });
 
 test('Linux container entrypoints normalize Windows line endings', () => {
