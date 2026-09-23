@@ -6,6 +6,15 @@ const path = require('node:path');
 const script = path.join(__dirname, 'start-all.cjs');
 test('startup orchestrator exists', () => assert.ok(existsSync(script)));
 
+test('resolves Nx CLI from package metadata', () => {
+  const { resolvePackageBin } = require(script);
+  const nx = resolvePackageBin('nx', 'nx');
+
+  assert.equal(existsSync(nx), true);
+  assert.equal(path.basename(nx), 'nx.js');
+  assert.match(nx, /[\\/]dist[\\/]bin[\\/]nx\.js$/);
+});
+
 test('reconciles all services without forcing healthy containers to restart', () => {
   const { reconcileDocker } = require(script);
   const calls = [];
