@@ -545,16 +545,26 @@ export class MusicRuntimeService {
         ]);
         const state = JSON.parse(String(stdout).trim()) as {
           Running?: boolean;
-          Health?: { Status?: string };
+          Restarting?: boolean;
+          ExitCode?: number;
+          Error?: string;
+          Health?: {
+            Status?: string;
+            FailingStreak?: number;
+            Log?: Array<{
+              ExitCode?: number;
+              Output?: string;
+            }>;
+          };
         };
 
         if (state.Running && state.Health?.Status === 'healthy') {
           return;
         }
 
-        if (!state.Running) {
+        if (!state.Running && !state.Restarting) {
           throw new Error(
-            `${provider.containerName} exited before becoming healthy.`
+            `${provider.containerName} exited before becoming healthy (exit ${state.ExitCode ?? 'unknown'}${state.Error ? `: ${state.Error}` : ''}).`
           );
         }
       } catch (error) {
@@ -569,10 +579,64 @@ export class MusicRuntimeService {
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
+    let diagnostics = '';
+    try {
+      const [{ stdout: inspectOut }, { stdout: logsOut }] = await Promise.all([
+        execFileAsync('docker', [
+          'inspect',
+          '--format',
+          '{{json .State}}',
+          provider.containerName,
+        ]),
+        execFileAsync('docker', [
+          'logs',
+          '--tail',
+          '40',
+          provider.containerName,
+        ]),
+      ]);
+      const state = JSON.parse(String(inspectOut).trim()) as {
+        Running?: boolean;
+        Restarting?: boolean;
+        ExitCode?: number;
+        Error?: string;
+        Health?: {
+          Status?: string;
+          FailingStreak?: number;
+          Log?: Array<{ ExitCode?: number; Output?: string }>;
+        };
+      };
+      const healthTail = (state.Health?.Log || [])
+        .slice(-3)
+        .map(
+          (entry) =>
+            `health exit=${entry.ExitCode ?? 'unknown'} ${String(
+              entry.Output || ''
+            ).trim()}`
+        )
+        .join(' | ');
+      diagnostics = [
+        `running=${Boolean(state.Running)}`,
+        `restarting=${Boolean(state.Restarting)}`,
+        `exit=${state.ExitCode ?? 'unknown'}`,
+        `health=${state.Health?.Status || 'none'}`,
+        `failingStreak=${state.Health?.FailingStreak ?? 0}`,
+        state.Error ? `dockerError=${state.Error}` : '',
+        healthTail,
+        String(logsOut).trim()
+          ? `logs=${String(logsOut).trim().slice(-3000)}`
+          : '',
+      ]
+        .filter(Boolean)
+        .join('; ');
+    } catch {
+      diagnostics = 'container diagnostics unavailable';
+    }
+
     throw new Error(
       `${provider.name} health check timed out after ${Math.round(
         timeoutMs / 1000
-      )} seconds.`
+      )} seconds. ${diagnostics}`
     );
   }
 
