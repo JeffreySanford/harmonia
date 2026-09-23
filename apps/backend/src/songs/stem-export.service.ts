@@ -347,6 +347,24 @@ export class StemExportService {
 
     if (!options.outputDir || typeof options.outputDir !== 'string') {
       errors.push('Output directory must be specified');
+    } else {
+      const resolvedOutput = path.resolve(process.cwd(), options.outputDir);
+      const allowedRoots = ['generated', 'exports'].map((rootDir) =>
+        path.resolve(process.cwd(), rootDir)
+      );
+      const insideAllowedRoot = allowedRoots.some((rootDir) => {
+        const relative = path.relative(rootDir, resolvedOutput);
+        return (
+          relative === '' ||
+          (!relative.startsWith('..') && !path.isAbsolute(relative))
+        );
+      });
+
+      if (!insideAllowedRoot) {
+        errors.push(
+          'Output directory must be inside Harmonia generated/ or exports/.'
+        );
+      }
     }
 
     return {
