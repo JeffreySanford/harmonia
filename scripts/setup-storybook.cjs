@@ -46,7 +46,7 @@ function main() {
 
   if (!pkg.devDependencies?.['@nx/storybook']) {
     console.log('Installing @nx/storybook for the Nx 22 workspace...');
-    run(['add', '-D', '@nx/storybook@22.1.3']);
+    run(['add', '-D', '-w', '@nx/storybook@22.1.3']);
   }
 
   if (!existsSync(storybookMain)) {
