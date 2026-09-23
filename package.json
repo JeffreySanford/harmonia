@@ -59,8 +59,9 @@
     "test:compose": "node scripts/validate-compose.cjs",
     "test:all": "pnpm test && pnpm test:startup && pnpm test:compose",
     "test:all:e2e": "pnpm test:all && pnpm test:e2e",
-    "lint:scripts": "node --check scripts/start-all.cjs && node --check scripts/start-all.test.cjs && node --check scripts/start-all.integration.test.cjs && node --check scripts/runtime-contract.test.cjs && node --check scripts/validate-compose.cjs",
-    "lint:compose": "node scripts/validate-compose.cjs"
+    "lint:scripts": "node --check scripts/start-all.cjs && node --check scripts/start-all.test.cjs && node --check scripts/start-all.integration.test.cjs && node --check scripts/runtime-contract.test.cjs && node --check scripts/validate-compose.cjs && node --check scripts/repair-local-db-auth.cjs",
+    "lint:compose": "node scripts/validate-compose.cjs",
+    "repair:local-auth": "node scripts/repair-local-db-auth.cjs"
   },
   "keywords": [],
   "author": "",
