@@ -97,7 +97,7 @@ services:
       dockerfile: Dockerfile.diffsinger
     image: harmonia/diffsinger:dev
     container_name: harmonia-diffsinger
-    restart: unless-stopped
+    restart: "no"
     profiles:
       - model-diffsinger
     environment:
@@ -128,7 +128,7 @@ services:
       dockerfile: Dockerfile.musicgen
     image: harmonia/musicgen:dev
     container_name: harmonia-musicgen
-    restart: unless-stopped
+    restart: "no"
     profiles:
       - model-musicgen
     environment:
