@@ -60,13 +60,13 @@ export class JobRecord {
     error?: string;
   } | null;
 
-  @Prop({ default: null })
+  @Prop({ type: Date, default: null })
   startedAt: Date | null;
 
-  @Prop({ default: null })
+  @Prop({ type: Date, default: null })
   completedAt: Date | null;
 
-  @Prop({ default: null })
+  @Prop({ type: Number, default: null })
   estimatedDuration: number | null;
 
   @Prop()
