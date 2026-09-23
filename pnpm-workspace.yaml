@@ -13,6 +13,6 @@ allowBuilds:
   'esbuild@0.25.9 || 0.25.12 || 0.27.0 || 0.28.1': true
   'lmdb@3.4.2': true
   'msgpackr-extract@3.0.3': true
-  'nx@22.1.3': true
+  'nx@22.7.12': true
 
 strictDepBuilds: true
