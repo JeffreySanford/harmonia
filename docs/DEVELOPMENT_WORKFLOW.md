@@ -5,7 +5,7 @@
 ### Prerequisites
 
 - Node.js 20.19+
-- pnpm 10.23+
+- pnpm 12.6.0 (pinned by `packageManager`)
 - Docker Desktop with Docker Compose
 - Git
 - Optional NVIDIA runtime for `--gpu`
@@ -17,6 +17,12 @@
 git clone https://github.com/jeffreysanford/harmonia.git
 cd harmonia
 pnpm install
+
+> **Windows / read-only Node installs:** if `corepack enable` fails with an
+> `EPERM` error under `C:\\Program Files\\nodejs`, do not run the repository
+> as Administrator. Run the pinned package manager directly with
+> `corepack pnpm@12.6.0 <command>` (for example,
+> `corepack pnpm@12.6.0 install`).
 cp .env.example .env
 # Set MONGO_ROOT_PASSWORD, MONGO_HARMONIA_PASSWORD, and JWT_SECRET.
 pnpm start:all
