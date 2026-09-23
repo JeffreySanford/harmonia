@@ -6,6 +6,8 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const packagePath = path.join(root, 'package.json');
 const storybookMain = path.join(root, 'apps', 'frontend', '.storybook', 'main.ts');
+const storybookPreview = path.join(root, 'apps', 'frontend', '.storybook', 'preview.ts');
+const storybookTsconfig = path.join(root, 'apps', 'frontend', '.storybook', 'tsconfig.json');
 const frontendProjectPath = path.join(root, 'apps', 'frontend', 'project.json');
 const storybookPort = 4401;
 const pnpm = 'pnpm';
@@ -50,6 +52,29 @@ function normalizeGeneratedStorybookConfig() {
   }
 }
 
+
+
+function normalizeGeneratedStorybookWhitespace() {
+  for (const file of [storybookMain, storybookPreview, storybookTsconfig]) {
+    if (!existsSync(file)) {
+      continue;
+    }
+
+    const original = readFileSync(file, 'utf8');
+    const normalized =
+      original
+        .replace(/[ \t]+$/gm, '')
+        .replace(/(?:\r?\n){3,}$/g, '\n')
+        .replace(/\r?\n?$/, '\n');
+
+    if (normalized !== original) {
+      writeFileSync(file, normalized);
+      console.log(
+        `Normalized generated Storybook whitespace in ${path.relative(root, file)}.`
+      );
+    }
+  }
+}
 
 function normalizeGeneratedStorybookTargets() {
   if (!existsSync(frontendProjectPath)) {
@@ -133,6 +158,7 @@ function main() {
   }
 
   normalizeGeneratedStorybookConfig();
+  normalizeGeneratedStorybookWhitespace();
   normalizeGeneratedStorybookTargets();
   ensureScripts();
 
