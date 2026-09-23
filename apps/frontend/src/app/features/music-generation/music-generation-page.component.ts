@@ -13,6 +13,11 @@ import { WebSocketService } from '../../services/websocket.service';
 import { AppState } from '../../store/app.state';
 import { selectAuthToken } from '../../store/auth/auth.selectors';
 import * as MusicRuntimeActions from '../../store/music-runtime/music-runtime.actions';
+import * as JobsActions from '../../store/jobs/jobs.actions';
+import {
+  selectJobsError,
+  selectSelectedJob,
+} from '../../store/jobs/jobs.selectors';
 import {
   selectModelsForSelectedProvider,
   selectRuntimeHardware,
@@ -81,6 +86,8 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
   isGenerating = false;
   progress = 0;
   generatedAudioUrl: string | null = null;
+  activeGenerationJobId: string | null = null;
+  private handledTerminalJobId: string | null = null;
 
   selectedProviderId: string | null = null;
   selectedModelId: string | null = null;
@@ -219,9 +226,70 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
       .subscribe((loading) => {
         this.runtimeLoading = loading;
       });
+
+    this.store
+      .select(selectSelectedJob)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((job) => {
+        if (!job || job.jobType !== 'generate' || !this.isGenerating) {
+          return;
+        }
+
+        if (this.activeGenerationJobId !== job.id) {
+          if (this.activeGenerationJobId) {
+            this.websocket.unsubscribeFromJob(this.activeGenerationJobId);
+          }
+          this.activeGenerationJobId = job.id;
+          this.websocket.subscribeToJob(job.id);
+        }
+
+        this.progress = job.progress?.percentage ?? this.progress;
+
+        if (job.status === 'completed') {
+          const outputPath = job.result?.outputPath;
+          this.generatedAudioUrl =
+            typeof outputPath === 'string' ? outputPath : null;
+          this.progress = 100;
+          this.isGenerating = false;
+
+          if (this.handledTerminalJobId !== job.id) {
+            this.handledTerminalJobId = job.id;
+            this.snackBar.open('Music generation completed.', 'Close', {
+              duration: 4000,
+            });
+          }
+        } else if (job.status === 'failed') {
+          this.isGenerating = false;
+          if (this.handledTerminalJobId !== job.id) {
+            this.handledTerminalJobId = job.id;
+            this.snackBar.open(
+              job.result?.error || 'Music generation failed.',
+              'Close'
+            );
+          }
+        } else if (job.status === 'cancelled') {
+          this.isGenerating = false;
+        } else {
+          this.isGenerating = true;
+        }
+      });
+
+    this.store
+      .select(selectJobsError)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((error) => {
+        if (!error || !this.isGenerating || this.activeGenerationJobId) {
+          return;
+        }
+        this.isGenerating = false;
+        this.snackBar.open(error, 'Close');
+      });
   }
 
   ngOnDestroy(): void {
+    if (this.activeGenerationJobId) {
+      this.websocket.unsubscribeFromJob(this.activeGenerationJobId);
+    }
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -307,6 +375,7 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
       case 'building':
       case 'starting':
       case 'health-checking':
+      case 'busy':
       case 'loading-model':
       case 'unloading-model':
       case 'stopping':
@@ -380,10 +449,6 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
     return `${minutes} minute${minutes > 1 ? 's' : ''}`;
   }
 
-  /**
-   * Audio generation remains intentionally disabled until a provider adapter
-   * returns a real artifact. This avoids the previous fake sample-audio success.
-   */
   generateMusic(): void {
     if (!this.musicTitle || !this.genre) {
       this.snackBar.open(
@@ -394,7 +459,7 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.runtimeReady) {
+    if (!this.runtimeReady || !this.selectedModelId) {
       this.snackBar.open(
         'Select a compatible model and wait for its runtime to become ready.',
         'Close',
@@ -403,15 +468,43 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.generatedAudioUrl = null;
-    this.progress = 0;
-    this.isGenerating = false;
+    if (this.activeGenerationJobId) {
+      this.websocket.unsubscribeFromJob(this.activeGenerationJobId);
+    }
 
-    this.snackBar.open(
-      `${this.runtimeStatus?.modelName || 'Selected model'} is ready. Audio generation wiring is the next provider-adapter step; Harmonia will not create a fake audio file.`,
-      'OK',
-      { duration: 7000 }
+    this.generatedAudioUrl = null;
+    this.activeGenerationJobId = null;
+    this.handledTerminalJobId = null;
+    this.progress = 0;
+    this.isGenerating = true;
+
+    this.store.dispatch(
+      JobsActions.createJob({
+        jobType: 'generate',
+        modelId: this.selectedModelId,
+        parameters: {
+          title: this.musicTitle,
+          prompt: this.buildMusicPrompt(),
+          duration: this.duration,
+          genre: this.genre,
+          mood: this.mood,
+          bpm: this.bpm,
+          instruments: [...this.selectedInstruments],
+          vocalsStyle: this.vocalsStyle,
+        },
+      })
     );
+  }
+
+  private buildMusicPrompt(): string {
+    const instrumentText =
+      this.selectedInstruments.length > 0
+        ? `, featuring ${this.selectedInstruments
+            .map((instrument) => instrument.replace(/[-_]/g, ' '))
+            .join(', ')}`
+        : '';
+
+    return `${this.genre} music, ${this.mood} mood, ${this.bpm} BPM${instrumentText}, clean production`;
   }
 
   downloadAudio(): void {
