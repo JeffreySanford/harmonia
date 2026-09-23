@@ -258,3 +258,17 @@ test('MusicGen startup validates dependencies once and healthcheck uses readines
   assert.match(backend, /failingStreak=/);
   assert.match(backend, /docker', \['logs', '--tail', '40'/);
 });
+
+
+test('provider lifecycle is orchestrator-owned and unhealthy runtimes fail fast', () => {
+  const compose = read('docker-compose.yml');
+  const backend = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+
+  const providerRestartPolicies =
+    compose.match(/container_name:\s*harmonia-(?:diffsinger|musicgen)[\s\S]{0,80}restart:\s*"no"/g) || [];
+  assert.equal(providerRestartPolicies.length, 2);
+  assert.match(backend, /state\.Health\?\.Status === 'unhealthy'/);
+  assert.match(backend, /became unhealthy/);
+});
