@@ -140,6 +140,9 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
   assert.match(setup, /--interactionTests=true/);
   assert.match(setup, /--generateStories=false/);
   assert.match(setup, /build-storybook/);
+  assert.match(setup, /normalizeGeneratedStorybookConfig/);
+  assert.match(setup, /fileURLToPath/);
+  assert.match(setup, /dirname/);
 
   assert.match(loginStory, /LoginModalComponent/);
   assert.match(loginStory, /ValidLoginDispatchesRealAuthAction/);
