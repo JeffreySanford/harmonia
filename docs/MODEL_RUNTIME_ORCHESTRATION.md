@@ -150,3 +150,27 @@ For the current 10 GB RTX 3080 target:
 The existing stem-generation code now targets `harmonia-musicgen` instead of
 the generic worker. MusicGen weights remain CC-BY-NC 4.0, so the catalog marks
 them as commercially restricted.
+
+
+## Persistent MusicGen inference
+
+MusicGen runs a container-local provider server on `127.0.0.1:8765`. The port
+is intentionally not published to the host. Nest invokes a small client with
+`docker exec`; the client sends generation requests to the resident process.
+
+The first generation for a selected MusicGen model loads the model from the
+persistent Hugging Face cache into GPU memory. Later generations reuse the
+resident model instead of reloading weights. Selecting another MusicGen model
+causes the provider to unload the current model, release CUDA cache, and lazily
+load the new model on the next generation.
+
+Generation lifecycle:
+
+```text
+ready
+  -> busy
+  -> ready
+```
+
+Provider stop terminates the resident process and releases GPU memory. Model
+weights remain cached under `models/musicgen/` for future starts.
