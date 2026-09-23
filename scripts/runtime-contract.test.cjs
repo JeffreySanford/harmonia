@@ -169,3 +169,18 @@ test('provider runtime lifecycle is driven by backend events and NgRx', () => {
   assert.match(websocket, /music-runtime:status/);
   assert.match(effects, /MatSnackBar/);
 });
+
+
+test('provider image builds stream progress instead of buffering Docker output', () => {
+  const backend = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+
+  assert.match(backend, /spawn\('docker'/);
+  assert.match(backend, /--progress=plain/);
+  assert.match(backend, /step \${current}\/\${total}/);
+  assert.match(backend, /10_000/);
+  assert.match(backend, /elapsed/);
+  assert.match(backend, /child\.stdout\?\.on\('data'/);
+  assert.match(backend, /child\.stderr\?\.on\('data'/);
+});
