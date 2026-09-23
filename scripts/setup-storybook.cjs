@@ -53,7 +53,7 @@ function ensureScripts() {
 
   pkg.scripts ||= {};
   pkg.scripts.storybook =
-    'nx storybook frontend --ci=true --noOpen=true --host=127.0.0.1 --port=4400';
+    'nx storybook frontend --ci=true --host=127.0.0.1 --port=4400';
   pkg.scripts['storybook:build'] = 'nx build-storybook frontend';
   pkg.scripts['storybook:test'] = 'nx run frontend:test-storybook';
 
