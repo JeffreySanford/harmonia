@@ -1,164 +1,107 @@
 #!/usr/bin/env python3
-"""
-Simple DiffSinger wrapper for Harmonia.
-Usage: python3 scripts/run_diffsinger.py <meta_json_path> <output_wav_path>
+"""Strict DiffSinger wrapper for Harmonia.
 
-This script invokes the isolated DiffSinger inference helper and only succeeds
-when a real RIFF/WAVE artifact is produced. Inference failures propagate as
-non-zero exit codes; placeholder audio is never synthesized.
+Usage:
+  python3 scripts/run_diffsinger.py <meta_json_path> <output_wav_path>
+
+The pinned compatibility helper owns inference. This wrapper never fabricates
+audio: it copies a genuine RIFF/WAVE result to the requested path or exits
+non-zero.
 """
+
+import glob
 import json
-import sys
 import os
-from pathlib import Path
+import shutil
+import subprocess
+import sys
+
 
 def is_valid_wav(path):
     try:
-        with open(path, 'rb') as f:
-            header = f.read(12)
-        return len(header) >= 12 and header[:4] == b'RIFF' and header[8:12] == b'WAVE'
-    except Exception:
+        with open(path, "rb") as stream:
+            header = stream.read(12)
+        return (
+            len(header) >= 12
+            and header[:4] == b"RIFF"
+            and header[8:12] == b"WAVE"
+        )
+    except OSError:
         return False
 
 
 def run_diffsinger(meta_path, out_path):
     try:
-        # Do not attempt to import heavy ML packages here; prefer invoking the
-        # upstream `infer.py` script in /opt/DiffSinger when available.
+        with open(meta_path, "r", encoding="utf-8") as stream:
+            meta = json.load(stream)
 
-        # Load metadata
-        with open(meta_path, 'r', encoding='utf-8') as mf:
-            meta = json.load(mf)
+        title = str(meta.get("title") or "harmonia-diffsinger")
+        out_dir = os.path.dirname(out_path) or "/workspace/generated/songs"
+        os.makedirs(out_dir, exist_ok=True)
 
-        lyrics = meta.get('lyrics', '')
-        title = meta.get('title', 'song')
+        before = set(glob.glob(os.path.join(out_dir, "*.wav")))
 
-        # If the upstream cloned repo's infer script exists, prefer invoking it (best-effort).
-        infer_script = '/opt/DiffSinger/scripts/infer.py'
-        if os.path.isfile(infer_script):
-            try:
-                # If there are checkpoints in the workspace (models/diffsinger/*),
-                # copy them into the cloned repo's checkpoints folder so infer.py
-                # can find them by --exp.
-                try:
-                    import glob
-                    workspace_ckpts = sorted(glob.glob('/workspace/models/diffsinger/*'))
-                    if workspace_ckpts:
-                        chk_dest_root = '/opt/DiffSinger/checkpoints'
-                        os.makedirs(chk_dest_root, exist_ok=True)
-                        import shutil
-                        for src in workspace_ckpts:
-                            base = os.path.basename(src.rstrip('/'))
-                            dest = os.path.join(chk_dest_root, base)
-                            if not os.path.exists(dest):
-                                try:
-                                    shutil.copytree(src, dest)
-                                    print(f'Copied checkpoint {src} -> {dest}')
-                                except Exception as e:
-                                    print(f'Warning: failed to copy checkpoint {src} -> {dest}: {e}')
-                except Exception as _:
-                    pass
+        command = [
+            "python3",
+            "/workspace/scripts/diffsinger_infer_helper.py",
+            out_dir,
+            title,
+        ]
+        print("Running pinned DiffSinger compatibility inference:", command)
+        completed = subprocess.run(command, check=False)
 
-                # If the metadata provides an explicit command, run that. Otherwise run a dry-run help command to ensure infer is callable.
-                import subprocess
-                if meta.get('diffsinger_cmd'):
-                    cmd = meta['diffsinger_cmd']
-                    print('Running user-provided DiffSinger command:', cmd)
-                    res = subprocess.run(cmd, shell=True)
-                    if res.returncode == 0 and is_valid_wav(out_path):
-                        print('DiffSinger external command completed successfully with a valid WAV.')
-                        return 0
-                    if res.returncode == 0:
-                        print('DiffSinger external command returned success but did not produce a valid WAV.')
-                        return 6
-                    print('DiffSinger external command failed.')
-                else:
-                    # Try calling infer.py acoustic with any checkpoint we copied. Use a sample .ds file
-                    # from the cloned repo as an input to get a realistic exercise of the pipeline.
-                    sample_ds = '/opt/DiffSinger/samples/03_撒娇八连.ds'
-                    out_dir = os.path.dirname(out_path) or '/workspace/generated/songs'
-                    # Prefer programmatic invocation to avoid CLI parsing differences.
-                    try:
-                        # Pre-migrate any old-format checkpoint found in the embedded folder.
-                        ckpt_dir = '/opt/DiffSinger/checkpoints/0102_xiaoma_pe'
-                        orig_ckpt = None
-                        migrated_ckpt = None
-                        try:
-                            import glob
-                            found = glob.glob(ckpt_dir + '/model_ckpt_steps_*.ckpt')
-                            if found:
-                                orig_ckpt = sorted(found)[-1]
-                                migrated_ckpt = orig_ckpt.replace('.ckpt', '.migrated.ckpt')
-                                if not os.path.exists(migrated_ckpt):
-                                    print('Migrating checkpoint', orig_ckpt, '->', migrated_ckpt)
-                                    try:
-                                        subprocess.run(['python3', '/workspace/scripts/migrate_checkpoint.py', orig_ckpt, migrated_ckpt], check=True)
-                                        print('Migration finished')
-                                    except Exception as e:
-                                        print('Checkpoint migration failed:', e)
-                        except Exception:
-                            pass
+        if completed.returncode != 0:
+            print(
+                f"DiffSinger compatibility helper failed with exit "
+                f"{completed.returncode}.",
+                file=sys.stderr,
+            )
+            return completed.returncode or 5
 
-                        # Use a helper script (workspace) to run programmatic DiffSinger invocation
-                        cmd = ['python3', '/workspace/scripts/diffsinger_infer_helper.py', out_dir, title]
-                        print('Running programmatic DiffSinger helper:', cmd)
-                        import time
-                        ts = time.strftime('%Y%m%dT%H%M%S')
-                        log_dir = '/workspace/generate_script/debug'
-                        try:
-                            os.makedirs(log_dir, exist_ok=True)
-                        except Exception:
-                            pass
-                        log_file = os.path.join(log_dir, f'diffsinger_{ts}.log')
-                        import shutil
-                        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                        out, _ = proc.communicate()
-                        try:
-                            with open(log_file, 'wb') as lf:
-                                lf.write(out or b'')
-                        except Exception:
-                            pass
-                        res = proc
-                        stdout = (out.decode('utf-8', errors='replace') if out else '')
-                        stderr = ''
-                        print('Program log saved to', log_file)
-                        print('programmatic infer exit', res.returncode)
-                        if res.returncode == 0:
-                            try:
-                                import glob
-                                candidates = glob.glob(os.path.join(out_dir, '*.wav'))
-                                if candidates:
-                                    chosen = sorted(candidates)[-1]
-                                    shutil.copy(chosen, out_path)
-                                    print('DiffSinger: copied generated wav', chosen, '->', out_path)
-                                    return 0
-                            except Exception as e:
-                                print('Error copying generated wav:', e)
-                            print('DiffSinger helper returned success but no WAV output was found.')
-                            print(stdout)
-                            return 6
-                        else:
-                            print('Programmatic DiffSinger run failed. See log:', log_file)
-                            print(stdout)
-                    except Exception as e:
-                        print('Programmatic DiffSinger invocation error:', e)
-            except Exception as e:
-                print('Error while attempting to run upstream infer.py:', e)
+        candidates = [
+            candidate
+            for candidate in glob.glob(os.path.join(out_dir, "*.wav"))
+            if candidate not in before and is_valid_wav(candidate)
+        ]
 
-        print('DiffSinger inference could not produce a valid WAV artifact.')
-        return 7
+        if not candidates:
+            candidates = [
+                candidate
+                for candidate in glob.glob(os.path.join(out_dir, "*.wav"))
+                if is_valid_wav(candidate)
+            ]
 
-    except Exception as e:
-        print('Error running DiffSinger wrapper:', e)
+        if not candidates:
+            print(
+                "DiffSinger helper returned success but produced no valid WAV.",
+                file=sys.stderr,
+            )
+            return 6
+
+        source = max(candidates, key=os.path.getmtime)
+        if os.path.abspath(source) != os.path.abspath(out_path):
+            shutil.copy2(source, out_path)
+
+        if not is_valid_wav(out_path):
+            print("DiffSinger output failed RIFF/WAVE validation.", file=sys.stderr)
+            return 7
+
+        print(f"DiffSinger generated real audio: {out_path}")
+        return 0
+    except Exception as exc:
+        print(f"Error running DiffSinger wrapper: {exc}", file=sys.stderr)
         return 2
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print('Usage: run_diffsinger.py <meta_json_path> <output_wav_path>')
-        sys.exit(3)
-    meta_path = sys.argv[1]
-    out_path = sys.argv[2]
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    code = run_diffsinger(meta_path, out_path)
-    sys.exit(code)
+        print(
+            "Usage: run_diffsinger.py <meta_json_path> <output_wav_path>",
+            file=sys.stderr,
+        )
+        raise SystemExit(3)
+
+    metadata_path = sys.argv[1]
+    output_path = sys.argv[2]
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+    raise SystemExit(run_diffsinger(metadata_path, output_path))
