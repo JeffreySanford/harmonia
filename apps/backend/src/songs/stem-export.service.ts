@@ -191,7 +191,7 @@ export class StemExportService {
         'docker',
         [
           'exec',
-          'harmonia-worker',
+          'harmonia-musicgen',
           'python3',
           '/workspace/scripts/generate_musicgen_audio.py',
           '--instrument',
@@ -242,7 +242,7 @@ export class StemExportService {
           const { spawn: spawn2 } = require('child_process');
           const catCmd = spawn2(
             'docker',
-            ['exec', 'harmonia-worker', 'cat', outputPath],
+            ['exec', 'harmonia-musicgen', 'cat', outputPath],
             { stdio: 'pipe' }
           );
 
@@ -305,7 +305,7 @@ export class StemExportService {
       });
 
       // Log the command being executed
-      const cmdLogMessage = `[${new Date().toISOString()}] EXECUTING: docker exec harmonia-worker python3 /workspace/scripts/generate_musicgen_audio.py --instrument ${instrument} --output ${outputPath} --duration 5\n`;
+      const cmdLogMessage = `[${new Date().toISOString()}] EXECUTING: docker exec harmonia-musicgen python3 /workspace/scripts/generate_musicgen_audio.py --instrument ${instrument} --output ${outputPath} --duration 5\n`;
       fs.appendFileSync(debugLogPath, cmdLogMessage);
     });
   }
