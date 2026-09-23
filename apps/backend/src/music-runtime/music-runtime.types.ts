@@ -35,6 +35,7 @@ export interface MusicProviderDefinition {
   name: string;
   description: string;
   runtimeInstalled: boolean;
+  imageName?: string;
   dockerService?: string;
   containerName?: string;
   composeProfile?: string;
