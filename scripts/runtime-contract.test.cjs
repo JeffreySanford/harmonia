@@ -15,7 +15,9 @@ test('runtime uses one canonical Compose definition plus an optional GPU overrid
   const compose = read('docker-compose.yml');
   assert.match(compose, /container_name:\s*harmonia-worker/);
   assert.match(compose, /container_name:\s*harmonia-diffsinger/);
+  assert.match(compose, /container_name:\s*harmonia-musicgen/);
   assert.match(compose, /model-diffsinger/);
+  assert.match(compose, /model-musicgen/);
   assert.match(compose, /127\.0\.0\.1:27017:27017/);
   assert.match(compose, /127\.0\.0\.1:8081:8081/);
   assert.doesNotMatch(compose, /8000:8000/);
@@ -66,9 +68,10 @@ test('Mongo initialization never falls back to a default application password', 
   assert.doesNotMatch(init, /changeme/);
 });
 
-test('backend Docker execution target matches the canonical worker name', () => {
+test('backend MusicGen execution targets the isolated provider container', () => {
   const service = read('apps/backend/src/songs/stem-export.service.ts');
-  assert.match(service, /harmonia-worker/);
+  assert.match(service, /harmonia-musicgen/);
+  assert.doesNotMatch(service, /harmonia-worker/);
   assert.doesNotMatch(service, /harmonia-dev/);
 });
 
@@ -183,4 +186,37 @@ test('provider image builds stream progress instead of buffering Docker output',
   assert.match(backend, /elapsed/);
   assert.match(backend, /child\.stdout\?\.on\('data'/);
   assert.match(backend, /child\.stderr\?\.on\('data'/);
+});
+
+
+test('MusicGen is isolated in its AudioCraft-compatible provider image', () => {
+  const worker = read('Dockerfile.worker');
+  const musicgen = read('Dockerfile.musicgen');
+  const compose = read('docker-compose.yml');
+  const catalog = read(
+    'apps/backend/src/music-runtime/music-model.catalog.ts'
+  );
+
+  assert.doesNotMatch(worker, /audiocraft/i);
+  assert.match(musicgen, /python3\.9/);
+  assert.match(musicgen, /torch==2\.1\.0/);
+  assert.match(musicgen, /audiocraft==1\.3\.0/);
+  assert.match(compose, /profiles:\s*\n\s*- model-musicgen/);
+  assert.match(compose, /harmonia\/musicgen:dev/);
+  assert.match(catalog, /musicgen-stereo-small/);
+  assert.match(catalog, /musicgen-medium/);
+  assert.match(catalog, /minVramGb: 16/);
+});
+
+test('provider image identity is catalog-driven rather than hard-coded', () => {
+  const backend = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+  const catalog = read(
+    'apps/backend/src/music-runtime/music-model.catalog.ts'
+  );
+
+  assert.match(backend, /const imageName = provider\.imageName/);
+  assert.match(catalog, /imageName: 'harmonia\/diffsinger:dev'/);
+  assert.match(catalog, /imageName: 'harmonia\/musicgen:dev'/);
 });
