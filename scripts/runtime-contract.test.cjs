@@ -272,3 +272,12 @@ test('provider lifecycle is orchestrator-owned and unhealthy runtimes fail fast'
   assert.match(backend, /state\.Health\?\.Status === 'unhealthy'/);
   assert.match(backend, /became unhealthy/);
 });
+
+
+test('MusicGen pins Transformers to a PyTorch 2.1-compatible release', () => {
+  const musicgen = read('Dockerfile.musicgen');
+
+  assert.match(musicgen, /transformers==4\.35\.2/);
+  assert.match(musicgen, /MusicGen Python stack import check passed/);
+  assert.match(musicgen, /torch\.__version__\.startswith\("2\.1\.0"\)/);
+});
