@@ -29,6 +29,25 @@ function run(args) {
   }
 }
 
+
+function normalizeGeneratedStorybookConfig() {
+  if (!existsSync(storybookMain)) {
+    return;
+  }
+
+  let source = readFileSync(storybookMain, 'utf8');
+  const original = source;
+
+  source = source
+    .replace(/^import \{ fileURLToPath \} from ["']node:url["'];\r?\n/m, '')
+    .replace(/^import \{ dirname \} from ["']node:path["'];\r?\n/m, '');
+
+  if (source !== original) {
+    writeFileSync(storybookMain, source);
+    console.log('Normalized generated Storybook main.ts for strict TypeScript.');
+  }
+}
+
 function ensureScripts() {
   const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
 
@@ -67,6 +86,7 @@ function main() {
     console.log('Storybook configuration already exists; generator skipped.');
   }
 
+  normalizeGeneratedStorybookConfig();
   ensureScripts();
 
   console.log('Installing any package.json changes and refreshing pnpm-lock.yaml...');
