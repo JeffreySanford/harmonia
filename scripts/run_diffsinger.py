@@ -3,19 +3,22 @@
 Simple DiffSinger wrapper for Harmonia.
 Usage: python3 scripts/run_diffsinger.py <meta_json_path> <output_wav_path>
 
-This script attempts to import DiffSinger and run a minimal inference.
-If DiffSinger isn't available, it writes a placeholder WAV file with the lyrics text encoded as bytes.
+This script invokes the isolated DiffSinger inference helper and only succeeds
+when a real RIFF/WAVE artifact is produced. Inference failures propagate as
+non-zero exit codes; placeholder audio is never synthesized.
 """
 import json
 import sys
 import os
 from pathlib import Path
 
-def write_placeholder_wav(out_path, text):
-    # Create a small placeholder binary file (not a valid WAV) but helps debugging
-    with open(out_path, 'wb') as f:
-        f.write(b"HARMONIA_DIFFSINGER_PLACEHOLDER\n")
-        f.write(text.encode('utf-8'))
+def is_valid_wav(path):
+    try:
+        with open(path, 'rb') as f:
+            header = f.read(12)
+        return len(header) >= 12 and header[:4] == b'RIFF' and header[8:12] == b'WAVE'
+    except Exception:
+        return False
 
 
 def run_diffsinger(meta_path, out_path):
@@ -62,12 +65,13 @@ def run_diffsinger(meta_path, out_path):
                     cmd = meta['diffsinger_cmd']
                     print('Running user-provided DiffSinger command:', cmd)
                     res = subprocess.run(cmd, shell=True)
-                    if res.returncode == 0:
-                        print('DiffSinger external command completed successfully.')
-                        write_placeholder_wav(out_path, f'DiffSinger external command completed for: {title}\n\n(see container logs)')
+                    if res.returncode == 0 and is_valid_wav(out_path):
+                        print('DiffSinger external command completed successfully with a valid WAV.')
                         return 0
-                    else:
-                        print('DiffSinger external command failed, falling back to placeholder.')
+                    if res.returncode == 0:
+                        print('DiffSinger external command returned success but did not produce a valid WAV.')
+                        return 6
+                    print('DiffSinger external command failed.')
                 else:
                     # Try calling infer.py acoustic with any checkpoint we copied. Use a sample .ds file
                     # from the cloned repo as an input to get a realistic exercise of the pipeline.
@@ -130,8 +134,9 @@ def run_diffsinger(meta_path, out_path):
                                     return 0
                             except Exception as e:
                                 print('Error copying generated wav:', e)
-                            write_placeholder_wav(out_path, f'DiffSinger ran but no output found. stdout:\n{stdout}\nstderr:\n{stderr}')
-                            return 0
+                            print('DiffSinger helper returned success but no WAV output was found.')
+                            print(stdout)
+                            return 6
                         else:
                             print('Programmatic DiffSinger run failed. See log:', log_file)
                             print(stdout)
@@ -140,14 +145,11 @@ def run_diffsinger(meta_path, out_path):
             except Exception as e:
                 print('Error while attempting to run upstream infer.py:', e)
 
-        # NOTE: This block is a placeholder. Real DiffSinger integration requires model checkpoints and proper API calls.
-        write_placeholder_wav(out_path, f'DiffSinger synthesized (placeholder) for: {title}\n\n{lyrics}')
-        print('DiffSinger: placeholder written to', out_path)
-        return 0
+        print('DiffSinger inference could not produce a valid WAV artifact.')
+        return 7
 
     except Exception as e:
         print('Error running DiffSinger wrapper:', e)
-        write_placeholder_wav(out_path, 'Error running DiffSinger: ' + str(e))
         return 2
 
 
