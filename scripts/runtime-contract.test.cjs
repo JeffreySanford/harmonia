@@ -83,6 +83,24 @@ test('backend never falls back to unauthenticated MongoDB access', () => {
   assert.doesNotMatch(appModule, /mongodb:\/\/localhost:27017\/harmonia/);
 });
 
+
+test('local auth repair synchronizes app credentials and seeds the test user', () => {
+  const pkg = JSON.parse(read('package.json'));
+  const repair = read('scripts/repair-local-db-auth.cjs');
+
+  assert.equal(
+    pkg.scripts['repair:local-auth'],
+    'node scripts/repair-local-db-auth.cjs'
+  );
+  assert.match(repair, /crypto\.randomBytes\(24\)/);
+  assert.match(repair, /h\.updateUser\("harmonia_app"/);
+  assert.match(repair, /h\.createUser\(\{ user: "harmonia_app"/);
+  assert.match(repair, /E2E_TEST_USER_USERNAME/);
+  assert.match(repair, /E2E_TEST_USER_PASSWORD/);
+  assert.match(repair, /LOCAL_DB_AUTH_REPAIR_OK/);
+  assert.doesNotMatch(repair, /MONGO_HARMONIA_PASSWORD=.*password/i);
+});
+
 test('backend MusicGen execution targets the isolated provider container', () => {
   const service = read('apps/backend/src/songs/stem-export.service.ts');
   assert.match(service, /harmonia-musicgen/);
