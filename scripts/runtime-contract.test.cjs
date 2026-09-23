@@ -79,6 +79,25 @@ test('CI reads the pinned pnpm version from packageManager', () => {
   }
 });
 
+test('hosted smoke CI skips absent local artifacts without opening alert storms', () => {
+  const smoke = read('tests/env_tests/smoke_check.py');
+  const workflow = read('.github/workflows/smoke.yml');
+  const pkg = JSON.parse(read('package.json'));
+  const wsl = read('scripts/qualify-wsl-ci.sh');
+
+  assert.match(smoke, /successful skip/);
+  assert.match(smoke, /normalize_artifact_path/);
+  assert.doesNotMatch(workflow, /actions\/cache@/);
+  assert.match(workflow, /cancel-in-progress:\s*true/);
+  assert.match(workflow, /github\.event_name == 'schedule'/);
+  assert.match(workflow, /search\.issuesAndPullRequests/);
+  assert.match(workflow, /createComment/);
+  assert.equal(pkg.scripts['qualify:wsl-ci'], 'bash scripts/qualify-wsl-ci.sh');
+  assert.match(wsl, /RUN_DOCKER_START_TESTS=1/);
+  assert.match(wsl, /NX_NO_CLOUD=true/);
+  assert.match(wsl, /HARMONIA_WSL_CI_PARITY_OK/);
+});
+
 test('all Nx packages are aligned on 22.7.12', () => {
   const pkg = JSON.parse(read('package.json'));
   const nxPackages = [
