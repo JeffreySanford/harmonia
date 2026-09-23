@@ -114,7 +114,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - "test -f /tmp/harmonia-runtime-ready && python3 -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)'"
+        - "test -f /tmp/harmonia-runtime-ready && python3 -c 'import torch; raise SystemExit(0 if torch.__version__.startswith(\"1.8.2\") else 1)'"
       start_period: 180s
       interval: 10s
       timeout: 5s
