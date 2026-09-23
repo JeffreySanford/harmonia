@@ -73,6 +73,7 @@ export const MUSIC_MODELS: MusicModelDefinition[] = [
     id: 'diffsinger-acoustic-hifigan',
     providerId: 'diffsinger',
     name: 'Acoustic + HiFi-GAN',
+    runtimeModelId: '0228_opencpop_ds100_rel',
     availability: 'installed',
     minVramGb: 6,
     recommendedVramGb: 8,
