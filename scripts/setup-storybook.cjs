@@ -6,6 +6,8 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const packagePath = path.join(root, 'package.json');
 const storybookMain = path.join(root, 'apps', 'frontend', '.storybook', 'main.ts');
+const frontendProjectPath = path.join(root, 'apps', 'frontend', 'project.json');
+const storybookPort = 4401;
 const pnpm = 'pnpm';
 
 function run(args) {
@@ -48,12 +50,47 @@ function normalizeGeneratedStorybookConfig() {
   }
 }
 
+
+function normalizeGeneratedStorybookTargets() {
+  if (!existsSync(frontendProjectPath)) {
+    return;
+  }
+
+  const project = JSON.parse(readFileSync(frontendProjectPath, 'utf8'));
+  const storybookTarget = project.targets?.storybook;
+  const testStorybookTarget = project.targets?.['test-storybook'];
+  let changed = false;
+
+  if (storybookTarget?.options && storybookTarget.options.port !== storybookPort) {
+    storybookTarget.options.port = storybookPort;
+    changed = true;
+  }
+
+  if (testStorybookTarget?.options?.command) {
+    const normalized = testStorybookTarget.options.command
+      .replace(/http:\/\/localhost:\d+/g, `http://127.0.0.1:${storybookPort}`)
+      .replace(/http:\/\/127\.0\.0\.1:\d+/g, `http://127.0.0.1:${storybookPort}`);
+
+    if (normalized !== testStorybookTarget.options.command) {
+      testStorybookTarget.options.command = normalized;
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    writeFileSync(frontendProjectPath, JSON.stringify(project, null, 2) + '\n');
+    console.log(
+      `Normalized generated Storybook targets to 127.0.0.1:${storybookPort}.`
+    );
+  }
+}
+
 function ensureScripts() {
   const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
 
   pkg.scripts ||= {};
   pkg.scripts.storybook =
-    'nx storybook frontend --ci=true --host=127.0.0.1 --port=4400';
+    `nx storybook frontend --ci=true --host=127.0.0.1 --port=${storybookPort}`;
   pkg.scripts['storybook:build'] = 'nx build-storybook frontend';
   pkg.scripts['storybook:test'] = 'nx run frontend:test-storybook';
 
@@ -92,6 +129,7 @@ function main() {
   }
 
   normalizeGeneratedStorybookConfig();
+  normalizeGeneratedStorybookTargets();
   ensureScripts();
 
   console.log('Installing any package.json changes and refreshing pnpm-lock.yaml...');
@@ -104,7 +142,7 @@ function main() {
   console.log('STORYBOOK_SETUP_OK');
   console.log('Run Storybook with: pnpm storybook');
   console.log(
-    'With Storybook running on port 4400, run interaction tests with: pnpm storybook:test'
+    `With Storybook running on port ${storybookPort}, run interaction tests with: pnpm storybook:test`
   );
 }
 
