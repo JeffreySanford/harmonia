@@ -3,7 +3,7 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import {
   MUSIC_MODELS,
@@ -249,11 +249,145 @@ export class MusicRuntimeService {
       10
     );
 
-    await this.compose(provider, [
+    await this.buildProviderImage(provider, model, hardware);
+  }
+
+  private async buildProviderImage(
+    provider: MusicProviderDefinition,
+    model: MusicModelDefinition,
+    hardware: HardwareProfile
+  ): Promise<void> {
+    const args = this.composeArgs(provider, [
       'build',
       '--provenance=false',
-      provider.dockerService,
+      '--progress=plain',
+      provider.dockerService!,
     ]);
+
+    this.logger.log(`docker ${args.join(' ')}`);
+
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn('docker', args, {
+        cwd: process.cwd(),
+        windowsHide: true,
+        env: process.env,
+      });
+
+      const startedAt = Date.now();
+      let lastStep = '';
+      let lastProgress = 10;
+      let errorTail = '';
+
+      const emitBuildLine = (raw: string): void => {
+        const line = raw
+          .replace(/\u001b\[[0-9;]*m/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (!line) {
+          return;
+        }
+
+        errorTail = `${errorTail}\n${line}`.slice(-12000);
+
+        const step = line.match(/^#\d+\s+\[(\d+)\/(\d+)\]\s+(.+)$/);
+        if (step) {
+          const current = Number(step[1]);
+          const total = Number(step[2]);
+          const detail = step[3].slice(0, 140);
+          lastStep = `step ${current}/${total}`;
+          lastProgress = Math.min(
+            30,
+            10 + Math.max(1, Math.round((current / total) * 20))
+          );
+          void this.transition(
+            provider,
+            model,
+            hardware,
+            'building',
+            `Building ${provider.name} runtime — ${lastStep}: ${detail}`,
+            lastProgress
+          );
+          return;
+        }
+
+        if (/exporting to image/i.test(line)) {
+          lastStep = 'exporting image';
+          lastProgress = Math.max(lastProgress, 31);
+          void this.transition(
+            provider,
+            model,
+            hardware,
+            'building',
+            `Building ${provider.name} runtime — exporting image…`,
+            lastProgress
+          );
+          return;
+        }
+
+        if (/naming to .*harmonia\//i.test(line)) {
+          lastStep = 'finalizing image';
+          lastProgress = Math.max(lastProgress, 33);
+          void this.transition(
+            provider,
+            model,
+            hardware,
+            'building',
+            `Building ${provider.name} runtime — finalizing image…`,
+            lastProgress
+          );
+        }
+      };
+
+      const consume = (chunk: Buffer | string): void => {
+        String(chunk)
+          .split(/\r?\n/)
+          .forEach(emitBuildLine);
+      };
+
+      child.stdout?.on('data', consume);
+      child.stderr?.on('data', consume);
+
+      const heartbeat = setInterval(() => {
+        const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+        const minutes = Math.floor(elapsedSeconds / 60);
+        const seconds = elapsedSeconds % 60;
+        const elapsed =
+          minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+        const suffix = lastStep ? ` — ${lastStep}` : '';
+
+        void this.transition(
+          provider,
+          model,
+          hardware,
+          'building',
+          `Building ${provider.name} runtime… ${elapsed} elapsed${suffix}`,
+          lastProgress
+        );
+      }, 10_000);
+
+      child.once('error', (error) => {
+        clearInterval(heartbeat);
+        reject(error);
+      });
+
+      child.once('close', (code) => {
+        clearInterval(heartbeat);
+
+        if (code === 0) {
+          resolve();
+          return;
+        }
+
+        reject(
+          new Error(
+            `Docker build exited with code ${code ?? 'unknown'}.${
+              errorTail ? ` Last output: ${errorTail.slice(-2000)}` : ''
+            }`
+          )
+        );
+      });
+    });
   }
 
   private async waitForHealthy(
@@ -306,10 +440,10 @@ export class MusicRuntimeService {
     );
   }
 
-  private async compose(
+  private composeArgs(
     provider: MusicProviderDefinition,
     operation: string[]
-  ): Promise<void> {
+  ): string[] {
     const args = [
       'compose',
       '-f',
@@ -324,6 +458,14 @@ export class MusicRuntimeService {
     }
 
     args.push('--profile', provider.composeProfile!, ...operation);
+    return args;
+  }
+
+  private async compose(
+    provider: MusicProviderDefinition,
+    operation: string[]
+  ): Promise<void> {
+    const args = this.composeArgs(provider, operation);
 
     this.logger.log(`docker ${args.join(' ')}`);
     await execFileAsync('docker', args, {
