@@ -8,9 +8,10 @@ import { SongDslParserService } from './song-dsl-parser.service';
 import { InstrumentCatalogService } from './instrument-catalog.service';
 import { LyricAnalysisService } from './lyric-analysis.service';
 import { PaletteSuggestionService } from './palette-suggestion.service';
+import { MusicRuntimeModule } from '../music-runtime/music-runtime.module';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, MusicRuntimeModule],
   controllers: [SongsController],
   providers: [
     OllamaService,
