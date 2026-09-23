@@ -105,8 +105,8 @@ describe('SongsController', () => {
     );
 
     expect(result.success).toBe(true);
-    expect(result.files?.[0]?.url).toBeNull();
-    expect(result.zipUrl).toBeNull();
+    expect((result as any).files?.[0]?.url).toBeNull();
+    expect((result as any).zipUrl).toBeNull();
   });
 
   it('returns download URLs only for files under exports/', async () => {
@@ -138,8 +138,7 @@ describe('SongsController', () => {
     );
 
     expect(result.success).toBe(true);
-    expect(result.files?.[0]?.url).toBe('/downloads/smoke/piano.wav');
-    expect(result.zipUrl).toBeNull();
+    expect((result as any).files?.[0]?.url).toBe('/downloads/smoke/piano.wav');
+    expect((result as any).zipUrl).toBeNull();
   });
-
 });
