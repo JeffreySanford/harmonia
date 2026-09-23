@@ -256,7 +256,7 @@ test('MusicGen startup validates dependencies once and healthcheck uses readines
     /python3\.9 -c 'import torch, audiocraft/
   );
   assert.match(backend, /failingStreak=/);
-  assert.match(backend, /docker', \['logs', '--tail', '40'/);
+  assert.match(backend, /'logs',[\s\S]*'--tail',[\s\S]*'40'/);
 });
 
 
@@ -292,4 +292,35 @@ test('provider selection reconciles stale images once per backend process', () =
   assert.match(backend, /validatedProviderImages\.has\(provider\.id\)/);
   assert.match(backend, /Checking \${provider\.name} runtime image for source changes/);
   assert.match(backend, /validatedProviderImages\.add\(provider\.id\)/);
+});
+
+
+test('backend MusicGen failures propagate instead of synthesizing placeholder audio', () => {
+  const service = read('apps/backend/src/songs/stem-export.service.ts');
+
+  assert.doesNotMatch(service, /generateBasicInstrumentAudio/);
+  assert.doesNotMatch(service, /generateWavPlaceholder/);
+  assert.doesNotMatch(service, /using basic instrument audio/i);
+  assert.match(service, /reject\(new Error\(/);
+});
+
+test('generic worker excludes heavyweight model frameworks', () => {
+  const requirements = read('requirements.worker.txt');
+  const gpu = read('docker-compose.gpu.yml');
+  const startup = read('scripts/start-all.cjs');
+
+  for (const packageName of [
+    'torch',
+    'torchaudio',
+    'huggingface_hub',
+    'soundfile',
+    'scipy',
+    'audiocraft',
+  ]) {
+    assert.doesNotMatch(requirements, new RegExp(packageName, 'i'));
+  }
+
+  assert.doesNotMatch(gpu, /^\s*worker:\s*$/m);
+  assert.doesNotMatch(startup, /--gpu cannot be combined with --no-worker/);
+  assert.match(startup, /--gpu enables NVIDIA runtime for selected model providers/);
 });
