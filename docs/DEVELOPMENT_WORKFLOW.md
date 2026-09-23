@@ -30,6 +30,12 @@ pnpm install
 > `trustPolicy: ignore` to `trustPolicy: off` in
 > `%LOCALAPPDATA%\\pnpm\\config\\config.yaml`. This is a per-user file and
 > does not require Administrator privileges.
+
+> **Windows major pnpm upgrades:** before the first install with the new pnpm
+> major, stop Harmonia Node/Nx/Storybook processes. Windows can otherwise lock
+> files under `node_modules/.pnpm` and pnpm will fail with
+> `ERR_PNPM_PACKAGE_MANAGER_REMOVE_MODULES_DIR` / `Access is denied`. This is a
+> file-lock issue and normally does not require Administrator privileges.
 cp .env.example .env
 # Set MONGO_ROOT_PASSWORD, MONGO_HARMONIA_PASSWORD, and JWT_SECRET.
 pnpm start:all
