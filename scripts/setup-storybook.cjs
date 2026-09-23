@@ -146,7 +146,7 @@ function main() {
   console.log('STORYBOOK_SETUP_OK');
   console.log('Run Storybook with: pnpm storybook');
   console.log(
-    `With Storybook running on port ${storybookPort}, run interaction tests with: pnpm storybook:test`
+    'Run isolated Storybook interaction tests with: pnpm storybook:test'
   );
 }
 
