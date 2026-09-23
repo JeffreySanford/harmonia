@@ -9,4 +9,9 @@ module.exports = {
     '<rootDir>/dist/',
     '<rootDir>/.nx/cache/',
   ],
+  watchPathIgnorePatterns: [
+    ...(baseConfig.watchPathIgnorePatterns || []),
+    '<rootDir>/dist/',
+    '<rootDir>/.nx/cache/',
+  ],
 };
