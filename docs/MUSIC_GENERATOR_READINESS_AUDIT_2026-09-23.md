@@ -46,6 +46,11 @@ the artifact under `exports/jobs/<jobId>/`, validates the RIFF/WAV structure
 and requested duration, then returns a truthful `/downloads/...` URL. This
 new path is implemented on the branch and awaits local end-to-end qualification.
 
+Local authentication prerequisite is now qualified: the Mongo `harmonia_app`
+credentials were synchronized from `.env`, the `test-user` account was seeded,
+and both direct Nest login and Angular-proxied login returned HTTP 200 on the
+local qualification run.
+
 ### DiffSinger gaps
 
 DiffSinger has an isolated provider image and cached HiFi-GAN vocoder, but it is
