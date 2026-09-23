@@ -562,6 +562,23 @@ export class MusicRuntimeService {
           return;
         }
 
+        if (state.Health?.Status === 'unhealthy') {
+          const healthTail = (state.Health.Log || [])
+            .slice(-3)
+            .map(
+              (entry) =>
+                `exit=${entry.ExitCode ?? 'unknown'} ${String(
+                  entry.Output || ''
+                ).trim()}`
+            )
+            .join(' | ');
+          throw new Error(
+            `${provider.containerName} became unhealthy${
+              healthTail ? `: ${healthTail}` : '.'
+            }`
+          );
+        }
+
         if (!state.Running && !state.Restarting) {
           throw new Error(
             `${provider.containerName} exited before becoming healthy (exit ${state.ExitCode ?? 'unknown'}${state.Error ? `: ${state.Error}` : ''}).`
