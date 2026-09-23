@@ -46,6 +46,7 @@ export interface MusicModelDefinition {
   providerId: string;
   name: string;
   modelSize?: string;
+  runtimeModelId?: string;
   availability: ModelAvailability;
   minVramGb?: number;
   recommendedVramGb?: number;
