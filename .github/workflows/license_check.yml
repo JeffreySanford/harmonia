@@ -5,10 +5,18 @@ on:
     branches:
       - master
 
+permissions:
+  contents: read
+
+concurrency:
+  group: license-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   license-check:
     name: Ensure model licenses present
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
