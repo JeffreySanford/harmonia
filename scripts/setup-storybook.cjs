@@ -93,6 +93,11 @@ function ensureScripts() {
   pkg.scripts['storybook:build'] = 'nx build-storybook frontend';
   pkg.scripts['storybook:test'] = 'node scripts/run-storybook-tests.cjs';
 
+  if (!pkg.scripts['lint:scripts'].includes('run-storybook-tests.cjs')) {
+    pkg.scripts['lint:scripts'] +=
+      ' && node --check scripts/run-storybook-tests.cjs';
+  }
+
   writeFileSync(packagePath, JSON.stringify(pkg, null, 2) + '\n');
 }
 
