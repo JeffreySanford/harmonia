@@ -292,14 +292,17 @@ export class MusicRuntimeService {
 
         const step = line.match(/^#\d+\s+\[(\d+)\/(\d+)\]\s+(.+)$/);
         if (step) {
-          const current = Number(step[1]);
-          const total = Number(step[2]);
-          const detail = step[3].slice(0, 140);
+          const current = Number(step[1] ?? 0);
+          const total = Number(step[2] ?? 0);
+          const detail = (step[3] ?? 'Docker build step').slice(0, 140);
           lastStep = `step ${current}/${total}`;
-          lastProgress = Math.min(
-            30,
-            10 + Math.max(1, Math.round((current / total) * 20))
-          );
+          lastProgress =
+            total > 0
+              ? Math.min(
+                  30,
+                  10 + Math.max(1, Math.round((current / total) * 20))
+                )
+              : lastProgress;
           void this.transition(
             provider,
             model,
