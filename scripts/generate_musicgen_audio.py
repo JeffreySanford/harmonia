@@ -74,16 +74,25 @@ subprocess.Popen = patched_popen
 
 # Now import audiocraft after the patch
 from audiocraft.models import MusicGen
-from audiocraft.data.audio import audio_write
 import torch
 
-def generate_instrument_audio(instrument: str, output_path: str, duration: int = 5) -> bool:
-    print(f"DEBUG: generate_instrument_audio called with instrument='{instrument}', output_path='{output_path}', duration={duration}")
+def generate_instrument_audio(
+    instrument: str,
+    output_path: str,
+    duration: int = 5,
+    model_name: str = "facebook/musicgen-small",
+) -> bool:
+    print(
+        f"DEBUG: generate_instrument_audio called with instrument='{instrument}', "
+        f"output_path='{output_path}', duration={duration}, model='{model_name}'"
+    )
     try:
         print(f"Loading MusicGen model for {instrument}...")
 
-        # Load a pre-trained MusicGen model (small for speed)
-        model = MusicGen.get_pretrained('facebook/musicgen-small')
+        # Load the selected provider model. Hugging Face/AudioCraft caches
+        # persist under HF_HOME mounted by the MusicGen provider container.
+        print(f"Loading MusicGen model: {model_name}")
+        model = MusicGen.get_pretrained(model_name)
 
         # Set generation parameters
         model.set_generation_params(
@@ -226,6 +235,11 @@ def main():
     parser.add_argument('--instrument-file', help='File containing instrument name/description')
     parser.add_argument('--output', required=False, help='Output WAV file path (default: generated/instruments/)')
     parser.add_argument('--duration', type=int, default=5, help='Duration in seconds')
+    parser.add_argument(
+        '--model',
+        default=os.environ.get('HARMONIA_MUSICGEN_MODEL', 'facebook/musicgen-small'),
+        help='AudioCraft MusicGen model id',
+    )
 
     args = parser.parse_args()
 
@@ -277,7 +291,12 @@ def main():
     else:
         print(f"No directory creation needed for: {output_dir}")
 
-    success = generate_instrument_audio(args.instrument, args.output, args.duration)
+    success = generate_instrument_audio(
+        args.instrument,
+        args.output,
+        args.duration,
+        args.model,
+    )
 
     if success:
         print(f"Audio generation completed: {args.output}")
