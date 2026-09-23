@@ -1,107 +1,134 @@
 name: "Smoke Checks"
 
 "on":
+  workflow_dispatch:
   push:
     branches:
       - "master"
+    paths:
+      - ".github/workflows/smoke.yml"
+      - "tests/env_tests/**"
+      - "inventory/**"
+      - "scripts/validate_manifest.py"
+      - "requirements-light.txt"
   pull_request:
     branches:
       - "master"
+    paths:
+      - ".github/workflows/smoke.yml"
+      - "tests/env_tests/**"
+      - "inventory/**"
+      - "scripts/validate_manifest.py"
+      - "requirements-light.txt"
   schedule:
-    - cron: '0 6 * * 1' # weekly on Monday 06:00 UTC - adjust as needed
+    - cron: '0 6 * * 1'
 
 permissions:
   contents: read
   issues: write
 
+concurrency:
+  group: smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   smoke:
     name: "Run environment smoke checks"
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CI: "true"
     steps:
       - name: "Checkout"
         uses: actions/checkout@v4
+
       - name: "Set up Python"
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: "Restore manifests cache"
-        uses: actions/cache@v4
-        with:
-          path: |
-            inventory/combined_inventory.json
-            models/checksums.sha256
-          key: ${{ runner.os }}-harmonia-manifests-v1
-          restore-keys: |
-            ${{ runner.os }}-harmonia-manifests-
-      - name: "Validate inventory manifest (optional)"
+
+      - name: "Validate inventory manifest when present"
         run: |
           python -m pip install --upgrade pip
-          pip install jsonschema || true
+          pip install jsonschema
           if [ -f inventory/manifest_schema.json ] && [ -f inventory/combined_inventory.json ]; then
             python scripts/validate_manifest.py
           else
-            echo "No manifest or schema found; skipping manifest validation"
+            echo "No manifest/schema pair found; skipping manifest validation."
           fi
+
       - name: "Install minimal deps"
         run: |
-          python -m pip install --upgrade pip
           pip install --no-deps -r requirements-light.txt || true
+
       - name: "Run smoke check"
         run: |
           set -o pipefail
-          # Run the smoke check (it returns specific non-zero codes):
-          # 3 = recorded checksums present but mismatched (we want to fail CI)
-          # 4 = missing files and no recorded checksums (do not fail CI; likely run without large artifacts)
-          set +e
           python tests/env_tests/smoke_check.py
-          rc=$?
-          set -e
-          echo "Smoke check exit code: $rc"
-          # Fail the workflow explicitly when recorded checksums mismatch (rc==3)
-          if [ "$rc" -eq 3 ]; then
-            echo "Recorded checksum mismatch detected. Failing job."
-            exit 1
-          fi
-          # rc==4 -> missing files without recorded checksums: treat as non-fatal (developer/local)
-          if [ "$rc" -eq 4 ]; then
-            echo "Missing files and no recorded checksums (non-fatal)."
-            exit 0
-          fi
-
-          if [ "$rc" -ne 0 ]; then
-            exit "$rc"
-          fi
 
       - name: "Upload smoke report"
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: "smoke-reports"
+          name: "smoke-reports-${{ github.run_id }}"
           path: "tests/env_tests/smoke_report_*.json"
+          if-no-files-found: warn
+          retention-days: 14
 
-      - name: "Create issue on checksum mismatch"
-        if: failure()
+      - name: "Create or update scheduled smoke incident"
+        if: failure() && github.event_name == 'schedule'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const title = 'Smoke check failure';
             const dir = 'tests/env_tests';
             const files = fs.existsSync(dir)
               ? fs.readdirSync(dir)
                   .filter((name) => name.startsWith('smoke_report_') && name.endsWith('.json'))
-                  .map((name) => `${dir}/${name}`)
+                  .sort()
               : [];
-            let body = 'Smoke check failed. Please review the smoke report artifact and workflow logs.';
+
+            let body = [
+              'Scheduled Harmonia smoke check failed.',
+              '',
+              `Workflow: ${context.workflow}`,
+              `Run: ${context.runId}`,
+            ].join('\n');
+
             if (files.length) {
               body += '\n\nRecent smoke reports:\n';
-              for (const f of files.slice(-3)) {
-                body += `- ${f}\n`;
+              for (const file of files.slice(-3)) {
+                body += `- ${dir}/${file}\n`;
               }
             }
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: 'Smoke check failure',
-              body: body
+
+            const query = `repo:${owner}/${repo} is:issue is:open in:title "${title}"`;
+            const search = await github.rest.search.issuesAndPullRequests({
+              q: query,
+              per_page: 10,
             });
+
+            const existing = search.data.items.find(
+              (item) => !item.pull_request && item.title === title
+            );
+
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: existing.number,
+                body,
+              });
+              core.notice(`Updated existing smoke incident #${existing.number}`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner,
+                repo,
+                title,
+                body,
+              });
+              core.notice(`Created smoke incident #${created.data.number}`);
+            }
