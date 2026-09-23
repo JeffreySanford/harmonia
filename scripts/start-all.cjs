@@ -47,8 +47,7 @@ function parseOptions(args) {
     tools: !args.includes('--no-tools'),
     gpu: args.includes('--gpu'),
   };
-  if (options.gpu && !options.worker) throw new Error('--gpu cannot be combined with --no-worker.');
-  return options;
+    return options;
 }
 
 function composeArguments(options) {
@@ -178,7 +177,7 @@ async function main(args = process.argv.slice(2)) {
       [
         'Usage: pnpm start:all [--gpu] [--no-worker] [--no-tools]',
         'Starts MongoDB, optional Mongo Express, optional ML worker, backend, and frontend.',
-        '--gpu enables the NVIDIA runtime for harmonia-worker.',
+        '--gpu enables NVIDIA runtime for selected model providers.',
         '--no-worker omits the ML worker.',
         '--no-tools omits Mongo Express.',
         'Docker must already be running.',
