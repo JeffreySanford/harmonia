@@ -202,6 +202,33 @@ test('occupied app ports fail without stopping the existing server', async () =>
 });
 
 
+test('detects an app listener bound only to IPv6 localhost', async (t) => {
+  const { checkPort } = require(script);
+  const server = require('node:net').createServer();
+
+  try {
+    await new Promise((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(0, '::1', resolve);
+    });
+  } catch (error) {
+    if (error?.code === 'EADDRNOTAVAIL') {
+      t.skip('IPv6 loopback is unavailable in this environment');
+      return;
+    }
+    throw error;
+  }
+
+  try {
+    await assert.rejects(
+      checkPort(server.address().port, 'Frontend'),
+      /Frontend port .* unavailable on ::1/
+    );
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
 test('managed Docker port preflight allows Harmonia owner and rejects conflicts', async () => {
   const { checkManagedDockerPort } = require(script);
   const probedHosts = [];
