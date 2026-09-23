@@ -79,6 +79,30 @@ test('CI reads the pinned pnpm version from packageManager', () => {
   }
 });
 
+test('all Nx packages are aligned on 22.7.12', () => {
+  const pkg = JSON.parse(read('package.json'));
+  const nxPackages = [
+    '@nx/angular',
+    '@nx/devkit',
+    '@nx/eslint',
+    '@nx/eslint-plugin',
+    '@nx/jest',
+    '@nx/js',
+    '@nx/nest',
+    '@nx/node',
+    '@nx/playwright',
+    '@nx/storybook',
+    '@nx/web',
+    '@nx/webpack',
+    '@nx/workspace',
+    'nx',
+  ];
+
+  for (const name of nxPackages) {
+    assert.equal(pkg.devDependencies[name], '22.7.12', `${name} must match Nx 22.7.12`);
+  }
+});
+
 test('dependency build scripts use pnpm 12 allowBuilds policy', () => {
   const workspace = read('pnpm-workspace.yaml');
 
@@ -92,7 +116,7 @@ test('dependency build scripts use pnpm 12 allowBuilds policy', () => {
   );
   assert.match(workspace, /'lmdb@3\.4\.2': true/);
   assert.match(workspace, /'msgpackr-extract@3\.0\.3': true/);
-  assert.match(workspace, /'nx@22\.1\.3': true/);
+  assert.match(workspace, /'nx@22\.7\.12': true/);
   assert.match(workspace, /^strictDepBuilds:\s*true$/m);
   assert.doesNotMatch(workspace, /onlyBuiltDependencies:/);
   assert.doesNotMatch(workspace, /dangerouslyAllowAllBuilds:\s*true/);
@@ -202,9 +226,9 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
     pkg.scripts['storybook:setup'],
     'node scripts/setup-storybook.cjs'
   );
-  assert.match(setup, /@nx\/storybook@22\.1\.3/);
+  assert.match(setup, /@nx\/storybook@22\.7\.12/);
   assert.match(setup, /@storybook\/test-runner@\^0\.24\.0/);
-  assert.match(setup, /run\(\['add', '-D', '-w', '@nx\/storybook@22\.1\.3'\]\)/);
+  assert.match(setup, /run\(\['add', '-D', '-w', '@nx\/storybook@22\.7\.12'\]\)/);
   assert.match(setup, /const pnpm = 'pnpm'/);
   assert.match(setup, /shell: process\.platform === 'win32'/);
   assert.match(setup, /@nx\/angular:storybook-configuration/);
