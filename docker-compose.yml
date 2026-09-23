@@ -139,6 +139,7 @@ services:
     volumes:
       - ./models/musicgen:/workspace/models/musicgen
       - ./generated:/workspace/generated
+      - ./exports:/workspace/exports
       - ./artifacts:/workspace/artifacts
     command:
       - python3.9
