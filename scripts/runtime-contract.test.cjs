@@ -133,6 +133,8 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
     'node scripts/setup-storybook.cjs'
   );
   assert.match(setup, /@nx\/storybook@22\.1\.3/);
+  assert.match(setup, /shell: process\.platform === 'win32'/);
+  assert.doesNotMatch(setup, /pnpm\.cmd/);
   assert.match(setup, /@nx\/angular:storybook-configuration/);
   assert.match(setup, /--interactionTests=true/);
   assert.match(setup, /--generateStories=false/);
