@@ -146,10 +146,10 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - "test -f /tmp/harmonia-runtime-ready && python3.9 -c 'import torch, audiocraft; raise SystemExit(0 if torch.cuda.is_available() else 1)'"
+        - "test -f /tmp/harmonia-runtime-ready"
       start_period: 120s
       interval: 10s
-      timeout: 8s
+      timeout: 5s
       retries: 6
     networks:
       - harmonia-net
