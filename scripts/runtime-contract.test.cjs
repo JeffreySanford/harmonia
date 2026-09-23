@@ -220,3 +220,16 @@ test('provider image identity is catalog-driven rather than hard-coded', () => {
   assert.match(catalog, /imageName: 'harmonia\/diffsinger:dev'/);
   assert.match(catalog, /imageName: 'harmonia\/musicgen:dev'/);
 });
+
+
+test('runtime ownership is recovered from Docker before model switching', () => {
+  const backend = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+
+  assert.match(backend, /reconcileRuntimeOwnership/);
+  assert.match(backend, /Multiple model runtimes were running after state recovery/);
+  assert.match(backend, /Recovered running \${recovered\.provider\.name} runtime after backend restart/);
+  assert.match(backend, /all were stopped to protect GPU ownership/);
+  assert.match(backend, /await this\.reconcileRuntimeOwnership\(\)/);
+});
