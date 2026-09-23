@@ -58,6 +58,23 @@ RUN python3.9 -m pip install \
 
 RUN python3.9 -m pip install audiocraft==1.3.0
 
+# AudioCraft 1.3.0 supports transformers>=4.31.0, but current releases use
+# torch.utils._pytree.register_pytree_node, which is not available in
+# PyTorch 2.1.0. Pin to the Torch-2.1-compatible Transformers generation.
+RUN python3.9 -m pip install "transformers==4.35.2"
+
+# Catch Python package compatibility drift during image build rather than
+# deferring it to provider startup/health checks.
+RUN python3.9 - <<'PY'
+import torch
+import transformers
+import audiocraft
+
+assert torch.__version__.startswith("2.1.0"), torch.__version__
+assert transformers.__version__ == "4.35.2", transformers.__version__
+print("MusicGen Python stack import check passed")
+PY
+
 COPY entrypoint.musicgen.sh /workspace/entrypoint.musicgen.sh
 RUN sed -i 's/\r$//' /workspace/entrypoint.musicgen.sh \
     && chmod +x /workspace/entrypoint.musicgen.sh
