@@ -118,6 +118,39 @@ test('MusicGen Small qualification exercises persistent generation and downloads
   assert.match(qualify, /MUSICGEN_SMALL_QUALIFICATION_OK/);
 });
 
+test('Storybook bootstrap covers actual login and music-generation UI', () => {
+  const pkg = JSON.parse(read('package.json'));
+  const setup = read('scripts/setup-storybook.cjs');
+  const loginStory = read(
+    'apps/frontend/src/app/features/auth/login-modal/login-modal.component.stories.ts'
+  );
+  const musicStory = read(
+    'apps/frontend/src/app/features/music-generation/music-generation-page.component.stories.ts'
+  );
+
+  assert.equal(
+    pkg.scripts['storybook:setup'],
+    'node scripts/setup-storybook.cjs'
+  );
+  assert.match(setup, /@nx\/storybook@22\.1\.3/);
+  assert.match(setup, /@nx\/angular:storybook-configuration/);
+  assert.match(setup, /--interactionTests=true/);
+  assert.match(setup, /--generateStories=false/);
+  assert.match(setup, /build-storybook/);
+
+  assert.match(loginStory, /LoginModalComponent/);
+  assert.match(loginStory, /ValidLoginDispatchesRealAuthAction/);
+  assert.match(loginStory, /AuthActions\.login/);
+  assert.match(loginStory, /PasswordValidation/);
+
+  assert.match(musicStory, /MusicGenerationPageComponent/);
+  assert.match(musicStory, /GenerateMusicDispatchesPersistentJob/);
+  assert.match(musicStory, /JobsActions\.createJob/);
+  assert.match(musicStory, /CompletedGenerationShowsAudioPlayer/);
+  assert.match(musicStory, /\/downloads\/jobs\/storybook-musicgen-job\/music\.wav/);
+});
+
+
 test('backend MusicGen execution targets the isolated provider container', () => {
   const service = read('apps/backend/src/songs/stem-export.service.ts');
   assert.match(service, /harmonia-musicgen/);
