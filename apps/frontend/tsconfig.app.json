@@ -4,7 +4,11 @@
     "outDir": "../../dist/out-tsc",
     "types": [],
     "forceConsistentCasingInFileNames": true,
-    "lib": ["ES2022", "dom", "dom.iterable"]
+    "lib": [
+      "ES2022",
+      "dom",
+      "dom.iterable"
+    ]
   },
   "files": [
     "src/main.ts"
