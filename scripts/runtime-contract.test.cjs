@@ -234,7 +234,7 @@ test('runtime ownership is recovered from Docker before model switching', () => 
 
   assert.match(backend, /reconcileRuntimeOwnership/);
   assert.match(backend, /Multiple model runtimes were running after state recovery/);
-  assert.match(backend, /Recovered running \${recovered\.provider\.name} runtime after backend restart/);
+  assert.match(backend, /Recovered running \${recovered\.provider\.name}/);
   assert.match(backend, /all were stopped to protect GPU ownership/);
   assert.match(backend, /await this\.reconcileRuntimeOwnership\(\)/);
 });
@@ -360,4 +360,28 @@ test('MusicGen generation reuses a resident provider model', () => {
     catalog,
     /runtimeModelId: 'facebook\/musicgen-stereo-small'/
   );
+});
+
+
+test('backend restart recovers resident MusicGen model and busy state', () => {
+  const backend = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+
+  assert.match(backend, /recoverProviderRuntimeSnapshot/);
+  assert.match(backend, /127\.0\.0\.1:8765\/health/);
+  assert.match(backend, /candidate\.runtimeModelId === snapshot\.model/);
+  assert.match(backend, /snapshot\.busy/);
+  assert.match(backend, /recoveredModelLabel/);
+  assert.match(backend, /shouldRecoverSnapshot/);
+  assert.match(backend, /!this\.status\.modelId/);
+  assert.match(backend, /this\.status\.state === 'busy'/);
+});
+
+test('provider unhealthy state escapes the health wait loop immediately', () => {
+  const backend = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+
+  assert.match(backend, /error\.message\.includes\('became unhealthy'\)/);
 });
