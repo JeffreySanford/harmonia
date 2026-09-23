@@ -6,7 +6,7 @@ Harmonia uses one canonical local Compose definition: `docker-compose.yml`.
 | --- | --- | ---: | --- |
 | MongoDB | `harmonia-mongo-i9` | 27017 | Application database |
 | Mongo Express | `harmonia-mongo-ui` | 8081 | Optional database UI |
-| ML worker | `harmonia-worker` | none | MusicGen/DiffSinger/Python workloads |
+| Utility worker | `harmonia-worker` | none | Lightweight Python/orchestration utilities |
 
 The Angular frontend and NestJS backend run through Nx on the host:
 
@@ -14,8 +14,8 @@ The Angular frontend and NestJS backend run through Nx on the host:
 - Backend/API/WebSocket: `http://localhost:3000`
 - Ollama: external/local at `http://localhost:11434` when `USE_OLLAMA=true`
 
-Port 8000 is intentionally not published. The worker is invoked with `docker exec`
-by the backend and does not currently expose an HTTP API.
+Port 8000 is intentionally not published. Heavy ML frameworks do not live in the
+utility worker; MusicGen and DiffSinger run only in their provider-specific images.
 
 ## Start everything
 
@@ -52,8 +52,8 @@ pnpm start:all --no-tools
 pnpm start:all --gpu --no-tools
 ```
 
-`--gpu` cannot be combined with `--no-worker`. GPU settings live in
-`docker-compose.gpu.yml`; the default worker remains CPU-compatible.
+`--gpu` enables NVIDIA runtime settings for provider-specific model containers.
+It may be combined with `--no-worker`; the utility worker itself is CPU-only.
 
 ## MongoDB
 
@@ -75,10 +75,11 @@ MONGO_MAX_CONNS=500
 The application user is created when the MongoDB volume is first initialized.
 Changing `MONGO_HARMONIA_PASSWORD` later does not mutate an existing user.
 
-## Worker
+## Utility worker
 
-The canonical worker container is `harmonia-worker`. The backend uses that exact
-name for MusicGen execution.
+The canonical utility container is `harmonia-worker`. It intentionally excludes
+Torch, AudioCraft, DiffSinger, and other provider-specific model frameworks.
+Music generation is executed only in the selected provider container.
 
 ```bash
 pnpm docker:ml:start
