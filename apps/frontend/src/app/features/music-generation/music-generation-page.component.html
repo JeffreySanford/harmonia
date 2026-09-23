@@ -203,14 +203,13 @@
         </div>
       </section>
 
-      <!-- Music Parameters Form -->
+      <!-- Provider-specific generation parameters -->
       <section class="parameters-section">
         <h3 class="section-title">
-          <mat-icon>tune</mat-icon>
-          Music Parameters
+          <mat-icon>{{ isDiffSingerSelected ? 'record_voice_over' : 'tune' }}</mat-icon>
+          {{ isDiffSingerSelected ? 'DiffSinger Score' : 'Music Parameters' }}
         </h3>
 
-        <!-- Title (editable even if imported) -->
         <mat-form-field
           appearance="outline"
           class="full-width"
@@ -225,97 +224,155 @@
           <mat-icon matPrefix>title</mat-icon>
         </mat-form-field>
 
-        <!-- Genre and Duration Row -->
-        <div class="form-row">
-          <mat-form-field appearance="outline" class="half-width">
-            <mat-label>Genre</mat-label>
-            <mat-select
-              [(ngModel)]="genre"
-              (ngModelChange)="onGenreChange()"
-              [disabled]="hasImportedSong"
+        <ng-container *ngIf="isDiffSingerSelected; else musicGenParameters">
+          <div class="info-banner">
+            <mat-icon class="banner-icon">graphic_eq</mat-icon>
+            <div class="banner-content">
+              <p>
+                This pinned OpenCpop DiffSinger runtime synthesizes vocals from
+                word-level lyrics, notes, and note durations. It does not use
+                the genre/mood/instrument prompt controls used by MusicGen.
+              </p>
+            </div>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Lyrics / score text</mat-label>
+            <textarea
+              matInput
+              rows="4"
+              [(ngModel)]="lyrics"
+              placeholder="SP一闪一闪亮晶晶SP满天都是小星星"
+              aria-label="DiffSinger lyrics or score text"
+            ></textarea>
+            <mat-icon matPrefix>lyrics</mat-icon>
+            <mat-hint>
+              Word-level OpenCpop text. Imported song lyrics are preserved here.
+            </mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Notes</mat-label>
+            <textarea
+              matInput
+              rows="3"
+              [(ngModel)]="diffsingerNotes"
+              placeholder="rest|C4|C4|G4|G4|A4|A4|G4"
+              aria-label="DiffSinger notes"
+            ></textarea>
+            <mat-icon matPrefix>music_note</mat-icon>
+            <mat-hint>
+              Pipe-separated word-level note groups. Use rest for silence.
+            </mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Note durations (seconds)</mat-label>
+            <textarea
+              matInput
+              rows="3"
+              [(ngModel)]="diffsingerNotesDuration"
+              placeholder="1|0.5|0.5|0.5|0.5|0.5|0.5|0.75"
+              aria-label="DiffSinger note durations"
+            ></textarea>
+            <mat-icon matPrefix>schedule</mat-icon>
+            <mat-hint>
+              Must contain the same number of pipe-separated groups as Notes.
+              Score duration:
+              {{ diffsingerScoreDurationSeconds | number:'1.2-2' }}s
+            </mat-hint>
+          </mat-form-field>
+        </ng-container>
+
+        <ng-template #musicGenParameters>
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Genre</mat-label>
+              <mat-select
+                [(ngModel)]="genre"
+                (ngModelChange)="onGenreChange()"
+                [disabled]="hasImportedSong"
+              >
+                <mat-option *ngFor="let g of genres" [value]="g.value">
+                  {{ g.label }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>category</mat-icon>
+              <mat-hint *ngIf="hasImportedSong">From imported song</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="half-width">
+              <mat-label>Duration (seconds)</mat-label>
+              <input
+                matInput
+                type="number"
+                [(ngModel)]="duration"
+                [min]="15"
+                [max]="maxDurationSeconds"
+                [disabled]="hasImportedSong"
+                aria-label="Song duration in seconds"
+              />
+              <mat-icon matPrefix>timer</mat-icon>
+              <mat-hint *ngIf="hasImportedSong">From imported song</mat-hint>
+            </mat-form-field>
+          </div>
+
+          <div class="slider-container">
+            <label class="slider-label">
+              Tempo (BPM): {{ bpm }}
+              <span class="slider-info">
+                Default for {{ genre }}: {{ bpm }} BPM
+              </span>
+            </label>
+            <mat-slider
+              [min]="60"
+              [max]="180"
+              [step]="5"
+              showTickMarks
+              discrete
+              class="full-width"
             >
-              <mat-option *ngFor="let g of genres" [value]="g.value">
-                {{ g.label }}
+              <input matSliderThumb [(ngModel)]="bpm" aria-label="Tempo in BPM" />
+            </mat-slider>
+          </div>
+
+          <div class="instrumentation-section">
+            <h4 class="subsection-title">
+              <mat-icon>piano</mat-icon>
+              Instrumentation
+            </h4>
+            <p class="subsection-description">
+              Select instruments for your composition ({{
+                selectedInstruments.length
+              }}
+              selected)
+            </p>
+            <div class="instrument-chips">
+              <mat-chip-option
+                *ngFor="let instrument of instruments"
+                [selected]="isInstrumentSelected(instrument.value)"
+                (click)="toggleInstrument(instrument.value)"
+              >
+                <mat-icon>{{ instrument.icon }}</mat-icon>
+                {{ instrument.label }}
+              </mat-chip-option>
+            </div>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Vocals Style</mat-label>
+            <mat-select [(ngModel)]="vocalsStyle">
+              <mat-option
+                *ngFor="let style of vocalsStyles"
+                [value]="style.value"
+              >
+                {{ style.label }}
               </mat-option>
             </mat-select>
-            <mat-icon matPrefix>category</mat-icon>
-            <mat-hint *ngIf="hasImportedSong">From imported song</mat-hint>
+            <mat-icon matPrefix>record_voice_over</mat-icon>
+            <mat-hint>Singing voice characteristics</mat-hint>
           </mat-form-field>
-
-          <mat-form-field appearance="outline" class="half-width">
-            <mat-label>Duration (seconds)</mat-label>
-            <input
-              matInput
-              type="number"
-              [(ngModel)]="duration"
-              [min]="15"
-              [max]="maxDurationSeconds"
-              [disabled]="hasImportedSong"
-              aria-label="Song duration in seconds"
-            />
-            <mat-icon matPrefix>timer</mat-icon>
-            <mat-hint *ngIf="hasImportedSong">From imported song</mat-hint>
-          </mat-form-field>
-        </div>
-
-        <!-- BPM Slider -->
-        <div class="slider-container">
-          <label class="slider-label">
-            Tempo (BPM): {{ bpm }}
-            <span class="slider-info"
-              >Default for {{ genre }}: {{ bpm }} BPM</span
-            >
-          </label>
-          <mat-slider
-            [min]="60"
-            [max]="180"
-            [step]="5"
-            showTickMarks
-            discrete
-            class="full-width"
-          >
-            <input matSliderThumb [(ngModel)]="bpm" aria-label="Tempo in BPM" />
-          </mat-slider>
-        </div>
-
-        <!-- Instrumentation Selection -->
-        <div class="instrumentation-section">
-          <h4 class="subsection-title">
-            <mat-icon>piano</mat-icon>
-            Instrumentation
-          </h4>
-          <p class="subsection-description">
-            Select instruments for your composition ({{
-              selectedInstruments.length
-            }}
-            selected)
-          </p>
-          <div class="instrument-chips">
-            <mat-chip-option
-              *ngFor="let instrument of instruments"
-              [selected]="isInstrumentSelected(instrument.value)"
-              (click)="toggleInstrument(instrument.value)"
-            >
-              <mat-icon>{{ instrument.icon }}</mat-icon>
-              {{ instrument.label }}
-            </mat-chip-option>
-          </div>
-        </div>
-
-        <!-- Vocals Style -->
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Vocals Style</mat-label>
-          <mat-select [(ngModel)]="vocalsStyle">
-            <mat-option
-              *ngFor="let style of vocalsStyles"
-              [value]="style.value"
-            >
-              {{ style.label }}
-            </mat-option>
-          </mat-select>
-          <mat-icon matPrefix>record_voice_over</mat-icon>
-          <mat-hint>Singing voice characteristics</mat-hint>
-        </mat-form-field>
+        </ng-template>
       </section>
 
       <!-- Generate Section -->
@@ -324,7 +381,7 @@
           mat-raised-button
           color="primary"
           (click)="generateMusic()"
-          [disabled]="isGenerating || runtimeSwitching || !musicTitle || !genre"
+          [disabled]="isGenerating || runtimeSwitching || !hasRequiredGenerationInputs"
           class="generate-button"
         >
           <mat-icon>{{
@@ -341,7 +398,13 @@
         <p class="helper-text">
           <mat-icon class="info-icon">schedule</mat-icon>
           <ng-container *ngIf="runtimeReady; else runtimeHelp">
-            Estimated generation time: {{ estimatedGenerationTime }}
+            <ng-container *ngIf="isDiffSingerSelected; else musicGenEstimate">
+              Score duration:
+              {{ diffsingerScoreDurationSeconds | number:'1.2-2' }} seconds
+            </ng-container>
+            <ng-template #musicGenEstimate>
+              Estimated generation time: {{ estimatedGenerationTime }}
+            </ng-template>
           </ng-container>
           <ng-template #runtimeHelp>
             Select a compatible model and wait for its runtime to report Ready.
