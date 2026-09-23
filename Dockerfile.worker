@@ -50,10 +50,8 @@ COPY requirements.txt /workspace/requirements.txt
 RUN echo "Step 4/5: Installing Python requirements..." && \
     pip install --upgrade pip --progress-bar=on && pip install -v --progress-bar=on -r /workspace/requirements.txt || true
 
-# Add entrypoint and scripts
-COPY scripts /workspace/scripts
-RUN echo "Step 5/5: Setting up scripts..." && \
-    chmod +x /workspace/scripts/*.py || true
+# Add entrypoint. Worker Python scripts are copied after the heavy ML layers so
+# edits to host-side Node orchestration do not invalidate expensive dependencies.
 COPY entrypoint.sh /workspace/entrypoint.sh
 RUN chmod +x /workspace/entrypoint.sh || true
 
@@ -126,11 +124,13 @@ RUN if [ ! -d /opt/DiffSinger ]; then \
                  echo "Warning: /opt/DiffSinger/requirements.txt not found"; \
              fi
 
-# Copy any acoustic checkpoint folders from the workspace into the image so infer.py can find them by --exp
-COPY models/diffsinger /opt/DiffSinger/checkpoints/
+# Local acoustic checkpoints are intentionally not copied into the image.
+# models/ is gitignored and mounted read-only at /workspace/models at runtime.
+# entrypoint.sh mirrors /workspace/models/diffsinger into the cloned DiffSinger
+# checkpoints directory when local checkpoints are actually present.
 
-    # Copy any local config fallbacks (so includes like configs/tts/lj/fs2.yaml resolve)
-    COPY configs/tts /opt/DiffSinger/configs/tts/
+# Copy local config fallbacks (so includes like configs/tts/lj/fs2.yaml resolve)
+COPY configs/tts /opt/DiffSinger/configs/tts/
 
 # Download a pretrained HiFi-GAN vocoder and place it under the cloned repo's checkpoints.
 # This provides a vocoder checkpoint the acoustic model can use to synthesize waveforms.
@@ -173,6 +173,17 @@ RUN pip install diffsinger || echo "pip install diffsinger failed; using cloned 
 
 # Attempt to install so-vits-svc via pip (may require additional steps for full functionality).
 RUN pip install so-vits-svc || echo "so-vits-svc pip install failed; install manually in container if required"
+
+# Only Python worker scripts belong in the ML image. Copying the whole scripts/
+# directory would make changes to start-all.cjs and other host tooling invalidate
+# the expensive DiffSinger / vocoder layers.
+COPY scripts/*.py /workspace/scripts/
+RUN chmod +x /workspace/scripts/*.py || true
+
+# Windows checkouts may present shell files with CRLF despite the Linux runtime.
+# Normalize the already-copied entrypoint here, after expensive ML layers, so a
+# line-ending fix does not invalidate Torch / DiffSinger / vocoder caches.
+RUN sed -i 's/\r$//' /workspace/entrypoint.sh && chmod +x /workspace/entrypoint.sh
 
 ENTRYPOINT ["/workspace/entrypoint.sh"]
 

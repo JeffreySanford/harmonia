@@ -10,6 +10,10 @@ name: "Smoke Checks"
   schedule:
     - cron: '0 6 * * 1' # weekly on Monday 06:00 UTC - adjust as needed
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   smoke:
     name: "Run environment smoke checks"
@@ -18,7 +22,7 @@ jobs:
       - name: "Checkout"
         uses: actions/checkout@v4
       - name: "Set up Python"
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: "Restore manifests cache"
@@ -49,8 +53,10 @@ jobs:
           # Run the smoke check (it returns specific non-zero codes):
           # 3 = recorded checksums present but mismatched (we want to fail CI)
           # 4 = missing files and no recorded checksums (do not fail CI; likely run without large artifacts)
-          python tests/env_tests/smoke_check.py || true
+          set +e
+          python tests/env_tests/smoke_check.py
           rc=$?
+          set -e
           echo "Smoke check exit code: $rc"
           # Fail the workflow explicitly when recorded checksums mismatch (rc==3)
           if [ "$rc" -eq 3 ]; then
@@ -60,6 +66,11 @@ jobs:
           # rc==4 -> missing files without recorded checksums: treat as non-fatal (developer/local)
           if [ "$rc" -eq 4 ]; then
             echo "Missing files and no recorded checksums (non-fatal)."
+            exit 0
+          fi
+
+          if [ "$rc" -ne 0 ]; then
+            exit "$rc"
           fi
 
       - name: "Upload smoke report"
@@ -71,13 +82,17 @@ jobs:
 
       - name: "Create issue on checksum mismatch"
         if: failure()
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const glob = require('glob');
-            const files = glob.sync('tests/env_tests/smoke_report_*.json');
-            let body = 'Smoke check failed: recorded checksum mismatch or missing artifacts. Please review the attached smoke report artifacts.';
+            const dir = 'tests/env_tests';
+            const files = fs.existsSync(dir)
+              ? fs.readdirSync(dir)
+                  .filter((name) => name.startsWith('smoke_report_') && name.endsWith('.json'))
+                  .map((name) => `${dir}/${name}`)
+              : [];
+            let body = 'Smoke check failed. Please review the smoke report artifact and workflow logs.';
             if (files.length) {
               body += '\n\nRecent smoke reports:\n';
               for (const f of files.slice(-3)) {
@@ -87,6 +102,6 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: 'Smoke check failure: model checksum mismatch',
+              title: 'Smoke check failure',
               body: body
             });

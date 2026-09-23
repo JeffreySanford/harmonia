@@ -1,11 +1,5 @@
 #!/bin/bash
-# Stop ML/Music Generation Docker Container
+set -euo pipefail
 
-echo "🛑 Stopping Harmonia ML Container"
-echo "=================================="
-echo ""
-
-docker-compose stop harmonia 2>&1 | grep -v "version.*obsolete" || true
-
-echo "✅ Container stopped"
-echo ""
+echo "Stopping Harmonia ML worker..."
+docker compose --profile worker stop worker

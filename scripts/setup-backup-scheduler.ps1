@@ -126,7 +126,7 @@ try {
         Write-Host "✅ MongoDB container is running" -ForegroundColor Green
     } else {
         Write-Host "⚠️  MongoDB container is not running" -ForegroundColor Yellow
-        Write-Host "   Start it with: docker compose -f docker-compose.mongo.yml up -d" -ForegroundColor Gray
+        Write-Host "   Start it with: docker compose up -d --wait mongo" -ForegroundColor Gray
     }
 } catch {
     Write-Host "⚠️  Could not verify Docker status" -ForegroundColor Yellow

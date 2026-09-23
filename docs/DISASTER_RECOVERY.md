@@ -25,7 +25,7 @@
    cat .env | grep MONGO
    
    # Start fresh MongoDB
-   docker compose -f docker-compose.mongo.yml up -d
+   docker compose up -d --wait mongo
    
    # Wait for healthy
    docker ps | grep harmonia-mongo
@@ -150,7 +150,7 @@
 
    ```bash
    # Pause application services
-   docker compose -f docker-compose.dev.yml down
+   docker compose --profile worker --profile tools down
    ```
 
 2. **Check latest backup age**

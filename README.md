@@ -6,7 +6,7 @@
 [![Nx](https://img.shields.io/badge/Nx-22.1.3-blue)](https://nx.dev)
 [![Angular](https://img.shields.io/badge/Angular-21.0.2-red)](https://angular.io)
 [![NestJS](https://img.shields.io/badge/NestJS-11.1.9-e0234e)](https://nestjs.com)
-[![MongoDB](https://img.shields.io/badge/MongoDB-8.0.6-green)](https://www.mongodb.com)
+[![MongoDB](https://img.shields.io/badge/MongoDB-7.0-green)](https://www.mongodb.com)
 [![Docker](https://img.shields.io/badge/Docker-29.0.1-blue)](https://www.docker.com)
 
 [![CI](https://github.com/jeffreysanford/harmonia/actions/workflows/ci.yml/badge.svg)](https://github.com/jeffreysanford/harmonia/actions/workflows/ci.yml)
@@ -26,11 +26,12 @@ cd harmonia
 pnpm install
 
 # 3. Copy .env.example to .env and set both MongoDB passwords and JWT_SECRET
-# Start Docker Desktop (NVIDIA runtime required for the GPU worker)
+# Start Docker Desktop (NVIDIA runtime is optional; use --gpu when available)
 
 # 4. Start Docker infrastructure and both development servers
 pnpm start:all
-# Without the NVIDIA-only worker: pnpm start:all --no-worker
+# Optional NVIDIA acceleration: pnpm start:all --gpu
+# Optional omissions: pnpm start:all --no-worker / --no-tools
 ```
 
 **Access Points:**
@@ -39,41 +40,27 @@ pnpm start:all
 - **Backend API:** <http://localhost:3000/api>
 - **MongoDB:** `127.0.0.1:27017` (authenticated)
 - **Mongo Express:** <http://localhost:8081>
-- **ML container:** published port `8000` (interactive workspace, no HTTP server by default)
+- **ML worker:** `harmonia-worker` (no published HTTP port)
 
 `pnpm start` also runs `start:all`, implemented in `scripts/start-all.cjs`.
-It combines `docker-compose.yml`, `docker-compose.mongo.yml`, and
-`docker-compose.dev.yml`. Missing containers are created, stopped containers are
-started, and unhealthy containers are restarted. Docker's cached builds and
-Compose configuration comparison recreate **dirty** containers when their image
-or configuration changes; unchanged healthy containers stay running. Dirty does
-not mean uncommitted Git changes or files written inside a running container.
-Bind-mounted source changes are already visible inside the container.
+The canonical runtime is `docker-compose.yml`, with optional NVIDIA settings in
+`docker-compose.gpu.yml`. Missing containers are created, stopped containers are
+started, unhealthy containers are restarted, dirty image/config changes are
+recreated, and unchanged healthy containers stay running. MongoDB uses Docker;
+the worker is CPU-compatible by default. Ollama (`11434`) is external and checked
+only when `USE_OLLAMA=true`. Redis (`6379`) remains optional and is not provisioned.
 
-Startup waits up to 120 seconds for container readiness after builds, checks the
-application's database credentials, then starts the backend and frontend with Nx.
-The interactive ML containers are checked for running state, not model readiness.
-Database volumes are preserved. Changing passwords in `.env` does not change users
-in an existing database; use its existing credentials or update its users explicitly.
-Ctrl+C stops the app servers and leaves Docker running. Startup failures return a
-nonzero exit code. Other projects using the same ports must be stopped separately.
-`start:all` requires `PORT=3000` because the frontend API configuration uses that
-port. It URI-encodes both database passwords when constructing connection URLs.
-
-Run startup unit tests with `pnpm test:startup`. To include the isolated Docker
-lifecycle test, set `RUN_DOCKER_START_TESTS=1` first (PowerShell:
-`$env:RUN_DOCKER_START_TESTS='1'`). The test uses a temporary Compose project with
-no host ports or persistent volumes and removes its containers and image afterward.
-
-`pnpm dev` remains the app-only flow with its existing native MongoDB port check.
-Ollama (`11434`) and Redis (`6379`) are not provisioned by these Compose files.
+Run `pnpm test:all` for application tests, startup contracts, and Compose
+validation; use `pnpm lint:all` for code, docs, lifecycle scripts, and Compose.
+Set `RUN_DOCKER_START_TESTS=1` when you explicitly want the isolated real-Docker
+startup lifecycle test.
 
 ### Prerequisites
 
 - **Node.js 20.19+** (LTS)
 - **pnpm 10.23.0+** (`npm install -g pnpm`)
-- **Docker Desktop with Compose supporting `build --provenance` and `up --wait`** (MongoDB 7, database UI, and ML containers)
-- **NVIDIA container runtime** for the GPU worker (or use `--no-worker`)
+- **Docker Desktop with Compose supporting `build --provenance` and `up --wait`**
+- **NVIDIA container runtime** only when using `pnpm start:all --gpu`
 - **Git** for version control
 - **16GB+ RAM** recommended for AI model inference
 
@@ -105,8 +92,8 @@ Ollama (`11434`) and Redis (`6379`) are not provisioned by these Compose files.
 
 - **Nx 22.1.3 Monorepo** - Build caching, parallel execution, dependency graph
 - **pnpm Workspace** - Fast installs (3x faster than npm), disk space efficiency
-- **Native MongoDB 8.0** - Windows Service with authentication and RBAC hardening
-- **Docker ML Container** - Python 3.11, PyTorch, MusicGen for music generation
+- **Docker MongoDB 7.0** - Authenticated local database with persistent volumes
+- **Docker ML Worker** - Python 3.11, PyTorch, MusicGen for music generation
 - **Automated Backups** - MongoDB dump scripts with cron/Task Scheduler
 - **CI/CD Pipelines** - GitHub Actions with smoke tests and license validation
 
@@ -136,11 +123,11 @@ pnpm dev:backend
 # Build all applications
 pnpm build:all
 
-# Run all tests
-pnpm test
+# Run the full local qualification test suite
+pnpm test:all
 
-# Lint all projects
-pnpm lint
+# Lint code, docs, lifecycle scripts, and Compose
+pnpm lint:all
 
 # Auto-fix linting errors
 pnpm lint:fix
@@ -223,7 +210,7 @@ See [DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) for comprehensive de
 
 - **Nx Monorepo**: Build caching, parallel execution, dependency management
 - **Docker ML Container**: Python 3.11 + PyTorch + MusicGen environment
-- **MongoDB 8.0**: Native Windows Service with authentication and RBAC
+- **MongoDB 7.0**: Docker service with authentication and persistent volumes
 - **WebSocket Architecture**: Room-based event routing for multi-user support
 - **Automated Backups**: MongoDB dump scripts with scheduling
 
@@ -277,7 +264,7 @@ If you want, I can open a branch and PR with these README updates and the workfl
 - **Angular 21.0.2** + **NGRX 20.1.0** + **Material Design 3**
 - **NestJS 11.1.9** + **Socket.IO 4.8.1** + **Mongoose 8.9**
 - **Nx 22.1.3** + **pnpm 10.23.0** + **TypeScript 5.9.3**
-- **MongoDB 8.0.6 (Native)** + **Docker 29.0.1 (ML Container)** + **Jest/Playwright**
+- **MongoDB 7.0 (Docker)** + **Docker 29.0.1 (ML Worker)** + **Jest/Playwright**
 - **Ollama (DeepSeek-Coder, Mistral3)** + **MusicGen (Small/Medium/Large)**
 
 ---
@@ -286,9 +273,9 @@ If you want, I can open a branch and PR with these README updates and the workfl
 
 ### Phase 0: Foundation (✅ Complete)
 
-- MongoDB 8.0.6 hardened (native Windows Service)
+- MongoDB 7.0 Docker runtime with authenticated application user
 - PNPM 10.23.0 workspace
-- Docker ML container setup (harmonia-dev)
+- Docker ML worker setup (harmonia-worker)
 - 27 documentation files
 
 ### Phase 1: Full-Stack Implementation (🔄 In Progress)

@@ -62,14 +62,10 @@ export class InstrumentCatalogService implements OnModuleInit {
    * Load and validate the instrument catalog
    */
   loadCatalog(catalogPath?: string): Observable<ValidationResult> {
+    const catalogRoot = path.join(process.cwd(), 'configs', 'instruments');
     const catalogFile =
-      catalogPath ||
-      path.join(process.cwd(), 'models', 'instrument_catalog.json');
-    const schemaFile = path.join(
-      process.cwd(),
-      'models',
-      'instrument_catalog.schema.json'
-    );
+      catalogPath || path.join(catalogRoot, 'instrument_catalog.json');
+    const schemaFile = path.join(catalogRoot, 'instrument_catalog.schema.json');
 
     // Create observables for file reading
     const readFileObservable = (filePath: string) => {

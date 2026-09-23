@@ -1,0 +1,407 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-09-22T00:00:00.000Z",
+  "description": "Version-controlled Harmonia instrument identifiers used by palette suggestion, validation, and stem export.",
+  "categories": [
+    "keyboard",
+    "guitar",
+    "bass",
+    "drums",
+    "strings",
+    "woodwinds",
+    "brass",
+    "electronic",
+    "percussion"
+  ],
+  "instruments": [
+    {
+      "id": "piano",
+      "name": "Piano",
+      "category": "keyboard",
+      "presets": [
+        "acoustic_grand"
+      ],
+      "fallback_rules": [
+        "organ_hammond"
+      ]
+    },
+    {
+      "id": "organ_hammond",
+      "name": "Hammond Organ",
+      "category": "keyboard",
+      "presets": [
+        "hammond_b3"
+      ],
+      "fallback_rules": [
+        "piano"
+      ]
+    },
+    {
+      "id": "guitar_acoustic",
+      "name": "Acoustic Guitar",
+      "category": "guitar",
+      "presets": [
+        "steel_string"
+      ],
+      "fallback_rules": [
+        "guitar_jazz"
+      ]
+    },
+    {
+      "id": "guitar_electric",
+      "name": "Electric Guitar",
+      "category": "guitar",
+      "presets": [
+        "clean",
+        "overdrive"
+      ],
+      "fallback_rules": [
+        "guitar_jazz"
+      ]
+    },
+    {
+      "id": "guitar_jazz",
+      "name": "Jazz Guitar",
+      "category": "guitar",
+      "presets": [
+        "hollow_body"
+      ],
+      "fallback_rules": [
+        "guitar_electric"
+      ]
+    },
+    {
+      "id": "bass",
+      "name": "Bass",
+      "category": "bass",
+      "presets": [
+        "electric_finger"
+      ],
+      "fallback_rules": [
+        "bass_electric"
+      ]
+    },
+    {
+      "id": "bass_electric",
+      "name": "Electric Bass",
+      "category": "bass",
+      "presets": [
+        "finger",
+        "pick"
+      ],
+      "fallback_rules": [
+        "bass"
+      ]
+    },
+    {
+      "id": "bass_acoustic",
+      "name": "Acoustic Bass",
+      "category": "bass",
+      "presets": [
+        "upright"
+      ],
+      "fallback_rules": [
+        "bass_electric"
+      ]
+    },
+    {
+      "id": "bass_synth",
+      "name": "Synth Bass",
+      "category": "electronic",
+      "presets": [
+        "sub",
+        "analog"
+      ],
+      "fallback_rules": [
+        "bass_electric"
+      ]
+    },
+    {
+      "id": "drums",
+      "name": "Drums",
+      "category": "drums",
+      "presets": [
+        "standard"
+      ],
+      "fallback_rules": [
+        "drums_acoustic"
+      ]
+    },
+    {
+      "id": "drums_acoustic",
+      "name": "Acoustic Drums",
+      "category": "drums",
+      "presets": [
+        "studio_kit"
+      ],
+      "fallback_rules": [
+        "drums"
+      ]
+    },
+    {
+      "id": "drums_brushes",
+      "name": "Brush Drums",
+      "category": "drums",
+      "presets": [
+        "jazz_brushes"
+      ],
+      "fallback_rules": [
+        "drums_acoustic"
+      ]
+    },
+    {
+      "id": "drums_electronic",
+      "name": "Electronic Drums",
+      "category": "electronic",
+      "presets": [
+        "electronic_kit"
+      ],
+      "fallback_rules": [
+        "drums_acoustic"
+      ]
+    },
+    {
+      "id": "percussion",
+      "name": "Percussion",
+      "category": "percussion",
+      "presets": [
+        "mixed_percussion"
+      ],
+      "fallback_rules": [
+        "drums_acoustic"
+      ]
+    },
+    {
+      "id": "violin",
+      "name": "Violin",
+      "category": "strings",
+      "presets": [
+        "solo"
+      ],
+      "fallback_rules": [
+        "strings_violin"
+      ]
+    },
+    {
+      "id": "strings_violin",
+      "name": "Violin Section",
+      "category": "strings",
+      "presets": [
+        "ensemble"
+      ],
+      "fallback_rules": [
+        "violin"
+      ]
+    },
+    {
+      "id": "cello",
+      "name": "Cello",
+      "category": "strings",
+      "presets": [
+        "solo"
+      ],
+      "fallback_rules": [
+        "strings_violin"
+      ]
+    },
+    {
+      "id": "harp",
+      "name": "Harp",
+      "category": "strings",
+      "presets": [
+        "concert"
+      ],
+      "fallback_rules": [
+        "piano"
+      ]
+    },
+    {
+      "id": "flute",
+      "name": "Flute",
+      "category": "woodwinds",
+      "presets": [
+        "concert"
+      ],
+      "fallback_rules": [
+        "clarinet"
+      ]
+    },
+    {
+      "id": "clarinet",
+      "name": "Clarinet",
+      "category": "woodwinds",
+      "presets": [
+        "concert"
+      ],
+      "fallback_rules": [
+        "flute"
+      ]
+    },
+    {
+      "id": "saxophone",
+      "name": "Saxophone",
+      "category": "woodwinds",
+      "presets": [
+        "tenor"
+      ],
+      "fallback_rules": [
+        "clarinet"
+      ]
+    },
+    {
+      "id": "oboe",
+      "name": "Oboe",
+      "category": "woodwinds",
+      "presets": [
+        "concert"
+      ],
+      "fallback_rules": [
+        "clarinet"
+      ]
+    },
+    {
+      "id": "bassoon",
+      "name": "Bassoon",
+      "category": "woodwinds",
+      "presets": [
+        "concert"
+      ],
+      "fallback_rules": [
+        "clarinet"
+      ]
+    },
+    {
+      "id": "trumpet",
+      "name": "Trumpet",
+      "category": "brass",
+      "presets": [
+        "concert"
+      ],
+      "fallback_rules": [
+        "brass_trumpet"
+      ]
+    },
+    {
+      "id": "brass_trumpet",
+      "name": "Trumpet Section",
+      "category": "brass",
+      "presets": [
+        "ensemble"
+      ],
+      "fallback_rules": [
+        "trumpet"
+      ]
+    },
+    {
+      "id": "trombone",
+      "name": "Trombone",
+      "category": "brass",
+      "presets": [
+        "concert"
+      ],
+      "fallback_rules": [
+        "trumpet"
+      ]
+    },
+    {
+      "id": "horn",
+      "name": "French Horn",
+      "category": "brass",
+      "presets": [
+        "concert"
+      ],
+      "fallback_rules": [
+        "trumpet"
+      ]
+    },
+    {
+      "id": "tuba",
+      "name": "Tuba",
+      "category": "brass",
+      "presets": [
+        "concert"
+      ],
+      "fallback_rules": [
+        "trombone"
+      ]
+    },
+    {
+      "id": "timpani",
+      "name": "Timpani",
+      "category": "percussion",
+      "presets": [
+        "orchestral"
+      ],
+      "fallback_rules": [
+        "percussion"
+      ]
+    },
+    {
+      "id": "synth_lead",
+      "name": "Synth Lead",
+      "category": "electronic",
+      "presets": [
+        "analog_lead"
+      ],
+      "fallback_rules": [
+        "piano"
+      ]
+    },
+    {
+      "id": "synth_pad",
+      "name": "Synth Pad",
+      "category": "electronic",
+      "presets": [
+        "warm_pad"
+      ],
+      "fallback_rules": [
+        "strings_violin"
+      ]
+    },
+    {
+      "id": "sampler",
+      "name": "Sampler",
+      "category": "electronic",
+      "presets": [
+        "general"
+      ],
+      "fallback_rules": [
+        "synth_pad"
+      ]
+    },
+    {
+      "id": "sequencer",
+      "name": "Sequencer",
+      "category": "electronic",
+      "presets": [
+        "step_sequence"
+      ],
+      "fallback_rules": [
+        "synth_lead"
+      ]
+    },
+    {
+      "id": "effects_reverb",
+      "name": "Reverb Effects",
+      "category": "electronic",
+      "presets": [
+        "hall",
+        "plate"
+      ],
+      "fallback_rules": [
+        "synth_pad"
+      ]
+    },
+    {
+      "id": "vibraphone",
+      "name": "Vibraphone",
+      "category": "percussion",
+      "presets": [
+        "concert"
+      ],
+      "fallback_rules": [
+        "piano"
+      ]
+    }
+  ]
+}

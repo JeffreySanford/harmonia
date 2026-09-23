@@ -61,13 +61,25 @@ test('real Compose lifecycle: missing, healthy, stopped, dirty config/image, unh
     assert.notEqual(changedImage.Id, changedConfig.Id);
     assert.notEqual(changedImage.Image, changedConfig.Image);
 
+    // Regression: if the current container is unhealthy at the same time a new
+    // image is built, Compose must recreate it before health recovery restarts it.
     docker(['exec', changedImage.Id, 'rm', '/tmp/ready']);
+    for (let attempt = 0; attempt < 20 && container().State.Health.Status !== 'unhealthy'; attempt++) await delay(500);
+    assert.equal(container().State.Health.Status, 'unhealthy');
+    writeImage('3');
+    reconcileDocker(docker, compose);
+    const changedWhileUnhealthy = container();
+    assert.notEqual(changedWhileUnhealthy.Id, changedImage.Id);
+    assert.notEqual(changedWhileUnhealthy.Image, changedImage.Image);
+    assert.equal(changedWhileUnhealthy.State.Health.Status, 'healthy');
+
+    docker(['exec', changedWhileUnhealthy.Id, 'rm', '/tmp/ready']);
     for (let attempt = 0; attempt < 20 && container().State.Health.Status !== 'unhealthy'; attempt++) await delay(500);
     assert.equal(container().State.Health.Status, 'unhealthy');
     reconcileDocker(docker, compose);
     const recovered = container();
-    assert.equal(recovered.Id, changedImage.Id);
-    assert.notEqual(recovered.State.StartedAt, changedImage.State.StartedAt);
+    assert.equal(recovered.Id, changedWhileUnhealthy.Id);
+    assert.notEqual(recovered.State.StartedAt, changedWhileUnhealthy.State.StartedAt);
     assert.equal(recovered.State.Health.Status, 'healthy');
   } finally {
     try {

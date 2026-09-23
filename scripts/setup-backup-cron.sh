@@ -69,7 +69,7 @@ if docker ps --filter "name=harmonia-mongo-i9" --format "{{.Status}}" 2>/dev/nul
     echo -e "${GREEN}✅ MongoDB container is running${NC}"
 else
     echo -e "${YELLOW}⚠️  MongoDB container is not running${NC}"
-    echo -e "${GRAY}   Start it with: docker compose -f docker-compose.mongo.yml up -d${NC}"
+    echo -e "${GRAY}   Start it with: docker compose up -d --wait mongo${NC}"
 fi
 
 echo ""

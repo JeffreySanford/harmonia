@@ -46,7 +46,7 @@ export class WebSocketService {
       return;
     }
 
-    this.socket = io('http://localhost:3333', {
+    this.socket = io('http://localhost:3000', {
       auth: { token },
       transports: ['websocket'],
       reconnection: true,

@@ -81,7 +81,7 @@ find seeds -name "dr-seed-*.json" -mtime +7 -delete
 1. **Fresh MongoDB installation:**
 
    ```bash
-   docker compose -f docker-compose.mongo.yml up -d
+   docker compose up -d --wait mongo
    ```
 
 2. **Wait for healthy status:**

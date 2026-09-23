@@ -1,0 +1,2 @@
+# Linux/container scripts must retain LF endings even on Windows workstations.
+*.sh text eol=lf

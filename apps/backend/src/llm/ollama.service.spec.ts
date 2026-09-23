@@ -12,6 +12,8 @@ describe('OllamaService', () => {
   let service: OllamaService;
 
   beforeEach(async () => {
+    mockedAxios.post.mockReset();
+    mockedAxios.get.mockReset();
     service = await createServiceWithModel();
   });
 
@@ -47,11 +49,8 @@ describe('OllamaService', () => {
     service = await createServiceWithModel('deepseek');
     mockedAxios.post.mockResolvedValueOnce({
       data: {
-        choices: [
-          {
-            text: '{"title":"D","lyrics":"a b","genre":"rock","mood":"happy"}',
-          },
-        ],
+        response:
+          '{"title":"D","lyrics":"a b","genre":"rock","mood":"happy"}',
       },
     });
     const res = await firstValueFrom(service.generateMetadata('narrative', 60));
@@ -65,11 +64,8 @@ describe('OllamaService', () => {
     service = await createServiceWithModel('minstral3');
     mockedAxios.post.mockResolvedValueOnce({
       data: {
-        choices: [
-          {
-            text: '{"song":{"name":"M","lyrics":["line1","line2"]},"genres":["indie","folk"],"mood":"reflective"}',
-          },
-        ],
+        response:
+          '{"song":{"name":"M","lyrics":["line1","line2"]},"genres":["indie","folk"],"mood":"reflective"}',
       },
     });
     const res = await firstValueFrom(service.generateMetadata('story', 120));
@@ -83,11 +79,8 @@ describe('OllamaService', () => {
     service = await createServiceWithModel('deepseek');
     mockedAxios.post.mockResolvedValueOnce({
       data: {
-        choices: [
-          {
-            text: '{"song":{"name":"M","lyrics":["o1","o2"]},"genres":["indie"],"mood":"calm"}',
-          },
-        ],
+        response:
+          '{"song":{"name":"M","lyrics":["o1","o2"]},"genres":["indie"],"mood":"calm"}',
       },
     });
     const res = await firstValueFrom(
@@ -102,21 +95,40 @@ describe('OllamaService', () => {
     service = await createServiceWithModel('deepseek');
     mockedAxios.post.mockResolvedValueOnce({
       data: {
-        choices: [
-          {
-            text: '{"title":"Test Song","lyrics":"Verse 1\\nChorus","genre":"pop","mood":"happy","melody":"Upbeat melody","tempo":120,"key":"C major","instrumentation":["piano","drums","bass"]}',
+        response: JSON.stringify({
+          title: 'Test Song',
+          genre: 'pop',
+          mood: 'happy',
+          tempo: 120,
+          key: 'C major',
+          instrumentation: ['piano', 'drums', 'bass'],
+          verse_1: {
+            lyrics: ['Verse 1'],
+            chords: ['C', 'G'],
           },
-        ],
+          chorus: {
+            lyrics: ['Chorus'],
+            chords: ['F', 'G'],
+          },
+        }),
       },
     });
     const res = await firstValueFrom(service.generateSong('happy story', 180));
     expect(res.title).toBe('Test Song');
-    expect(res.lyrics).toBe('Verse 1\nChorus');
     expect(res.genre).toBe('pop');
     expect(res.mood).toBe('happy');
-    expect(res.melody).toBe('Upbeat melody');
     expect(res.tempo).toBe(120);
     expect(res.key).toBe('C major');
     expect(res.instrumentation).toEqual(['piano', 'drums', 'bass']);
+    expect(res.verse_1).toEqual({
+      lyrics: ['Verse 1'],
+      chords: ['C', 'G'],
+    });
+    expect(res.chorus).toEqual({
+      lyrics: ['Chorus'],
+      chords: ['F', 'G'],
+    });
+    expect(res.syllableCount).toBeGreaterThan(0);
+    expect(res.wordCount).toBeGreaterThan(0);
   });
 });

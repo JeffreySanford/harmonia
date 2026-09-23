@@ -4,23 +4,22 @@
 
 ### Prerequisites
 
-- **Node.js 20+** (LTS)
-- **pnpm 10.23.0+**
-- **MongoDB 8.0.6** (running locally or via Docker)
-- **Git** for version control
+- Node.js 20.19+
+- pnpm 10.23+
+- Docker Desktop with Docker Compose
+- Git
+- Optional NVIDIA runtime for `--gpu`
+- Optional Ollama when `USE_OLLAMA=true`
 
 ### Initial Setup
 
 ```bash
-# Clone repository
 git clone https://github.com/jeffreysanford/harmonia.git
 cd harmonia
-
-# Install dependencies
 pnpm install
-
-# Start development servers (frontend + backend)
-pnpm dev
+cp .env.example .env
+# Set MONGO_ROOT_PASSWORD, MONGO_HARMONIA_PASSWORD, and JWT_SECRET.
+pnpm start:all
 ```
 
 ### Available Scripts
@@ -28,73 +27,44 @@ pnpm dev
 #### Development
 
 ```bash
-# Start both frontend and backend (parallel)
+pnpm start:all
+pnpm start:all --gpu
 pnpm dev
-
-# Start frontend only (http://localhost:4200)
 pnpm dev:frontend
-
-# Start backend only (http://localhost:3333)
 pnpm dev:backend
 ```
+
+Frontend: `http://localhost:4200`  
+Backend: `http://localhost:3000`
 
 #### Building
 
 ```bash
-# Build all applications
 pnpm build:all
-
-# Build frontend only
 pnpm build:frontend
-
-# Build backend only
 pnpm build:backend
 ```
 
 #### Testing
 
 ```bash
-# Run all tests
-pnpm test
-
-# Run frontend tests
-pnpm test:frontend
-
-# Run backend tests
-pnpm test:backend
-
-# Run tests in watch mode
-pnpm test:watch
-
-# Run tests with coverage
-pnpm test:coverage
+pnpm test:all
+pnpm test:startup
+pnpm test:compose
+pnpm test:all:e2e
 ```
+
+Set `RUN_DOCKER_START_TESTS=1` when you explicitly want the isolated real-Docker
+startup lifecycle test.
 
 #### Linting
 
 ```bash
-# Lint all projects
-pnpm lint
-
-# Lint frontend only
-pnpm lint:frontend
-
-# Lint backend only
-pnpm lint:backend
-
-# Auto-fix linting errors
-pnpm lint:fix
+pnpm lint:all
+pnpm lint:all:fix
 ```
 
-#### End-to-End Testing
-
-```bash
-# Run frontend E2E tests (Playwright)
-pnpm e2e:frontend
-
-# Run backend E2E tests (Jest)
-pnpm e2e:backend
-```
+See [DOCKER_SETUP.md](DOCKER_SETUP.md) for the Docker lifecycle contract.
 
 ## Project Structure
 
