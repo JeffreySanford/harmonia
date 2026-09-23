@@ -47,6 +47,10 @@ compose([
   'worker',
   '--profile',
   'tools',
+  '--profile',
+  'model-diffsinger',
+  '--profile',
+  'model-musicgen',
   'config',
   '--quiet',
 ]);
@@ -57,6 +61,30 @@ for (const name of ['mongo', 'mongo-express', 'worker']) {
 }
 assert.equal(config.services.worker.container_name, 'harmonia-worker');
 
+const providerConfig = JSON.parse(
+  compose([
+    '-f',
+    'docker-compose.yml',
+    '-f',
+    'docker-compose.gpu.yml',
+    '--profile',
+    'model-diffsinger',
+    '--profile',
+    'model-musicgen',
+    'config',
+    '--format',
+    'json',
+  ])
+);
+assert.equal(
+  providerConfig.services.diffsinger.container_name,
+  'harmonia-diffsinger'
+);
+assert.equal(
+  providerConfig.services.musicgen.container_name,
+  'harmonia-musicgen'
+);
+
 const publishedPorts = Object.values(config.services)
   .flatMap((service) => service.ports || [])
   .map((port) => Number(port.published))
@@ -64,4 +92,6 @@ const publishedPorts = Object.values(config.services)
   .sort((a, b) => a - b);
 
 assert.deepEqual(publishedPorts, [8081, 27017]);
-console.log('Compose contract valid: MongoDB 27017, Mongo Express 8081, worker has no published port.');
+console.log(
+  'Compose contract valid: MongoDB 27017, Mongo Express 8081, generic worker plus isolated DiffSinger/MusicGen providers have no published ports.'
+);
