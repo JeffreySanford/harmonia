@@ -82,9 +82,10 @@ export class StemExportService {
           }`;
           const filePath = path.join(options.outputDir, fileName);
 
-          // Create observable that generates audio and writes file
+          // Generate real provider audio. Provider failures propagate and are
+          // reported to the caller; Harmonia must never substitute fake audio.
           const audioObservable = from(
-            this.generatePlaceholderAudio(instrument)
+            this.generateMusicGenAudio(instrument)
           );
 
           return audioObservable.pipe(
@@ -146,23 +147,6 @@ export class StemExportService {
     );
   }
   /**
-   * Generate audio for an instrument using MusicGen
-   * This replaces the placeholder audio generation with real MusicGen synthesis
-   */
-  private async generatePlaceholderAudio(instrument: string): Promise<Buffer> {
-    // For now, try MusicGen, fall back to placeholder if it fails
-    try {
-      return await this.generateMusicGenAudio(instrument);
-    } catch (error) {
-      console.warn(
-        `MusicGen generation failed for ${instrument}, using basic instrument audio:`,
-        error
-      );
-      return this.generateBasicInstrumentAudio(instrument);
-    }
-  }
-
-  /**
    * Generate audio using MusicGen via Docker
    */
   private generateMusicGenAudio(instrument: string): Promise<Buffer> {
@@ -185,7 +169,7 @@ export class StemExportService {
       fs.mkdirSync(logsDir, { recursive: true });
     }
 
-    return new Promise<Buffer>((resolve, _reject) => {
+    return new Promise<Buffer>((resolve, reject) => {
       // Run the Python script in the Docker container
       const dockerCmd = spawn(
         'docker',
@@ -264,12 +248,12 @@ export class StemExportService {
               resolve(audioBuffer);
             } else {
               const errorMsg = `Failed to read generated audio file (cat exit code: ${catCode}, buffer size: ${audioBuffer.length})`;
-              console.warn(errorMsg);
+              console.error(errorMsg);
               fs.appendFileSync(
                 debugLogPath,
                 `[${new Date().toISOString()}] ERROR: ${errorMsg}\n`
               );
-              resolve(this.generateBasicInstrumentAudio(instrument));
+              reject(new Error(errorMsg));
             }
           });
 
@@ -283,14 +267,12 @@ export class StemExportService {
           });
         } else {
           const errorMsg = `MusicGen generation failed with code ${code}`;
-          console.warn(
-            `${errorMsg}, using basic instrument audio. Stderr: ${stderr}`
-          );
+          console.error(`${errorMsg}. Stderr: ${stderr}`);
           fs.appendFileSync(
             debugLogPath,
             `[${new Date().toISOString()}] ERROR: ${errorMsg}\nSTDERR: ${stderr}\n`
           );
-          resolve(this.generateBasicInstrumentAudio(instrument));
+          reject(new Error(`${errorMsg}: ${stderr.trim() || 'no stderr'}`));
         }
       });
 
@@ -301,157 +283,13 @@ export class StemExportService {
           debugLogPath,
           `[${new Date().toISOString()}] FATAL ERROR: ${errorMsg}\n`
         );
-        resolve(this.generateBasicInstrumentAudio(instrument));
+        reject(new Error(errorMsg));
       });
 
       // Log the command being executed
       const cmdLogMessage = `[${new Date().toISOString()}] EXECUTING: docker exec harmonia-musicgen python3 /workspace/scripts/generate_musicgen_audio.py --instrument ${instrument} --output ${outputPath} --duration 5\n`;
       fs.appendFileSync(debugLogPath, cmdLogMessage);
     });
-  }
-
-  /**
-   * Generate basic instrument audio (placeholder for MusicGen integration)
-   */
-  private generateBasicInstrumentAudio(instrument: string): Buffer {
-    // Create different audio patterns based on instrument characteristics
-    const instrumentType = this.getInstrumentType(instrument);
-
-    switch (instrumentType) {
-      case 'piano':
-        return this.generatePianoAudio();
-      case 'guitar':
-        return this.generateGuitarAudio();
-      case 'bass':
-        return this.generateBassAudio();
-      case 'drums':
-        return this.generateDrumsAudio();
-      case 'strings':
-        return this.generateStringsAudio();
-      case 'brass':
-        return this.generateBrassAudio();
-      case 'woodwinds':
-        return this.generateWoodwindsAudio();
-      default:
-        return this.generateWavPlaceholder();
-    }
-  }
-
-  /**
-   * Get instrument type category
-   */
-  private getInstrumentType(instrument: string): string {
-    const instrumentMap: { [key: string]: string } = {
-      piano: 'piano',
-      guitar_acoustic: 'guitar',
-      guitar_electric: 'guitar',
-      bass: 'bass',
-      drums: 'drums',
-      cello: 'strings',
-      violin: 'strings',
-      trumpet: 'brass',
-      trombone: 'brass',
-      horn: 'brass',
-      tuba: 'brass',
-      flute: 'woodwinds',
-      clarinet: 'woodwinds',
-      saxophone: 'woodwinds',
-      oboe: 'woodwinds',
-      bassoon: 'woodwinds',
-    };
-
-    return instrumentMap[instrument] || 'default';
-  }
-
-  /**
-   * Generate piano-like audio
-   */
-  private generatePianoAudio(): Buffer {
-    // Create a simple piano-like sound (higher frequency, clear tones)
-    return this.generateWavPlaceholder(); // Placeholder for now
-  }
-
-  /**
-   * Generate guitar-like audio
-   */
-  private generateGuitarAudio(): Buffer {
-    // Create guitar-like sound
-    return this.generateWavPlaceholder(); // Placeholder for now
-  }
-
-  /**
-   * Generate bass-like audio
-   */
-  private generateBassAudio(): Buffer {
-    // Create bass-like sound (lower frequency)
-    return this.generateWavPlaceholder(); // Placeholder for now
-  }
-
-  /**
-   * Generate drums-like audio
-   */
-  private generateDrumsAudio(): Buffer {
-    // Create percussion-like sound
-    return this.generateWavPlaceholder(); // Placeholder for now
-  }
-
-  /**
-   * Generate strings-like audio
-   */
-  private generateStringsAudio(): Buffer {
-    // Create string instrument sound
-    return this.generateWavPlaceholder(); // Placeholder for now
-  }
-
-  /**
-   * Generate brass-like audio
-   */
-  private generateBrassAudio(): Buffer {
-    // Create brass instrument sound
-    return this.generateWavPlaceholder(); // Placeholder for now
-  }
-
-  /**
-   * Generate woodwinds-like audio
-   */
-  private generateWoodwindsAudio(): Buffer {
-    // Create woodwind instrument sound
-    return this.generateWavPlaceholder(); // Placeholder for now
-  }
-
-  /**
-   * Generate a minimal valid WAV file with silence
-   */
-  private generateWavPlaceholder(): Buffer {
-    const sampleRate = 44100;
-    const duration = 1; // 1 second
-    const numSamples = sampleRate * duration;
-    const numChannels = 1; // mono
-    const bitsPerSample = 16;
-    const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
-    const blockAlign = (numChannels * bitsPerSample) / 8;
-    const dataSize = (numSamples * numChannels * bitsPerSample) / 8;
-    const buffer = Buffer.alloc(44 + dataSize);
-
-    // WAV header
-    buffer.write('RIFF', 0);
-    buffer.writeUInt32LE(36 + dataSize, 4);
-    buffer.write('WAVE', 8);
-    buffer.write('fmt ', 12);
-    buffer.writeUInt32LE(16, 16);
-    buffer.writeUInt16LE(1, 20); // PCM
-    buffer.writeUInt16LE(numChannels, 22);
-    buffer.writeUInt32LE(sampleRate, 24);
-    buffer.writeUInt32LE(byteRate, 28);
-    buffer.writeUInt16LE(blockAlign, 32);
-    buffer.writeUInt16LE(bitsPerSample, 34);
-    buffer.write('data', 36);
-    buffer.writeUInt32LE(dataSize, 40);
-
-    // Silence data (all zeros)
-    buffer.fill(0, 44);
-
-    return buffer;
   }
 
   /**
