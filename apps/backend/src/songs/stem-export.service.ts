@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
-import { Observable, from } from 'rxjs';
+import { Observable, defer, from } from 'rxjs';
 import { map, catchError, switchMap, concatMap, toArray } from 'rxjs/operators';
 import { InstrumentCatalogService } from './instrument-catalog.service';
 import { MusicRuntimeService } from '../music-runtime/music-runtime.service';
@@ -87,7 +87,7 @@ export class StemExportService {
 
           // Generate real provider audio. Provider failures propagate and are
           // reported to the caller; Harmonia must never substitute fake audio.
-          const audioObservable = from(
+          const audioObservable = defer(() =>
             this.generateProviderAudio(instrument)
           );
 
