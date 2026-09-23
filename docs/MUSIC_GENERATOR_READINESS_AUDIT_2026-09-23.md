@@ -39,8 +39,12 @@ Verified on the local RTX 3080 10 GB system:
 - Runtime transitions support `ready -> busy -> ready`.
 - Fake placeholder audio fallback has been removed.
 
-The Music Generation page still does not submit a generation request. Its
-`generateMusic()` method only reports that generation wiring is pending.
+The Music Generation page now submits a persistent `generate` job through the
+existing NgRx jobs store. The backend `/api/jobs` layer persists the job in
+MongoDB, serializes GPU execution, selects the requested runtime model, writes
+the artifact under `exports/jobs/<jobId>/`, validates the RIFF/WAV structure
+and requested duration, then returns a truthful `/downloads/...` URL. This
+new path is implemented on the branch and awaits local end-to-end qualification.
 
 ### DiffSinger gaps
 
@@ -52,25 +56,25 @@ removed before it can be reported as working.
 
 ## Next five implementation steps
 
-### 1. Finish the shared generation contract and main-page flow
+### 1. Qualify the shared generation contract and main-page flow
 
-Build one provider-neutral generation job contract around the runtime
-orchestrator. Carry the selected provider/model plus prompt, duration and
-provider-specific options into a job; emit progress and failure; validate the
-artifact before success; and expose a real playback/download URL.
+The first implementation is now present on this branch. Harmonia reuses the
+existing frontend jobs store/WebSocket protocol and adds the previously missing
+persistent backend jobs API. MusicGen is the reference executor.
 
-MusicGen is the reference implementation because its real inference path is
-already proven.
+The next action is local qualification of this path: create a generation from
+the browser, observe queued/processing/completed updates, play the result, and
+download the same validated artifact.
 
 Acceptance:
 
-- The Music Generation page actually starts a backend generation.
-- Prompt and duration are honored instead of the stem path's fixed five seconds.
-- NgRx represents submit/progress/success/failure/cancel states.
-- No successful job can reference a missing or invalid audio file.
-- Concurrent GPU jobs are serialized or explicitly rejected.
-- Provider/model switching while busy is rejected.
-- Backend restart recovery does not lose selected resident model state.
+- [implemented; local qualification pending] The Music Generation page starts a backend generation.
+- [implemented; local qualification pending] Prompt and duration are carried into MusicGen.
+- [implemented] NgRx represents queued/processing/completed/failed job state.
+- [implemented] Successful jobs require a structurally valid WAV of the requested duration.
+- [implemented] GPU generation jobs are serialized.
+- [implemented] Provider/model switching while busy is rejected.
+- [verified] Backend restart recovery preserves the selected resident MusicGen model.
 
 ### 2. Fully qualify MusicGen variants
 
