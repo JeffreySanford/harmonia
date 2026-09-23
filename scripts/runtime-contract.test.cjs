@@ -33,6 +33,7 @@ test('application port contract is 4200 frontend and 3000 backend', () => {
 
   assert.match(env, /^PORT=3000$/m);
   assert.match(proxy, /localhost:3000/);
+  assert.match(proxy, /"\/downloads"/);
   assert.match(backend, /process\.env\.PORT \|\| 3000/);
   assert.match(playwright, /localhost:3000\/api\/__health/);
   assert.match(playwright, /localhost:4200/);
