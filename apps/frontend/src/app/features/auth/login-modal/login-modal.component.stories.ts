@@ -1,10 +1,11 @@
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { MatDialogRef } from '@angular/material/dialog';
 import { Store } from '@ngrx/store';
 import { BehaviorSubject, map, Observable, of } from 'rxjs';
 import {
   Meta,
   StoryObj,
+  applicationConfig,
   moduleMetadata,
 } from '@storybook/angular';
 import { expect, fn } from 'storybook/test';
@@ -65,8 +66,11 @@ const meta: Meta<LoginModalComponent> = {
   component: LoginModalComponent,
   tags: ['autodocs'],
   decorators: [
+    applicationConfig({
+      providers: [provideNoopAnimations()],
+    }),
     moduleMetadata({
-      imports: [AuthModule, NoopAnimationsModule],
+      imports: [AuthModule],
       providers: [
         { provide: MatDialogRef, useValue: dialogRef },
         { provide: HealthService, useValue: healthService },
