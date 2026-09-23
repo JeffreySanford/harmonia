@@ -115,22 +115,34 @@ test('Linux container entrypoints normalize Windows line endings', () => {
 });
 
 
-test('music generation UI exposes real runtime state and never fakes an audio artifact', () => {
+test('music generation UI submits real jobs and never fakes an audio artifact', () => {
   const component = read(
     'apps/frontend/src/app/features/music-generation/music-generation-page.component.ts'
   );
   const template = read(
     'apps/frontend/src/app/features/music-generation/music-generation-page.component.html'
   );
+  const jobs = read('apps/backend/src/jobs/jobs.service.ts');
+  const controller = read('apps/backend/src/jobs/jobs.controller.ts');
+  const compose = read('docker-compose.yml');
 
   assert.doesNotMatch(component, /sample-audio\.mp3/);
+  assert.doesNotMatch(component, /Audio generation wiring is the next/);
   assert.doesNotMatch(component, /setInterval\(/);
   assert.match(component, /MusicRuntimeActions\.selectModel/);
+  assert.match(component, /JobsActions\.createJob/);
+  assert.match(component, /jobType: 'generate'/);
+  assert.match(controller, /@Controller\('jobs'\)/);
+  assert.match(jobs, /processGenerationJob/);
+  assert.match(jobs, /validateWav/);
+  assert.match(jobs, /exports', 'jobs', jobId/);
+  assert.match(jobs, /musicgen_provider_client\.py/);
+  assert.match(compose, /\.\/exports:\/workspace\/exports/);
   assert.match(template, /Generation Engine/);
+  assert.match(template, /generatedAudioUrl/);
   assert.match(template, /disabledReason/);
   assert.match(template, /runtimeStatus/);
 });
-
 test('music model catalog includes local and higher-capacity disabled tiers', () => {
   const catalog = read(
     'apps/backend/src/music-runtime/music-model.catalog.ts'
