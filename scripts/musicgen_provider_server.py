@@ -107,9 +107,12 @@ class MusicGenRuntime:
             raise ValueError("output is required")
         if not (
             output_path.startswith("/workspace/generated/")
+            or output_path.startswith("/workspace/exports/")
             or output_path.startswith("/tmp/")
         ):
-            raise ValueError("output must be under /workspace/generated or /tmp")
+            raise ValueError(
+                "output must be under /workspace/generated, /workspace/exports, or /tmp"
+            )
 
         prompt = str(payload.get("prompt") or "").strip()
         if not prompt:
