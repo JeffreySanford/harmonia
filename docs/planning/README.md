@@ -54,7 +54,7 @@ operational documentation:
 - [Phase 10 Catalog Installation Awareness](MODEL_CATALOG_INSTALLATION_AWARENESS_PHASE10.md) —
   completed advisory installation state in runtime catalog selectability and guidance.
 - [Phase 11 Portable Model Inventory](MODEL_INVENTORY_PHASE11.md) —
-  read-only normalized observed inventory derived from deep verification evidence.
+  completed read-only normalized observed inventory derived from deep verification evidence.
 - [Model Installation MongoDB Schema](MODEL_INSTALLATION_MONGO_SCHEMA.md) —
   artifact-granular operational state, readiness derivation, indexes, error
   sanitization, and migration strategy.
