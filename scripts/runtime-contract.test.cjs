@@ -1075,7 +1075,14 @@ test('backend restart recovers resident MusicGen model and busy state', () => {
   );
 
   assert.match(backend, /recoverProviderRuntimeSnapshot/);
-  assert.match(backend, /127\.0\.0\.1:8765\/health/);
+  assert.match(
+    backend,
+    /provider\.id === 'musicgen'[\s\S]*\? 8765/
+  );
+  assert.match(
+    backend,
+    /127\.0\.0\.1:\$\{healthPort\}\/health/
+  );
   assert.match(backend, /candidate\.runtimeModelId === snapshot\.model/);
   assert.match(backend, /snapshot\.busy/);
   assert.match(backend, /recoveredModelLabel/);
