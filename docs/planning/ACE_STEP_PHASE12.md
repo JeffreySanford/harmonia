@@ -1,6 +1,6 @@
 # Phase 12 ACE-Step 1.5 Local Provider
 
-**Status:** Phase 12A, 12B, and 12C complete and locally qualified; Phase 12D real generation integration in progress  
+**Status:** Phase 12A, 12B, and 12C complete and locally qualified; Phase 12D real generation integration implemented, awaiting local qualification  
 **Date:** September 24, 2026  
 **Primary target:** `acestep-v15-turbo-06b`  
 **Reference GPU:** NVIDIA GeForce RTX 3080, 10 GB VRAM  
@@ -266,6 +266,36 @@ The provider adapter must:
 3. retrieve the generated audio;
 4. place the final artifact under Harmonia's existing job export directory;
 5. return normalized metadata to `JobsService`.
+
+## Phase 12D generation contract
+
+Phase 12D integrates ACE-Step into Harmonia's existing durable generation-job path.
+
+First qualified request:
+
+- model: `acestep-v15-turbo-06b`;
+- duration: 30 seconds;
+- output: WAV;
+- batch size: 1;
+- supplied prompt and supplied lyrics;
+- explicit BPM;
+- English vocal language;
+- `thinking=true` so the resident 0.6B LM participates;
+- CoT caption/language rewriting disabled so qualification can prove the supplied
+  prompt/lyrics survive the provider boundary.
+
+Provider-client flow:
+
+1. `POST /release_task`;
+2. poll `POST /query_result` until success/failure;
+3. parse the returned result payload;
+4. download the returned `/v1/audio` WAV into Harmonia's shared exports mount;
+5. return normalized ACE task/model/seed/meta information to `JobsService`;
+6. run the existing Harmonia RIFF/WAVE validation and durable completion path.
+
+The Angular music-generation form now includes its existing lyrics field in
+non-DiffSinger job parameters, allowing ACE-Step to use supplied lyrics without
+introducing a parallel provider-specific page.
 
 ## Output qualification
 
