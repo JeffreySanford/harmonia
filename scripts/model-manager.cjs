@@ -1978,14 +1978,32 @@ function createInitialization(options = {}) {
       };
     }
 
-    const reposToFetch = [
-      ...new Set([
-        ...(before.state === 'verified'
-          ? []
-          : [artifact.source.repoId]),
-        ...missingRuntimeReposBefore,
-      ]),
-    ];
+    if (
+      isHttpZip &&
+      before.state !== 'missing'
+    ) {
+      return {
+        ...base,
+        state: before.state,
+        action: 'repair-required',
+        resolvedRevision: before.resolvedRevision,
+        missingRuntimeRepos: [],
+        detail:
+          'incomplete existing HTTP-ZIP destination is preserved; use models:repair for replacement',
+      };
+    }
+
+    const reposToFetch =
+      isHuggingFace
+        ? [
+            ...new Set([
+              ...(before.state === 'verified'
+                ? []
+                : [artifact.source.repoId]),
+              ...missingRuntimeReposBefore,
+            ]),
+          ]
+        : [];
 
     if (normalized.dryRun) {
       return {
@@ -1995,8 +2013,12 @@ function createInitialization(options = {}) {
         resolvedRevision: before.resolvedRevision,
         missingRuntimeRepos: missingRuntimeReposBefore,
         pendingDownloadRepos: reposToFetch,
+        pendingDownloadSources:
+          isHuggingFace
+            ? reposToFetch
+            : [artifact.source.url],
         detail:
-          'dry-run: selected Hugging Face repositories would be initialized',
+          'dry-run: selected source artifacts would be initialized',
       };
     }
 
