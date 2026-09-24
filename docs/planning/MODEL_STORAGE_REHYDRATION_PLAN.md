@@ -2,6 +2,7 @@
 
 **Status:** Planned  
 **Created:** September 23, 2026  
+**Updated:** September 24, 2026  
 **Architecture:** [../MODEL_STORAGE_AND_REHYDRATION.md](../MODEL_STORAGE_AND_REHYDRATION.md)
 
 ## Supporting planning specifications
@@ -18,7 +19,7 @@ contracts:
 
 ## Current implementation status
 
-As of September 23, 2026:
+As of September 24, 2026:
 
 - Phase 0 architecture/documentation contract: **complete**.
 - Phase 1 desired-state registry: **complete and locally qualified**.
@@ -26,12 +27,13 @@ As of September 23, 2026:
   - `inventory/model_registry.schema.json`
   - `scripts/model-registry-contract.test.cjs`
   - `pnpm test:model-registry`
-- Phase 2 core model lifecycle CLI: **read-only planning implemented, awaiting local qualification**.
+- Phase 2 core model lifecycle CLI: **complete and locally qualified**.
   - `scripts/model-manager.cjs`
   - `scripts/model-manager.test.cjs`
   - `pnpm models:plan`
   - `pnpm test:model-manager`
   - [MODEL_PLAN_PHASE2.md](MODEL_PLAN_PHASE2.md)
+- Phase 3 read-only deep verification: **next**.
 - Later download/Mongo/runtime/recovery phases: **not started**.
 
 Phase 1 intentionally includes all application models currently marked
@@ -464,7 +466,7 @@ This order deliberately implements read-only visibility before mutation.
 ## Definition of done
 
 - [x] All installed local catalog models map to registry entries.
-- [ ] `models:plan` identifies missing/cached models without mutation. (Implemented; local qualification pending.)
+- [x] `models:plan` identifies missing/cached models without mutation.
 - [ ] `models:init` can populate an empty alternate root.
 - [ ] `models:init` is idempotent on a complete root.
 - [ ] `models:verify` performs no downloads.
