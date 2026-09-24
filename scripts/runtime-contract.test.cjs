@@ -869,6 +869,10 @@ test('ACE-Step 1.5 provider image is pinned isolated and boot-safe without model
   );
   assert.match(
     ace,
+    /ENV ACESTEP_OFFLOAD_DIT_TO_CPU=true/
+  );
+  assert.match(
+    ace,
     /ENV HF_HUB_OFFLINE=1/
   );
   assert.match(
@@ -891,6 +895,14 @@ test('ACE-Step 1.5 provider image is pinned isolated and boot-safe without model
   assert.match(
     compose,
     /\.\/models\/ace-step-1\.5:\/workspace\/models\/ace-step-1\.5/
+  );
+  assert.match(
+    compose,
+    /\.\/models\/ace-step-1\.5\/checkpoints:\/opt\/ACE-Step-1\.5\/checkpoints/
+  );
+  assert.match(
+    compose,
+    /ACESTEP_OFFLOAD_DIT_TO_CPU: "true"/
   );
   assert.match(
     compose,
@@ -926,7 +938,54 @@ test('ACE-Step 1.5 provider image is pinned isolated and boot-safe without model
 
   assert.match(
     catalog,
-    /id: 'ace-step-1\.5'[\s\S]*runtimeInstalled: false/
+    /id: 'ace-step-1\.5'[\s\S]*runtimeInstalled: true[\s\S]*imageName: 'harmonia\/ace-step-1\.5:dev'/
+  );
+  assert.match(
+    catalog,
+    /id: 'acestep-v15-turbo-06b'[\s\S]*runtimeModelId: 'acestep-v15-turbo'[\s\S]*availability: 'installed'/
+  );
+});
+
+test('ACE-Step runtime selection initializes Turbo and 0.6B LM before ready and recovers resident state', () => {
+  const backend = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+
+  assert.match(
+    backend,
+    /provider\.id === 'ace-step-1\.5'[\s\S]*'loading-model'[\s\S]*prepareProviderModel/
+  );
+  assert.match(
+    backend,
+    /http:\/\/127\.0\.0\.1:8001\/v1\/init/
+  );
+  assert.match(
+    backend,
+    /init_llm: true/
+  );
+  assert.match(
+    backend,
+    /lm_model_path:[\s\S]*'acestep-5Hz-lm-0\.6B'/
+  );
+  assert.match(
+    backend,
+    /loaded_model[^\n]*!== model\.runtimeModelId/
+  );
+  assert.match(
+    backend,
+    /loaded_lm_model[^\n]*!== 'acestep-5Hz-lm-0\.6B'/
+  );
+  assert.match(
+    backend,
+    /provider\.id === 'ace-step-1\.5'[\s\S]*\? 8001/
+  );
+  assert.match(
+    backend,
+    /parsed\.data\?\.models_initialized[\s\S]*parsed\.data\?\.llm_initialized[\s\S]*loaded_lm_model === 'acestep-5Hz-lm-0\.6B'/
+  );
+  assert.match(
+    backend,
+    /Turbo and the 0\.6B LM are resident/
   );
 });
 
