@@ -36,9 +36,13 @@ operational documentation:
 - [Phase 4 Hugging Face Initialization](MODEL_HF_INIT_PHASE4.md) — completed
   alternate-root recovery for MusicGen Small/Stereo Small and Stable Audio 3,
   including offline provider-load qualification.
-- [Phase 5 DiffSinger Initialization](MODEL_DIFFSINGER_INIT_PHASE5.md) — staged,
-  path-safe HTTP-ZIP recovery contract for the acoustic, pitch-estimator, and
-  HiFi-GAN packages.
+- [Phase 5 DiffSinger Initialization](MODEL_DIFFSINGER_INIT_PHASE5.md) — completed
+  staged, path-safe HTTP-ZIP recovery for the acoustic, pitch-estimator, and
+  HiFi-GAN packages, including offline boot and real recovered-model inference.
+- [Phase 6 Default Init Orchestration](MODEL_DEFAULT_INIT_PHASE6.md) — completed
+  selector-free default-set initialization with gated prerequisite preflight.
+- [Phase 7 Conservative Repair](MODEL_REPAIR_PHASE7.md) — quarantine-first
+  repair contract for incomplete model installations.
 - [Model Installation MongoDB Schema](MODEL_INSTALLATION_MONGO_SCHEMA.md) —
   artifact-granular operational state, readiness derivation, indexes, error
   sanitization, and migration strategy.
