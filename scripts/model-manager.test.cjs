@@ -9,6 +9,7 @@ const {
   createPlan,
   createVerification,
   huggingFaceDownloadReposForArtifact,
+  normalizePinnedHuggingFaceMainRef,
   inspectShallowPathPresence,
   verifyRequiredFile,
   loadRegistry,
@@ -688,6 +689,100 @@ test('models:init repairs a missing MusicGen runtime dependency instead of repor
   assert.equal(result.ok, true);
   assert.equal(result.artifacts[0].action, 'downloaded');
   assert.deepEqual(result.artifacts[0].missingRuntimeRepos, []);
+});
+
+
+test('pinned HF main ref normalization writes the exact revision with no newline', () => {
+  const root = tempRoot();
+  const registry = loadRegistry();
+  const artifact = registry.artifacts.find(
+    (candidate) => candidate.artifactId === 'stable-audio-3-small-music'
+  );
+
+  createHuggingFaceFixture(root, artifact);
+
+  const artifactRoot = path.join(root, artifact.destination);
+  const repoCache =
+    'models--' + artifact.source.repoId.replace(/\//g, '--');
+  const refPath = path.join(
+    artifactRoot,
+    'hub',
+    repoCache,
+    'refs',
+    'main'
+  );
+
+  fs.writeFileSync(
+    refPath,
+    artifact.source.revision + '\n',
+    'utf8'
+  );
+
+  const result = normalizePinnedHuggingFaceMainRef(
+    artifact,
+    root
+  );
+
+  assert.equal(result.changed, true);
+  assert.equal(
+    fs.readFileSync(refPath, 'utf8'),
+    artifact.source.revision
+  );
+
+  const second = normalizePinnedHuggingFaceMainRef(
+    artifact,
+    root
+  );
+
+  assert.equal(second.changed, false);
+});
+
+test('models:init normalizes a pinned HF ref on an otherwise verified cache hit', () => {
+  const root = tempRoot();
+  const registry = loadRegistry();
+  const artifact = registry.artifacts.find(
+    (candidate) => candidate.artifactId === 'stable-audio-3-small-music'
+  );
+
+  createHuggingFaceFixture(root, artifact);
+
+  const artifactRoot = path.join(root, artifact.destination);
+  const repoCache =
+    'models--' + artifact.source.repoId.replace(/\//g, '--');
+  const refPath = path.join(
+    artifactRoot,
+    'hub',
+    repoCache,
+    'refs',
+    'main'
+  );
+
+  fs.writeFileSync(
+    refPath,
+    artifact.source.revision + '\n',
+    'utf8'
+  );
+
+  const result = createInitialization({
+    root,
+    modelIds: ['stable-audio-3-small-music'],
+    providerIds: [],
+    artifactIds: [],
+    platform: 'linux',
+    credential: 'fixture-token',
+    downloadExecutor: () => {
+      throw new Error('verified cache must not download');
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.cacheHits, 1);
+  assert.equal(result.artifacts[0].action, 'cache-hit');
+  assert.equal(result.artifacts[0].cacheRefNormalized, true);
+  assert.equal(
+    fs.readFileSync(refPath, 'utf8'),
+    artifact.source.revision
+  );
 });
 
 test('models:init is idempotent for an already verified HF artifact', () => {
