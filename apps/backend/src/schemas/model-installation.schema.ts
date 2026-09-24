@@ -18,6 +18,7 @@ export type ModelInstallationSourceKind =
 @Schema({
   timestamps: true,
   collection: 'model_installations',
+  versionKey: false,
 })
 export class ModelInstallation {
   @Prop({
