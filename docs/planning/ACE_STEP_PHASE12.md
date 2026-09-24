@@ -215,6 +215,17 @@ Runtime behavior:
   generation qualification will determine whether an additional quantization
   adapter is necessary.
 
+### Phase 12C qualification note
+
+The first operational qualification attempt reached a verified/selectable catalog
+entry and recovered an already-running ACE-Step provider with Turbo + 0.6B resident.
+The product runtime correctly returned `ready`, but the shell harness rejected the
+valid recovery message because it expected only the fresh-load message.
+
+Continuation qualification therefore starts from a deliberately stopped ACE-Step
+provider. This makes the `/v1/init` load path deterministic while preserving the
+separately proven backend-restart recovery path.
+
 ## Generation job contract
 
 The persistent job path must accept ACE-Step models and send at minimum:
