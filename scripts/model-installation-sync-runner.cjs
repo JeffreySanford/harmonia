@@ -8,6 +8,13 @@ const syncScript = path.join(
   'scripts',
   'model-installation-sync.cjs'
 );
+const registry = require(
+  '../inventory/model_registry.json'
+);
+const canonicalModelRoot = path.resolve(
+  repoRoot,
+  registry.modelsRoot
+);
 
 function buildSyncArgs(options = {}) {
   const args = [syncScript];
@@ -120,6 +127,23 @@ function lifecycleDatabaseState(
       warning: null,
       required:
         Boolean(options.requireDb),
+    };
+  }
+
+  const selectedRoot = path.resolve(
+    repoRoot,
+    options.root ||
+      registry.modelsRoot
+  );
+
+  if (selectedRoot !== canonicalModelRoot) {
+    return {
+      status:
+        'skipped-noncanonical-root',
+      synchronized: false,
+      records: 0,
+      warning: null,
+      required: false,
     };
   }
 
