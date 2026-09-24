@@ -7,7 +7,6 @@ const path = require('node:path');
 const {
   createInitialization,
   createPlan,
-  createRepair,
   createVerification,
   huggingFaceDownloadReposForArtifact,
   isSafeArchiveMemberPath,
@@ -18,6 +17,10 @@ const {
   safeResolveUnderRoot,
   wildcardToRegExp,
 } = require('./model-manager.cjs');
+
+const {
+  createRepair,
+} = require('./model-repair.cjs');
 
 function tempRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'harmonia-model-plan-'));
@@ -1340,6 +1343,19 @@ test('models:init bare dry-run exposes five downloads plus gated authentication 
 test('models:repair leaves a verified default fixture untouched', () => {
   const root = tempRoot();
   createDefaultInstallFixture(root);
+
+  const registry = loadRegistry();
+  for (const artifact of registry.artifacts.filter(
+    (candidate) =>
+      candidate.defaultInstall &&
+      candidate.providerId === 'musicgen'
+  )) {
+    createMusicGenDependencyFixtures(
+      root,
+      artifact
+    );
+  }
+
   const before = listTree(root);
   let calls = 0;
 
