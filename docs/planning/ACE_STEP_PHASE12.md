@@ -1,6 +1,6 @@
 # Phase 12 ACE-Step 1.5 Local Provider
 
-**Status:** Phase 12A provider shell implemented, awaiting local boot qualification  
+**Status:** Phase 12A complete and locally qualified; Phase 12B selective checkpoint acquisition next  
 **Date:** September 24, 2026  
 **Primary target:** `acestep-v15-turbo-06b`  
 **Reference GPU:** NVIDIA GeForce RTX 3080, 10 GB VRAM  
@@ -50,6 +50,29 @@ Add:
 - persistent checkpoint mount under `models/ace-step-1.5/`.
 
 ACE-Step must not be installed in the generic worker or another provider image.
+
+## Phase 12A local qualification result
+
+Qualified locally on September 24, 2026.
+
+Observed behavior:
+
+- runtime/Compose contract suite passed 45/45;
+- pinned ACE-Step provider image built successfully from upstream revision
+  `ca1e85fe9430179831e6bc6be790c332190a3866`;
+- container import probe reported PyTorch `2.10.0+cu128`, CUDA available,
+  NVIDIA GeForce RTX 3080, and 10.00 GB VRAM;
+- official ACE-Step API became healthy;
+- `/health` reported `models_initialized=false` and `llm_initialized=false`;
+- runtime environment enforced lazy initialization plus Hugging Face/Transformers
+  offline mode;
+- persistent `models/ace-step-1.5` payload remained exactly 0 files / 0 bytes
+  before and after provider boot;
+- container remained healthy with zero restarts;
+- full startup/model regression finished with 138 passing tests, zero failures,
+  and one intentionally skipped Compose lifecycle test;
+- Compose validation confirmed the ACE-Step provider publishes no host ports;
+- cleanup removed the qualification container.
 
 ## Model storage
 
