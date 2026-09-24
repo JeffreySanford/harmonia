@@ -162,6 +162,27 @@ function isSafeRelativePath(value) {
   );
 }
 
+function isSafeArchiveMemberPath(value) {
+  if (typeof value !== 'string' || value.length === 0) {
+    return false;
+  }
+
+  const normalized = value.replace(/\\/g, '/');
+
+  if (
+    normalized.startsWith('/') ||
+    /^[A-Za-z]:\//.test(normalized)
+  ) {
+    return false;
+  }
+
+  const parts = normalized
+    .split('/')
+    .filter((part) => part.length > 0);
+
+  return !parts.includes('..');
+}
+
 function safeResolveUnderRoot(rootPath, relativePath) {
   const resolvedRoot = path.resolve(rootPath);
   const resolvedTarget = path.resolve(resolvedRoot, relativePath);
@@ -738,6 +759,96 @@ function runHuggingFaceDownloadContainer(
     throw new Error(
       'Hugging Face download returned invalid machine-readable output for ' +
         artifact.source.repoId
+    );
+  }
+}
+
+function runHttpZipDownloadContainer(
+  artifact,
+  modelRoot,
+  options = {}
+) {
+  if (artifact.source.kind !== 'http-zip') {
+    throw new Error(
+      'HTTP ZIP adapter received unsupported source kind: ' +
+        artifact.source.kind
+    );
+  }
+
+  const resolvedRoot = path.resolve(modelRoot);
+  const scriptsRoot = path.join(repoRoot, 'scripts');
+
+  fs.mkdirSync(resolvedRoot, { recursive: true });
+
+  const args = [
+    'run',
+    '--rm',
+    '--mount',
+    'type=bind,source=' +
+      resolvedRoot +
+      ',target=/workspace/models',
+    '--mount',
+    'type=bind,source=' +
+      scriptsRoot +
+      ',target=/workspace/scripts,readonly',
+    '--entrypoint',
+    'python3',
+    'harmonia/diffsinger:dev',
+    '/workspace/scripts/model-init-diffsinger.py',
+    '/workspace/models',
+    artifact.source.url,
+    artifact.destination.replace(/\\/g, '/'),
+    artifact.artifactId,
+    artifact.source.archiveRootName || '-',
+    JSON.stringify(artifact.verification || {}),
+  ];
+
+  const spawn = options.spawnSyncApi || spawnSync;
+  const execution = spawn('docker', args, {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: process.env,
+    windowsHide: true,
+    stdio: ['ignore', 'pipe', 'inherit'],
+    timeout: options.timeout || 2 * 60 * 60 * 1000,
+    maxBuffer: 16 * 1024 * 1024,
+  });
+
+  if (execution.error) {
+    throw new Error(
+      'DiffSinger ZIP download container failed to start: ' +
+        execution.error.message
+    );
+  }
+
+  if (execution.status !== 0) {
+    throw new Error(
+      'DiffSinger ZIP initialization failed for ' +
+        artifact.artifactId +
+        ' (docker exit ' +
+        execution.status +
+        ')'
+    );
+  }
+
+  const lines = String(execution.stdout || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) {
+    throw new Error(
+      'DiffSinger ZIP initialization returned no machine-readable result for ' +
+        artifact.artifactId
+    );
+  }
+
+  try {
+    return JSON.parse(lines[lines.length - 1]);
+  } catch {
+    throw new Error(
+      'DiffSinger ZIP initialization returned invalid machine-readable output for ' +
+        artifact.artifactId
     );
   }
 }
