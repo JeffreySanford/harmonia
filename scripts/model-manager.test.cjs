@@ -1188,6 +1188,124 @@ test('archive member safety rejects ZIP traversal and absolute paths', () => {
   assert.equal(isSafeArchiveMemberPath('C:\\absolute\\path'), false);
 });
 
+test('models:init selectively initializes the ACE-Step Turbo 0.6B composite', () => {
+  const root = tempRoot();
+  const calls = [];
+
+  const result =
+    createInitialization({
+      root,
+      modelIds: [
+        'acestep-v15-turbo-06b',
+      ],
+      providerIds: [],
+      artifactIds: [],
+      platform: 'linux',
+      huggingFaceDownloadExecutor:
+        (
+          artifact,
+          modelRoot,
+          options
+        ) => {
+          calls.push({
+            artifactId:
+              artifact.artifactId,
+            repos:
+              options.repos,
+            allowPatterns:
+              artifact.source.allowPatterns || [],
+          });
+
+          createHuggingFaceLocalDirFixture(
+            modelRoot,
+            artifact
+          );
+
+          return {
+            repos: [
+              {
+                repoId:
+                  artifact.source.repoId,
+                resolvedRevision:
+                  artifact.source.revision,
+              },
+            ],
+          };
+        },
+    });
+
+  assert.equal(
+    result.ok,
+    true
+  );
+  assert.equal(
+    result.summary.selectedModels,
+    1
+  );
+  assert.equal(
+    result.summary.selectedArtifacts,
+    2
+  );
+  assert.equal(
+    result.summary.downloaded,
+    2
+  );
+  assert.equal(
+    result.summary.verified,
+    2
+  );
+
+  assert.deepEqual(
+    calls
+      .map(
+        (call) =>
+          call.artifactId
+      )
+      .sort(),
+    [
+      'acestep-5hz-lm-06b',
+      'acestep-v15-turbo-core',
+    ]
+  );
+
+  const core =
+    calls.find(
+      (call) =>
+        call.artifactId ===
+        'acestep-v15-turbo-core'
+    );
+
+  assert.deepEqual(
+    core.allowPatterns,
+    [
+      'acestep-v15-turbo/**',
+      'vae/**',
+      'Qwen3-Embedding-0.6B/**',
+    ]
+  );
+  assert.equal(
+    JSON.stringify(calls)
+      .includes(
+        'acestep-5Hz-lm-1.7B'
+      ),
+    false
+  );
+
+  for (
+    const row
+    of result.artifacts
+  ) {
+    assert.equal(
+      row.state,
+      'verified'
+    );
+    assert.equal(
+      row.action,
+      'downloaded'
+    );
+  }
+});
+
 test('models:init downloads and verifies the DiffSinger composite through the HTTP ZIP adapter', () => {
   const root = tempRoot();
   const calls = [];
