@@ -236,3 +236,18 @@ test('checkpoint wildcard matching handles DiffSinger checkpoint names', () => {
   assert.equal(matcher.test('model_ckpt_steps_160000.ckpt'), true);
   assert.equal(matcher.test('config.yaml'), false);
 });
+
+test('package exposes the read-only model plan command', () => {
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')
+  );
+
+  assert.equal(
+    pkg.scripts['models:plan'],
+    'node scripts/model-manager.cjs plan'
+  );
+  assert.equal(
+    pkg.scripts['test:model-manager'],
+    'node --test scripts/model-manager.test.cjs'
+  );
+});
