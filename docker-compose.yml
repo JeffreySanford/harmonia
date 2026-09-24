@@ -151,6 +151,7 @@ services:
     volumes:
       - ./models/ace-step-1.5:/workspace/models/ace-step-1.5
       - ./models/ace-step-1.5/checkpoints:/opt/ACE-Step-1.5/checkpoints
+      - ./scripts:/workspace/scripts:ro
       - ./generated:/workspace/generated
       - ./exports:/workspace/exports
       - ./artifacts:/workspace/artifacts
