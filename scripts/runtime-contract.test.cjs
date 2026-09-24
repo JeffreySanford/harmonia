@@ -837,6 +837,89 @@ test('music generation UI submits real jobs and never fakes an audio artifact', 
   assert.match(template, /disabledReason/);
   assert.match(template, /runtimeStatus/);
 });
+test('ACE-Step 1.5 provider image is pinned isolated and boot-safe without model downloads', () => {
+  const worker = read('Dockerfile.worker');
+  const ace = read('Dockerfile.ace-step-1.5');
+  const compose = read('docker-compose.yml');
+  const gpu = read('docker-compose.gpu.yml');
+  const catalog = read(
+    'apps/backend/src/music-runtime/music-model.catalog.ts'
+  );
+
+  assert.doesNotMatch(worker, /ACE-Step|acestep/i);
+  assert.match(
+    ace,
+    /ARG ACESTEP_REF=ca1e85fe9430179831e6bc6be790c332190a3866/
+  );
+  assert.match(
+    ace,
+    /git checkout --detach "\$\{ACESTEP_REF\}"/
+  );
+  assert.match(
+    ace,
+    /uv sync --frozen --no-dev --python python3\.11/
+  );
+  assert.match(
+    ace,
+    /ENV ACESTEP_NO_INIT=true/
+  );
+  assert.match(
+    ace,
+    /ENV ACESTEP_LM_MODEL_PATH=acestep-5Hz-lm-0\.6B/
+  );
+  assert.match(
+    ace,
+    /ENV HF_HUB_OFFLINE=1/
+  );
+  assert.match(
+    ace,
+    /ENV TRANSFORMERS_OFFLINE=1/
+  );
+  assert.match(
+    ace,
+    /acestep-api", "--host", "0\.0\.0\.0", "--port", "8001"/
+  );
+
+  assert.match(
+    compose,
+    /ace-step-1\.5:[\s\S]*profiles:[\s\S]*- model-ace-step-1\.5/
+  );
+  assert.match(
+    compose,
+    /harmonia\/ace-step-1\.5:dev/
+  );
+  assert.match(
+    compose,
+    /\.\/models\/ace-step-1\.5:\/workspace\/models\/ace-step-1\.5/
+  );
+  assert.match(
+    compose,
+    /ACESTEP_NO_INIT: "true"/
+  );
+  assert.match(
+    compose,
+    /HF_HUB_OFFLINE: "1"/
+  );
+  assert.match(
+    compose,
+    /127\.0\.0\.1:8001\/health/
+  );
+  assert.doesNotMatch(
+    compose,
+    /ace-step-1\.5:[\s\S]{0,800}ports:/
+  );
+
+  assert.match(
+    gpu,
+    /ace-step-1\.5:[\s\S]*runtime: nvidia/
+  );
+
+  assert.match(
+    catalog,
+    /id: 'ace-step-1\.5'[\s\S]*runtimeInstalled: false/
+  );
+});
+
 test('music model catalog includes local and higher-capacity disabled tiers', () => {
   const catalog = read(
     'apps/backend/src/music-runtime/music-model.catalog.ts'
