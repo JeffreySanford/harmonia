@@ -143,13 +143,14 @@ services:
       ACESTEP_INIT_LLM: "true"
       ACESTEP_LLM_BACKEND: pt
       ACESTEP_OFFLOAD_TO_CPU: "true"
-      ACESTEP_OFFLOAD_DIT_TO_CPU: "false"
+      ACESTEP_OFFLOAD_DIT_TO_CPU: "true"
       ACESTEP_CHECKPOINTS_DIR: /workspace/models/ace-step-1.5/checkpoints
       HF_HOME: /workspace/models/ace-step-1.5/huggingface
       HF_HUB_OFFLINE: "1"
       TRANSFORMERS_OFFLINE: "1"
     volumes:
       - ./models/ace-step-1.5:/workspace/models/ace-step-1.5
+      - ./models/ace-step-1.5/checkpoints:/opt/ACE-Step-1.5/checkpoints
       - ./generated:/workspace/generated
       - ./exports:/workspace/exports
       - ./artifacts:/workspace/artifacts
