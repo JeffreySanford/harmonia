@@ -261,9 +261,24 @@ Qualified inference result:
 - first qualified generation elapsed time: 84.34 seconds
 - provider remained resident, healthy, and idle after generation
 
-The next qualification boundary is durable `/api/jobs` generation using the
-same persistent provider lifecycle and download contract already used by
-MusicGen and DiffSinger.
+Persistent-job qualification also passed through the same durable product
+boundary used by MusicGen and DiffSinger:
+
+- authenticated `POST /api/jobs`
+- durable MongoDB job lifecycle
+- provider-native runtime model id `small-music`
+- output path `/downloads/jobs/<jobId>/music.wav`
+- stereo, 44.1 kHz, 32-bit IEEE float WAV
+- requested and actual duration: 8.00 seconds
+- artifact size: 2,822,488 bytes
+- resident-model persistent generation elapsed time: 12.19 seconds
+- backend download HTTP 200
+- frontend-proxied download HTTP 200
+- provider remained healthy and idle on the NVIDIA GeForce RTX 3080
+
+Stable Audio 3 Small-Music is therefore qualified through direct inference and
+the durable Harmonia job/download boundary. The remaining product-facing work
+for this model is Angular prompt-form qualification, not backend/runtime proof.
 
 ## 3. Google Music Generation: Lyria Is Now Public
 
