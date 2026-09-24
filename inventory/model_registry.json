@@ -20,7 +20,8 @@
       "verification": {
         "strategy": "huggingface-snapshot",
         "requiredFiles": [
-          "config.json"
+          "state_dict.bin",
+          "compression_state_dict.bin"
         ]
       },
       "license": {
@@ -52,7 +53,8 @@
       "verification": {
         "strategy": "huggingface-snapshot",
         "requiredFiles": [
-          "config.json"
+          "state_dict.bin",
+          "compression_state_dict.bin"
         ]
       },
       "license": {
@@ -84,7 +86,8 @@
       "verification": {
         "strategy": "huggingface-snapshot",
         "requiredFiles": [
-          "config.json"
+          "state_dict.bin",
+          "compression_state_dict.bin"
         ]
       },
       "license": {
@@ -116,7 +119,8 @@
       "verification": {
         "strategy": "huggingface-snapshot",
         "requiredFiles": [
-          "config.json"
+          "state_dict.bin",
+          "compression_state_dict.bin"
         ]
       },
       "license": {
