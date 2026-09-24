@@ -35,7 +35,8 @@ As of September 24, 2026:
   - [MODEL_PLAN_PHASE2.md](MODEL_PLAN_PHASE2.md)
 - Phase 3 read-only deep verification: **complete and locally qualified**.
 - Phase 4 Hugging Face initialization adapter: **complete and locally qualified**.
-- Phase 5 DiffSinger HTTP-ZIP initialization adapter: **implemented, awaiting alternate-root qualification**.
+- Phase 5 DiffSinger HTTP-ZIP initialization adapter: **complete and locally qualified**.
+- Phase 6 default-set `models:init` orchestration: **next**.
 - Later download/Mongo/runtime/recovery phases: **not started**.
 
 Phase 1 intentionally includes all application models currently marked
@@ -469,14 +470,14 @@ This order deliberately implements read-only visibility before mutation.
 
 - [x] All installed local catalog models map to registry entries.
 - [x] `models:plan` identifies missing/cached models without mutation.
-- [ ] `models:init` can populate an empty alternate root.
-- [ ] `models:init` is idempotent on a complete root.
+- [x] `models:init` can populate an empty alternate root.
+- [x] `models:init` is idempotent on a complete root.
 - [x] `models:verify` performs no downloads.
 - [ ] `models:repair` fixes an incomplete root without deleting unrelated data.
-- [ ] Gated model failures are explicit and secret-safe.
+- [x] Gated model failures are explicit and secret-safe.
 - [ ] Mongo records installation state and provenance.
 - [ ] No large model binary is stored in Mongo or Git.
 - [ ] Startup never performs surprise multi-GB downloads.
 - [ ] Provider runtimes use persistent local model mounts.
-- [ ] Recovery is qualified using an alternate empty root.
+- [x] Recovery is qualified using an alternate empty root.
 - [ ] Generated/exported runtime artifacts remain outside source control.
