@@ -1,6 +1,6 @@
 # Phase 8B Filesystem-to-Mongo Installation Synchronization
 
-**Status:** Implemented, awaiting live Mongo qualification  
+**Status:** Complete and locally qualified  
 **Date:** September 24, 2026  
 **Command:** `pnpm models:db-sync`
 
@@ -152,6 +152,28 @@ Repeated synchronization of unchanged verified filesystem state:
 12. no model cache files are modified;
 13. the separate reconstructed recovery root remains untouched;
 14. full startup/model regression remains green.
+
+## Local qualification result
+
+Qualified against the operational `models/` root and live MongoDB on
+September 24, 2026.
+
+Observed behavior:
+
+- eight operational artifact records were synchronized;
+- six installed/default artifacts were `verified` and the two optional
+  MusicGen Medium variants were `missing`;
+- a second sync preserved `installedAt` and `lastUsedAt` while refreshing
+  verification metadata;
+- Mongo unavailability remained advisory by default;
+- `--require-db` made the same outage fatal;
+- operational and recovery model roots both remained green;
+- jobs/users counts remained unchanged;
+- the full startup/model suite finished with 119 passing tests, zero
+  failures, and one intentionally skipped Compose lifecycle test.
+
+Phase 8B is complete. Automatic post-init/post-repair synchronization is
+the next integration boundary.
 
 ## Completion boundary
 
