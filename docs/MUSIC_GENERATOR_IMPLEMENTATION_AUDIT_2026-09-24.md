@@ -64,8 +64,6 @@ Status:
 - persistent provider/job path qualified;
 - live runtime recovery and same-ready re-selection qualified.
 
-## Qualified local providers
-
 ### ACE-Step 1.5
 
 Qualified:
