@@ -7,7 +7,7 @@
     "build": "tsc -p .",
     "start": "node scripts/start-all.cjs",
     "start:all": "node scripts/start-all.cjs",
-    "test:startup": "node --test scripts/start-all.test.cjs scripts/runtime-contract.test.cjs scripts/model-registry-contract.test.cjs scripts/model-manager.test.cjs scripts/model-installation-sync.test.cjs scripts/model-installation-sync-runner.test.cjs scripts/start-all.integration.test.cjs",
+    "test:startup": "node --test scripts/start-all.test.cjs scripts/runtime-contract.test.cjs scripts/model-registry-contract.test.cjs scripts/model-manager.test.cjs scripts/model-installation-sync.test.cjs scripts/model-installation-sync-runner.test.cjs scripts/model-inventory.test.cjs scripts/start-all.integration.test.cjs",
     "dev": "nx run-many --target=serve --projects=frontend,backend --parallel=2",
     "dev:frontend": "nx serve frontend",
     "dev:backend": "nx serve backend",
@@ -59,7 +59,7 @@
     "test:compose": "node scripts/validate-compose.cjs",
     "test:all": "pnpm test && pnpm test:startup && pnpm test:compose",
     "test:all:e2e": "pnpm test:all && pnpm test:e2e",
-    "lint:scripts": "node --check scripts/start-all.cjs && node --check scripts/start-all.test.cjs && node --check scripts/start-all.integration.test.cjs && node --check scripts/runtime-contract.test.cjs && node --check scripts/model-registry-contract.test.cjs && node --check scripts/qualify-model-registry-phase1.cjs && node --check scripts/validate-compose.cjs && node --check scripts/repair-local-db-auth.cjs && node --check scripts/qualify-musicgen-small.cjs && node --check scripts/qualify-musicgen-stereo-small.cjs && node --check scripts/qualify-diffsinger-runtime.cjs && node --check scripts/qualify-diffsinger-inference.cjs && node --check scripts/qualify-diffsinger-job.cjs && node --check scripts/qualify-stable-audio-3-small-music.cjs && node --check scripts/qualify-stable-audio-3-job.cjs && node --check scripts/setup-storybook.cjs && node --check scripts/run-storybook-tests.cjs && node --check scripts/model-manager.cjs && node --check scripts/model-manager.test.cjs && node --check scripts/model-repair.cjs && node --check scripts/sync-model-installations-schema.cjs && node --check scripts/model-installation-sync.cjs && node --check scripts/model-installation-sync.test.cjs && node --check scripts/model-installation-sync-runner.cjs && node --check scripts/model-installation-sync-runner.test.cjs",
+    "lint:scripts": "node --check scripts/start-all.cjs && node --check scripts/start-all.test.cjs && node --check scripts/start-all.integration.test.cjs && node --check scripts/runtime-contract.test.cjs && node --check scripts/model-registry-contract.test.cjs && node --check scripts/qualify-model-registry-phase1.cjs && node --check scripts/validate-compose.cjs && node --check scripts/repair-local-db-auth.cjs && node --check scripts/qualify-musicgen-small.cjs && node --check scripts/qualify-musicgen-stereo-small.cjs && node --check scripts/qualify-diffsinger-runtime.cjs && node --check scripts/qualify-diffsinger-inference.cjs && node --check scripts/qualify-diffsinger-job.cjs && node --check scripts/qualify-stable-audio-3-small-music.cjs && node --check scripts/qualify-stable-audio-3-job.cjs && node --check scripts/setup-storybook.cjs && node --check scripts/run-storybook-tests.cjs && node --check scripts/model-manager.cjs && node --check scripts/model-manager.test.cjs && node --check scripts/model-repair.cjs && node --check scripts/sync-model-installations-schema.cjs && node --check scripts/model-installation-sync.cjs && node --check scripts/model-installation-sync.test.cjs && node --check scripts/model-installation-sync-runner.cjs && node --check scripts/model-installation-sync-runner.test.cjs && node --check scripts/model-inventory.cjs && node --check scripts/model-inventory.test.cjs",
     "lint:compose": "node scripts/validate-compose.cjs",
     "repair:local-auth": "node scripts/repair-local-db-auth.cjs",
     "qualify:musicgen-small": "node scripts/qualify-musicgen-small.cjs",
@@ -85,7 +85,9 @@
     "models:db-schema": "node scripts/sync-model-installations-schema.cjs",
     "models:db-sync": "node scripts/model-installation-sync.cjs",
     "test:model-installations": "node --test scripts/model-installation-sync.test.cjs",
-    "test:model-installation-runner": "node --test scripts/model-installation-sync-runner.test.cjs"
+    "test:model-installation-runner": "node --test scripts/model-installation-sync-runner.test.cjs",
+    "models:inventory": "node scripts/model-inventory.cjs",
+    "test:model-inventory": "node --test scripts/model-inventory.test.cjs"
   },
   "keywords": [],
   "author": "",
