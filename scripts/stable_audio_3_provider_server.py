@@ -103,9 +103,13 @@ class StableAudioRuntime:
                 or "authorized" in message.lower()
             ):
                 raise RuntimeError(
-                    "Stable Audio 3 model access failed. Accept the gated "
-                    "stabilityai/stable-audio-3-small-music terms on Hugging "
-                    "Face and configure HUGGINGFACE_HUB_TOKEN in Harmonia."
+                    "Stable Audio 3 model access was denied by Hugging Face. "
+                    "Sign in to the Hugging Face account that owns this token, "
+                    "open stabilityai/stable-audio-3-small-music, and accept "
+                    "the gated-model terms. The token must also have read "
+                    "permission for gated repositories. Harmonia accepts "
+                    "HF_TOKEN, HUGGINGFACE_API_KEY, HUGGING_FACE_HUB_TOKEN, "
+                    "or HUGGINGFACE_HUB_TOKEN."
                 ) from exc
             raise
 
