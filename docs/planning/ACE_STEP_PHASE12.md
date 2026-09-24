@@ -1,6 +1,6 @@
 # Phase 12 ACE-Step 1.5 Local Provider
 
-**Status:** Phase 12A and 12B complete and locally qualified; Phase 12C operational promotion/runtime selection implemented, awaiting local qualification  
+**Status:** Phase 12A, 12B, and 12C complete and locally qualified; Phase 12D real generation integration in progress  
 **Date:** September 24, 2026  
 **Primary target:** `acestep-v15-turbo-06b`  
 **Reference GPU:** NVIDIA GeForce RTX 3080, 10 GB VRAM  
@@ -225,6 +225,26 @@ valid recovery message because it expected only the fresh-load message.
 Continuation qualification therefore starts from a deliberately stopped ACE-Step
 provider. This makes the `/v1/init` load path deterministic while preserving the
 separately proven backend-restart recovery path.
+
+## Phase 12C local qualification result
+
+Qualified locally on September 24, 2026.
+
+Observed behavior:
+
+- canonical operational payload deep-verified 2/2 with exact pinned revisions;
+- Mongo installation metadata synchronized both ACE-Step physical artifacts;
+- live catalog on the RTX 3080 reported ACE-Step verified, recommended, and selectable;
+- deterministic fresh provider boot completed successfully;
+- official `POST /v1/init` loaded `acestep-v15-turbo` plus `acestep-5Hz-lm-0.6B`;
+- upstream `/health` confirmed `models_initialized=true` and `llm_initialized=true`; 
+- resident load used roughly 5.1 GB of the 10 GB RTX 3080 at the sampled point;
+- qualified weight sizes were unchanged and no `.incomplete` runtime-download files appeared;
+- backend restart recovered the resident ACE-Step runtime without replacing or restarting the provider;
+- same-ready re-selection preserved provider identity and restart count;
+- full startup/model regression finished with 144 passing tests, zero failures,
+  and one intentionally skipped Compose lifecycle test;
+- continuation returned zero and intentionally left ACE-Step resident for Phase 12D.
 
 ## Generation job contract
 
