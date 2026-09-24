@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 const fs = require('node:fs');
 const path = require('node:path');
+const {
+  applyDatabaseRequirement,
+  lifecycleDatabaseState,
+} = require('./model-installation-sync-runner.cjs');
 
 const {
   createInitialization,
@@ -348,7 +352,7 @@ function createRepair(options = {}) {
     warnings: [
       'Repair never modifies deeply verified artifacts.',
       'Forced quarantine replacement is limited to exclusive HTTP-ZIP destinations.',
-      'Shared Hugging Face destructive repair, provider-active checks, locks, and Mongo synchronization remain future work.',
+      'Shared Hugging Face destructive repair, provider-active checks, and locks remain future work; CLI repair synchronizes installation metadata after successful non-dry-run repair.',
     ],
   };
 }
@@ -683,6 +687,18 @@ function main(
   ]);
 
   const result = createRepair(parsed);
+
+  const databaseIntegration =
+    lifecycleDatabaseState(
+      result,
+      parsed
+    );
+
+  applyDatabaseRequirement(
+    result,
+    databaseIntegration
+  );
+
   const reportPath = writeReport(result);
 
   if (parsed.json) {
