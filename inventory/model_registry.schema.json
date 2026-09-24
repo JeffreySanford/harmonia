@@ -1,0 +1,266 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://harmonia.local/schemas/model-registry-v1.json",
+  "title": "Harmonia Model Registry",
+  "description": "Desired-state registry for local model artifacts and application-model bindings.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "modelsRoot",
+    "artifacts",
+    "modelBindings"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "harmonia-model-registry-v1"
+    },
+    "modelsRoot": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/artifact"
+      }
+    },
+    "modelBindings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/modelBinding"
+      }
+    }
+  },
+  "definitions": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifactId",
+        "providerId",
+        "displayName",
+        "runtimeModelIds",
+        "source",
+        "destination",
+        "sharedDestination",
+        "verification",
+        "license",
+        "defaultInstall"
+      ],
+      "properties": {
+        "artifactId": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]*$"
+        },
+        "providerId": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]*$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runtimeModelIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "source": {
+          "$ref": "#/definitions/source"
+        },
+        "destination": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+        },
+        "sharedDestination": {
+          "type": "boolean"
+        },
+        "verification": {
+          "$ref": "#/definitions/verification"
+        },
+        "license": {
+          "$ref": "#/definitions/license"
+        },
+        "defaultInstall": {
+          "type": "boolean"
+        },
+        "estimatedBytes": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "revision",
+        "gated"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "huggingface",
+            "http-zip"
+          ]
+        },
+        "repoId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "revision": {
+          "type": ["string", "null"]
+        },
+        "gated": {
+          "type": "boolean"
+        },
+        "archiveRootName": {
+          "type": ["string", "null"]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "huggingface"
+              }
+            }
+          },
+          "then": {
+            "required": ["repoId"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "http-zip"
+              }
+            }
+          },
+          "then": {
+            "required": ["url"]
+          }
+        }
+      ]
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "strategy",
+        "requiredFiles"
+      ],
+      "properties": {
+        "strategy": {
+          "enum": [
+            "huggingface-snapshot",
+            "checkpoint-config-pair",
+            "required-files",
+            "sha256"
+          ]
+        },
+        "requiredFiles": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "checkpointGlobs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "sha256": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{64}$"
+          }
+        }
+      }
+    },
+    "license": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acceptanceRequired",
+        "redistributionAllowed",
+        "commercialUse",
+        "sourceUrl"
+      ],
+      "properties": {
+        "acceptanceRequired": {
+          "type": "boolean"
+        },
+        "redistributionAllowed": {
+          "type": "boolean"
+        },
+        "commercialUse": {
+          "enum": [
+            "allowed",
+            "restricted",
+            "review-required",
+            "unknown"
+          ]
+        },
+        "sourceUrl": {
+          "type": ["string", "null"],
+          "format": "uri"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "modelBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "modelId",
+        "artifactIds"
+      ],
+      "properties": {
+        "modelId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifactIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
