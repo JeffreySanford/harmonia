@@ -1153,6 +1153,36 @@ test('models:init bare default selection downloads exactly the six default artif
   );
 });
 
+test('models:init explicit optional MusicGen Medium still overrides default selection', () => {
+  const root = tempRoot();
+
+  const result = createInitialization({
+    root,
+    modelIds: ['musicgen-medium'],
+    providerIds: [],
+    artifactIds: [],
+    dryRun: true,
+    platform: 'linux',
+    credential: null,
+    downloadExecutor: () => {
+      throw new Error('dry-run must not execute downloads');
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.selectedModels, 1);
+  assert.equal(result.summary.selectedArtifacts, 1);
+  assert.equal(result.summary.plannedDownloads, 1);
+  assert.equal(
+    result.artifacts[0].artifactId,
+    'musicgen-medium'
+  );
+  assert.equal(
+    result.artifacts[0].action,
+    'would-download'
+  );
+});
+
 test('models:init bare default selection is six cache hits on a complete root', () => {
   const root = tempRoot();
   const registry = loadRegistry();
