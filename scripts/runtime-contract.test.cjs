@@ -1032,6 +1032,14 @@ test('ACE-Step durable generation submits supplied lyrics through async API and 
     component,
     /lyrics: this\.lyrics\.trim\(\)/
   );
+  assert.match(
+    component,
+    /get isAceStepSelected\(\)/
+  );
+  assert.match(
+    component,
+    /ACE-Step requires supplied lyrics for this qualified full-song workflow/
+  );
 
   assert.match(
     compose,
