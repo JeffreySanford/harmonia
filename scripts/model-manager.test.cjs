@@ -1638,7 +1638,7 @@ test('package exposes the conservative model repair command', () => {
 
   assert.equal(
     pkg.scripts['models:repair'],
-    'node scripts/model-manager.cjs repair'
+    'node scripts/model-repair.cjs'
   );
 });
 
