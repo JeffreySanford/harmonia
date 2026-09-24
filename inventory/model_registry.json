@@ -292,9 +292,9 @@
         "gated": false,
         "layout": "local-dir",
         "allowPatterns": [
-          "acestep-v15-turbo/**",
-          "vae/**",
-          "Qwen3-Embedding-0.6B/**"
+          "acestep-v15-turbo/*",
+          "vae/*",
+          "Qwen3-Embedding-0.6B/*"
         ]
       },
       "destination": "ace-step-1.5/checkpoints",
