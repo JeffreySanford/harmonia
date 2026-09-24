@@ -1,6 +1,6 @@
 # Phase 8C Automatic Lifecycle-to-Mongo Synchronization
 
-**Status:** Implemented, awaiting live qualification  
+**Status:** Complete and locally qualified  
 **Date:** September 24, 2026  
 **Commands:** `pnpm models:init`, `pnpm models:repair`
 
@@ -123,6 +123,28 @@ The automatic hook:
 10. live cache-hit init updates Mongo without changing model files;
 11. live repair no-op updates Mongo without changing model files;
 12. full startup/model regression remains green.
+
+## Local qualification result
+
+Qualified locally on September 24, 2026.
+
+Observed behavior:
+
+- successful canonical cache-hit init synchronized Mongo automatically;
+- successful canonical repair no-op synchronized Mongo automatically;
+- dry-run skipped automatic synchronization;
+- alternate recovery-root lifecycle skipped operational Mongo synchronization;
+- Mongo outage remained advisory by default;
+- advisory and required-DB failure messages exposed no Mongo URI, endpoint,
+  hostname, port, token, or credential details;
+- `--require-db` converted synchronization failure into lifecycle exit failure
+  without pretending filesystem work was rolled back;
+- both operational and recovery model roots remained green;
+- live operational inventory remained eight records: six verified and two
+  optional missing Medium artifacts;
+- jobs/users remained unchanged;
+- the full regression suite finished with 127 passing tests, zero failures,
+  and one intentionally skipped Compose lifecycle test.
 
 ## Completion boundary
 
