@@ -15,11 +15,38 @@
 - **Separation of concerns:**: Avoid putting all documents into one collection. Use one collection per aggregate root / entity type.
 - **Auditability & provenance:**: Track `created_by`, `created_at`, `modified_by`, `modified_at`, and `source` metadata on relevant collections.
 
+## Model binary storage boundary
+
+Large model checkpoints are not MongoDB payloads.
+
+Harmonia's local model providers use host-mounted persistent storage under
+`models/`. MongoDB stores metadata, provenance, verification state, and paths
+to those assets.
+
+The detailed model lifecycle is defined in
+[MODEL_STORAGE_AND_REHYDRATION.md](MODEL_STORAGE_AND_REHYDRATION.md), with
+implementation sequencing in
+[planning/MODEL_STORAGE_REHYDRATION_PLAN.md](planning/MODEL_STORAGE_REHYDRATION_PLAN.md).
+
+The intended split is:
+
+```text
+Git inventory/model registry  = desired state and download provenance
+models/                       = large local model binaries
+MongoDB model_installations   = operational installation state
+MongoDB jobs                  = generation workflow state/result metadata
+exports/jobs/                 = generated audio payloads
+```
+
+Do not persist Hugging Face tokens, API keys, checkpoint binaries, or generated
+WAV blobs in MongoDB. Mongo records pointers and metadata for those files.
+
 **Recommended Collections (high-level):**
 
 - **users**: Authentication and account metadata (authentication stored in separate Auth system if possible).
 - **projects**: Logical grouping for models, datasets, runs, collaborators, and permissions.
-- **model_artifacts**: One doc per model snapshot (path, version, checksums, license metadata, source_url, size, tags).
+- **model_artifacts**: One doc per logical model snapshot/provenance record (path, version, checksums, license metadata, source_url, size, tags); this is metadata only, not the checkpoint bytes.
+- **model_installations**: Current local installation state for a model (model/provider/runtime ids, local path, source revision, status, bytes, file count, verification timestamps, and sanitized errors).
 - **datasets**: Dataset manifests and provenance records.
 - **licenses**: Snapshot of license text files and parsed license metadata (spdx, commercial_use boolean, notes).
 - **checksums**: Records of computed checksums per artifact and audit history (useful for re-verification).
@@ -54,7 +81,7 @@
 
 **On-disk vs Object-storage:**
 
-- **Large model files:**: Prefer object storage (S3/GCS) for long-term storage. Keep local copies only for active workers and CI warm caches.
+- **Large model files:**: For the current local workstation architecture, keep provider caches under the persistent host `models/` tree and reconstruct them from committed model source manifests. For future multi-worker/production deployments, object storage or a managed model registry may become the durable upstream mirror. MongoDB continues to store metadata/pointers rather than binary payloads.
 
 **Files to commit (recommended):**
 
