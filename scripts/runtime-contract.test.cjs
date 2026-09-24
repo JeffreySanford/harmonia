@@ -1122,6 +1122,14 @@ test('ACE-Step persistent job qualifier proves lyrics models and downloads', () 
   );
   assert.match(
     qualifier,
+    /HARMONIA_QUALIFY_BACKEND_BASE/
+  );
+  assert.match(
+    qualifier,
+    /HARMONIA_QUALIFY_FRONTEND_BASE/
+  );
+  assert.match(
+    qualifier,
     /lyricsPreserved/
   );
   assert.match(
