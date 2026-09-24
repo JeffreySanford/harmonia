@@ -43,6 +43,39 @@ async function request(url, options = {}, timeoutMs = 30000) {
   return { response, body };
 }
 
+async function waitForLiveCatalog(timeoutMs = 90000) {
+  const started = Date.now();
+  let lastEntry = null;
+
+  while (Date.now() - started < timeoutMs) {
+    try {
+      const catalog = await request(
+        `${backendBase}/api/music/runtime/catalog`,
+        {},
+        5000
+      );
+      const models = Array.isArray(catalog.body) ? catalog.body : [];
+      lastEntry = models.find((entry) => entry?.id === modelId) || null;
+
+      if (
+        lastEntry?.providerId === 'stable-audio-3' &&
+        lastEntry?.selectable === true
+      ) {
+        return lastEntry;
+      }
+    } catch {
+      // The dev backend may be between watcher rebuilds.
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+
+  throw new Error(
+    'Live backend catalog did not reload Stable Audio 3 as selectable within 90 seconds. ' +
+      `Last catalog entry: ${JSON.stringify(lastEntry)}. Restart the backend dev server before retrying.`
+  );
+}
+
 function docker(args, timeout = 20 * 60 * 1000) {
   return execFileSync('docker', args, {
     cwd: root,
@@ -161,6 +194,11 @@ async function main() {
   await request(`${backendBase}/api/__health`);
   await request(frontendBase);
   console.log('Backend and frontend are reachable.');
+
+  const liveCatalogEntry = await waitForLiveCatalog();
+  console.log(
+    `Live backend catalog ready: ${liveCatalogEntry.name || modelId} selectable=${liveCatalogEntry.selectable}`
+  );
 
   const selected = await request(
     `${backendBase}/api/music/runtime/select`,
