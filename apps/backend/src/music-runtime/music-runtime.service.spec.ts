@@ -162,7 +162,7 @@ describe('MusicRuntimeService model readiness ordering', () => {
       error: null,
     };
 
-    installations.markModelUsed.mockResolvedValue();
+    installations.markModelUsed.mockResolvedValue(undefined);
 
     const stop = jest.spyOn(
       service,
