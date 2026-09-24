@@ -2459,7 +2459,14 @@ function printHumanInitialization(result, reportPath) {
     'mutation: ' +
       (result.dryRun
         ? 'none (dry-run)'
-        : 'selected Hugging Face cache only')
+        : 'selected model artifacts')
+  );
+  console.log(
+    'database: ' +
+      (
+        result.databaseIntegration?.status ||
+        'filesystem-only'
+      )
   );
   console.log('');
 
