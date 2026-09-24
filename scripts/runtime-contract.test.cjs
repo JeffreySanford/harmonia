@@ -218,9 +218,11 @@ test('model installation Mongo contract is consistent across fresh, existing, an
       source,
       /modelIds: 1/
     );
-    assert.match(
-      source,
-      /^(?!/)(?![A-Za-z]:/
+    assert.equal(
+      source.includes(
+        "pattern: '^(?!/)(?![A-Za-z]:"
+      ),
+      true
     );
   }
 
@@ -246,23 +248,23 @@ test('model installation Mongo contract is consistent across fresh, existing, an
   );
   assert.match(
     schema,
-    /sourceRevision: string | null/
+    /sourceRevision: string \| null/
   );
   assert.match(
     schema,
-    /verifiedAt: Date | null/
+    /verifiedAt: Date \| null/
   );
   assert.match(
     schema,
-    /installedAt: Date | null/
+    /installedAt: Date \| null/
   );
   assert.match(
     schema,
-    /lastUsedAt: Date | null/
+    /lastUsedAt: Date \| null/
   );
   assert.match(
     schema,
-    /lastError: string | null/
+    /lastError: string \| null/
   );
 
   assert.equal(
