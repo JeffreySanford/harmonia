@@ -13,6 +13,7 @@ import urllib.request
 import uuid
 import zipfile
 from pathlib import Path, PurePosixPath
+from typing import Optional
 
 
 def fail(message):
@@ -118,7 +119,7 @@ def extract_safely(archive: Path, unpack: Path) -> None:
 
 def locate_package_root(
     unpack: Path,
-    archive_root: str | None,
+    archive_root: Optional[str],
 ) -> Path:
     if archive_root:
         preferred = unpack / archive_root
