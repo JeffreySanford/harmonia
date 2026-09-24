@@ -1838,7 +1838,7 @@ function createInitialization(options = {}) {
     normalized.artifactIds.length === 0
   ) {
     fail(
-      'Phase 4 models:init requires an explicit --model, --provider, or --artifact selector.'
+      'models:init requires an explicit --model, --provider, or --artifact selector.'
     );
   }
 
