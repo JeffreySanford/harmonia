@@ -488,7 +488,10 @@ test('DiffSinger persistent jobs execute score-native synthesis', () => {
     catalog,
     /runtimeModelId:\s*'0228_opencpop_ds100_rel'/
   );
-  assert.match(jobs, /\['musicgen', 'diffsinger'\]/);
+  assert.match(
+    jobs,
+    /\[[^\]]*'diffsinger'[^\]]*\]\.includes\(model\.providerId\)/
+  );
   assert.match(jobs, /parseDiffSingerScore/);
   assert.match(jobs, /runDiffSingerClient/);
   assert.match(jobs, /request\.json/);
