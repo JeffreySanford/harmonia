@@ -64,29 +64,39 @@ Status:
 - persistent provider/job path qualified;
 - live runtime recovery and same-ready re-selection qualified.
 
-## Planned local providers
+## Qualified local providers
 
 ### ACE-Step 1.5
 
-Catalog entries:
+Qualified:
 
 - `acestep-v15-turbo-06b`
+
+Status:
+
+- pinned isolated provider runtime;
+- selective registry-managed Turbo + VAE + Qwen + 0.6B LM payload;
+- exact revision markers and deep verification qualified;
+- no 1.7B LM downloaded for the 10 GB workstation profile;
+- operational catalog state verified/selectable;
+- fresh runtime load and resident-model recovery qualified;
+- durable supplied-lyrics generation qualified;
+- 30-second stereo 48 kHz / 16-bit WAV generated successfully;
+- backend and frontend download paths qualified;
+- no runtime model downloads during generation.
+
+Still planned:
+
 - `acestep-v15-sft-06b`
 - larger 1.7B/XL variants
 
-Reference-workstation fit:
+Reference-workstation policy:
 
-- Turbo + 0.6B LM: primary next target;
-- SFT + 0.6B LM: secondary comparison;
-- XL models: not a default 10 GB target.
+- Turbo + 0.6B LM is the qualified default ACE-Step target;
+- SFT + 0.6B LM is the next ACE-Step comparison target;
+- XL models remain outside the default RTX 3080 10 GB profile.
 
-Why next:
-
-- adds full-song vocals + supplied lyrics rather than duplicating the current
-  instrumental providers;
-- upstream supports automatic GPU-tier configuration;
-- upstream provides a supported standalone REST API;
-- the 8–12 GB tier is directly relevant to the RTX 3080 10 GB workstation.
+## Planned local providers
 
 ### DiffRhythm
 
@@ -156,13 +166,12 @@ Hosted paid providers should remain outside the default free/local path.
 
 ## Implementation order
 
-1. ACE-Step 1.5 Turbo + 0.6B LM
-2. ACE-Step 1.5 SFT + 0.6B LM
-3. DiffRhythm v1.2 Base
-4. HeartMuLa 3B lazy-load
-5. SongGeneration Base New
-6. Muse after hardware qualification
-7. higher-memory variants only on appropriate hardware
+1. ACE-Step 1.5 SFT + 0.6B LM
+2. DiffRhythm v1.2 Base
+3. HeartMuLa 3B lazy-load
+4. SongGeneration Base New
+5. Muse after hardware qualification
+6. higher-memory variants only on appropriate hardware
 
 ## Completion definition for a new Harmonia generator
 
