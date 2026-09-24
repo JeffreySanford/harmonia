@@ -146,6 +146,8 @@ pnpm models:verify
 pnpm models:init
 pnpm models:init --model <modelId>
 pnpm models:repair --artifact <artifactId>
+pnpm models:db-schema
+pnpm models:db-sync
 ```
 
 `models:plan` is marker-level and read-only. `models:verify` performs deeper
