@@ -9,6 +9,7 @@ const {
   createPlan,
   createVerification,
   huggingFaceDownloadReposForArtifact,
+  isSafeArchiveMemberPath,
   normalizePinnedHuggingFaceMainRef,
   inspectShallowPathPresence,
   verifyRequiredFile,
@@ -877,20 +878,186 @@ test('models:init never exposes the supplied HF credential in its result', () =>
   assert.equal(JSON.stringify(result).includes(secret), false);
 });
 
-test('models:init partial Phase 4 rejects non-Hugging-Face selections', () => {
-  const root = tempRoot();
-
-  assert.throws(
-    () =>
-      createInitialization({
-        root,
-        modelIds: [],
-        providerIds: ['diffsinger'],
-        artifactIds: [],
-        platform: 'linux',
-      }),
-    /supports Hugging Face artifacts only/
+test('archive member safety rejects ZIP traversal and absolute paths', () => {
+  assert.equal(
+    isSafeArchiveMemberPath(
+      '0228_opencpop_ds100_rel/config.yaml'
+    ),
+    true
   );
+  assert.equal(
+    isSafeArchiveMemberPath(
+      '0228_opencpop_ds100_rel/model_ckpt_steps_160000.ckpt'
+    ),
+    true
+  );
+  assert.equal(isSafeArchiveMemberPath('../escape.txt'), false);
+  assert.equal(
+    isSafeArchiveMemberPath(
+      '0228_opencpop_ds100_rel/../../escape.txt'
+    ),
+    false
+  );
+  assert.equal(isSafeArchiveMemberPath('/absolute/path'), false);
+  assert.equal(isSafeArchiveMemberPath('C:/absolute/path'), false);
+  assert.equal(isSafeArchiveMemberPath('C:\\absolute\\path'), false);
+});
+
+test('models:init downloads and verifies the DiffSinger composite through the HTTP ZIP adapter', () => {
+  const root = tempRoot();
+  const calls = [];
+
+  const result = createInitialization({
+    root,
+    modelIds: [],
+    providerIds: ['diffsinger'],
+    artifactIds: [],
+    platform: 'linux',
+    httpZipDownloadExecutor: (
+      selectedArtifact,
+      modelRoot
+    ) => {
+      calls.push(selectedArtifact.artifactId);
+      createCheckpointFixture(
+        modelRoot,
+        selectedArtifact
+      );
+      return {
+        bytesDownloaded: 1234,
+        operationId:
+          'fixture-' + selectedArtifact.artifactId,
+      };
+    },
+  });
+
+  assert.deepEqual(
+    calls.sort(),
+    [
+      'diffsinger-hifigan-vocoder',
+      'diffsinger-opencpop-acoustic',
+      'diffsinger-xiaoma-pitch-estimator',
+    ].sort()
+  );
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.selectedArtifacts, 3);
+  assert.equal(result.summary.downloaded, 3);
+  assert.equal(result.summary.verified, 3);
+  assert.equal(result.summary.repairRequired, 0);
+
+  for (const row of result.artifacts) {
+    assert.equal(row.state, 'verified');
+    assert.equal(row.action, 'downloaded');
+    assert.equal(row.sourceKind, 'http-zip');
+  }
+});
+
+test('models:init is idempotent for a complete DiffSinger composite', () => {
+  const root = tempRoot();
+  const registry = loadRegistry();
+
+  for (const artifact of registry.artifacts.filter(
+    (candidate) => candidate.providerId === 'diffsinger'
+  )) {
+    createCheckpointFixture(root, artifact);
+  }
+
+  let calls = 0;
+
+  const result = createInitialization({
+    root,
+    modelIds: [],
+    providerIds: ['diffsinger'],
+    artifactIds: [],
+    platform: 'linux',
+    httpZipDownloadExecutor: () => {
+      calls += 1;
+      throw new Error(
+        'verified DiffSinger cache must not download'
+      );
+    },
+  });
+
+  assert.equal(calls, 0);
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.cacheHits, 3);
+  assert.equal(result.summary.downloaded, 0);
+
+  for (const row of result.artifacts) {
+    assert.equal(row.action, 'cache-hit');
+    assert.equal(row.state, 'verified');
+  }
+});
+
+test('models:init refuses to overwrite an incomplete DiffSinger destination', () => {
+  const root = tempRoot();
+  const registry = loadRegistry();
+  const artifact = registry.artifacts.find(
+    (candidate) =>
+      candidate.artifactId ===
+      'diffsinger-opencpop-acoustic'
+  );
+  const destination = path.join(
+    root,
+    artifact.destination
+  );
+
+  ensureFile(
+    path.join(destination, 'config.yaml'),
+    'partial'
+  );
+
+  let calls = 0;
+
+  const result = createInitialization({
+    root,
+    modelIds: [],
+    providerIds: [],
+    artifactIds: [
+      'diffsinger-opencpop-acoustic',
+    ],
+    platform: 'linux',
+    httpZipDownloadExecutor: () => {
+      calls += 1;
+    },
+  });
+
+  assert.equal(calls, 0);
+  assert.equal(result.ok, false);
+  assert.equal(result.summary.repairRequired, 1);
+  assert.equal(
+    result.artifacts[0].action,
+    'repair-required'
+  );
+  assert.equal(
+    fs.readFileSync(
+      path.join(destination, 'config.yaml'),
+      'utf8'
+    ),
+    'partial'
+  );
+});
+
+test('models:init offline blocks missing DiffSinger packages without mutation', () => {
+  const root = tempRoot();
+  let calls = 0;
+
+  const result = createInitialization({
+    root,
+    modelIds: [],
+    providerIds: ['diffsinger'],
+    artifactIds: [],
+    offline: true,
+    platform: 'linux',
+    httpZipDownloadExecutor: () => {
+      calls += 1;
+    },
+  });
+
+  assert.equal(calls, 0);
+  assert.equal(result.ok, false);
+  assert.equal(result.summary.offlineBlocked, 3);
+  assert.equal(result.summary.downloaded, 0);
+  assert.equal(fs.readdirSync(root).length, 0);
 });
 
 test('models:init partial Phase 4 requires an explicit selector', () => {
