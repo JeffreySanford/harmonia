@@ -241,8 +241,25 @@ export class MusicRuntimeService {
         true
       );
 
+      if (provider.id === 'ace-step-1.5') {
+        await this.transition(
+          provider,
+          model,
+          hardware,
+          'loading-model',
+          `Loading ${model.name} and the 0.6B LM…`,
+          95,
+          true
+        );
+
+        await this.prepareProviderModel(
+          provider,
+          model
+        );
+      }
+
       // Give the client enough time to visibly acknowledge the successful
-      // health milestone before the terminal ready notification replaces it.
+      // health/model-load milestone before the terminal ready notification replaces it.
       await new Promise((resolve) => setTimeout(resolve, 800));
 
       await this.transition(
@@ -250,7 +267,9 @@ export class MusicRuntimeService {
         model,
         hardware,
         'ready',
-        `${model.name} runtime is ready. Model weights load on first inference.`,
+        provider.id === 'ace-step-1.5'
+          ? `${model.name} runtime is ready. Turbo and the 0.6B LM are resident.`
+          : `${model.name} runtime is ready. Model weights load on first inference.`,
         100,
         true
       );
@@ -505,6 +524,91 @@ export class MusicRuntimeService {
     });
   }
 
+  private async prepareProviderModel(
+    provider: MusicProviderDefinition,
+    model: MusicModelDefinition
+  ): Promise<void> {
+    if (provider.id !== 'ace-step-1.5') {
+      return;
+    }
+
+    if (!provider.containerName) {
+      throw new Error(
+        `${provider.name} has no container name configured.`
+      );
+    }
+
+    if (model.runtimeModelId !== 'acestep-v15-turbo') {
+      throw new Error(
+        `Unsupported ACE-Step runtime model: ${model.runtimeModelId || 'none'}`
+      );
+    }
+
+    const payload = JSON.stringify({
+      model: model.runtimeModelId,
+      init_llm: true,
+      lm_model_path:
+        'acestep-5Hz-lm-0.6B',
+    });
+
+    const python = [
+      'import json, sys, urllib.request',
+      'payload = sys.argv[1].encode("utf-8")',
+      'req = urllib.request.Request(',
+      '    "http://127.0.0.1:8001/v1/init",',
+      '    data=payload,',
+      '    headers={"Content-Type": "application/json"},',
+      '    method="POST",',
+      ')',
+      'body = urllib.request.urlopen(req, timeout=900).read().decode("utf-8")',
+      'print(body)',
+    ].join('; ');
+
+    const { stdout } = await execFileAsync(
+      'docker',
+      [
+        'exec',
+        provider.containerName,
+        '/opt/ACE-Step-1.5/.venv/bin/python',
+        '-c',
+        python,
+        payload,
+      ],
+      {
+        cwd: process.cwd(),
+        windowsHide: true,
+        timeout: 15 * 60 * 1000,
+        maxBuffer: 16 * 1024 * 1024,
+      }
+    );
+
+    const response = JSON.parse(
+      String(stdout).trim()
+    ) as {
+      code?: number;
+      error?: string | null;
+      data?: {
+        loaded_model?: string | null;
+        loaded_lm_model?: string | null;
+        llm_initialized?: boolean;
+      };
+    };
+
+    if (
+      response.code !== 200 ||
+      response.error ||
+      response.data?.loaded_model !== model.runtimeModelId ||
+      response.data?.loaded_lm_model !== 'acestep-5Hz-lm-0.6B' ||
+      response.data?.llm_initialized !== true
+    ) {
+      throw new Error(
+        `ACE-Step model initialization did not reach the requested resident state: ${JSON.stringify(
+          response
+        )}`
+      );
+    }
+  }
+
   private async recoverProviderRuntimeSnapshot(
     provider: MusicProviderDefinition
   ): Promise<{
@@ -520,7 +624,9 @@ export class MusicRuntimeService {
         ? 8765
         : provider.id === 'stable-audio-3'
           ? 8766
-          : null;
+          : provider.id === 'ace-step-1.5'
+            ? 8001
+            : null;
 
     if (healthPort === null) {
       return { model: null, busy: false };
@@ -529,7 +635,9 @@ export class MusicRuntimeService {
     const pythonExecutable =
       provider.id === 'musicgen'
         ? 'python3.9'
-        : 'python3';
+        : provider.id === 'ace-step-1.5'
+          ? '/opt/ACE-Step-1.5/.venv/bin/python'
+          : 'python3';
 
     try {
       const { stdout } = await execFileAsync(
@@ -552,10 +660,29 @@ export class MusicRuntimeService {
         }
       );
 
-      const snapshot = JSON.parse(String(stdout).trim()) as {
+      const parsed = JSON.parse(String(stdout).trim()) as {
         model?: string | null;
         busy?: boolean;
+        data?: {
+          models_initialized?: boolean;
+          llm_initialized?: boolean;
+          loaded_model?: string | null;
+          loaded_lm_model?: string | null;
+        };
       };
+
+      const snapshot =
+        provider.id === 'ace-step-1.5'
+          ? {
+              model:
+                parsed.data?.models_initialized &&
+                parsed.data?.llm_initialized &&
+                parsed.data?.loaded_lm_model === 'acestep-5Hz-lm-0.6B'
+                  ? parsed.data?.loaded_model || null
+                  : null,
+              busy: false,
+            }
+          : parsed;
 
       const model = snapshot.model
         ? MUSIC_MODELS.find(
