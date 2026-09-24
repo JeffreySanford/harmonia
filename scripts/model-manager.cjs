@@ -300,6 +300,59 @@ function readTextIfExists(filePath) {
   return fs.readFileSync(filePath, 'utf8').trim() || null;
 }
 
+function inspectShallowPathPresence(
+  filePath,
+  fsApi = fs,
+  platform = process.platform
+) {
+  if (fsApi.existsSync(filePath)) {
+    return {
+      present: true,
+      mode: 'direct',
+    };
+  }
+
+  if (platform !== 'win32') {
+    return {
+      present: false,
+      mode: 'missing',
+    };
+  }
+
+  try {
+    fsApi.lstatSync(filePath);
+    return {
+      present: true,
+      mode: 'direct',
+    };
+  } catch (error) {
+    if (!['EACCES', 'EPERM'].includes(error?.code)) {
+      return {
+        present: false,
+        mode: 'missing',
+      };
+    }
+  }
+
+  try {
+    const entries = fsApi.readdirSync(path.dirname(filePath));
+
+    if (entries.includes(path.basename(filePath))) {
+      return {
+        present: true,
+        mode: 'directory-entry',
+      };
+    }
+  } catch {
+    // Treat unreadable/missing parent directories as absent.
+  }
+
+  return {
+    present: false,
+    mode: 'missing',
+  };
+}
+
 function listSnapshotRevisions(repoCacheRoot) {
   const snapshotsRoot = path.join(repoCacheRoot, 'snapshots');
 
@@ -367,9 +420,20 @@ function inspectHuggingFaceArtifact(artifact, artifactRoot) {
   }
 
   const snapshotRoot = path.join(repoCacheRoot, 'snapshots', resolvedRevision);
-  const requiredMissing = (artifact.verification.requiredFiles || []).filter(
-    (relativePath) => !fs.existsSync(path.join(snapshotRoot, relativePath))
+  const requiredChecks = (artifact.verification.requiredFiles || []).map(
+    (relativePath) => ({
+      relativePath,
+      ...inspectShallowPathPresence(
+        path.join(snapshotRoot, relativePath)
+      ),
+    })
   );
+  const requiredMissing = requiredChecks
+    .filter((check) => !check.present)
+    .map((check) => check.relativePath);
+  const directoryEntryOnly = requiredChecks
+    .filter((check) => check.mode === 'directory-entry')
+    .map((check) => check.relativePath);
 
   if (requiredMissing.length > 0) {
     return {
@@ -384,7 +448,13 @@ function inspectHuggingFaceArtifact(artifact, artifactRoot) {
     state: 'verified',
     resolvedRevision,
     detail:
-      'snapshot ' + resolvedRevision + ' contains required files',
+      'snapshot ' +
+      resolvedRevision +
+      ' contains required files' +
+      (directoryEntryOnly.length > 0
+        ? '; Windows host confirmed Linux-created cache link entries without dereferencing: ' +
+          directoryEntryOnly.join(', ')
+        : ''),
   };
 }
 
@@ -860,6 +930,7 @@ module.exports = {
   inspectArtifact,
   inspectCheckpointArtifact,
   inspectHuggingFaceArtifact,
+  inspectShallowPathPresence,
   isSafeRelativePath,
   loadRegistry,
   parseArgs,
