@@ -237,6 +237,8 @@ test('MusicGen Stereo Small qualification requires two-channel audio', () => {
     'node scripts/qualify-musicgen-stereo-small.cjs'
   );
   assert.match(qualifier, /musicgen-stereo-small/);
+  assert.match(qualifier, /HUGGINGFACE_API_KEY/);
+  assert.match(qualifier, /HF_TOKEN/);
   assert.match(qualifier, /wav\.channels !== 2/);
   assert.match(qualifier, /MUSICGEN_STEREO_SMALL_QUALIFICATION_OK/);
 });
@@ -376,6 +378,9 @@ test('Stable Audio 3 Small-Music provider is isolated and qualification verifies
   assert.match(dockerfile, /torchaudio==2\.7\.1/);
   assert.match(dockerfile, /cu126/);
   assert.match(entrypoint, /HF_TOKEN/);
+  assert.match(entrypoint, /HUGGING_FACE_HUB_TOKEN/);
+  assert.match(entrypoint, /HF_TOKEN/);
+  assert.match(entrypoint, /HUGGINGFACE_API_KEY/);
   assert.match(entrypoint, /HUGGING_FACE_HUB_TOKEN/);
   assert.match(entrypoint, /HUGGINGFACE_HUB_TOKEN/);
   assert.match(server, /StableAudioModel\.from_pretrained/);
