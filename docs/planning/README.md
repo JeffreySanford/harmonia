@@ -44,7 +44,9 @@ operational documentation:
 - [Phase 7 Conservative Repair](MODEL_REPAIR_PHASE7.md) — completed
   quarantine-first repair for incomplete model installations.
 - [Phase 8 Model Installation Metadata](MODEL_INSTALLATIONS_PHASE8.md) —
-  validated Mongo operational metadata for filesystem-backed model artifacts.
+  completed validated Mongo schema for filesystem-backed model artifacts.
+- [Phase 8B Installation Synchronization](MODEL_INSTALLATIONS_SYNC_PHASE8B.md) —
+  filesystem-verification projection into idempotent Mongo operational records.
 - [Model Installation MongoDB Schema](MODEL_INSTALLATION_MONGO_SCHEMA.md) —
   artifact-granular operational state, readiness derivation, indexes, error
   sanitization, and migration strategy.
