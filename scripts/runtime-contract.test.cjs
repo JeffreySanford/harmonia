@@ -904,9 +904,19 @@ test('ACE-Step 1.5 provider image is pinned isolated and boot-safe without model
     compose,
     /127\.0\.0\.1:8001\/health/
   );
+  const aceCompose =
+    compose.match(
+      /  ace-step-1\.5:[\s\S]*?(?=\r?\n  stable-audio-3:)/
+    )?.[0] || '';
+
+  assert.ok(
+    aceCompose,
+    'ACE-Step Compose service block is missing'
+  );
+
   assert.doesNotMatch(
-    compose,
-    /ace-step-1\.5:[\s\S]{0,800}ports:/
+    aceCompose,
+    /^\s+ports:/m
   );
 
   assert.match(
