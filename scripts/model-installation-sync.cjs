@@ -323,14 +323,9 @@ async function synchronizeVerification(
       records,
       warning: null,
     };
-  } catch (error) {
+  } catch {
     const message =
-      'MongoDB synchronization unavailable: ' +
-      sanitizeError(
-        error instanceof Error
-          ? error.message
-          : String(error)
-      );
+      'MongoDB synchronization unavailable; filesystem verification remains authoritative.';
 
     if (requireDb) {
       throw new Error(message);
