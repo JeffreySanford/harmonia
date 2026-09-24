@@ -303,3 +303,20 @@ test('qualified composite and gated model contracts are represented explicitly',
     false
   );
 });
+
+test('package exposes the committed Phase 1 model registry qualifier', () => {
+  const pkg = readJson('package.json');
+
+  assert.equal(
+    pkg.scripts['qualify:model-registry-phase1'],
+    'node scripts/qualify-model-registry-phase1.cjs'
+  );
+
+  const qualifier = read('scripts/qualify-model-registry-phase1.cjs');
+
+  assert.match(qualifier, /new Ajv/);
+  assert.match(qualifier, /isSafeRelativePath/);
+  assert.match(qualifier, /Stable Audio qualified snapshot pin = passed/);
+  assert.match(qualifier, /DiffSinger composite binding = passed/);
+  assert.match(qualifier, /MODEL_REGISTRY_PHASE_1_QUALIFICATION_OK/);
+});
