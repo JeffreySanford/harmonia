@@ -1,6 +1,6 @@
 # Phase 12 ACE-Step 1.5 Local Provider
 
-**Status:** Phase 12A, 12B, and 12C complete and locally qualified; Phase 12D real generation integration implemented, awaiting local qualification  
+**Status:** Phase 12 complete and locally qualified end to end  
 **Date:** September 24, 2026  
 **Primary target:** `acestep-v15-turbo-06b`  
 **Reference GPU:** NVIDIA GeForce RTX 3080, 10 GB VRAM  
@@ -316,6 +316,31 @@ Qualification must therefore avoid `python -m py_compile` on the mounted source,
 because `py_compile` may attempt to create `__pycache__` beside the file.
 Use an in-memory `compile(source, path, 'exec')` syntax check instead; the runtime
 client itself only reads the script and writes generated audio under `/workspace/exports`.
+
+## Phase 12D local qualification result
+
+Qualified locally on September 24, 2026 through Harmonia's durable product path.
+
+Observed result:
+
+- authenticated Harmonia test user successfully selected `acestep-v15-turbo-06b`;
+- durable Mongo-backed generation job completed successfully;
+- upstream ACE task id was preserved in job metadata;
+- `thinking=true` exercised `acestep-5Hz-lm-0.6B`;
+- returned DiT metadata identified `acestep-v15-turbo`;
+- supplied lyrics were preserved exactly across Harmonia and ACE-Step;
+- fixed seed `12012026` and explicit 118 BPM request were accepted;
+- generated artifact was a real RIFF/WAVE file;
+- output was stereo, 48 kHz, 16-bit PCM;
+- artifact duration was exactly 30.00 seconds;
+- artifact size was 5,760,078 bytes;
+- measured durable-job generation elapsed time was 24.12 seconds;
+- backend download returned HTTP 200;
+- frontend-proxied download returned HTTP 200;
+- provider remained resident and healthy after generation;
+- both operational model artifacts still deep-verified 2/2 afterward;
+- no runtime model download tempfiles were created;
+- qualification returned zero.
 
 ## Output qualification
 
