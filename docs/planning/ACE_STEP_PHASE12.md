@@ -1,6 +1,6 @@
 # Phase 12 ACE-Step 1.5 Local Provider
 
-**Status:** Phase 12A complete and locally qualified; Phase 12B selective checkpoint acquisition next  
+**Status:** Phase 12A complete and locally qualified; Phase 12B selective checkpoint acquisition implemented, awaiting alternate-root qualification  
 **Date:** September 24, 2026  
 **Primary target:** `acestep-v15-turbo-06b`  
 **Reference GPU:** NVIDIA GeForce RTX 3080, 10 GB VRAM  
@@ -91,6 +91,40 @@ are best modeled as one physical artifact or multiple independently verifiable
 artifacts.
 
 No first-generation surprise download is allowed.
+
+## Phase 12B selective acquisition contract
+
+Harmonia does not use ACE-Step's upstream whole-unified-repository downloader
+for the 10 GB workstation profile. The upstream unified repository also contains
+the 1.7B LM, which is outside the intended first qualification payload.
+
+The registry now binds `acestep-v15-turbo-06b` to two optional physical artifacts:
+
+1. `acestep-v15-turbo-core`
+   - repository: `ACE-Step/Ace-Step1.5`;
+   - pinned revision: `19671f406d603126926c1b7e2adc169acbcade22`;
+   - direct local-dir destination: `ace-step-1.5/checkpoints`;
+   - allowed subtrees only:
+     - `acestep-v15-turbo/**`;
+     - `vae/**`;
+     - `Qwen3-Embedding-0.6B/**`.
+2. `acestep-5hz-lm-06b`
+   - repository: `ACE-Step/acestep-5Hz-lm-0.6B`;
+   - pinned revision: `f802b6dfe8dd4db180c6bf1a45669a303130de3d`;
+   - direct local-dir destination:
+     `ace-step-1.5/checkpoints/acestep-5Hz-lm-0.6B`.
+
+The registry source remains `kind: huggingface`; `layout: local-dir` is the
+new storage modifier. Existing MusicGen and Stable Audio cache-layout behavior
+is unchanged.
+
+Each local-dir artifact receives a `.harmonia-revision` marker only after its
+download completes. Deep verification requires that pinned marker plus explicit
+non-empty runtime files.
+
+Both ACE-Step artifacts remain `defaultInstall: false` until runtime/inference
+qualification is complete. Bare `models:init` therefore remains the existing
+four logical defaults / six physical artifacts.
 
 ## Verification
 
