@@ -136,6 +136,21 @@ Observed behavior:
 The remaining Phase 9 evidence is a controlled live API selection proving
 `lastUsedAt` advances and same-ready re-selection does not restart the provider.
 
+## Stable Audio provider recovery
+
+The live Phase 9 qualification discovered a healthy Stable Audio 3 provider
+already running. The qualification correctly refused to disturb it.
+
+To make the live proof safe against that real state, runtime ownership recovery
+now reads Stable Audio's existing `/health` contract on port 8766 and maps its
+resident `small-music` runtime model back to the logical
+`stable-audio-3-small-music` catalog entry.
+
+A subsequent isolated-backend live proof may use the already-running Stable Audio
+provider only when it is idle and `small-music` is already resident. In that case
+the same-ready fast path updates `lastUsedAt` without image reconciliation, Compose
+startup, container replacement, or GPU ownership changes.
+
 ## Completion boundary
 
 Phase 9 is complete when provider selection cannot start an unverified model,
