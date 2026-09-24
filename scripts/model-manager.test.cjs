@@ -1278,9 +1278,9 @@ test('models:init selectively initializes the ACE-Step Turbo 0.6B composite', ()
   assert.deepEqual(
     core.allowPatterns,
     [
-      'acestep-v15-turbo/**',
-      'vae/**',
-      'Qwen3-Embedding-0.6B/**',
+      'acestep-v15-turbo/*',
+      'vae/*',
+      'Qwen3-Embedding-0.6B/*',
     ]
   );
   assert.equal(
