@@ -30,9 +30,15 @@ operational documentation:
 - [Phase 2 Model Plan Semantics](MODEL_PLAN_PHASE2.md) — completed marker-level
   cache inspection, state/action definitions, optional-model policy, and local
   qualification evidence for `pnpm models:plan`.
-- [Phase 3 Model Verify Semantics](MODEL_VERIFY_PHASE3.md) — deep, read-only local
-  verification contract for cache links, required files, sizes, revisions, and
-  provider-specific evidence.
+- [Phase 3 Model Verify Semantics](MODEL_VERIFY_PHASE3.md) — completed deep,
+  read-only local verification for cache links, required files, sizes,
+  revisions, and provider-specific evidence.
+- [Phase 4 Hugging Face Initialization](MODEL_HF_INIT_PHASE4.md) — completed
+  alternate-root recovery for MusicGen Small/Stereo Small and Stable Audio 3,
+  including offline provider-load qualification.
+- [Phase 5 DiffSinger Initialization](MODEL_DIFFSINGER_INIT_PHASE5.md) — staged,
+  path-safe HTTP-ZIP recovery contract for the acoustic, pitch-estimator, and
+  HiFi-GAN packages.
 - [Model Installation MongoDB Schema](MODEL_INSTALLATION_MONGO_SCHEMA.md) —
   artifact-granular operational state, readiness derivation, indexes, error
   sanitization, and migration strategy.
