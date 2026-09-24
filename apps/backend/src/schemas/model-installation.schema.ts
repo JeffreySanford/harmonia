@@ -22,15 +22,12 @@ export type ModelInstallationSourceKind =
 export class ModelInstallation {
   @Prop({
     required: true,
-    unique: true,
-    index: true,
     trim: true,
   })
   artifactId: string;
 
   @Prop({
     required: true,
-    index: true,
     trim: true,
   })
   providerId: string;
@@ -39,7 +36,6 @@ export class ModelInstallation {
     type: [String],
     required: true,
     default: [],
-    index: true,
   })
   modelIds: string[];
 
@@ -84,7 +80,6 @@ export class ModelInstallation {
       'unavailable',
       'failed',
     ],
-    index: true,
   })
   status: ModelInstallationStatus;
 
@@ -111,7 +106,6 @@ export class ModelInstallation {
   @Prop({
     type: Date,
     default: null,
-    index: true,
   })
   verifiedAt: Date | null;
 
