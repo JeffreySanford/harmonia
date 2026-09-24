@@ -1925,10 +1925,14 @@ function createInitialization(options = {}) {
       missingRuntimeReposBefore.length === 0
     ) {
       const normalizedRef =
-        normalizePinnedHuggingFaceMainRef(
-          artifact,
-          modelRoot
-        );
+        isHuggingFace
+          ? normalizePinnedHuggingFaceMainRef(
+              artifact,
+              modelRoot
+            )
+          : {
+              changed: false,
+            };
 
       return {
         ...base,
@@ -1946,7 +1950,11 @@ function createInitialization(options = {}) {
       };
     }
 
-    if (artifact.source.gated && !credential) {
+    if (
+      isHuggingFace &&
+      artifact.source.gated &&
+      !credential
+    ) {
       return {
         ...base,
         state: before.state,
