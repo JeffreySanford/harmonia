@@ -1716,6 +1716,18 @@ function verifyArtifact(artifact, modelRoot, options = {}) {
     artifact.destination
   );
 
+  if (
+    isHuggingFaceLocalDirArtifact(
+      artifact
+    )
+  ) {
+    return verifyHuggingFaceLocalDirArtifact(
+      artifact,
+      artifactRoot,
+      options
+    );
+  }
+
   switch (artifact.verification.strategy) {
     case 'huggingface-snapshot':
       return verifyHuggingFaceArtifact(
@@ -1747,7 +1759,17 @@ function inspectArtifact(artifact, modelRoot, auth) {
   const artifactRoot = safeResolveUnderRoot(modelRoot, artifact.destination);
   let inspection;
 
-  switch (artifact.verification.strategy) {
+  if (
+    isHuggingFaceLocalDirArtifact(
+      artifact
+    )
+  ) {
+    inspection =
+      inspectHuggingFaceLocalDirArtifact(
+        artifact,
+        artifactRoot
+      );
+  } else switch (artifact.verification.strategy) {
     case 'huggingface-snapshot':
       inspection = inspectHuggingFaceArtifact(artifact, artifactRoot);
       break;
