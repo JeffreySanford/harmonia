@@ -1832,21 +1832,40 @@ function createInitialization(options = {}) {
     verbose: Boolean(options.verbose),
   };
 
-  if (
-    normalized.modelIds.length === 0 &&
-    normalized.providerIds.length === 0 &&
-    normalized.artifactIds.length === 0
-  ) {
-    fail(
-      'models:init requires an explicit --model, --provider, or --artifact selector.'
-    );
-  }
+  const explicitSelection =
+    normalized.modelIds.length > 0 ||
+    normalized.providerIds.length > 0 ||
+    normalized.artifactIds.length > 0;
 
   const modelRoot = path.isAbsolute(normalized.root)
     ? normalized.root
     : path.resolve(repoRoot, normalized.root);
-  const bindings = selectBindings(registry, normalized);
-  const artifacts = selectArtifacts(registry, bindings, normalized);
+  let bindings = selectBindings(registry, normalized);
+  let artifacts = selectArtifacts(
+    registry,
+    bindings,
+    normalized
+  );
+
+  if (!explicitSelection) {
+    artifacts = artifacts.filter(
+      (artifact) => artifact.defaultInstall
+    );
+
+    const selectedArtifactIds = new Set(
+      artifacts.map(
+        (artifact) => artifact.artifactId
+      )
+    );
+
+    bindings = bindings.filter(
+      (binding) =>
+        binding.artifactIds.some(
+          (artifactId) =>
+            selectedArtifactIds.has(artifactId)
+        )
+    );
+  }
 
   if (bindings.length === 0 || artifacts.length === 0) {
     fail('Selectors resolved to no model artifacts.');
