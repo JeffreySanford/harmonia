@@ -490,9 +490,25 @@ export class MusicRuntimeService {
     model: MusicModelDefinition | null;
     busy: boolean;
   }> {
-    if (provider.id !== 'musicgen' || !provider.containerName) {
+    if (!provider.containerName) {
       return { model: null, busy: false };
     }
+
+    const healthPort =
+      provider.id === 'musicgen'
+        ? 8765
+        : provider.id === 'stable-audio-3'
+          ? 8766
+          : null;
+
+    if (healthPort === null) {
+      return { model: null, busy: false };
+    }
+
+    const pythonExecutable =
+      provider.id === 'musicgen'
+        ? 'python3.9'
+        : 'python3';
 
     try {
       const { stdout } = await execFileAsync(
@@ -500,11 +516,11 @@ export class MusicRuntimeService {
         [
           'exec',
           provider.containerName,
-          'python3.9',
+          pythonExecutable,
           '-c',
           [
             'import json, urllib.request',
-            "body = urllib.request.urlopen('http://127.0.0.1:8765/health', timeout=3).read().decode('utf-8')",
+            `body = urllib.request.urlopen('http://127.0.0.1:${healthPort}/health', timeout=3).read().decode('utf-8')`,
             'print(body)',
           ].join('; '),
         ],
