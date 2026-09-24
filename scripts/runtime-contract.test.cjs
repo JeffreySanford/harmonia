@@ -301,6 +301,77 @@ test('model installation Mongo contract is consistent across fresh, existing, an
   }
 });
 
+test('runtime model selection enforces filesystem readiness before provider switch and records usage after ready', () => {
+  const service = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+  const readiness = read(
+    'apps/backend/src/music-runtime/model-installation-runtime.service.ts'
+  );
+  const module = read(
+    'apps/backend/src/music-runtime/music-runtime.module.ts'
+  );
+
+  const readinessIndex = service.indexOf(
+    'await this.modelInstallations.assertModelReady(model.id)'
+  );
+  const stopIndex = service.indexOf(
+    'await this.stopCurrentRuntime()'
+  );
+  const imageIndex = service.indexOf(
+    'await this.ensureProviderImage(provider, model, hardware)'
+  );
+
+  assert.ok(readinessIndex >= 0);
+  assert.ok(stopIndex > readinessIndex);
+  assert.ok(imageIndex > readinessIndex);
+
+  assert.match(
+    service,
+    /await this\.modelInstallations\.markModelUsed\(model\.id\)/
+  );
+  assert.match(
+    readiness,
+    /model-manager\.cjs/
+  );
+  assert.match(
+    readiness,
+    /'verify'/
+  );
+  assert.match(
+    readiness,
+    /'--model'/
+  );
+  assert.match(
+    readiness,
+    /'--root',[\s\S]*'models'/
+  );
+  assert.match(
+    readiness,
+    /'--offline'/
+  );
+  assert.match(
+    readiness,
+    /modelIds: modelId,[\s\S]*status: 'verified'/
+  );
+  assert.match(
+    readiness,
+    /lastUsedAt: usedAt/
+  );
+  assert.match(
+    module,
+    /MongooseModule\.forFeature/
+  );
+  assert.match(
+    module,
+    /ModelInstallationRuntimeService/
+  );
+  assert.match(
+    module,
+    /ModelInstallationSchema/
+  );
+});
+
 test('backend never falls back to unauthenticated MongoDB access', () => {
   const appModule = read('apps/backend/src/app/app.module.ts');
 
