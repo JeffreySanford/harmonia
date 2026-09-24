@@ -145,6 +145,7 @@ pnpm models:plan
 pnpm models:verify
 pnpm models:init
 pnpm models:init --model <modelId>
+pnpm models:repair --artifact <artifactId>
 ```
 
 `models:plan` is marker-level and read-only. `models:verify` performs deeper
@@ -153,11 +154,15 @@ registry artifacts marked `defaultInstall=true`; explicit selectors may add
 optional models deliberately. Hugging Face and DiffSinger HTTP-ZIP recovery are
 locally qualified against an alternate root.
 
+Conservative repair is now available. Verified artifacts are no-ops; incomplete
+DiffSinger destinations require `--force` before quarantine + replacement.
+Shared Hugging Face cache directories are never destructively quarantined by
+the initial repair implementation.
+
 Planned next:
 
 ```bash
 pnpm models:inventory
-pnpm models:repair
 ```
 
 Ordinary `pnpm start:all --gpu` should never silently download multi-gigabyte
