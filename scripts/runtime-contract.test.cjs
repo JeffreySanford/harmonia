@@ -1080,6 +1080,52 @@ test('ACE-Step durable generation submits supplied lyrics through async API and 
   );
 });
 
+test('ACE-Step persistent job qualifier proves lyrics models and downloads', () => {
+  const qualifier = read(
+    'scripts/qualify-ace-step-job.cjs'
+  );
+  const pkg = JSON.parse(
+    read('package.json')
+  );
+
+  assert.equal(
+    pkg.scripts['qualify:ace-step-job'],
+    'node scripts/qualify-ace-step-job.cjs'
+  );
+  assert.match(
+    qualifier,
+    /acestep-v15-turbo-06b/
+  );
+  assert.match(
+    qualifier,
+    /acestep-v15-turbo/
+  );
+  assert.match(
+    qualifier,
+    /acestep-5Hz-lm-0\.6B/
+  );
+  assert.match(
+    qualifier,
+    /requestedDuration = 30/
+  );
+  assert.match(
+    qualifier,
+    /lyricsPreserved/
+  );
+  assert.match(
+    qualifier,
+    /backend download/
+  );
+  assert.match(
+    qualifier,
+    /frontend download/
+  );
+  assert.match(
+    qualifier,
+    /ACE_STEP_JOB_QUALIFICATION_OK/
+  );
+});
+
 test('music model catalog includes local and higher-capacity disabled tiers', () => {
   const catalog = read(
     'apps/backend/src/music-runtime/music-model.catalog.ts'
