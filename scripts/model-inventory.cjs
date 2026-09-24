@@ -336,6 +336,17 @@ function createInventory(
   );
 }
 
+function portableOutputPath(
+  filePath
+) {
+  return path
+    .relative(
+      repoRoot,
+      filePath
+    )
+    .replace(/\\/g, '/');
+}
+
 function printHuman(
   inventory,
   paths
@@ -392,11 +403,15 @@ function printHuman(
   console.log('');
   console.log(
     'stable=' +
-      paths.stablePath
+      portableOutputPath(
+        paths.stablePath
+      )
   );
   console.log(
     'timestamped=' +
-      paths.timestampedPath
+      portableOutputPath(
+        paths.timestampedPath
+      )
   );
   console.log(
     inventory.ok
@@ -444,9 +459,13 @@ function main(
         {
           ...inventory,
           inventoryPath:
-            paths.stablePath,
+            portableOutputPath(
+              paths.stablePath
+            ),
           reportPath:
-            paths.timestampedPath,
+            portableOutputPath(
+              paths.timestampedPath
+            ),
         },
         null,
         2
@@ -483,6 +502,7 @@ module.exports = {
   containsAbsoluteLocalPath,
   createInventory,
   numericChecks,
+  portableOutputPath,
   sanitizeDetail,
   sourceRevision,
   writeInventoryFiles,
