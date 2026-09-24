@@ -2244,54 +2244,6 @@ function createInitialization(options = {}) {
   };
 }
 
-function createRepairOperationId() {
-  return (
-    'repair-' +
-    new Date().toISOString().replace(/[:.]/g, '-') +
-    '-' +
-    process.pid
-  );
-}
-
-function quarantineArtifactDestination(
-  artifact,
-  modelRoot,
-  operationId = createRepairOperationId()
-) {
-  const source = safeResolveUnderRoot(
-    modelRoot,
-    artifact.destination
-  );
-
-  if (!fs.existsSync(source)) {
-    return null;
-  }
-
-  const relative = path.posix.join(
-    '.quarantine',
-    artifact.artifactId,
-    operationId
-  );
-  const target = safeResolveUnderRoot(
-    modelRoot,
-    relative
-  );
-
-  if (fs.existsSync(target)) {
-    fail(
-      'Repair quarantine destination already exists: ' +
-        relative
-    );
-  }
-
-  fs.mkdirSync(path.dirname(target), {
-    recursive: true,
-  });
-  fs.renameSync(source, target);
-
-  return relative;
-}
-
 function writeReport(result) {
   const reportDir = path.join(repoRoot, 'generated', 'model-manager');
   fs.mkdirSync(reportDir, { recursive: true });
