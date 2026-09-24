@@ -232,6 +232,39 @@ Qualified Angular UI result:
 This completes the DiffSinger phase across runtime, inference, persistent jobs,
 downloads, and the Angular score-generation UI.
 
+### Stable Audio 3 Small-Music qualification result
+
+Stable Audio 3 Small-Music has passed direct local inference qualification on
+the Harmonia development workstation.
+
+Qualified runtime:
+
+- provider image: `harmonia/stable-audio-3:dev`
+- upstream Stable Audio 3 revision:
+  `779434a908193105335fd8d833418603625b2859`
+- runtime model id: `small-music`
+- PyTorch 2.7.1+cu126
+- torchaudio 2.7.1+cu126
+- CUDA available
+- NVIDIA GeForce RTX 3080
+- gated Hugging Face model access confirmed for the configured account
+
+Qualified inference result:
+
+- prompt-to-music generation completed successfully
+- requested duration: 8.00 seconds
+- actual duration: 8.00 seconds
+- stereo output
+- 44.1 kHz sample rate
+- 32-bit IEEE float WAV
+- artifact size: 2,822,488 bytes
+- first qualified generation elapsed time: 84.34 seconds
+- provider remained resident, healthy, and idle after generation
+
+The next qualification boundary is durable `/api/jobs` generation using the
+same persistent provider lifecycle and download contract already used by
+MusicGen and DiffSinger.
+
 ## 3. Google Music Generation: Lyria Is Now Public
 
 When Harmonia was originally designed, Google's higher-end music generation work was not exposed as a normal developer API. That has changed.
