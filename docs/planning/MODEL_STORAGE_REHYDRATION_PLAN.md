@@ -4,6 +4,18 @@
 **Created:** September 23, 2026  
 **Architecture:** [../MODEL_STORAGE_AND_REHYDRATION.md](../MODEL_STORAGE_AND_REHYDRATION.md)
 
+## Supporting planning specifications
+
+This implementation plan is intentionally split from the detailed behavioral
+contracts:
+
+- [MODEL_REGISTRY_DATA_MODEL.md](MODEL_REGISTRY_DATA_MODEL.md) — registry and
+  binding schema.
+- [MODEL_REHYDRATION_FAILURE_RECOVERY.md](MODEL_REHYDRATION_FAILURE_RECOVERY.md)
+  — safe failure/retry/repair semantics.
+- [MODEL_REHYDRATION_ACCEPTANCE_MATRIX.md](MODEL_REHYDRATION_ACCEPTANCE_MATRIX.md)
+  — qualification evidence required by phase and provider.
+
 ## Objective
 
 Create a deterministic, idempotent model lifecycle for Harmonia so every
@@ -357,6 +369,53 @@ pnpm start:all --gpu
 ```
 
 Historical Mongo backups may then be restored when job/user history is needed.
+
+## Dependency graph
+
+```text
+Architecture/docs
+      |
+      v
+Registry schema + bindings
+      |
+      +--------------------+
+      |                    |
+      v                    v
+models:plan           models:verify
+      |                    |
+      +----------+---------+
+                 |
+                 v
+        source adapters
+        /             \
+       v               v
+Hugging Face         HTTP ZIP
+       \               /
+        +------+-------+
+               |
+               v
+          models:init
+               |
+               v
+          models:repair
+               |
+               v
+   Mongo model_installations
+               |
+               v
+      runtime readiness gate
+               |
+               v
+   recovery qualification
+               |
+               v
+ setup/disaster recovery docs
+```
+
+The sequencing is deliberate: read-only planning and verification must exist
+before mutation; mutation must be safe before runtime selection starts relying
+on it; recovery qualification comes only after both filesystem and Mongo
+contracts are stable.
 
 ## Proposed delivery order
 
