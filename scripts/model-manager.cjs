@@ -236,7 +236,9 @@ function wildcardToRegExp(pattern) {
     })
     .join('');
 
-  return new RegExp('^' + escaped + '
+  return new RegExp('^' + escaped + '$');
+}
+
 function inspectCheckpointArtifact(artifact, artifactRoot) {
   if (!fs.existsSync(artifactRoot)) {
     return {
