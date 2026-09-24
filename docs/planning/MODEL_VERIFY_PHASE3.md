@@ -1,6 +1,6 @@
 # Phase 3 Model Verify Semantics
 
-**Status:** Planned  
+**Status:** Complete and locally qualified  
 **Date:** September 24, 2026  
 **Command:** `pnpm models:verify`
 
@@ -256,19 +256,51 @@ unavailable = 0
 No provider generation is required for Phase 3 completion because existing
 runtime qualifications already test real generation separately.
 
+## Local qualification result
+
+Qualified locally on September 24, 2026.
+
+Observed default workstation verification:
+
+```text
+selectedModels=6
+selectedArtifacts=8
+verified=6
+missing=2
+corrupt=0
+unavailable=0
+optionalSkipped=2
+```
+
+Qualification proved:
+
+- MusicGen Small and Stereo Small backing files are non-empty and
+  dereferenceable through read-only Linux container probes on Windows;
+- all three DiffSinger physical artifacts contain readable, non-empty
+  config/checkpoint files;
+- Stable Audio 3 verifies its pinned model config, model weights, bundled
+  T5 config, T5 weights, and tokenizer config;
+- unselected optional MusicGen Medium variants may remain absent;
+- explicitly selected missing optional models fail verification;
+- an empty alternate root fails verification without mutation;
+- invalid selectors return configuration error status 2;
+- the startup regression suite remained green.
+
+`models:verify` is therefore complete. Mutation-capable recovery work now
+moves to the Hugging Face initialization adapter.
+
 ## Completion criterion
 
-Phase 3 is complete when:
+Phase 3 completion criteria are satisfied:
 
-- fixture/regression tests pass;
-- `pnpm models:verify` is package-exposed;
-- verification performs no network or model mutation;
-- real MusicGen Small and Stereo Small backing files verify;
-- real DiffSinger acoustic/pitch/vocoder files verify;
-- real Stable Audio 3 pinned snapshot files verify;
-- Windows HF cache links are verified through a read-only Linux probe rather
-  than accepted from directory presence alone;
-- missing/corrupt/unavailable states remain distinguishable;
-- optional Medium absence does not fail the default run;
-- explicit missing optional selection fails;
-- no secrets appear in output or reports.
+- [x] fixture/regression tests pass;
+- [x] `pnpm models:verify` is package-exposed;
+- [x] verification performs no network or model mutation;
+- [x] real MusicGen Small and Stereo Small backing files verify;
+- [x] real DiffSinger acoustic/pitch/vocoder files verify;
+- [x] real Stable Audio 3 pinned snapshot files verify;
+- [x] Windows HF cache links use a read-only Linux probe;
+- [x] missing/corrupt/unavailable states remain distinguishable;
+- [x] optional Medium absence does not fail the default run;
+- [x] explicit missing optional selection fails;
+- [x] no secrets appear in output or reports.
