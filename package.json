@@ -59,7 +59,7 @@
     "test:compose": "node scripts/validate-compose.cjs",
     "test:all": "pnpm test && pnpm test:startup && pnpm test:compose",
     "test:all:e2e": "pnpm test:all && pnpm test:e2e",
-    "lint:scripts": "node --check scripts/start-all.cjs && node --check scripts/start-all.test.cjs && node --check scripts/start-all.integration.test.cjs && node --check scripts/runtime-contract.test.cjs && node --check scripts/validate-compose.cjs && node --check scripts/repair-local-db-auth.cjs && node --check scripts/qualify-musicgen-small.cjs && node --check scripts/qualify-musicgen-stereo-small.cjs && node --check scripts/qualify-diffsinger-runtime.cjs && node --check scripts/qualify-diffsinger-inference.cjs && node --check scripts/qualify-diffsinger-job.cjs && node --check scripts/qualify-stable-audio-3-small-music.cjs && node --check scripts/setup-storybook.cjs && node --check scripts/run-storybook-tests.cjs",
+    "lint:scripts": "node --check scripts/start-all.cjs && node --check scripts/start-all.test.cjs && node --check scripts/start-all.integration.test.cjs && node --check scripts/runtime-contract.test.cjs && node --check scripts/validate-compose.cjs && node --check scripts/repair-local-db-auth.cjs && node --check scripts/qualify-musicgen-small.cjs && node --check scripts/qualify-musicgen-stereo-small.cjs && node --check scripts/qualify-diffsinger-runtime.cjs && node --check scripts/qualify-diffsinger-inference.cjs && node --check scripts/qualify-diffsinger-job.cjs && node --check scripts/qualify-stable-audio-3-small-music.cjs && node --check scripts/qualify-stable-audio-3-job.cjs && node --check scripts/setup-storybook.cjs && node --check scripts/run-storybook-tests.cjs",
     "lint:compose": "node scripts/validate-compose.cjs",
     "repair:local-auth": "node scripts/repair-local-db-auth.cjs",
     "qualify:musicgen-small": "node scripts/qualify-musicgen-small.cjs",
@@ -73,7 +73,8 @@
     "qualify:wsl-ci": "bash scripts/qualify-wsl-ci.sh",
     "qualify:diffsinger-inference": "node scripts/qualify-diffsinger-inference.cjs",
     "qualify:diffsinger-job": "node scripts/qualify-diffsinger-job.cjs",
-    "qualify:stable-audio-3-small-music": "node scripts/qualify-stable-audio-3-small-music.cjs"
+    "qualify:stable-audio-3-small-music": "node scripts/qualify-stable-audio-3-small-music.cjs",
+    "qualify:stable-audio-3-job": "node scripts/qualify-stable-audio-3-job.cjs"
   },
   "keywords": [],
   "author": "",
