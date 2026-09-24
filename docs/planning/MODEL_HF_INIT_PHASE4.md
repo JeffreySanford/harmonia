@@ -1,6 +1,6 @@
 # Phase 4 Hugging Face Initialization Adapter
 
-**Status:** Planned  
+**Status:** Implemented, awaiting local qualification  
 **Date:** September 24, 2026  
 **Scope:** MusicGen and Stable Audio 3  
 **Future command:** `pnpm models:init`
@@ -9,6 +9,10 @@
 
 Add the first mutation-capable model lifecycle adapter while preserving the
 verified developer cache.
+
+The implementation is now present in `scripts/model-manager.cjs`; qualification
+remains intentionally scoped to alternate roots before any recovery workflow is
+allowed to target the default workstation cache.
 
 Phase 4 is limited to Hugging Face sources. DiffSinger HTTP ZIP recovery,
 MongoDB installation state, and runtime gating remain later work.
