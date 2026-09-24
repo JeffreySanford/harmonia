@@ -372,6 +372,40 @@ test('runtime model selection enforces filesystem readiness before provider swit
   );
 });
 
+test('runtime ownership recovery recognizes resident Stable Audio model state', () => {
+  const service = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+  const provider = read(
+    'scripts/stable_audio_3_provider_server.py'
+  );
+
+  assert.match(
+    service,
+    /provider\.id === 'stable-audio-3'[\s\S]*8766/
+  );
+  assert.match(
+    service,
+    /provider\.id === 'musicgen'[\s\S]*'python3\.9'[\s\S]*'python3'/
+  );
+  assert.match(
+    service,
+    /candidate\.providerId === provider\.id[\s\S]*candidate\.runtimeModelId === snapshot\.model/
+  );
+  assert.match(
+    provider,
+    /"model": self\._model_name/
+  );
+  assert.match(
+    provider,
+    /"busy": self\._busy/
+  );
+  assert.match(
+    provider,
+    /HARMONIA_STABLE_AUDIO_3_PORT", "8766"/
+  );
+});
+
 test('backend never falls back to unauthenticated MongoDB access', () => {
   const appModule = read('apps/backend/src/app/app.module.ts');
 
