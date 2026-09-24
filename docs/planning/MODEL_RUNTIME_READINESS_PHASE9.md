@@ -1,6 +1,6 @@
 # Phase 9 Runtime Readiness and Usage Metadata
 
-**Status:** Implemented, awaiting local qualification  
+**Status:** Core readiness gate locally qualified; live API usage proof pending  
 **Date:** September 24, 2026  
 **Runtime seam:** `MusicRuntimeService.selectModel()`
 
@@ -116,6 +116,25 @@ integration step.
 12. live missing optional Medium model is rejected before provider startup;
 13. live installed model readiness succeeds without modifying model bytes;
 14. full startup/model regression remains green.
+
+## Core readiness qualification result
+
+Qualified locally on September 24, 2026.
+
+Observed behavior:
+
+- backend unit suite: 47 passing tests across 12 suites;
+- backend production build completed successfully;
+- runtime source-order contract proved filesystem readiness before provider stop/image work;
+- MusicGen Small deep readiness verified from the operational model root;
+- DiffSinger composite readiness verified all three physical artifacts;
+- missing optional MusicGen Medium was rejected by deep verification;
+- live Mongo installation bindings contained all three DiffSinger physical artifacts;
+- full startup/model regression finished with 128 passing tests, zero failures, and one intentionally skipped Compose lifecycle test;
+- model bytes remained unchanged.
+
+The remaining Phase 9 evidence is a controlled live API selection proving
+`lastUsedAt` advances and same-ready re-selection does not restart the provider.
 
 ## Completion boundary
 
