@@ -1,0 +1,317 @@
+{
+  "schemaVersion": "harmonia-model-registry-v1",
+  "modelsRoot": "models",
+  "artifacts": [
+    {
+      "artifactId": "musicgen-small",
+      "providerId": "musicgen",
+      "displayName": "MusicGen Small weights",
+      "runtimeModelIds": [
+        "facebook/musicgen-small"
+      ],
+      "source": {
+        "kind": "huggingface",
+        "repoId": "facebook/musicgen-small",
+        "revision": null,
+        "gated": false
+      },
+      "destination": "musicgen/huggingface",
+      "sharedDestination": true,
+      "verification": {
+        "strategy": "huggingface-snapshot",
+        "requiredFiles": [
+          "config.json"
+        ]
+      },
+      "license": {
+        "acceptanceRequired": false,
+        "redistributionAllowed": false,
+        "commercialUse": "restricted",
+        "sourceUrl": "https://huggingface.co/facebook/musicgen-small",
+        "notes": "MusicGen model weights are published under CC-BY-NC 4.0; do not assume commercial use or redistribution is permitted without review."
+      },
+      "defaultInstall": true,
+      "estimatedBytes": null,
+      "notes": "Qualified Harmonia mono MusicGen baseline."
+    },
+    {
+      "artifactId": "musicgen-stereo-small",
+      "providerId": "musicgen",
+      "displayName": "MusicGen Stereo Small weights",
+      "runtimeModelIds": [
+        "facebook/musicgen-stereo-small"
+      ],
+      "source": {
+        "kind": "huggingface",
+        "repoId": "facebook/musicgen-stereo-small",
+        "revision": null,
+        "gated": false
+      },
+      "destination": "musicgen/huggingface",
+      "sharedDestination": true,
+      "verification": {
+        "strategy": "huggingface-snapshot",
+        "requiredFiles": [
+          "config.json"
+        ]
+      },
+      "license": {
+        "acceptanceRequired": false,
+        "redistributionAllowed": false,
+        "commercialUse": "restricted",
+        "sourceUrl": "https://huggingface.co/facebook/musicgen-stereo-small",
+        "notes": "MusicGen model weights are published under CC-BY-NC 4.0; do not assume commercial use or redistribution is permitted without review."
+      },
+      "defaultInstall": true,
+      "estimatedBytes": null,
+      "notes": "Qualified Harmonia stereo MusicGen baseline."
+    },
+    {
+      "artifactId": "musicgen-medium",
+      "providerId": "musicgen",
+      "displayName": "MusicGen Medium weights",
+      "runtimeModelIds": [
+        "facebook/musicgen-medium"
+      ],
+      "source": {
+        "kind": "huggingface",
+        "repoId": "facebook/musicgen-medium",
+        "revision": null,
+        "gated": false
+      },
+      "destination": "musicgen/huggingface",
+      "sharedDestination": true,
+      "verification": {
+        "strategy": "huggingface-snapshot",
+        "requiredFiles": [
+          "config.json"
+        ]
+      },
+      "license": {
+        "acceptanceRequired": false,
+        "redistributionAllowed": false,
+        "commercialUse": "restricted",
+        "sourceUrl": "https://huggingface.co/facebook/musicgen-medium",
+        "notes": "MusicGen model weights are published under CC-BY-NC 4.0; commercial use requires review."
+      },
+      "defaultInstall": false,
+      "estimatedBytes": null,
+      "notes": "Catalog-installed runtime option, but not part of the default 10 GB workstation rehydration set because current guidance expects approximately 16 GB VRAM."
+    },
+    {
+      "artifactId": "musicgen-stereo-medium",
+      "providerId": "musicgen",
+      "displayName": "MusicGen Stereo Medium weights",
+      "runtimeModelIds": [
+        "facebook/musicgen-stereo-medium"
+      ],
+      "source": {
+        "kind": "huggingface",
+        "repoId": "facebook/musicgen-stereo-medium",
+        "revision": null,
+        "gated": false
+      },
+      "destination": "musicgen/huggingface",
+      "sharedDestination": true,
+      "verification": {
+        "strategy": "huggingface-snapshot",
+        "requiredFiles": [
+          "config.json"
+        ]
+      },
+      "license": {
+        "acceptanceRequired": false,
+        "redistributionAllowed": false,
+        "commercialUse": "restricted",
+        "sourceUrl": "https://huggingface.co/facebook/musicgen-stereo-medium",
+        "notes": "MusicGen model weights are published under CC-BY-NC 4.0; commercial use requires review."
+      },
+      "defaultInstall": false,
+      "estimatedBytes": null,
+      "notes": "Catalog-installed runtime option, but not part of the default 10 GB workstation rehydration set because current guidance expects approximately 16 GB VRAM."
+    },
+    {
+      "artifactId": "diffsinger-opencpop-acoustic",
+      "providerId": "diffsinger",
+      "displayName": "DiffSinger OpenCpop acoustic model",
+      "runtimeModelIds": [
+        "0228_opencpop_ds100_rel"
+      ],
+      "source": {
+        "kind": "http-zip",
+        "url": "https://github.com/MoonInTheRiver/DiffSinger/releases/download/pretrain-model/0228_opencpop_ds100_rel.zip",
+        "revision": "pretrain-model/0228_opencpop_ds100_rel",
+        "gated": false,
+        "archiveRootName": "0228_opencpop_ds100_rel"
+      },
+      "destination": "diffsinger/0228_opencpop_ds100_rel",
+      "sharedDestination": false,
+      "verification": {
+        "strategy": "checkpoint-config-pair",
+        "requiredFiles": [
+          "config.yaml"
+        ],
+        "checkpointGlobs": [
+          "model_ckpt_steps_*.ckpt"
+        ]
+      },
+      "license": {
+        "acceptanceRequired": false,
+        "redistributionAllowed": false,
+        "commercialUse": "review-required",
+        "sourceUrl": "https://github.com/MoonInTheRiver/DiffSinger/releases/tag/pretrain-model",
+        "notes": "Preserve upstream model/license terms and review redistribution separately from code licensing."
+      },
+      "defaultInstall": true,
+      "estimatedBytes": null,
+      "notes": "Qualified against the pinned OpenVPI compatibility runtime."
+    },
+    {
+      "artifactId": "diffsinger-xiaoma-pitch-estimator",
+      "providerId": "diffsinger",
+      "displayName": "DiffSinger Xiaoma pitch estimator",
+      "runtimeModelIds": [
+        "0102_xiaoma_pe"
+      ],
+      "source": {
+        "kind": "http-zip",
+        "url": "https://github.com/MoonInTheRiver/DiffSinger/releases/download/pretrain-model/0102_xiaoma_pe.zip",
+        "revision": "pretrain-model/0102_xiaoma_pe",
+        "gated": false,
+        "archiveRootName": "0102_xiaoma_pe"
+      },
+      "destination": "diffsinger/0102_xiaoma_pe",
+      "sharedDestination": false,
+      "verification": {
+        "strategy": "checkpoint-config-pair",
+        "requiredFiles": [
+          "config.yaml"
+        ],
+        "checkpointGlobs": [
+          "model_ckpt_steps_*.ckpt"
+        ]
+      },
+      "license": {
+        "acceptanceRequired": false,
+        "redistributionAllowed": false,
+        "commercialUse": "review-required",
+        "sourceUrl": "https://github.com/MoonInTheRiver/DiffSinger/releases/tag/pretrain-model",
+        "notes": "Preserve upstream model/license terms and review redistribution separately from code licensing."
+      },
+      "defaultInstall": true,
+      "estimatedBytes": null,
+      "notes": "Physical dependency of the qualified DiffSinger acoustic model."
+    },
+    {
+      "artifactId": "diffsinger-hifigan-vocoder",
+      "providerId": "diffsinger",
+      "displayName": "DiffSinger HiFi-GAN vocoder",
+      "runtimeModelIds": [
+        "0109_hifigan_bigpopcs_hop128"
+      ],
+      "source": {
+        "kind": "http-zip",
+        "url": "https://github.com/MoonInTheRiver/DiffSinger/releases/download/pretrain-model/0109_hifigan_bigpopcs_hop128.zip",
+        "revision": "pretrain-model/0109_hifigan_bigpopcs_hop128",
+        "gated": false,
+        "archiveRootName": "0109_hifigan_bigpopcs_hop128"
+      },
+      "destination": "diffsinger/hifigan",
+      "sharedDestination": false,
+      "verification": {
+        "strategy": "checkpoint-config-pair",
+        "requiredFiles": [
+          "config.yaml"
+        ],
+        "checkpointGlobs": [
+          "model_ckpt_steps_*.ckpt"
+        ]
+      },
+      "license": {
+        "acceptanceRequired": false,
+        "redistributionAllowed": false,
+        "commercialUse": "review-required",
+        "sourceUrl": "https://github.com/MoonInTheRiver/DiffSinger/releases/tag/pretrain-model",
+        "notes": "Preserve upstream model/license terms and review redistribution separately from code licensing."
+      },
+      "defaultInstall": true,
+      "estimatedBytes": null,
+      "notes": "Physical vocoder dependency of the qualified DiffSinger model."
+    },
+    {
+      "artifactId": "stable-audio-3-small-music",
+      "providerId": "stable-audio-3",
+      "displayName": "Stable Audio 3 Small-Music weights",
+      "runtimeModelIds": [
+        "small-music"
+      ],
+      "source": {
+        "kind": "huggingface",
+        "repoId": "stabilityai/stable-audio-3-small-music",
+        "revision": null,
+        "gated": true
+      },
+      "destination": "stable-audio-3/huggingface",
+      "sharedDestination": true,
+      "verification": {
+        "strategy": "huggingface-snapshot",
+        "requiredFiles": [
+          "model_config.json"
+        ]
+      },
+      "license": {
+        "acceptanceRequired": true,
+        "redistributionAllowed": false,
+        "commercialUse": "review-required",
+        "sourceUrl": "https://huggingface.co/stabilityai/stable-audio-3-small-music",
+        "notes": "Hugging Face gated access must be accepted by the token-owning account; redistribution and commercial use require license review."
+      },
+      "defaultInstall": true,
+      "estimatedBytes": null,
+      "notes": "Qualified on NVIDIA GeForce RTX 3080 with native 44.1 kHz stereo 32-bit float output."
+    }
+  ],
+  "modelBindings": [
+    {
+      "modelId": "musicgen-small",
+      "artifactIds": [
+        "musicgen-small"
+      ]
+    },
+    {
+      "modelId": "musicgen-stereo-small",
+      "artifactIds": [
+        "musicgen-stereo-small"
+      ]
+    },
+    {
+      "modelId": "musicgen-medium",
+      "artifactIds": [
+        "musicgen-medium"
+      ],
+      "notes": "Known runtime option; excluded from the default workstation download set because of VRAM requirements."
+    },
+    {
+      "modelId": "musicgen-stereo-medium",
+      "artifactIds": [
+        "musicgen-stereo-medium"
+      ],
+      "notes": "Known runtime option; excluded from the default workstation download set because of VRAM requirements."
+    },
+    {
+      "modelId": "diffsinger-acoustic-hifigan",
+      "artifactIds": [
+        "diffsinger-opencpop-acoustic",
+        "diffsinger-xiaoma-pitch-estimator",
+        "diffsinger-hifigan-vocoder"
+      ],
+      "notes": "Composite runtime model: acoustic model, pitch estimator, and vocoder must all verify."
+    },
+    {
+      "modelId": "stable-audio-3-small-music",
+      "artifactIds": [
+        "stable-audio-3-small-music"
+      ]
+    }
+  ]
+}
