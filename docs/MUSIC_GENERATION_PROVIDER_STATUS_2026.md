@@ -213,10 +213,24 @@ Qualified persistent-job result:
 - backend download HTTP 200
 - frontend-proxied download HTTP 200
 
-The Angular music-generation surface is being separated into provider-native forms:
+The Angular music-generation surface is separated into provider-native forms:
 MusicGen retains prompt/duration controls, while DiffSinger exposes lyrics/text,
 notes, and note durations. This avoids treating score-based singing synthesis as
 prompt-to-music generation.
+
+Qualified Angular UI result:
+
+- provider-specific DiffSinger score form renders successfully
+- frontend lint completed with warnings only and zero errors
+- 52 frontend unit tests passed
+- Angular production build passed
+- Storybook static build passed
+- both Storybook browser suites passed
+- 10 Storybook interaction tests passed
+- DiffSinger score interaction dispatches a real persistent generation job contract
+
+This completes the DiffSinger phase across runtime, inference, persistent jobs,
+downloads, and the Angular score-generation UI.
 
 ## 3. Google Music Generation: Lyria Is Now Public
 
