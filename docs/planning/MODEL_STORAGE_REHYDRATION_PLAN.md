@@ -33,7 +33,8 @@ As of September 24, 2026:
   - `pnpm models:plan`
   - `pnpm test:model-manager`
   - [MODEL_PLAN_PHASE2.md](MODEL_PLAN_PHASE2.md)
-- Phase 3 read-only deep verification: **next**.
+- Phase 3 read-only deep verification: **complete and locally qualified**.
+- Phase 4 Hugging Face initialization adapter: **next**.
 - Later download/Mongo/runtime/recovery phases: **not started**.
 
 Phase 1 intentionally includes all application models currently marked
@@ -469,7 +470,7 @@ This order deliberately implements read-only visibility before mutation.
 - [x] `models:plan` identifies missing/cached models without mutation.
 - [ ] `models:init` can populate an empty alternate root.
 - [ ] `models:init` is idempotent on a complete root.
-- [ ] `models:verify` performs no downloads.
+- [x] `models:verify` performs no downloads.
 - [ ] `models:repair` fixes an incomplete root without deleting unrelated data.
 - [ ] Gated model failures are explicit and secret-safe.
 - [ ] Mongo records installation state and provenance.
