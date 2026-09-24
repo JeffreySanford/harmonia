@@ -11,35 +11,6 @@ const {
   wildcardToRegExp,
 } = require('./model-manager.cjs');
 
-const HF_ENV_KEYS = [
-  'HF_TOKEN',
-  'HUGGINGFACE_API_KEY',
-  'HUGGING_FACE_HUB_TOKEN',
-  'HUGGINGFACE_HUB_TOKEN',
-];
-
-function withoutHuggingFaceEnv(fn) {
-  const saved = new Map();
-
-  for (const key of HF_ENV_KEYS) {
-    saved.set(key, process.env[key]);
-    delete process.env[key];
-  }
-
-  try {
-    return fn();
-  } finally {
-    for (const key of HF_ENV_KEYS) {
-      const value = saved.get(key);
-      if (value === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = value;
-      }
-    }
-  }
-}
-
 function tempRoot() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'harmonia-model-plan-'));
 }
@@ -103,14 +74,13 @@ test('models:plan reports a complete default cache without mutation actions', ()
   const root = tempRoot();
   createDefaultInstallFixture(root);
 
-  const result = withoutHuggingFaceEnv(() =>
-    createPlan({
-      root,
-      modelIds: [],
-      providerIds: [],
-      artifactIds: [],
-    })
-  );
+  const result = createPlan({
+    root,
+    modelIds: [],
+    providerIds: [],
+    artifactIds: [],
+    auth: { huggingFace: false },
+  });
 
   assert.equal(result.command, 'plan');
   assert.equal(result.summary.selectedModels, 6);
@@ -138,14 +108,13 @@ test('models:plan reports a complete default cache without mutation actions', ()
 test('models:plan identifies missing default artifacts and gated authentication', () => {
   const root = tempRoot();
 
-  const result = withoutHuggingFaceEnv(() =>
-    createPlan({
-      root,
-      modelIds: [],
-      providerIds: [],
-      artifactIds: [],
-    })
-  );
+  const result = createPlan({
+    root,
+    modelIds: [],
+    providerIds: [],
+    artifactIds: [],
+    auth: { huggingFace: false },
+  });
 
   assert.equal(result.summary.missing, 8);
   assert.equal(result.summary.downloadsRequired, 5);
@@ -206,14 +175,13 @@ test('provider selection resolves DiffSinger composite artifacts', () => {
 test('explicit gated artifact selection reports authentication before download', () => {
   const root = tempRoot();
 
-  const result = withoutHuggingFaceEnv(() =>
-    createPlan({
-      root,
-      modelIds: [],
-      providerIds: [],
-      artifactIds: ['stable-audio-3-small-music'],
-    })
-  );
+  const result = createPlan({
+    root,
+    modelIds: [],
+    providerIds: [],
+    artifactIds: ['stable-audio-3-small-music'],
+    auth: { huggingFace: false },
+  });
 
   assert.equal(result.summary.selectedModels, 1);
   assert.equal(result.summary.selectedArtifacts, 1);
