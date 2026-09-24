@@ -27,9 +27,12 @@ operational documentation:
 - [Model Manager CLI Specification](MODEL_MANAGER_CLI_SPEC.md) — exact command,
   selector, dry-run/offline, reporting, locking, authentication, and exit-code
   contract.
-- [Phase 2 Model Plan Semantics](MODEL_PLAN_PHASE2.md) — marker-level cache
-  inspection, state/action definitions, optional-model policy, and local
-  qualification criteria for `pnpm models:plan`.
+- [Phase 2 Model Plan Semantics](MODEL_PLAN_PHASE2.md) — completed marker-level
+  cache inspection, state/action definitions, optional-model policy, and local
+  qualification evidence for `pnpm models:plan`.
+- [Phase 3 Model Verify Semantics](MODEL_VERIFY_PHASE3.md) — deep, read-only local
+  verification contract for cache links, required files, sizes, revisions, and
+  provider-specific evidence.
 - [Model Installation MongoDB Schema](MODEL_INSTALLATION_MONGO_SCHEMA.md) —
   artifact-granular operational state, readiness derivation, indexes, error
   sanitization, and migration strategy.
