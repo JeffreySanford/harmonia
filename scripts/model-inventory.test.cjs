@@ -413,3 +413,32 @@ test('inventory writer produces stable and timestamped identical JSON files', ()
     );
   }
 });
+
+
+test('package exposes portable inventory commands', () => {
+  const pkg = JSON.parse(
+    fs.readFileSync(
+      path.join(
+        __dirname,
+        '..',
+        'package.json'
+      ),
+      'utf8'
+    )
+  );
+
+  assert.equal(
+    pkg.scripts['models:inventory'],
+    'node scripts/model-inventory.cjs'
+  );
+
+  assert.equal(
+    pkg.scripts['test:model-inventory'],
+    'node --test scripts/model-inventory.test.cjs'
+  );
+
+  assert.match(
+    pkg.scripts['test:startup'],
+    /scripts\/model-inventory\.test\.cjs/
+  );
+});
