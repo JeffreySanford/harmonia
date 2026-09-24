@@ -41,8 +41,10 @@ operational documentation:
   HiFi-GAN packages, including offline boot and real recovered-model inference.
 - [Phase 6 Default Init Orchestration](MODEL_DEFAULT_INIT_PHASE6.md) — completed
   selector-free default-set initialization with gated prerequisite preflight.
-- [Phase 7 Conservative Repair](MODEL_REPAIR_PHASE7.md) — quarantine-first
-  repair contract for incomplete model installations.
+- [Phase 7 Conservative Repair](MODEL_REPAIR_PHASE7.md) — completed
+  quarantine-first repair for incomplete model installations.
+- [Phase 8 Model Installation Metadata](MODEL_INSTALLATIONS_PHASE8.md) —
+  validated Mongo operational metadata for filesystem-backed model artifacts.
 - [Model Installation MongoDB Schema](MODEL_INSTALLATION_MONGO_SCHEMA.md) —
   artifact-granular operational state, readiness derivation, indexes, error
   sanitization, and migration strategy.
