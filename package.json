@@ -78,7 +78,8 @@
     "test:model-registry": "node --test scripts/model-registry-contract.test.cjs",
     "qualify:model-registry-phase1": "node scripts/qualify-model-registry-phase1.cjs",
     "models:plan": "node scripts/model-manager.cjs plan",
-    "test:model-manager": "node --test scripts/model-manager.test.cjs"
+    "test:model-manager": "node --test scripts/model-manager.test.cjs",
+    "models:verify": "node scripts/model-manager.cjs verify"
   },
   "keywords": [],
   "author": "",
