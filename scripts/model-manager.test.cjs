@@ -7,6 +7,7 @@ const path = require('node:path');
 const {
   createInitialization,
   createPlan,
+  createRepair,
   createVerification,
   huggingFaceDownloadReposForArtifact,
   isSafeArchiveMemberPath,
@@ -89,6 +90,37 @@ function createCheckpointFixture(root, artifact) {
     const filename = pattern.replace('*', '160000');
     ensureFile(path.join(base, filename));
   }
+}
+
+function listTree(root) {
+  if (!fs.existsSync(root)) {
+    return [];
+  }
+
+  const output = [];
+
+  function walk(directory, prefix = '') {
+    for (const entry of fs.readdirSync(directory, {
+      withFileTypes: true,
+    })) {
+      const absolute = path.join(directory, entry.name);
+      const relative = prefix
+        ? path.join(prefix, entry.name)
+        : entry.name;
+
+      output.push(
+        (entry.isDirectory() ? 'd:' : 'f:') +
+          relative.replace(/\\/g, '/')
+      );
+
+      if (entry.isDirectory()) {
+        walk(absolute, relative);
+      }
+    }
+  }
+
+  walk(root);
+  return output.sort();
 }
 
 function createDefaultInstallFixture(root) {
@@ -1302,6 +1334,296 @@ test('models:init bare dry-run exposes five downloads plus gated authentication 
   assert.equal(result.summary.authenticationRequired, 1);
   assert.equal(result.summary.prerequisiteBlocked, 0);
   assert.equal(fs.readdirSync(root).length, 0);
+});
+
+
+test('models:repair leaves a verified default fixture untouched', () => {
+  const root = tempRoot();
+  createDefaultInstallFixture(root);
+  const before = listTree(root);
+  let calls = 0;
+
+  const result = createRepair({
+    root,
+    modelIds: [],
+    providerIds: [],
+    artifactIds: [],
+    platform: 'linux',
+    credential: null,
+    downloadExecutor: () => {
+      calls += 1;
+    },
+  });
+
+  assert.equal(calls, 0);
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.selectedArtifacts, 6);
+  assert.equal(result.summary.verifiedNoop, 6);
+  assert.equal(result.summary.repaired, 0);
+  assert.deepEqual(listTree(root), before);
+
+  for (const row of result.artifacts) {
+    assert.equal(row.action, 'none');
+    assert.equal(row.afterState, 'verified');
+  }
+});
+
+test('models:repair restores an absent public HF artifact', () => {
+  const root = tempRoot();
+  let calls = 0;
+
+  const result = createRepair({
+    root,
+    modelIds: ['musicgen-small'],
+    providerIds: [],
+    artifactIds: [],
+    platform: 'linux',
+    credential: null,
+    huggingFaceDownloadExecutor: (
+      artifact,
+      modelRoot
+    ) => {
+      calls += 1;
+      createHuggingFaceFixture(
+        modelRoot,
+        artifact
+      );
+      createMusicGenDependencyFixtures(
+        modelRoot,
+        artifact
+      );
+      return {
+        repos:
+          huggingFaceDownloadReposForArtifact(
+            artifact
+          ).map((repoId) => ({ repoId })),
+      };
+    },
+  });
+
+  assert.equal(calls, 1);
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.repaired, 1);
+  assert.equal(result.artifacts[0].action, 'repaired');
+  assert.equal(result.artifacts[0].beforeState, 'missing');
+  assert.equal(result.artifacts[0].afterState, 'verified');
+});
+
+test('models:repair requires force for an incomplete DiffSinger destination', () => {
+  const root = tempRoot();
+  const registry = loadRegistry();
+  const artifact = registry.artifacts.find(
+    (candidate) =>
+      candidate.artifactId ===
+      'diffsinger-opencpop-acoustic'
+  );
+  const destination = path.join(
+    root,
+    artifact.destination
+  );
+
+  ensureFile(
+    path.join(destination, 'config.yaml'),
+    'repair-preservation-sentinel'
+  );
+
+  let calls = 0;
+
+  const result = createRepair({
+    root,
+    modelIds: [],
+    providerIds: [],
+    artifactIds: [
+      artifact.artifactId,
+    ],
+    platform: 'linux',
+    httpZipDownloadExecutor: () => {
+      calls += 1;
+    },
+  });
+
+  assert.equal(calls, 0);
+  assert.equal(result.ok, false);
+  assert.equal(result.summary.forceRequired, 1);
+  assert.equal(result.artifacts[0].action, 'force-required');
+  assert.equal(
+    fs.readFileSync(
+      path.join(destination, 'config.yaml'),
+      'utf8'
+    ),
+    'repair-preservation-sentinel'
+  );
+});
+
+test('models:repair force quarantines and replaces an incomplete DiffSinger destination', () => {
+  const root = tempRoot();
+  const registry = loadRegistry();
+  const artifact = registry.artifacts.find(
+    (candidate) =>
+      candidate.artifactId ===
+      'diffsinger-opencpop-acoustic'
+  );
+  const destination = path.join(
+    root,
+    artifact.destination
+  );
+
+  ensureFile(
+    path.join(destination, 'config.yaml'),
+    'repair-quarantine-sentinel'
+  );
+
+  let calls = 0;
+
+  const result = createRepair({
+    root,
+    modelIds: [],
+    providerIds: [],
+    artifactIds: [
+      artifact.artifactId,
+    ],
+    force: true,
+    platform: 'linux',
+    httpZipDownloadExecutor: (
+      selectedArtifact,
+      modelRoot
+    ) => {
+      calls += 1;
+      createCheckpointFixture(
+        modelRoot,
+        selectedArtifact
+      );
+      return {
+        bytesDownloaded: 1234,
+        operationId: 'fixture-repair',
+      };
+    },
+  });
+
+  assert.equal(calls, 1);
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.repaired, 1);
+  assert.equal(result.summary.quarantined, 1);
+
+  const row = result.artifacts[0];
+
+  assert.equal(row.action, 'repaired');
+  assert.equal(row.afterState, 'verified');
+  assert.ok(row.quarantinePath);
+
+  const quarantine = path.join(
+    root,
+    ...row.quarantinePath.split('/')
+  );
+
+  assert.equal(
+    fs.readFileSync(
+      path.join(quarantine, 'config.yaml'),
+      'utf8'
+    ),
+    'repair-quarantine-sentinel'
+  );
+
+  assert.notEqual(
+    fs.readFileSync(
+      path.join(destination, 'config.yaml'),
+      'utf8'
+    ),
+    'repair-quarantine-sentinel'
+  );
+});
+
+test('models:repair offline preserves an incomplete DiffSinger destination', () => {
+  const root = tempRoot();
+  const registry = loadRegistry();
+  const artifact = registry.artifacts.find(
+    (candidate) =>
+      candidate.artifactId ===
+      'diffsinger-opencpop-acoustic'
+  );
+  const destination = path.join(
+    root,
+    artifact.destination
+  );
+
+  ensureFile(
+    path.join(destination, 'config.yaml'),
+    'offline-repair-sentinel'
+  );
+
+  const before = listTree(root);
+
+  const result = createRepair({
+    root,
+    modelIds: [],
+    providerIds: [],
+    artifactIds: [
+      artifact.artifactId,
+    ],
+    offline: true,
+    force: true,
+    platform: 'linux',
+    httpZipDownloadExecutor: () => {
+      throw new Error('offline repair must not download');
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.summary.offlineBlocked, 1);
+  assert.equal(result.artifacts[0].action, 'offline-blocked');
+  assert.deepEqual(listTree(root), before);
+});
+
+test('models:repair dry-run force reports quarantine without mutation', () => {
+  const root = tempRoot();
+  const registry = loadRegistry();
+  const artifact = registry.artifacts.find(
+    (candidate) =>
+      candidate.artifactId ===
+      'diffsinger-opencpop-acoustic'
+  );
+  const destination = path.join(
+    root,
+    artifact.destination
+  );
+
+  ensureFile(
+    path.join(destination, 'config.yaml'),
+    'dry-run-repair-sentinel'
+  );
+
+  const before = listTree(root);
+
+  const result = createRepair({
+    root,
+    modelIds: [],
+    providerIds: [],
+    artifactIds: [
+      artifact.artifactId,
+    ],
+    dryRun: true,
+    force: true,
+    platform: 'linux',
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.plannedRepairs, 1);
+  assert.equal(
+    result.artifacts[0].action,
+    'would-quarantine-repair'
+  );
+  assert.deepEqual(listTree(root), before);
+});
+
+test('package exposes the conservative model repair command', () => {
+  const pkg = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')
+  );
+
+  assert.equal(
+    pkg.scripts['models:repair'],
+    'node scripts/model-manager.cjs repair'
+  );
 });
 
 test('checkpoint wildcard matching handles DiffSinger checkpoint names', () => {
