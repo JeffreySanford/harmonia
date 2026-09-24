@@ -40,7 +40,8 @@ As of September 24, 2026:
 - Phase 7 conservative `models:repair`: **complete and locally qualified**.
 - Phase 8A Mongo `model_installations` schema: **complete and locally qualified**.
 - Phase 8B filesystem-to-Mongo installation synchronization: **complete and locally qualified**.
-- Phase 8C automatic lifecycle-to-Mongo synchronization: **implemented, awaiting live qualification**.
+- Phase 8C automatic lifecycle-to-Mongo synchronization: **complete and locally qualified**.
+- Phase 9 runtime readiness enforcement and `lastUsedAt`: **next**.
 - Later download/Mongo/runtime/recovery phases: **not started**.
 
 Phase 1 intentionally includes all application models currently marked
