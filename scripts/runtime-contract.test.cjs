@@ -351,6 +351,55 @@ test('backend MusicGen execution targets the isolated provider container', () =>
 });
 
 
+test('Stable Audio 3 Small-Music provider is isolated and qualification verifies native stereo float output', () => {
+  const dockerfile = read('Dockerfile.stable-audio-3');
+  const entrypoint = read('entrypoint.stable-audio-3.sh');
+  const server = read('scripts/stable_audio_3_provider_server.py');
+  const client = read('scripts/stable_audio_3_provider_client.py');
+  const qualifier = read('scripts/qualify-stable-audio-3-small-music.cjs');
+  const compose = read('docker-compose.yml');
+  const gpuCompose = read('docker-compose.gpu.yml');
+  const catalog = read(
+    'apps/backend/src/music-runtime/music-model.catalog.ts'
+  );
+  const pkg = JSON.parse(read('package.json'));
+
+  assert.equal(
+    pkg.scripts['qualify:stable-audio-3-small-music'],
+    'node scripts/qualify-stable-audio-3-small-music.cjs'
+  );
+  assert.match(
+    dockerfile,
+    /779434a908193105335fd8d833418603625b2859/
+  );
+  assert.match(dockerfile, /torch==2\.7\.1/);
+  assert.match(dockerfile, /torchaudio==2\.7\.1/);
+  assert.match(dockerfile, /cu126/);
+  assert.match(entrypoint, /HUGGINGFACE_HUB_TOKEN/);
+  assert.match(server, /StableAudioModel\.from_pretrained/);
+  assert.match(server, /small-music/);
+  assert.match(server, /subtype="FLOAT"/);
+  assert.match(client, /127\.0\.0\.1:8766\/generate/);
+  assert.match(compose, /harmonia-stable-audio-3/);
+  assert.match(compose, /model-stable-audio-3/);
+  assert.match(
+    compose,
+    /\.\/models\/stable-audio-3:\/workspace\/models\/stable-audio-3/
+  );
+  assert.match(gpuCompose, /stable-audio-3:/);
+  assert.match(
+    catalog,
+    /id: 'stable-audio-3-small-music'[\s\S]*runtimeModelId: 'small-music'[\s\S]*availability: 'installed'/
+  );
+  assert.match(qualifier, /wav\.channels !== 2/);
+  assert.match(qualifier, /wav\.sampleRate !== 44100/);
+  assert.match(qualifier, /wav\.bitsPerSample !== 32/);
+  assert.match(
+    qualifier,
+    /STABLE_AUDIO_3_SMALL_MUSIC_QUALIFICATION_OK/
+  );
+});
+
 test('DiffSinger real inference qualification rejects placeholder audio', () => {
   const qualifier = read('scripts/qualify-diffsinger-inference.cjs');
   const wrapper = read('scripts/run_diffsinger.py');
