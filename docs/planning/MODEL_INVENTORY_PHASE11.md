@@ -1,6 +1,6 @@
 # Phase 11 Portable Observed Model Inventory
 
-**Status:** Planned  
+**Status:** Complete and locally qualified  
 **Date:** September 24, 2026  
 **Command:** `pnpm models:inventory`
 
@@ -148,6 +148,25 @@ Phase 11 does not silently rewrite that legacy file.
 9. explicit selectors narrow output correctly;
 10. stable and timestamped generated inventory files are written;
 11. model manager/startup regression remains green.
+
+## Local qualification result
+
+Qualified locally on September 24, 2026.
+
+Observed behavior:
+
+- selector-free inventory emitted all eight registered physical artifacts;
+- operational inventory reported six verified artifacts and two optional missing MusicGen Medium artifacts;
+- concrete deep-verification evidence covered 15 files totaling 6,852,319,710 bytes;
+- DiffSinger acoustic, pitch, and HiFi-GAN artifacts emitted portable size/file evidence;
+- Stable Audio preserved pinned revision `0fef1392cd842149a2b6d445e181c97608faac06`; 
+- all local artifact paths were registry-relative and generated report paths were repo-relative;
+- secret-shaped values were absent;
+- repeated inventory generation preserved observed evidence while advancing generation timestamps;
+- explicit DiffSinger selector narrowed inventory to the three composite artifacts;
+- alternate recovery-root inventory remained portable;
+- pre/post deep verification evidence was unchanged, proving inventory generation did not mutate model bytes;
+- full startup/model regression finished with 137 passing tests, zero failures, and one intentionally skipped Compose lifecycle test.
 
 ## Completion boundary
 
