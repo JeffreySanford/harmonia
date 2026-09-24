@@ -1,8 +1,9 @@
 # Phase 7 Conservative Model Repair
 
-**Status:** Planned  
+**Status:** Implemented, awaiting local qualification  
 **Date:** September 24, 2026  
-**Command:** `pnpm models:repair`
+**Command:** `pnpm models:repair`  
+**Engine:** `scripts/model-repair.cjs`
 
 ## Purpose
 
