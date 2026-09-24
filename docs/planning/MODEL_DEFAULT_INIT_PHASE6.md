@@ -1,6 +1,6 @@
 # Phase 6 Default-Set Initialization Orchestration
 
-**Status:** Implemented, awaiting local qualification  
+**Status:** Complete and locally qualified  
 **Date:** September 24, 2026  
 **Command:** `pnpm models:init`
 
@@ -86,9 +86,32 @@ network startup for the default recovery operation.
 8. real working cache remains unchanged;
 9. full startup/model regression remains green.
 
+## Local qualification result
+
+Qualified locally on September 24, 2026.
+
+Observed selector-free behavior:
+
+- four logical default models resolved to six physical artifacts;
+- MusicGen Medium and Stereo Medium remained excluded;
+- dry-run left the alternate root empty;
+- missing Stable Audio credentials blocked before any source adapter
+  executor ran;
+- the complete 23 GB reconstructed root returned six verified cache hits;
+- explicit MusicGen Medium selection still overrides default policy;
+- the complete recovery root and original workstation cache remained green;
+- the full startup/model regression suite finished with 103 passing tests,
+  zero failures, and one intentionally skipped Compose lifecycle test.
+
+The canonical recovery sequence `models:plan -> models:init -> models:verify`
+is now operational for the default model set.
+
 ## Completion criterion
 
-Phase 6 is complete when selector-free `models:init` safely represents and
-operates the default registry set, blocks before mutation when required gated
-credentials are unavailable, remains idempotent on the fully reconstructed
-recovery root, and never selects optional Medium artifacts implicitly.
+Phase 6 completion criteria are satisfied:
+
+- [x] selector-free init selects only the default registry set;
+- [x] gated prerequisites block before mutation;
+- [x] complete recovery roots are six cache hits;
+- [x] optional Medium variants remain explicit-only;
+- [x] the canonical default recovery sequence is operational.
