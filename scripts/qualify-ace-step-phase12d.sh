@@ -11,9 +11,12 @@ export NX_ISOLATE_PLUGINS=false
 export NX_DAEMON=false
 export NX_NO_CLOUD=true
 
-# Git Bash/MSYS rewrites POSIX-looking arguments passed to Windows executables.
-# Docker container paths must remain literal /workspace/... paths.
-export MSYS_NO_PATHCONV=1
+# Git Bash/MSYS rewrites POSIX-looking arguments passed to docker.exe.
+# Keep that suppression scoped to Docker only; setting it globally breaks
+# the Windows Corepack shim path resolution.
+docker_no_pathconv() {
+  MSYS_NO_PATHCONV=1 docker "$@"
+}
 
 OUT="generated/ace-step-phase12d"
 MODEL_ID="acestep-v15-turbo-06b"
@@ -131,7 +134,7 @@ docker compose \
   up --detach --no-build --wait --wait-timeout 180 \
   ace-step-1.5
 
-docker exec harmonia-ace-step-1.5 \
+docker_no_pathconv exec harmonia-ace-step-1.5 \
   curl --fail --silent \
   http://127.0.0.1:8001/health \
   > "$OUT/provider-health-before-phase12d.json"
@@ -142,7 +145,7 @@ echo
 echo "6. READ-ONLY CLIENT MOUNT"
 
 echo "=== ACE MOUNTS ==="
-docker inspect \
+docker_no_pathconv inspect \
   --format '{{json .Mounts}}' \
   harmonia-ace-step-1.5 \
   > "$OUT/ace-mounts.json"
@@ -169,23 +172,23 @@ fi
 echo "PHASE12D_SCRIPT_MOUNT_READ_ONLY_OK"
 
 echo "=== CLIENT FILE ==="
-if ! docker exec harmonia-ace-step-1.5 \
+if ! docker_no_pathconv exec harmonia-ace-step-1.5 \
   test -f /workspace/scripts/ace_step_provider_client.py
 then
   echo "STOP: ACE provider client file is not visible inside the container."
   echo "Directory listing:"
-  docker exec harmonia-ace-step-1.5 \
+  docker_no_pathconv exec harmonia-ace-step-1.5 \
     sh -lc 'ls -la /workspace/scripts || true'
   exit 1
 fi
 
-docker exec harmonia-ace-step-1.5 \
+docker_no_pathconv exec harmonia-ace-step-1.5 \
   ls -l /workspace/scripts/ace_step_provider_client.py
 
 echo "PHASE12D_PROVIDER_CLIENT_FILE_OK"
 
 echo "=== IN-MEMORY PYTHON COMPILE ==="
-if ! docker exec harmonia-ace-step-1.5 \
+if ! docker_no_pathconv exec harmonia-ace-step-1.5 \
   /opt/ACE-Step-1.5/.venv/bin/python \
   -c 'p="/workspace/scripts/ace_step_provider_client.py"; s=open(p,encoding="utf-8").read(); compile(s,p,"exec"); print("ACE_STEP_CLIENT_IN_MEMORY_COMPILE_OK")'
 then
@@ -194,7 +197,7 @@ then
 fi
 
 echo "=== CLIENT HELP ==="
-if ! docker exec harmonia-ace-step-1.5 \
+if ! docker_no_pathconv exec harmonia-ace-step-1.5 \
   /opt/ACE-Step-1.5/.venv/bin/python \
   /workspace/scripts/ace_step_provider_client.py \
   --help \
@@ -265,11 +268,11 @@ if [[ "$QUALIFY_STATUS" -ne 0 ]]; then
   echo "ACE_STEP_JOB_QUALIFICATION_FAILED status=$QUALIFY_STATUS"
   echo
   echo "=== ACE HEALTH ==="
-  docker exec harmonia-ace-step-1.5 \
+  docker_no_pathconv exec harmonia-ace-step-1.5 \
     curl --silent http://127.0.0.1:8001/health || true
   echo
   echo "=== ACE LOG TAIL ==="
-  docker logs --tail 320 harmonia-ace-step-1.5 2>&1 || true
+  docker_no_pathconv logs --tail 320 harmonia-ace-step-1.5 2>&1 || true
   echo
   echo "=== ISOLATED BACKEND LOG TAIL ==="
   if [[ -f "$OUT/backend-isolated-3112-phase12d.log" ]]; then
@@ -280,7 +283,7 @@ fi
 
 echo
 echo "9. POST-SONG RESIDENT STATE"
-docker exec harmonia-ace-step-1.5 \
+docker_no_pathconv exec harmonia-ace-step-1.5 \
   curl --fail --silent \
   http://127.0.0.1:8001/health \
   > "$OUT/provider-health-after-phase12d.json"
