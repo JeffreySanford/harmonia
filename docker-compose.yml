@@ -69,6 +69,8 @@ services:
     profiles:
       - worker
     environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+      HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
       HUGGINGFACE_HUB_TOKEN: ${HUGGINGFACE_HUB_TOKEN:-}
       HARMONIA_MODELS_ROOT: /workspace/models
     volumes:
@@ -134,7 +136,9 @@ services:
       - model-stable-audio-3
     environment:
       HF_HOME: /workspace/models/stable-audio-3/huggingface
-      HF_TOKEN: ${HUGGINGFACE_HUB_TOKEN:-}
+      HF_TOKEN: ${HF_TOKEN:-}
+      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY:-}
+      HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
       HUGGINGFACE_HUB_TOKEN: ${HUGGINGFACE_HUB_TOKEN:-}
       HARMONIA_STABLE_AUDIO_3_MODEL: small-music
       HARMONIA_STABLE_AUDIO_3_PORT: "8766"
@@ -170,6 +174,8 @@ services:
       HF_HOME: /workspace/models/musicgen/huggingface
       TORCH_HOME: /workspace/models/musicgen/torch
       HARMONIA_MUSICGEN_MODEL: facebook/musicgen-small
+      HF_TOKEN: ${HF_TOKEN:-}
+      HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
       HUGGINGFACE_HUB_TOKEN: ${HUGGINGFACE_HUB_TOKEN:-}
     volumes:
       - ./models/musicgen:/workspace/models/musicgen

@@ -146,9 +146,15 @@ async function main() {
   console.log('============================================================');
   console.log(' STABLE AUDIO 3 SMALL-MUSIC QUALIFICATION');
   console.log('============================================================');
-  console.log(
-    `Hugging Face token configured = ${Boolean(env.HUGGINGFACE_HUB_TOKEN)}`
+  const tokenConfigured = Boolean(
+    process.env.HF_TOKEN ||
+      env.HF_TOKEN ||
+      process.env.HUGGING_FACE_HUB_TOKEN ||
+      env.HUGGING_FACE_HUB_TOKEN ||
+      process.env.HUGGINGFACE_HUB_TOKEN ||
+      env.HUGGINGFACE_HUB_TOKEN
   );
+  console.log(`Hugging Face token configured = ${tokenConfigured}`);
 
   await request(`${backendBase}/api/__health`);
   await request(frontendBase);

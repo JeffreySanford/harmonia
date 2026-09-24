@@ -7,9 +7,19 @@ rm -f "${READY_FILE}"
 echo "Starting Harmonia Stable Audio 3 provider"
 echo "Stable Audio 3 revision: ${HARMONIA_STABLE_AUDIO_3_REF:-unknown}"
 
-if [ -z "${HF_TOKEN:-${HUGGINGFACE_HUB_TOKEN:-}}" ]; then
+if [ -z "${HF_TOKEN:-}" ]; then
+  if [ -n "${HUGGING_FACE_HUB_TOKEN:-}" ]; then
+    export HF_TOKEN="${HUGGING_FACE_HUB_TOKEN}"
+  elif [ -n "${HUGGINGFACE_HUB_TOKEN:-}" ]; then
+    export HF_TOKEN="${HUGGINGFACE_HUB_TOKEN}"
+  fi
+fi
+
+if [ -z "${HF_TOKEN:-}" ]; then
   echo "WARNING: no Hugging Face token is configured."
-  echo "Stable Audio 3 model inference will require an accepted gated-model license and token."
+  echo "Stable Audio 3 model inference requires gated-model access."
+else
+  echo "Hugging Face token available through the canonical HF_TOKEN runtime variable."
 fi
 
 python - <<'PY'
