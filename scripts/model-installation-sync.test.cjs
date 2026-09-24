@@ -532,9 +532,9 @@ test('error sanitizer removes URI userinfo and token-like values', () => {
     value,
     /abc123|user:secret|Bearer-thing/
   );
-  assert.match(
-    value,
-    /HF_TOKEN=***/
+  assert.equal(
+    value.includes('HF_TOKEN=***'),
+    true
   );
 });
 
