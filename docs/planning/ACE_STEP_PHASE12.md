@@ -1,6 +1,6 @@
 # Phase 12 ACE-Step 1.5 Local Provider
 
-**Status:** Phase 12A complete and locally qualified; Phase 12B selective checkpoint acquisition implemented, awaiting alternate-root qualification  
+**Status:** Phase 12A and 12B complete and locally qualified; Phase 12C operational promotion/runtime selection in progress  
 **Date:** September 24, 2026  
 **Primary target:** `acestep-v15-turbo-06b`  
 **Reference GPU:** NVIDIA GeForce RTX 3080, 10 GB VRAM  
@@ -125,6 +125,28 @@ non-empty runtime files.
 Both ACE-Step artifacts remain `defaultInstall: false` until runtime/inference
 qualification is complete. Bare `models:init` therefore remains the existing
 four logical defaults / six physical artifacts.
+
+## Phase 12B local qualification result
+
+Qualified locally on September 24, 2026 against an isolated alternate model root.
+
+Observed behavior:
+
+- registry contains 10 physical artifacts / 7 logical bindings, with the ACE-Step pair remaining optional;
+- explicit `acestep-v15-turbo-06b` plan selected exactly two physical artifacts;
+- dry-run performed zero filesystem mutation;
+- selective unified-repository download completed 16/16 files;
+- separate 0.6B LM download completed 11/11 files;
+- selected runtime payload was 85 files / 7,709,385,937 bytes;
+- exact core and 0.6B revision markers matched their pinned revisions;
+- Turbo, VAE, Qwen embedding, and 0.6B LM required files were non-empty;
+- no `acestep-5Hz-lm-1.7B` subtree was downloaded;
+- deep verification reported both physical artifacts verified;
+- an offline re-run returned two cache hits with unchanged file/byte totals;
+- operational `models/ace-step-1.5` remained 0 files / 0 bytes;
+- bare default initialization remained four logical models / six physical artifacts;
+- full startup/model regression finished with 143 passing tests, zero failures,
+  and one intentionally skipped Compose lifecycle test.
 
 ## Verification
 
