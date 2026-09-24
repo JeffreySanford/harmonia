@@ -1,0 +1,21 @@
+# Harmonia Planning Documents
+
+This directory contains implementation plans for work that has an approved
+architectural direction but is not yet fully delivered.
+
+Planning documents are intentionally separate from stable architecture and
+operational documentation:
+
+- stable/current design belongs in `docs/`;
+- implementation sequencing and acceptance criteria belong in
+  `docs/planning/`;
+- obsolete historical material belongs in `docs/archive/`.
+
+## Active plans
+
+- [Model Storage and Rehydration](MODEL_STORAGE_REHYDRATION_PLAN.md) — unified
+  model registry, local cache initialization, verification, repair, MongoDB
+  installation metadata, and disaster-recovery qualification.
+
+When an implementation plan is completed, its durable design decisions should
+remain represented by the corresponding architecture/operations documents.
