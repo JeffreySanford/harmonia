@@ -54,7 +54,9 @@ async function waitForLiveCatalog(timeoutMs = 90000) {
         {},
         5000
       );
-      const models = Array.isArray(catalog.body) ? catalog.body : [];
+      const models = Array.isArray(catalog.body?.models)
+        ? catalog.body.models
+        : [];
       lastEntry = models.find((entry) => entry?.id === modelId) || null;
 
       if (
