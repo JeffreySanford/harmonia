@@ -375,12 +375,17 @@ test('Stable Audio 3 Small-Music provider is isolated and qualification verifies
   assert.match(dockerfile, /torch==2\.7\.1/);
   assert.match(dockerfile, /torchaudio==2\.7\.1/);
   assert.match(dockerfile, /cu126/);
+  assert.match(entrypoint, /HF_TOKEN/);
+  assert.match(entrypoint, /HUGGING_FACE_HUB_TOKEN/);
   assert.match(entrypoint, /HUGGINGFACE_HUB_TOKEN/);
   assert.match(server, /StableAudioModel\.from_pretrained/);
   assert.match(server, /small-music/);
   assert.match(server, /subtype="FLOAT"/);
   assert.match(client, /127\.0\.0\.1:8766\/generate/);
   assert.match(compose, /harmonia-stable-audio-3/);
+  assert.match(compose, /HF_TOKEN: \${HF_TOKEN:-}/);
+  assert.match(compose, /HUGGING_FACE_HUB_TOKEN: \${HUGGING_FACE_HUB_TOKEN:-}/);
+  assert.match(compose, /HUGGINGFACE_HUB_TOKEN: \${HUGGINGFACE_HUB_TOKEN:-}/);
   assert.match(compose, /model-stable-audio-3/);
   assert.match(
     compose,
