@@ -187,6 +187,28 @@ It resolves:
 
 It then checks the registry's required marker files.
 
+For AudioCraft MusicGen repositories, the marker contract follows the files
+actually consumed by the pretrained loader:
+
+```text
+state_dict.bin
+compression_state_dict.bin
+```
+
+Hugging Face snapshots commonly expose these files as symlinks into the cache
+blob store. On Docker Desktop for Windows, Linux-created cache links can be
+fully usable inside the Linux provider container while Windows Node reports
+`EACCES` when attempting to dereference the same snapshot entry. For this
+Phase 2 shallow inspection only, Windows may therefore accept a required marker
+when:
+
+1. ordinary `existsSync` cannot resolve it;
+2. `lstat` fails specifically with `EACCES` or `EPERM`; and
+3. the exact filename is still visible in the parent snapshot directory.
+
+Normal missing files, including `ENOENT`, remain missing. Deep link/blob
+validation belongs to `models:verify`.
+
 For Stable Audio 3 Small-Music, the registry is pinned to the exact snapshot
 that passed Harmonia qualification.
 
