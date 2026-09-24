@@ -48,3 +48,7 @@ logs/
 
 # Generated environment smoke reports
 /tests/env_tests/smoke_report_*.json
+
+# Local runtime outputs and qualification evidence
+/generated/
+/exports/
