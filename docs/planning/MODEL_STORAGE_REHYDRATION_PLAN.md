@@ -16,6 +16,26 @@ contracts:
 - [MODEL_REHYDRATION_ACCEPTANCE_MATRIX.md](MODEL_REHYDRATION_ACCEPTANCE_MATRIX.md)
   — qualification evidence required by phase and provider.
 
+## Current implementation status
+
+As of September 23, 2026:
+
+- Phase 0 architecture/documentation contract: **complete**.
+- Phase 1 desired-state registry: **implemented, awaiting local qualification**.
+  - `inventory/model_registry.json`
+  - `inventory/model_registry.schema.json`
+  - `scripts/model-registry-contract.test.cjs`
+  - `pnpm test:model-registry`
+- Phase 2 core model lifecycle CLI: **not started**.
+- Later download/Mongo/runtime/recovery phases: **not started**.
+
+Phase 1 intentionally includes all application models currently marked
+`availability: installed`. MusicGen Medium and Stereo Medium are represented
+but use `defaultInstall: false` because they are not appropriate default
+downloads for the current 10 GB-class workstation.
+
+No model bytes have moved as part of Phase 1. The registry is declarative only.
+
 ## Objective
 
 Create a deterministic, idempotent model lifecycle for Harmonia so every
@@ -436,7 +456,7 @@ This order deliberately implements read-only visibility before mutation.
 
 ## Definition of done
 
-- [ ] All installed local catalog models map to registry entries.
+- [x] All installed local catalog models map to registry entries.
 - [ ] `models:plan` identifies missing/cached models without mutation.
 - [ ] `models:init` can populate an empty alternate root.
 - [ ] `models:init` is idempotent on a complete root.
