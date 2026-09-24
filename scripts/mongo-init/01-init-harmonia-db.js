@@ -26,6 +26,7 @@ db.createCollection('model_artifacts', {
   validator: {
     $jsonSchema: {
       bsonType: 'object',
+      additionalProperties: false,
       required: ['name', 'version', 'path', 'size_bytes'],
       properties: {
         name: { bsonType: 'string', description: 'Model name - required' },
@@ -129,6 +130,7 @@ db.createCollection('model_installations', {
         'gated'
       ],
       properties: {
+        _id: { bsonType: 'objectId' },
         artifactId: { bsonType: 'string' },
         providerId: { bsonType: 'string' },
         modelIds: {
