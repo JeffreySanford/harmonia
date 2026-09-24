@@ -5,8 +5,10 @@ const os = require('node:os');
 const path = require('node:path');
 
 const {
+  createInitialization,
   createPlan,
   createVerification,
+  huggingFaceDownloadReposForArtifact,
   inspectShallowPathPresence,
   verifyRequiredFile,
   loadRegistry,
@@ -543,6 +545,204 @@ test('models:verify rejects a zero-byte DiffSinger checkpoint', () => {
   );
 });
 
+
+test('MusicGen initialization includes shared runtime Hugging Face dependencies', () => {
+  const registry = loadRegistry();
+  const artifact = registry.artifacts.find(
+    (candidate) => candidate.artifactId === 'musicgen-small'
+  );
+
+  assert.deepEqual(
+    huggingFaceDownloadReposForArtifact(artifact),
+    [
+      'facebook/musicgen-small',
+      'facebook/encodec_32khz',
+      't5-base',
+    ]
+  );
+});
+
+test('models:init dry-run plans a public HF download without mutation', () => {
+  const root = tempRoot();
+  let calls = 0;
+
+  const result = createInitialization({
+    root,
+    modelIds: ['musicgen-small'],
+    providerIds: [],
+    artifactIds: [],
+    dryRun: true,
+    platform: 'linux',
+    downloadExecutor: () => {
+      calls += 1;
+      throw new Error('dry-run must not execute downloads');
+    },
+  });
+
+  assert.equal(calls, 0);
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.plannedDownloads, 1);
+  assert.equal(result.artifacts[0].action, 'would-download');
+  assert.equal(fs.readdirSync(root).length, 0);
+});
+
+test('models:init downloads and verifies a missing public HF artifact', () => {
+  const root = tempRoot();
+  const registry = loadRegistry();
+  const artifact = registry.artifacts.find(
+    (candidate) => candidate.artifactId === 'musicgen-small'
+  );
+  let calls = 0;
+
+  const result = createInitialization({
+    root,
+    modelIds: ['musicgen-small'],
+    providerIds: [],
+    artifactIds: [],
+    platform: 'linux',
+    downloadExecutor: (selectedArtifact, modelRoot) => {
+      calls += 1;
+      assert.equal(selectedArtifact.artifactId, artifact.artifactId);
+      createHuggingFaceFixture(modelRoot, selectedArtifact);
+      return {
+        repos: huggingFaceDownloadReposForArtifact(selectedArtifact).map(
+          (repoId) => ({ repoId })
+        ),
+      };
+    },
+  });
+
+  assert.equal(calls, 1);
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.downloaded, 1);
+  assert.equal(result.summary.verified, 1);
+  assert.equal(result.artifacts[0].action, 'downloaded');
+  assert.equal(result.artifacts[0].state, 'verified');
+});
+
+test('models:init is idempotent for an already verified HF artifact', () => {
+  const root = tempRoot();
+  const registry = loadRegistry();
+  const artifact = registry.artifacts.find(
+    (candidate) => candidate.artifactId === 'musicgen-small'
+  );
+  createHuggingFaceFixture(root, artifact);
+  let calls = 0;
+
+  const result = createInitialization({
+    root,
+    modelIds: ['musicgen-small'],
+    providerIds: [],
+    artifactIds: [],
+    platform: 'linux',
+    downloadExecutor: () => {
+      calls += 1;
+    },
+  });
+
+  assert.equal(calls, 0);
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.cacheHits, 1);
+  assert.equal(result.artifacts[0].action, 'cache-hit');
+  assert.equal(result.artifacts[0].state, 'verified');
+});
+
+test('models:init blocks missing gated HF artifacts before download without credentials', () => {
+  const root = tempRoot();
+  let calls = 0;
+
+  const result = createInitialization({
+    root,
+    modelIds: ['stable-audio-3-small-music'],
+    providerIds: [],
+    artifactIds: [],
+    platform: 'linux',
+    credential: null,
+    downloadExecutor: () => {
+      calls += 1;
+    },
+  });
+
+  assert.equal(calls, 0);
+  assert.equal(result.ok, false);
+  assert.equal(result.summary.authenticationRequired, 1);
+  assert.equal(result.artifacts[0].action, 'authenticate');
+});
+
+test('models:init offline blocks a missing HF artifact without mutation', () => {
+  const root = tempRoot();
+  let calls = 0;
+
+  const result = createInitialization({
+    root,
+    modelIds: ['musicgen-small'],
+    providerIds: [],
+    artifactIds: [],
+    offline: true,
+    platform: 'linux',
+    downloadExecutor: () => {
+      calls += 1;
+    },
+  });
+
+  assert.equal(calls, 0);
+  assert.equal(result.ok, false);
+  assert.equal(result.summary.offlineBlocked, 1);
+  assert.equal(result.artifacts[0].action, 'offline-missing');
+  assert.equal(fs.readdirSync(root).length, 0);
+});
+
+test('models:init never exposes the supplied HF credential in its result', () => {
+  const root = tempRoot();
+  const secret = 'hf_phase4_secret_should_never_escape';
+
+  const result = createInitialization({
+    root,
+    modelIds: ['stable-audio-3-small-music'],
+    providerIds: [],
+    artifactIds: [],
+    dryRun: true,
+    platform: 'linux',
+    credential: secret,
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.artifacts[0].action, 'would-download');
+  assert.equal(JSON.stringify(result).includes(secret), false);
+});
+
+test('models:init partial Phase 4 rejects non-Hugging-Face selections', () => {
+  const root = tempRoot();
+
+  assert.throws(
+    () =>
+      createInitialization({
+        root,
+        modelIds: [],
+        providerIds: ['diffsinger'],
+        artifactIds: [],
+        platform: 'linux',
+      }),
+    /supports Hugging Face artifacts only/
+  );
+});
+
+test('models:init partial Phase 4 requires an explicit selector', () => {
+  const root = tempRoot();
+
+  assert.throws(
+    () =>
+      createInitialization({
+        root,
+        modelIds: [],
+        providerIds: [],
+        artifactIds: [],
+        platform: 'linux',
+      }),
+    /requires an explicit --model, --provider, or --artifact selector/
+  );
+});
+
 test('checkpoint wildcard matching handles DiffSinger checkpoint names', () => {
   const matcher = wildcardToRegExp('model_ckpt_steps_*.ckpt');
 
@@ -562,6 +762,10 @@ test('package exposes the read-only model plan command', () => {
   assert.equal(
     pkg.scripts['models:verify'],
     'node scripts/model-manager.cjs verify'
+  );
+  assert.equal(
+    pkg.scripts['models:init'],
+    'node scripts/model-manager.cjs init'
   );
   assert.equal(
     pkg.scripts['test:model-manager'],
