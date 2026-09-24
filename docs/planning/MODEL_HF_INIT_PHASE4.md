@@ -41,8 +41,14 @@ Use the provider-compatible Linux environment so cache layout matches runtime:
 - MusicGen: `harmonia/musicgen:dev`;
 - Stable Audio 3: `harmonia/stable-audio-3:dev`.
 
-The adapter may invoke `huggingface_hub.snapshot_download` inside a short-lived
+The adapter invokes `huggingface_hub.snapshot_download` inside a short-lived
 container with the selected destination mounted read-write.
+
+For pinned artifacts, the adapter also writes the local `refs/main` cache alias
+to the resolved qualified snapshot. This is required because provider loaders
+such as Stable Audio 3 resolve the default `main` ref even when Harmonia's
+registry pins an exact commit. The alias changes local cache metadata only; it
+does not alter the remote repository or registry revision.
 
 For qualification, downloads go only to an alternate root under
 `generated/model-manager/`.
