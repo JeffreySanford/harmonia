@@ -260,7 +260,11 @@
       "verification": {
         "strategy": "huggingface-snapshot",
         "requiredFiles": [
-          "model_config.json"
+          "model_config.json",
+          "model.safetensors",
+          "t5gemma-b-b-ul2/config.json",
+          "t5gemma-b-b-ul2/model.safetensors",
+          "t5gemma-b-b-ul2/tokenizer_config.json"
         ]
       },
       "license": {
