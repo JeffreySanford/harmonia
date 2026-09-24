@@ -8,7 +8,9 @@ echo "Starting Harmonia Stable Audio 3 provider"
 echo "Stable Audio 3 revision: ${HARMONIA_STABLE_AUDIO_3_REF:-unknown}"
 
 if [ -z "${HF_TOKEN:-}" ]; then
-  if [ -n "${HUGGING_FACE_HUB_TOKEN:-}" ]; then
+  if [ -n "${HUGGINGFACE_API_KEY:-}" ]; then
+    export HF_TOKEN="${HUGGINGFACE_API_KEY}"
+  elif [ -n "${HUGGING_FACE_HUB_TOKEN:-}" ]; then
     export HF_TOKEN="${HUGGING_FACE_HUB_TOKEN}"
   elif [ -n "${HUGGINGFACE_HUB_TOKEN:-}" ]; then
     export HF_TOKEN="${HUGGINGFACE_HUB_TOKEN}"
