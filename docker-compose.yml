@@ -137,6 +137,7 @@ services:
     environment:
       HF_HOME: /workspace/models/stable-audio-3/huggingface
       HF_TOKEN: ${HF_TOKEN:-}
+      HUGGINGFACE_API_KEY: ${HUGGINGFACE_API_KEY:-}
       HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
       HUGGINGFACE_HUB_TOKEN: ${HUGGINGFACE_HUB_TOKEN:-}
       HARMONIA_STABLE_AUDIO_3_MODEL: small-music
