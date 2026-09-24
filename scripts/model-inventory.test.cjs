@@ -8,6 +8,7 @@ const {
   INVENTORY_SCHEMA_VERSION,
   buildInventory,
   containsAbsoluteLocalPath,
+  portableOutputPath,
   sanitizeDetail,
   writeInventoryFiles,
 } = require('./model-inventory.cjs');
@@ -414,6 +415,21 @@ test('inventory writer produces stable and timestamped identical JSON files', ()
   }
 });
 
+
+test('generated report paths are repo-relative', () => {
+  const absolute = path.join(
+    __dirname,
+    '..',
+    'generated',
+    'model-manager',
+    'model-inventory.json'
+  );
+
+  assert.equal(
+    portableOutputPath(absolute),
+    'generated/model-manager/model-inventory.json'
+  );
+});
 
 test('package exposes portable inventory commands', () => {
   const pkg = JSON.parse(
