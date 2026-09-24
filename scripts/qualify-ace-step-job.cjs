@@ -5,8 +5,12 @@ const { parseEnv } = require('node:util');
 
 const root = path.resolve(__dirname, '..');
 const envPath = path.join(root, '.env');
-const backendBase = 'http://localhost:3000';
-const frontendBase = 'http://localhost:4200';
+const backendBase =
+  process.env.HARMONIA_QUALIFY_BACKEND_BASE ||
+  'http://localhost:3000';
+const frontendBase =
+  process.env.HARMONIA_QUALIFY_FRONTEND_BASE ||
+  'http://localhost:4200';
 const modelId = 'acestep-v15-turbo-06b';
 const runtimeModelId = 'acestep-v15-turbo';
 const lmModelId = 'acestep-5Hz-lm-0.6B';
