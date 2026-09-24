@@ -1,6 +1,6 @@
 # Phase 10 Catalog Installation Awareness
 
-**Status:** Implemented, awaiting local qualification  
+**Status:** Complete and locally qualified  
 **Date:** September 24, 2026  
 **Backend seam:** `MusicRuntimeService.getCatalog()`  
 **Frontend seam:** existing model selector / `disabledReason`
@@ -142,9 +142,35 @@ No new model-selection action or state machine is required.
 6. planned/API-only/unreleased models report `not-managed`;
 7. Phase 9 select-time filesystem verification remains unchanged;
 8. frontend types accept the new catalog fields;
-9. model option label surfaces installation state;
+9. existing model option disabling and disabled-reason UI consumes installation-aware catalog state;
 10. backend/frontend builds remain green;
 11. startup/model regression remains green.
+
+## Local qualification result
+
+Qualified locally on September 24, 2026.
+
+Observed behavior:
+
+- backend installation-aware catalog suite: 52 passing tests;
+- frontend suite: 52 passing tests;
+- backend and frontend production builds completed successfully;
+- live catalog reported MusicGen Small/Stereo Small and Stable Audio as
+  single-artifact `verified` installations;
+- live DiffSinger catalog state derived `verified` from all three physical artifacts;
+- MusicGen Medium and Stereo Medium reported `missing` and unselectable;
+- planned/API-only Stable Audio entries reported `not-managed`;
+- the corrected secret-value scan passed while allowing the documented
+  `HUGGINGFACE_HUB_TOKEN` variable name;
+- catalog reads did not restart, replace, or otherwise mutate the running
+  Stable Audio provider;
+- the Phase 9 filesystem readiness gate remained in place before provider switching;
+- full startup/model regression finished with 129 passing tests, zero failures,
+  and one intentionally skipped Compose lifecycle test.
+
+The optional model-option label suffix (`Installed`, `Missing`, etc.) is deferred
+as presentation-only follow-up. Functional UI behavior is already installation-aware
+through the existing `selectable` and `disabledReason` contract.
 
 ## Completion boundary
 
