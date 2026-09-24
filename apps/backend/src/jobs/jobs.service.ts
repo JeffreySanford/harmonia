@@ -239,7 +239,14 @@ export class JobsService {
       return;
     }
 
-    if (!['musicgen', 'diffsinger', 'stable-audio-3'].includes(model.providerId)) {
+    if (
+      ![
+        'musicgen',
+        'diffsinger',
+        'stable-audio-3',
+        'ace-step-1.5',
+      ].includes(model.providerId)
+    ) {
       await this.fail(
         jobId,
         userId,
@@ -273,7 +280,9 @@ export class JobsService {
             ? 'Starting singing synthesis'
             : model.providerId === 'stable-audio-3'
               ? 'Starting Stable Audio generation'
-              : 'Starting music generation',
+              : model.providerId === 'ace-step-1.5'
+                ? 'Starting ACE-Step full-song generation'
+                : 'Starting music generation',
       });
 
       const runtime = await this.musicRuntime.beginGeneration(model.providerId);
@@ -289,7 +298,8 @@ export class JobsService {
       try {
         if (
           model.providerId === 'musicgen' ||
-          model.providerId === 'stable-audio-3'
+          model.providerId === 'stable-audio-3' ||
+          model.providerId === 'ace-step-1.5'
         ) {
           const duration = Number(parameters['duration']);
           const prompt = this.buildGenerationPrompt(parameters);
@@ -301,20 +311,60 @@ export class JobsService {
               duration,
               outputPath: containerPath,
             });
-          } else {
+
+            providerMetadata = {
+              prompt,
+              requestedDurationSeconds: duration,
+            };
+          } else if (model.providerId === 'stable-audio-3') {
             await this.runStableAudio3Client({
               runtimeModelId: runtime.runtimeModelId,
               prompt,
               duration,
               outputPath: containerPath,
             });
+
+            providerMetadata = {
+              prompt,
+              requestedDurationSeconds: duration,
+            };
+          } else {
+            const lyrics = String(
+              parameters['lyrics'] || ''
+            ).trim();
+            const bpm = Number(parameters['bpm']);
+            const seed = Number(parameters['seed']);
+
+            const ace = await this.runAceStepClient({
+              runtimeModelId: runtime.runtimeModelId,
+              prompt,
+              lyrics,
+              duration,
+              bpm:
+                Number.isFinite(bpm) && bpm > 0
+                  ? Math.round(bpm)
+                  : undefined,
+              seed:
+                Number.isFinite(seed) && seed >= 0
+                  ? Math.round(seed)
+                  : undefined,
+              vocalLanguage: String(
+                parameters['vocalLanguage'] ||
+                  parameters['vocal_language'] ||
+                  'en'
+              ),
+              outputPath: containerPath,
+            });
+
+            providerMetadata = {
+              prompt,
+              lyrics,
+              requestedDurationSeconds: duration,
+              aceStep: ace,
+            };
           }
 
           requestedDurationSeconds = duration;
-          providerMetadata = {
-            prompt,
-            requestedDurationSeconds: duration,
-          };
         } else {
           const score = this.parseDiffSingerScore(parameters);
           const hostRequestPath = path.join(hostDir, 'request.json');
@@ -409,7 +459,8 @@ export class JobsService {
 
     if (
       model.providerId !== 'musicgen' &&
-      model.providerId !== 'stable-audio-3'
+      model.providerId !== 'stable-audio-3' &&
+      model.providerId !== 'ace-step-1.5'
     ) {
       throw new BadRequestException(
         `${model.providerId} generation jobs are not implemented yet.`
@@ -417,9 +468,19 @@ export class JobsService {
     }
 
     const duration = Number(dto.parameters?.['duration']);
-    if (!Number.isFinite(duration) || duration < 1) {
+    const minimumDuration =
+      model.providerId === 'ace-step-1.5'
+        ? 10
+        : 1;
+
+    if (
+      !Number.isFinite(duration) ||
+      duration < minimumDuration
+    ) {
       throw new BadRequestException(
-        'Generation duration must be at least 1 second.'
+        `Generation duration must be at least ${minimumDuration} second${
+          minimumDuration === 1 ? '' : 's'
+        }.`
       );
     }
 
@@ -437,6 +498,18 @@ export class JobsService {
       throw new BadRequestException(
         'Generation requires a prompt or descriptive music parameters.'
       );
+    }
+
+    if (model.providerId === 'ace-step-1.5') {
+      const lyrics = String(
+        dto.parameters?.['lyrics'] || ''
+      ).trim();
+
+      if (!lyrics) {
+        throw new BadRequestException(
+          'ACE-Step generation requires supplied lyrics.'
+        );
+      }
     }
   }
 
@@ -673,6 +746,126 @@ export class JobsService {
               .slice(-3000)}`
           )
         );
+      });
+    });
+  }
+
+  private runAceStepClient(options: {
+    runtimeModelId: string;
+    prompt: string;
+    lyrics: string;
+    duration: number;
+    bpm?: number;
+    seed?: number;
+    vocalLanguage: string;
+    outputPath: string;
+  }): Promise<Record<string, unknown>> {
+    return new Promise((resolve, reject) => {
+      const args = [
+        'exec',
+        'harmonia-ace-step-1.5',
+        '/opt/ACE-Step-1.5/.venv/bin/python',
+        '/workspace/scripts/ace_step_provider_client.py',
+        '--output',
+        options.outputPath,
+        '--duration',
+        String(options.duration),
+        '--model',
+        options.runtimeModelId,
+        '--prompt',
+        options.prompt,
+        '--lyrics',
+        options.lyrics,
+        '--vocal-language',
+        options.vocalLanguage || 'en',
+      ];
+
+      if (options.bpm !== undefined) {
+        args.push(
+          '--bpm',
+          String(options.bpm)
+        );
+      }
+
+      if (options.seed !== undefined) {
+        args.push(
+          '--seed',
+          String(options.seed)
+        );
+      }
+
+      const child = spawn(
+        'docker',
+        args,
+        {
+          cwd: process.cwd(),
+          windowsHide: true,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }
+      );
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout.on('data', (chunk: Buffer) => {
+        stdout += chunk.toString();
+      });
+
+      child.stderr.on('data', (chunk: Buffer) => {
+        stderr += chunk.toString();
+      });
+
+      child.once('error', reject);
+
+      child.once('close', (code) => {
+        if (code !== 0) {
+          reject(
+            new Error(
+              `ACE-Step provider exited with code ${code ?? 'unknown'}: ${
+                (
+                  stderr ||
+                  stdout ||
+                  'no provider output'
+                )
+                  .trim()
+                  .slice(-5000)
+              }`
+            )
+          );
+          return;
+        }
+
+        const lines = stdout
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean);
+
+        if (lines.length === 0) {
+          reject(
+            new Error(
+              'ACE-Step provider returned no machine-readable result.'
+            )
+          );
+          return;
+        }
+
+        try {
+          resolve(
+            JSON.parse(
+              lines[
+                lines.length - 1
+              ]
+            ) as Record<string, unknown>
+          );
+        } catch {
+          reject(
+            new Error(
+              `ACE-Step provider returned invalid JSON: ${stdout
+                .trim()
+                .slice(-3000)}`
+            )
+          );
+        }
       });
     });
   }
