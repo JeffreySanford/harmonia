@@ -246,9 +246,10 @@ For each adapter:
 Add a Mongoose schema with:
 
 ```text
-modelId
+artifactId
 providerId
-runtimeModelId
+modelIds[]
+runtimeModelIds[]
 sourceKind
 sourceRef
 sourceRevision
@@ -268,10 +269,11 @@ timestamps
 
 ### Behavior
 
-- model CLI upserts status when Mongo is reachable;
+- model CLI upserts one operational record per physical `artifactId` when Mongo is reachable;
+- logical model readiness is derived from the registry binding's required artifact IDs;
 - CLI still works when Mongo is unavailable;
 - backend startup can reconcile DB state against disk;
-- provider selection can update `lastUsedAt`;
+- provider selection can update `lastUsedAt` for every artifact required by the selected model;
 - model download errors are stored in sanitized form.
 
 ### Non-goal
