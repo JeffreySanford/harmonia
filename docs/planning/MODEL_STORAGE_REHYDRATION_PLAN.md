@@ -34,7 +34,8 @@ As of September 24, 2026:
   - `pnpm test:model-manager`
   - [MODEL_PLAN_PHASE2.md](MODEL_PLAN_PHASE2.md)
 - Phase 3 read-only deep verification: **complete and locally qualified**.
-- Phase 4 Hugging Face initialization adapter: **implemented, awaiting alternate-root qualification**.
+- Phase 4 Hugging Face initialization adapter: **complete and locally qualified**.
+- Phase 5 DiffSinger HTTP-ZIP initialization adapter: **next**.
 - Later download/Mongo/runtime/recovery phases: **not started**.
 
 Phase 1 intentionally includes all application models currently marked
