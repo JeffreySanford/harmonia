@@ -11,6 +11,8 @@ const env = {
     process.env.MONGO_HARMONIA_PASSWORD || 'compose-validation-app',
   MONGO_WIREDTIGER_CACHE_GB: process.env.MONGO_WIREDTIGER_CACHE_GB || '2',
   MONGO_MAX_CONNS: process.env.MONGO_MAX_CONNS || '500',
+  HF_TOKEN: process.env.HF_TOKEN || '',
+  HUGGING_FACE_HUB_TOKEN: process.env.HUGGING_FACE_HUB_TOKEN || '',
   HUGGINGFACE_HUB_TOKEN: process.env.HUGGINGFACE_HUB_TOKEN || '',
 };
 
