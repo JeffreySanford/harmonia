@@ -443,6 +443,34 @@ test('DiffSinger real inference qualification rejects placeholder audio', () => 
   );
 });
 
+test('Stable Audio 3 persistent jobs use the resident provider and preserve native float WAV output', () => {
+  const jobs = read('apps/backend/src/jobs/jobs.service.ts');
+  const qualifier = read('scripts/qualify-stable-audio-3-job.cjs');
+  const pkg = JSON.parse(read('package.json'));
+
+  assert.equal(
+    pkg.scripts['qualify:stable-audio-3-job'],
+    'node scripts/qualify-stable-audio-3-job.cjs'
+  );
+  assert.match(
+    jobs,
+    /\['musicgen', 'diffsinger', 'stable-audio-3'\]/
+  );
+  assert.match(jobs, /runStableAudio3Client/);
+  assert.match(jobs, /harmonia-stable-audio-3/);
+  assert.match(jobs, /stable_audio_3_provider_client\.py/);
+  assert.match(jobs, /model\.providerId === 'stable-audio-3'/);
+  assert.match(qualifier, /stable-audio-3-small-music/);
+  assert.match(qualifier, /runtimeModelId = 'small-music'/);
+  assert.match(qualifier, /wav\.channels !== 2/);
+  assert.match(qualifier, /wav\.sampleRate !== 44100/);
+  assert.match(qualifier, /wav\.bitsPerSample !== 32/);
+  assert.match(qualifier, /wav\.audioFormat !== 3/);
+  assert.match(qualifier, /backend download/);
+  assert.match(qualifier, /frontend download/);
+  assert.match(qualifier, /STABLE_AUDIO_3_JOB_QUALIFICATION_OK/);
+});
+
 test('DiffSinger persistent jobs execute score-native synthesis', () => {
   const jobs = read('apps/backend/src/jobs/jobs.service.ts');
   const catalog = read('apps/backend/src/music-runtime/music-model.catalog.ts');
