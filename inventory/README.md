@@ -86,16 +86,21 @@ exceed the target 10 GB-class GPU memory budget.
 
 ## Commands
 
-Current contract check:
+Current commands:
 
 ```bash
 pnpm test:model-registry
+pnpm test:model-manager
+pnpm models:plan
 ```
+
+`models:plan` is read-only with respect to model data. It inspects the
+registry and local cache markers, writes a gitignored report under
+`generated/model-manager/`, and performs no download or repair.
 
 Planned lifecycle commands:
 
 ```bash
-pnpm models:plan
 pnpm models:init
 pnpm models:verify
 pnpm models:inventory
