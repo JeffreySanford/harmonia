@@ -1853,12 +1853,15 @@ function createInitialization(options = {}) {
   }
 
   const unsupported = artifacts.filter(
-    (artifact) => artifact.source.kind !== 'huggingface'
+    (artifact) =>
+      !['huggingface', 'http-zip'].includes(
+        artifact.source.kind
+      )
   );
 
   if (unsupported.length > 0) {
     fail(
-      'Phase 4 models:init supports Hugging Face artifacts only; unsupported: ' +
+      'models:init does not support source kinds for: ' +
         unsupported.map((artifact) => artifact.artifactId).join(', ')
     );
   }
@@ -1867,8 +1870,14 @@ function createInitialization(options = {}) {
     Object.prototype.hasOwnProperty.call(options, 'credential')
       ? options.credential
       : getHuggingFaceCredential();
-  const downloadExecutor =
-    options.downloadExecutor || runHuggingFaceDownloadContainer;
+  const huggingFaceDownloadExecutor =
+    options.huggingFaceDownloadExecutor ||
+    options.downloadExecutor ||
+    runHuggingFaceDownloadContainer;
+  const httpZipDownloadExecutor =
+    options.httpZipDownloadExecutor ||
+    options.downloadExecutor ||
+    runHttpZipDownloadContainer;
 
   const artifactRows = artifacts.map((artifact) => {
     const before = verifyArtifact(
@@ -1876,6 +1885,10 @@ function createInitialization(options = {}) {
       modelRoot,
       options
     );
+    const isHuggingFace =
+      artifact.source.kind === 'huggingface';
+    const isHttpZip =
+      artifact.source.kind === 'http-zip';
     const base = {
       artifactId: artifact.artifactId,
       providerId: artifact.providerId,
@@ -1884,18 +1897,28 @@ function createInitialization(options = {}) {
         artifact.artifactId
       ),
       sourceKind: artifact.source.kind,
-      sourceRef: artifact.source.repoId,
+      sourceRef:
+        artifact.source.repoId ||
+        artifact.source.url,
       expectedRevision: artifact.source.revision || null,
       relativePath: artifact.destination,
       gated: Boolean(artifact.source.gated),
       downloadRepos:
-        huggingFaceDownloadReposForArtifact(artifact),
+        isHuggingFace
+          ? huggingFaceDownloadReposForArtifact(artifact)
+          : [],
+      downloadSources:
+        isHuggingFace
+          ? huggingFaceDownloadReposForArtifact(artifact)
+          : [artifact.source.url],
     };
     const missingRuntimeReposBefore =
-      missingHuggingFaceDownloadRepos(
-        artifact,
-        modelRoot
-      );
+      isHuggingFace
+        ? missingHuggingFaceDownloadRepos(
+            artifact,
+            modelRoot
+          )
+        : [];
 
     if (
       before.state === 'verified' &&
