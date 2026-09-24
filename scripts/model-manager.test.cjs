@@ -1064,20 +1064,214 @@ test('models:init offline blocks missing DiffSinger packages without mutation', 
   assert.equal(fs.readdirSync(root).length, 0);
 });
 
-test('models:init partial Phase 4 requires an explicit selector', () => {
+test('models:init bare default selection downloads exactly the six default artifacts', () => {
   const root = tempRoot();
+  const registry = loadRegistry();
+  const hfCalls = [];
+  const zipCalls = [];
 
-  assert.throws(
-    () =>
-      createInitialization({
-        root,
-        modelIds: [],
-        providerIds: [],
-        artifactIds: [],
-        platform: 'linux',
-      }),
-    /requires an explicit --model, --provider, or --artifact selector/
+  const result = createInitialization({
+    root,
+    modelIds: [],
+    providerIds: [],
+    artifactIds: [],
+    platform: 'linux',
+    credential: 'fixture-token',
+    huggingFaceDownloadExecutor: (
+      artifact,
+      modelRoot
+    ) => {
+      hfCalls.push(artifact.artifactId);
+      createHuggingFaceFixture(
+        modelRoot,
+        artifact
+      );
+
+      if (artifact.providerId === 'musicgen') {
+        createMusicGenDependencyFixtures(
+          modelRoot,
+          artifact
+        );
+      }
+
+      return {
+        repos:
+          huggingFaceDownloadReposForArtifact(
+            artifact
+          ).map((repoId) => ({ repoId })),
+      };
+    },
+    httpZipDownloadExecutor: (
+      artifact,
+      modelRoot
+    ) => {
+      zipCalls.push(artifact.artifactId);
+      createCheckpointFixture(
+        modelRoot,
+        artifact
+      );
+      return {
+        bytesDownloaded: 1234,
+        operationId:
+          'fixture-' + artifact.artifactId,
+      };
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.selectedModels, 4);
+  assert.equal(result.summary.selectedArtifacts, 6);
+  assert.equal(result.summary.verified, 6);
+  assert.equal(result.summary.downloaded, 6);
+  assert.equal(result.summary.cacheHits, 0);
+
+  assert.deepEqual(
+    [...hfCalls].sort(),
+    [
+      'musicgen-small',
+      'musicgen-stereo-small',
+      'stable-audio-3-small-music',
+    ].sort()
   );
+
+  assert.deepEqual(
+    [...zipCalls].sort(),
+    [
+      'diffsinger-opencpop-acoustic',
+      'diffsinger-xiaoma-pitch-estimator',
+      'diffsinger-hifigan-vocoder',
+    ].sort()
+  );
+
+  assert.equal(
+    result.artifacts.some(
+      (row) =>
+        row.artifactId === 'musicgen-medium' ||
+        row.artifactId === 'musicgen-stereo-medium'
+    ),
+    false
+  );
+});
+
+test('models:init bare default selection is six cache hits on a complete root', () => {
+  const root = tempRoot();
+  const registry = loadRegistry();
+
+  for (const artifact of registry.artifacts.filter(
+    (candidate) => candidate.defaultInstall
+  )) {
+    if (artifact.source.kind === 'huggingface') {
+      createHuggingFaceFixture(root, artifact);
+
+      if (artifact.providerId === 'musicgen') {
+        createMusicGenDependencyFixtures(
+          root,
+          artifact
+        );
+      }
+    } else {
+      createCheckpointFixture(root, artifact);
+    }
+  }
+
+  let calls = 0;
+
+  const result = createInitialization({
+    root,
+    modelIds: [],
+    providerIds: [],
+    artifactIds: [],
+    platform: 'linux',
+    credential: null,
+    downloadExecutor: () => {
+      calls += 1;
+    },
+  });
+
+  assert.equal(calls, 0);
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.selectedModels, 4);
+  assert.equal(result.summary.selectedArtifacts, 6);
+  assert.equal(result.summary.cacheHits, 6);
+  assert.equal(result.summary.downloaded, 0);
+  assert.equal(result.summary.authenticationRequired, 0);
+});
+
+test('models:init bare empty root blocks before any download when gated credential is missing', () => {
+  const root = tempRoot();
+  let hfCalls = 0;
+  let zipCalls = 0;
+
+  const result = createInitialization({
+    root,
+    modelIds: [],
+    providerIds: [],
+    artifactIds: [],
+    platform: 'linux',
+    credential: null,
+    huggingFaceDownloadExecutor: () => {
+      hfCalls += 1;
+    },
+    httpZipDownloadExecutor: () => {
+      zipCalls += 1;
+    },
+  });
+
+  assert.equal(hfCalls, 0);
+  assert.equal(zipCalls, 0);
+  assert.equal(result.ok, false);
+  assert.equal(result.summary.selectedModels, 4);
+  assert.equal(result.summary.selectedArtifacts, 6);
+  assert.equal(result.summary.authenticationRequired, 1);
+  assert.equal(result.summary.prerequisiteBlocked, 5);
+  assert.equal(result.summary.downloaded, 0);
+
+  const stable = result.artifacts.find(
+    (row) =>
+      row.artifactId ===
+      'stable-audio-3-small-music'
+  );
+
+  assert.equal(stable.action, 'authenticate');
+
+  for (const row of result.artifacts) {
+    if (
+      row.artifactId !==
+      'stable-audio-3-small-music'
+    ) {
+      assert.equal(
+        row.action,
+        'blocked-prerequisite'
+      );
+    }
+  }
+});
+
+test('models:init bare dry-run exposes five downloads plus gated authentication without mutation', () => {
+  const root = tempRoot();
+  let calls = 0;
+
+  const result = createInitialization({
+    root,
+    modelIds: [],
+    providerIds: [],
+    artifactIds: [],
+    dryRun: true,
+    platform: 'linux',
+    credential: null,
+    downloadExecutor: () => {
+      calls += 1;
+    },
+  });
+
+  assert.equal(calls, 0);
+  assert.equal(result.ok, false);
+  assert.equal(result.summary.selectedModels, 4);
+  assert.equal(result.summary.selectedArtifacts, 6);
+  assert.equal(result.summary.plannedDownloads, 5);
+  assert.equal(result.summary.authenticationRequired, 1);
+  assert.equal(result.summary.prerequisiteBlocked, 0);
+  assert.equal(fs.readdirSync(root).length, 0);
 });
 
 test('checkpoint wildcard matching handles DiffSinger checkpoint names', () => {
