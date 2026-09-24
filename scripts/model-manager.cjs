@@ -1898,11 +1898,34 @@ function createInitialization(options = {}) {
     options.downloadExecutor ||
     runHttpZipDownloadContainer;
 
+  const beforeByArtifact = new Map(
+    artifacts.map((artifact) => [
+      artifact.artifactId,
+      verifyArtifact(
+        artifact,
+        modelRoot,
+        options
+      ),
+    ])
+  );
+
+  const defaultAuthenticationBlocked =
+    !explicitSelection &&
+    !normalized.dryRun &&
+    !normalized.offline &&
+    !credential &&
+    artifacts.some(
+      (artifact) =>
+        artifact.source.kind === 'huggingface' &&
+        artifact.source.gated &&
+        beforeByArtifact.get(
+          artifact.artifactId
+        )?.state !== 'verified'
+    );
+
   const artifactRows = artifacts.map((artifact) => {
-    const before = verifyArtifact(
-      artifact,
-      modelRoot,
-      options
+    const before = beforeByArtifact.get(
+      artifact.artifactId
     );
     const isHuggingFace =
       artifact.source.kind === 'huggingface';
@@ -1991,6 +2014,21 @@ function createInitialization(options = {}) {
         missingRuntimeRepos: missingRuntimeReposBefore,
         detail:
           'gated Hugging Face artifact requires a configured credential before initialization',
+      };
+    }
+
+    if (
+      defaultAuthenticationBlocked &&
+      before.state !== 'verified'
+    ) {
+      return {
+        ...base,
+        state: before.state,
+        action: 'blocked-prerequisite',
+        resolvedRevision: before.resolvedRevision,
+        missingRuntimeRepos: missingRuntimeReposBefore,
+        detail:
+          'default initialization is blocked until all required gated authentication prerequisites are available',
       };
     }
 
@@ -2164,6 +2202,9 @@ function createInitialization(options = {}) {
     ).length,
     authenticationRequired: artifactRows.filter(
       (row) => row.action === 'authenticate'
+    ).length,
+    prerequisiteBlocked: artifactRows.filter(
+      (row) => row.action === 'blocked-prerequisite'
     ).length,
     offlineBlocked: artifactRows.filter(
       (row) => row.action === 'offline-missing'
