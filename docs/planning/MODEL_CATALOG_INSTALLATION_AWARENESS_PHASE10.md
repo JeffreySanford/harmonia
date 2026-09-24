@@ -1,6 +1,6 @@
 # Phase 10 Catalog Installation Awareness
 
-**Status:** Planned  
+**Status:** Implemented, awaiting local qualification  
 **Date:** September 24, 2026  
 **Backend seam:** `MusicRuntimeService.getCatalog()`  
 **Frontend seam:** existing model selector / `disabledReason`
