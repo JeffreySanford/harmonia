@@ -898,6 +898,11 @@ function runHuggingFaceDownloadContainer(
       image: 'harmonia/stable-audio-3:dev',
       python: 'python',
     },
+    'ace-step-1.5': {
+      image: 'harmonia/ace-step-1.5:dev',
+      python:
+        '/opt/ACE-Step-1.5/.venv/bin/python',
+    },
   };
   const provider = providers[artifact.providerId];
 
@@ -916,6 +921,150 @@ function runHuggingFaceDownloadContainer(
       ? [...new Set(options.repos)]
       : huggingFaceDownloadReposForArtifact(artifact);
   const credential = options.credential || null;
+
+  if (
+    isHuggingFaceLocalDirArtifact(
+      artifact
+    )
+  ) {
+    const destination =
+      '/workspace/models/' +
+      artifact.destination.replace(
+        /\\/g,
+        '/'
+      );
+    const allowPatterns =
+      Array.isArray(
+        artifact.source.allowPatterns
+      )
+        ? artifact.source.allowPatterns
+        : [];
+
+    const python = [
+      'import json, os, sys',
+      'from pathlib import Path',
+      'from huggingface_hub import snapshot_download',
+      'repo_id = sys.argv[1]',
+      'revision = sys.argv[2]',
+      'destination = Path(sys.argv[3])',
+      'allow_patterns = json.loads(sys.argv[4])',
+      'token = sys.stdin.read().strip() or None',
+      'if token:',
+      '    os.environ["HF_TOKEN"] = token',
+      '    os.environ["HUGGING_FACE_HUB_TOKEN"] = token',
+      'destination.mkdir(parents=True, exist_ok=True)',
+      'print("HARMONIA_HF_LOCAL_DIR_FETCH " + repo_id, file=sys.stderr, flush=True)',
+      'snapshot_download(',
+      '    repo_id=repo_id,',
+      '    revision=revision,',
+      '    local_dir=str(destination),',
+      '    allow_patterns=allow_patterns or None,',
+      '    token=token,',
+      ')',
+      '(destination / ".harmonia-revision").write_text(revision, encoding="utf-8")',
+      'print(json.dumps({"repos": [{"repoId": repo_id, "resolvedRevision": revision}]}), flush=True)',
+    ].join('\n');
+
+    const args = [
+      'run',
+      '--rm',
+      '-i',
+      '--mount',
+      'type=bind,source=' +
+        resolvedRoot +
+        ',target=/workspace/models',
+      '-e',
+      'HF_HUB_OFFLINE=0',
+      '-e',
+      'TRANSFORMERS_OFFLINE=0',
+      '--entrypoint',
+      provider.python,
+      provider.image,
+      '-c',
+      python,
+      artifact.source.repoId,
+      artifact.source.revision,
+      destination,
+      JSON.stringify(
+        allowPatterns
+      ),
+    ];
+
+    const spawn =
+      options.spawnSyncApi ||
+      spawnSync;
+    const execution = spawn(
+      'docker',
+      args,
+      {
+        cwd: repoRoot,
+        encoding: 'utf8',
+        env: process.env,
+        input:
+          credential || '',
+        windowsHide: true,
+        stdio: [
+          'pipe',
+          'pipe',
+          'inherit',
+        ],
+        timeout:
+          options.timeout ||
+          4 * 60 * 60 * 1000,
+        maxBuffer:
+          16 * 1024 * 1024,
+      }
+    );
+
+    if (execution.error) {
+      throw new Error(
+        'Hugging Face local-dir download container failed to start: ' +
+          execution.error.message
+      );
+    }
+
+    if (execution.status !== 0) {
+      throw new Error(
+        'Hugging Face local-dir download failed for ' +
+          artifact.source.repoId +
+          ' (docker exit ' +
+          execution.status +
+          ')'
+      );
+    }
+
+    const lines =
+      String(
+        execution.stdout || ''
+      )
+        .split(/\r?\n/)
+        .map(
+          (line) =>
+            line.trim()
+        )
+        .filter(Boolean);
+
+    if (lines.length === 0) {
+      throw new Error(
+        'Hugging Face local-dir download returned no machine-readable result for ' +
+          artifact.source.repoId
+      );
+    }
+
+    try {
+      return JSON.parse(
+        lines[
+          lines.length - 1
+        ]
+      );
+    } catch {
+      throw new Error(
+        'Hugging Face local-dir download returned invalid machine-readable output for ' +
+          artifact.source.repoId
+      );
+    }
+  }
+
   const hfHome =
     '/workspace/models/' +
     artifact.destination.replace(/\\/g, '/');
