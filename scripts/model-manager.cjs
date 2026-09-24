@@ -328,6 +328,240 @@ function huggingFaceRepoCacheRoot(artifactRoot, repoId) {
   return path.join(artifactRoot, 'hub', cacheName);
 }
 
+function isHuggingFaceLocalDirArtifact(artifact) {
+  return (
+    artifact.source.kind === 'huggingface' &&
+    artifact.source.layout === 'local-dir'
+  );
+}
+
+function huggingFaceLocalDirRevisionPath(artifactRoot) {
+  return path.join(
+    artifactRoot,
+    '.harmonia-revision'
+  );
+}
+
+function inspectHuggingFaceLocalDirArtifact(
+  artifact,
+  artifactRoot
+) {
+  if (!fs.existsSync(artifactRoot)) {
+    return {
+      state: 'missing',
+      resolvedRevision: null,
+      detail: 'Hugging Face local-dir destination is absent',
+    };
+  }
+
+  const expectedRevision =
+    artifact.source.revision || null;
+  const resolvedRevision =
+    readTextIfExists(
+      huggingFaceLocalDirRevisionPath(
+        artifactRoot
+      )
+    );
+
+  const requiredChecks =
+    (artifact.verification.requiredFiles || [])
+      .map((relativePath) => ({
+        relativePath,
+        ...inspectShallowPathPresence(
+          path.join(
+            artifactRoot,
+            relativePath
+          )
+        ),
+      }));
+
+  const missing =
+    requiredChecks
+      .filter((check) => !check.present)
+      .map((check) => check.relativePath);
+
+  if (
+    missing.length > 0 &&
+    !resolvedRevision
+  ) {
+    return {
+      state: 'missing',
+      resolvedRevision: null,
+      detail:
+        'Hugging Face local-dir content is incomplete; missing files: ' +
+        missing.join(', '),
+    };
+  }
+
+  if (!resolvedRevision) {
+    return {
+      state: 'degraded',
+      resolvedRevision: null,
+      detail:
+        'Hugging Face local-dir revision marker is absent',
+    };
+  }
+
+  if (
+    expectedRevision &&
+    resolvedRevision !== expectedRevision
+  ) {
+    return {
+      state: 'revision-mismatch',
+      resolvedRevision,
+      detail:
+        'expected local-dir revision ' +
+        expectedRevision +
+        ' but found ' +
+        resolvedRevision,
+    };
+  }
+
+  if (missing.length > 0) {
+    return {
+      state: 'degraded',
+      resolvedRevision,
+      detail:
+        'missing files: ' +
+        missing.join(', '),
+    };
+  }
+
+  return {
+    state: 'verified',
+    resolvedRevision,
+    detail:
+      'pinned Hugging Face local-dir files are present',
+  };
+}
+
+function verifyHuggingFaceLocalDirArtifact(
+  artifact,
+  artifactRoot,
+  options = {}
+) {
+  if (!fs.existsSync(artifactRoot)) {
+    return {
+      state: 'missing',
+      resolvedRevision: null,
+      checks: [],
+      detail:
+        'Hugging Face local-dir destination is absent',
+    };
+  }
+
+  const expectedRevision =
+    artifact.source.revision || null;
+  const revisionPath =
+    huggingFaceLocalDirRevisionPath(
+      artifactRoot
+    );
+  const resolvedRevision =
+    readTextIfExists(revisionPath);
+
+  if (!resolvedRevision) {
+    const anyRequiredPresent =
+      (artifact.verification.requiredFiles || [])
+        .some((relativePath) =>
+          fs.existsSync(
+            path.join(
+              artifactRoot,
+              relativePath
+            )
+          )
+        );
+
+    if (!anyRequiredPresent) {
+      return {
+        state: 'missing',
+        resolvedRevision: null,
+        checks: [],
+        detail:
+          'Hugging Face local-dir content is absent',
+      };
+    }
+
+    return {
+      state: 'corrupt',
+      resolvedRevision: null,
+      checks: [],
+      detail:
+        'Hugging Face local-dir revision marker is absent',
+    };
+  }
+
+  if (
+    expectedRevision &&
+    resolvedRevision !== expectedRevision
+  ) {
+    return {
+      state: 'corrupt',
+      resolvedRevision,
+      checks: [],
+      detail:
+        'expected local-dir revision ' +
+        expectedRevision +
+        ' but found ' +
+        resolvedRevision,
+    };
+  }
+
+  const checks =
+    (artifact.verification.requiredFiles || [])
+      .map((relativePath) => ({
+        relativePath,
+        ...verifyRequiredFile(
+          path.join(
+            artifactRoot,
+            relativePath
+          ),
+          {
+            platform:
+              options.platform ||
+              process.platform,
+          }
+        ),
+      }));
+
+  const states =
+    new Set(
+      checks.map(
+        (check) => check.state
+      )
+    );
+
+  let state = 'verified';
+
+  if (states.has('missing')) {
+    state = 'missing';
+  } else if (states.has('corrupt')) {
+    state = 'corrupt';
+  } else if (states.has('unavailable')) {
+    state = 'unavailable';
+  }
+
+  return {
+    state,
+    resolvedRevision,
+    checks,
+    detail:
+      state === 'verified'
+        ? 'all pinned Hugging Face local-dir files are non-empty'
+        : checks
+            .filter(
+              (check) =>
+                check.state !== 'verified'
+            )
+            .map(
+              (check) =>
+                check.relativePath +
+                ': ' +
+                check.detail
+            )
+            .join('; '),
+  };
+}
+
 function readTextIfExists(filePath) {
   if (!fs.existsSync(filePath)) {
     return null;
@@ -547,6 +781,19 @@ function missingHuggingFaceDownloadRepos(
     artifact.destination
   );
 
+  if (
+    isHuggingFaceLocalDirArtifact(
+      artifact
+    )
+  ) {
+    return verifyHuggingFaceLocalDirArtifact(
+      artifact,
+      artifactRoot
+    ).state === 'verified'
+      ? []
+      : [artifact.source.repoId];
+  }
+
   return huggingFaceDownloadReposForArtifact(
     artifact
   ).filter(
@@ -562,6 +809,18 @@ function normalizePinnedHuggingFaceMainRef(
   artifact,
   modelRoot
 ) {
+  if (
+    isHuggingFaceLocalDirArtifact(
+      artifact
+    )
+  ) {
+    return {
+      changed: false,
+      reason:
+        'local-dir revision is owned by .harmonia-revision',
+    };
+  }
+
   if (
     artifact.source.kind !== 'huggingface' ||
     !artifact.source.revision
