@@ -385,6 +385,7 @@ test('Stable Audio 3 Small-Music provider is isolated and qualification verifies
   assert.match(client, /127\.0\.0\.1:8766\/generate/);
   assert.match(compose, /harmonia-stable-audio-3/);
   assert.match(compose, /HF_TOKEN: \${HF_TOKEN:-}/);
+  assert.match(compose, /HUGGINGFACE_API_KEY: \${HUGGINGFACE_API_KEY:-}/);
   assert.match(compose, /HUGGING_FACE_HUB_TOKEN: \${HUGGING_FACE_HUB_TOKEN:-}/);
   assert.match(compose, /HUGGINGFACE_HUB_TOKEN: \${HUGGINGFACE_HUB_TOKEN:-}/);
   assert.match(compose, /model-stable-audio-3/);
