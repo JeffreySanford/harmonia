@@ -18,9 +18,15 @@ Welcome to the Harmonia documentation! This is your comprehensive guide to under
 ### 🏗️ Architecture & Design
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture overview
+- **[MODEL_STORAGE_AND_REHYDRATION.md](MODEL_STORAGE_AND_REHYDRATION.md)** - Local model storage, inventory, verification, and deterministic restoration
 - **[COMPONENT_ARCHITECTURE.md](COMPONENT_ARCHITECTURE.md)** - Component design patterns
 - **[NGRX_PATTERNS.md](NGRX_PATTERNS.md)** - State management patterns
 - **[WEBSOCKET_INTEGRATION.md](WEBSOCKET_INTEGRATION.md)** - Real-time communication architecture
+
+### 🗺️ Planning
+
+- **[planning/README.md](planning/README.md)** - Active implementation plans
+- **[planning/MODEL_STORAGE_REHYDRATION_PLAN.md](planning/MODEL_STORAGE_REHYDRATION_PLAN.md)** - Phased model cache initialization, verification, repair, and Mongo inventory plan
 
 ### 🔧 Development Standards
 
@@ -47,6 +53,7 @@ Welcome to the Harmonia documentation! This is your comprehensive guide to under
 - **[MONGODB_SETUP.md](MONGODB_SETUP.md)** - MongoDB configuration and setup
 - **[REDIS_CACHING.md](REDIS_CACHING.md)** - Caching strategy and implementation
 - **[PERSISTENT_STORAGE.md](PERSISTENT_STORAGE.md)** - Data persistence patterns
+- **[MODEL_STORAGE_AND_REHYDRATION.md](MODEL_STORAGE_AND_REHYDRATION.md)** - Model binary/cache persistence and restoration architecture
 - **[BACKUP_SETUP.md](BACKUP_SETUP.md)** - Backup and recovery procedures
 
 ### 🔒 Security & Compliance
