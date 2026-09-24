@@ -330,6 +330,23 @@ test('MusicGen registry uses AudioCraft checkpoint markers', () => {
 });
 
 
+
+test('Stable Audio registry verifies weights and bundled text encoder assets', () => {
+  const registry = loadRegistry();
+  const artifact = registry.artifacts.find(
+    (candidate) => candidate.artifactId === 'stable-audio-3-small-music'
+  );
+
+  assert.ok(artifact);
+  assert.deepEqual(artifact.verification.requiredFiles, [
+    'model_config.json',
+    'model.safetensors',
+    't5gemma-b-b-ul2/config.json',
+    't5gemma-b-b-ul2/model.safetensors',
+    't5gemma-b-b-ul2/tokenizer_config.json',
+  ]);
+});
+
 test('models:verify deeply verifies the complete default fixture cache', () => {
   const root = tempRoot();
   createDefaultInstallFixture(root);
