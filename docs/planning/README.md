@@ -55,6 +55,8 @@ operational documentation:
   completed advisory installation state in runtime catalog selectability and guidance.
 - [Phase 11 Portable Model Inventory](MODEL_INVENTORY_PHASE11.md) —
   completed read-only normalized observed inventory derived from deep verification evidence.
+- [Phase 12 ACE-Step 1.5 Provider](ACE_STEP_PHASE12.md) —
+  staged integration of the 10 GB-class full-song vocal provider, beginning with a pinned offline boot-safe API shell.
 - [Model Installation MongoDB Schema](MODEL_INSTALLATION_MONGO_SCHEMA.md) —
   artifact-granular operational state, readiness derivation, indexes, error
   sanitization, and migration strategy.
