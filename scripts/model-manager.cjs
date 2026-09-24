@@ -2023,7 +2023,11 @@ function createInitialization(options = {}) {
     }
 
     try {
-      const download = downloadExecutor(
+      const selectedDownloadExecutor =
+        isHuggingFace
+          ? huggingFaceDownloadExecutor
+          : httpZipDownloadExecutor;
+      const download = selectedDownloadExecutor(
         artifact,
         modelRoot,
         {
@@ -2033,20 +2037,26 @@ function createInitialization(options = {}) {
         }
       );
       const normalizedRef =
-        normalizePinnedHuggingFaceMainRef(
-          artifact,
-          modelRoot
-        );
+        isHuggingFace
+          ? normalizePinnedHuggingFaceMainRef(
+              artifact,
+              modelRoot
+            )
+          : {
+              changed: false,
+            };
       const after = verifyArtifact(
         artifact,
         modelRoot,
         options
       );
       const missingRuntimeRepos =
-        missingHuggingFaceDownloadRepos(
-          artifact,
-          modelRoot
-        );
+        isHuggingFace
+          ? missingHuggingFaceDownloadRepos(
+              artifact,
+              modelRoot
+            )
+          : [];
       const verified =
         after.state === 'verified' &&
         missingRuntimeRepos.length === 0;
@@ -2074,6 +2084,12 @@ function createInitialization(options = {}) {
                 row.resolvedRevision || null,
             }))
           : [],
+        bytesDownloaded:
+          Number.isFinite(download?.bytesDownloaded)
+            ? download.bytesDownloaded
+            : null,
+        operationId:
+          download?.operationId || null,
         detail:
           missingRuntimeRepos.length > 0
             ? 'runtime dependency repositories are still missing: ' +
