@@ -1,6 +1,6 @@
 # Phase 5 DiffSinger HTTP-ZIP Initialization Adapter
 
-**Status:** Implemented, awaiting alternate-root qualification  
+**Status:** Complete and locally qualified  
 **Date:** September 24, 2026  
 **Scope:** DiffSinger acoustic, pitch-estimator, and HiFi-GAN packages  
 **Command:** `pnpm models:init --provider diffsinger`
@@ -135,10 +135,41 @@ Use a fresh alternate root and prove:
 10. the original workstation `models/` cache remains unchanged;
 11. the full startup/model regression suite remains green.
 
+## Local qualification result
+
+Qualified locally on September 24, 2026.
+
+The shared alternate recovery root reached approximately 23 GB and proved:
+
+- all three DiffSinger release ZIPs initialize through staged extraction;
+- all archive payloads deep-verify before use;
+- repeated initialization is three cache hits;
+- incomplete existing destinations are preserved and reported as
+  `repair-required` rather than overwritten;
+- the recovered package tree boots in the pinned DiffSinger container with
+  Docker networking disabled;
+- real CUDA DiffSinger inference succeeds from the recovered packages and
+  produces a non-placeholder RIFF/WAVE artifact;
+- the combined alternate root verifies all six default-installed physical
+  artifacts while the two Medium MusicGen variants remain optional;
+- the original workstation cache remains green;
+- the full startup/model regression suite remains green.
+
+The qualification run completed with 99 passing tests, zero failures, and
+one intentionally skipped real-Compose lifecycle test.
+
+`models:init` now has qualified Hugging Face and HTTP-ZIP source adapters.
+The next step is default-set orchestration for selector-free `models:init`.
+
 ## Completion criterion
 
-Phase 5 is complete when an empty alternate root can be populated with all
-three DiffSinger packages through `models:init --provider diffsinger`,
-deep-verified, mounted into the pinned provider image without further package
-download, and reinitialized idempotently while the working cache remains
-untouched.
+Phase 5 completion criteria are satisfied:
+
+- [x] all three DiffSinger packages initialize from release ZIPs;
+- [x] extraction is staged and path-safe;
+- [x] staged content verifies before promotion;
+- [x] incomplete final destinations are never overwritten by init;
+- [x] repeated initialization is idempotent;
+- [x] recovered packages boot with networking disabled;
+- [x] real inference succeeds from the recovered packages;
+- [x] the working cache remains untouched.
