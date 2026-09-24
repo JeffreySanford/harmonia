@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const fs = require('node:fs');
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 const { parseEnv } = require('node:util');
 const Ajv = require('ajv');
 
@@ -123,13 +123,14 @@ function usage() {
     'Usage:',
     '  node scripts/model-manager.cjs plan [options]',
     '  node scripts/model-manager.cjs verify [options]',
+    '  node scripts/model-manager.cjs init [options]',
     '',
     'Implemented:',
     '  plan       Inspect registry + local cache; never downloads or repairs.',
     '  verify     Deep read-only local verification.',
+    '  init       Rehydrate selected Hugging Face artifacts (Phase 4).',
     '',
     'Planned commands:',
-    '  init       Rehydrate missing artifacts.',
     '  inventory  Emit normalized observed inventory.',
     '  repair     Conservatively repair incomplete artifacts.',
     '',
@@ -191,17 +192,25 @@ function readLocalEnv() {
   }
 }
 
-function hasHuggingFaceCredential(env = readLocalEnv()) {
-  return Boolean(
-    process.env.HF_TOKEN ||
-      env.HF_TOKEN ||
-      process.env.HUGGINGFACE_API_KEY ||
-      env.HUGGINGFACE_API_KEY ||
-      process.env.HUGGING_FACE_HUB_TOKEN ||
-      env.HUGGING_FACE_HUB_TOKEN ||
-      process.env.HUGGINGFACE_HUB_TOKEN ||
-      env.HUGGINGFACE_HUB_TOKEN
+function getHuggingFaceCredential(
+  env = readLocalEnv(),
+  processEnv = process.env
+) {
+  return (
+    processEnv.HF_TOKEN ||
+    env.HF_TOKEN ||
+    processEnv.HUGGINGFACE_API_KEY ||
+    env.HUGGINGFACE_API_KEY ||
+    processEnv.HUGGING_FACE_HUB_TOKEN ||
+    env.HUGGING_FACE_HUB_TOKEN ||
+    processEnv.HUGGINGFACE_HUB_TOKEN ||
+    env.HUGGINGFACE_HUB_TOKEN ||
+    null
   );
+}
+
+function hasHuggingFaceCredential(env = readLocalEnv()) {
+  return Boolean(getHuggingFaceCredential(env));
 }
 
 function listFilesRecursive(directory, prefix = '') {
@@ -460,6 +469,155 @@ function inspectHuggingFaceArtifact(artifact, artifactRoot) {
   };
 }
 
+
+
+function huggingFaceDownloadReposForArtifact(artifact) {
+  const repos = [artifact.source.repoId];
+
+  if (artifact.providerId === 'musicgen') {
+    repos.push('facebook/encodec_32khz', 't5-base');
+  }
+
+  return [...new Set(repos.filter(Boolean))];
+}
+
+function runHuggingFaceDownloadContainer(
+  artifact,
+  modelRoot,
+  options = {}
+) {
+  const providers = {
+    musicgen: {
+      image: 'harmonia/musicgen:dev',
+      python: 'python3.9',
+    },
+    'stable-audio-3': {
+      image: 'harmonia/stable-audio-3:dev',
+      python: 'python',
+    },
+  };
+  const provider = providers[artifact.providerId];
+
+  if (!provider) {
+    throw new Error(
+      'No Hugging Face initialization container is configured for provider ' +
+        artifact.providerId
+    );
+  }
+
+  const resolvedRoot = path.resolve(modelRoot);
+  fs.mkdirSync(resolvedRoot, { recursive: true });
+
+  const repos = huggingFaceDownloadReposForArtifact(artifact);
+  const credential = options.credential || null;
+  const hfHome =
+    '/workspace/models/' +
+    artifact.destination.replace(/\\/g, '/');
+
+  const python = [
+    'import json, os, sys',
+    'from pathlib import Path',
+    'from huggingface_hub import snapshot_download',
+    'repos = json.loads(sys.argv[1])',
+    'primary = sys.argv[2]',
+    'revision = None if sys.argv[3] == "-" else sys.argv[3]',
+    'token = os.environ.get("HF_TOKEN") or None',
+    'result = []',
+    'for repo_id in repos:',
+    '    selected_revision = revision if repo_id == primary else None',
+    '    print("HARMONIA_HF_FETCH " + repo_id, file=sys.stderr, flush=True)',
+    '    local = snapshot_download(',
+    '        repo_id=repo_id,',
+    '        revision=selected_revision,',
+    '        token=token,',
+    '    )',
+    '    result.append({',
+    '        "repoId": repo_id,',
+    '        "resolvedRevision": Path(local).name,',
+    '    })',
+    'print(json.dumps({"repos": result}), flush=True)',
+  ].join('\n');
+
+  const args = [
+    'run',
+    '--rm',
+    '--mount',
+    'type=bind,source=' +
+      resolvedRoot +
+      ',target=/workspace/models',
+    '-e',
+    'HF_HOME=' + hfHome,
+  ];
+
+  const childEnv = {
+    ...process.env,
+  };
+
+  if (credential) {
+    childEnv.HF_TOKEN = credential;
+    args.push('-e', 'HF_TOKEN');
+  }
+
+  args.push(
+    '--entrypoint',
+    provider.python,
+    provider.image,
+    '-c',
+    python,
+    JSON.stringify(repos),
+    artifact.source.repoId,
+    artifact.source.revision || '-'
+  );
+
+  const spawn = options.spawnSyncApi || spawnSync;
+  const execution = spawn('docker', args, {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: childEnv,
+    windowsHide: true,
+    stdio: ['ignore', 'pipe', 'inherit'],
+    timeout: options.timeout || 4 * 60 * 60 * 1000,
+    maxBuffer: 16 * 1024 * 1024,
+  });
+
+  if (execution.error) {
+    throw new Error(
+      'Hugging Face download container failed to start: ' +
+        execution.error.message
+    );
+  }
+
+  if (execution.status !== 0) {
+    throw new Error(
+      'Hugging Face download failed for ' +
+        artifact.source.repoId +
+        ' (docker exit ' +
+        execution.status +
+        ')'
+    );
+  }
+
+  const lines = String(execution.stdout || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) {
+    throw new Error(
+      'Hugging Face download returned no machine-readable result for ' +
+        artifact.source.repoId
+    );
+  }
+
+  try {
+    return JSON.parse(lines[lines.length - 1]);
+  } catch {
+    throw new Error(
+      'Hugging Face download returned invalid machine-readable output for ' +
+        artifact.source.repoId
+    );
+  }
+}
 
 function verifyRequiredFile(filePath, options = {}) {
   const fsApi = options.fsApi || fs;
@@ -1425,6 +1583,231 @@ function createVerification(options = {}) {
   };
 }
 
+
+function createInitialization(options = {}) {
+  const registry = loadRegistry();
+  const normalized = {
+    command: 'init',
+    modelIds: options.modelIds || [],
+    providerIds: options.providerIds || [],
+    artifactIds: options.artifactIds || [],
+    root: options.root || registry.modelsRoot,
+    offline: Boolean(options.offline),
+    dryRun: Boolean(options.dryRun),
+    json: Boolean(options.json),
+    verbose: Boolean(options.verbose),
+  };
+
+  if (
+    normalized.modelIds.length === 0 &&
+    normalized.providerIds.length === 0 &&
+    normalized.artifactIds.length === 0
+  ) {
+    fail(
+      'Phase 4 models:init requires an explicit --model, --provider, or --artifact selector.'
+    );
+  }
+
+  const modelRoot = path.isAbsolute(normalized.root)
+    ? normalized.root
+    : path.resolve(repoRoot, normalized.root);
+  const bindings = selectBindings(registry, normalized);
+  const artifacts = selectArtifacts(registry, bindings, normalized);
+
+  if (bindings.length === 0 || artifacts.length === 0) {
+    fail('Selectors resolved to no model artifacts.');
+  }
+
+  const unsupported = artifacts.filter(
+    (artifact) => artifact.source.kind !== 'huggingface'
+  );
+
+  if (unsupported.length > 0) {
+    fail(
+      'Phase 4 models:init supports Hugging Face artifacts only; unsupported: ' +
+        unsupported.map((artifact) => artifact.artifactId).join(', ')
+    );
+  }
+
+  const credential =
+    Object.prototype.hasOwnProperty.call(options, 'credential')
+      ? options.credential
+      : getHuggingFaceCredential();
+  const downloadExecutor =
+    options.downloadExecutor || runHuggingFaceDownloadContainer;
+
+  const artifactRows = artifacts.map((artifact) => {
+    const before = verifyArtifact(
+      artifact,
+      modelRoot,
+      options
+    );
+    const base = {
+      artifactId: artifact.artifactId,
+      providerId: artifact.providerId,
+      modelIds: modelIdsForArtifact(
+        registry,
+        artifact.artifactId
+      ),
+      sourceKind: artifact.source.kind,
+      sourceRef: artifact.source.repoId,
+      expectedRevision: artifact.source.revision || null,
+      relativePath: artifact.destination,
+      gated: Boolean(artifact.source.gated),
+      downloadRepos:
+        huggingFaceDownloadReposForArtifact(artifact),
+    };
+
+    if (before.state === 'verified') {
+      return {
+        ...base,
+        state: 'verified',
+        action: 'cache-hit',
+        resolvedRevision: before.resolvedRevision,
+        detail: before.detail,
+      };
+    }
+
+    if (artifact.source.gated && !credential) {
+      return {
+        ...base,
+        state: before.state,
+        action: 'authenticate',
+        resolvedRevision: before.resolvedRevision,
+        detail:
+          'gated Hugging Face artifact requires a configured credential before initialization',
+      };
+    }
+
+    if (normalized.offline) {
+      return {
+        ...base,
+        state: before.state,
+        action: 'offline-missing',
+        resolvedRevision: before.resolvedRevision,
+        detail:
+          'artifact is not locally verified and initialization is offline',
+      };
+    }
+
+    if (normalized.dryRun) {
+      return {
+        ...base,
+        state: before.state,
+        action: 'would-download',
+        resolvedRevision: before.resolvedRevision,
+        detail:
+          'dry-run: selected Hugging Face repositories would be initialized',
+      };
+    }
+
+    try {
+      const download = downloadExecutor(
+        artifact,
+        modelRoot,
+        {
+          credential,
+          verbose: normalized.verbose,
+        }
+      );
+      const after = verifyArtifact(
+        artifact,
+        modelRoot,
+        options
+      );
+
+      return {
+        ...base,
+        state: after.state,
+        action:
+          after.state === 'verified'
+            ? 'downloaded'
+            : 'verification-failed',
+        resolvedRevision: after.resolvedRevision,
+        downloadedRepos: Array.isArray(download?.repos)
+          ? download.repos.map((row) => ({
+              repoId: row.repoId,
+              resolvedRevision:
+                row.resolvedRevision || null,
+            }))
+          : [],
+        detail: after.detail,
+      };
+    } catch (error) {
+      return {
+        ...base,
+        state: 'unavailable',
+        action: 'download-failed',
+        resolvedRevision: before.resolvedRevision,
+        detail:
+          error instanceof Error
+            ? error.message
+            : String(error),
+      };
+    }
+  });
+
+  const modelRows = bindings.map((binding) => ({
+    modelId: binding.modelId,
+    artifactIds: binding.artifactIds,
+    state: deriveVerificationModelState(
+      binding,
+      artifactRows
+    ),
+  }));
+
+  const summary = {
+    selectedModels: modelRows.length,
+    selectedArtifacts: artifactRows.length,
+    verified: artifactRows.filter(
+      (row) => row.state === 'verified'
+    ).length,
+    cacheHits: artifactRows.filter(
+      (row) => row.action === 'cache-hit'
+    ).length,
+    downloaded: artifactRows.filter(
+      (row) => row.action === 'downloaded'
+    ).length,
+    plannedDownloads: artifactRows.filter(
+      (row) => row.action === 'would-download'
+    ).length,
+    authenticationRequired: artifactRows.filter(
+      (row) => row.action === 'authenticate'
+    ).length,
+    offlineBlocked: artifactRows.filter(
+      (row) => row.action === 'offline-missing'
+    ).length,
+    failed: artifactRows.filter(
+      (row) =>
+        row.action === 'download-failed' ||
+        row.action === 'verification-failed'
+    ).length,
+  };
+
+  const ok = artifactRows.every((row) =>
+    ['cache-hit', 'downloaded', 'would-download'].includes(
+      row.action
+    )
+  );
+
+  return {
+    schemaVersion: RESULT_SCHEMA_VERSION,
+    command: 'init',
+    ok,
+    modelsRoot: normalized.root.replace(/\\/g, '/'),
+    offline: normalized.offline,
+    dryRun: normalized.dryRun,
+    databaseIntegration: 'not-yet-implemented',
+    summary,
+    models: modelRows,
+    artifacts: artifactRows,
+    warnings: [
+      'Phase 4 init currently supports selected Hugging Face artifacts only.',
+      'DiffSinger HTTP ZIP initialization and Mongo installation-state writes are not implemented yet.',
+    ],
+  };
+}
+
 function writeReport(result) {
   const reportDir = path.join(repoRoot, 'generated', 'model-manager');
   fs.mkdirSync(reportDir, { recursive: true });
@@ -1609,6 +1992,86 @@ function printHumanVerification(result, reportPath) {
   );
 }
 
+
+function printHumanInitialization(result, reportPath) {
+  const widths = {
+    model: 33,
+    artifact: 38,
+    state: 18,
+    action: 20,
+  };
+  const pad = (value, width) => {
+    const text = String(value ?? '');
+    return text.length >= width
+      ? text.slice(0, width - 1) + '…'
+      : text.padEnd(width);
+  };
+
+  console.log('============================================================');
+  console.log(' HARMONIA MODEL INIT');
+  console.log('============================================================');
+  console.log('modelsRoot: ' + result.modelsRoot);
+  console.log(
+    'network: ' +
+      (result.offline ? 'disabled' : 'allowed')
+  );
+  console.log(
+    'mutation: ' +
+      (result.dryRun
+        ? 'none (dry-run)'
+        : 'selected Hugging Face cache only')
+  );
+  console.log('');
+
+  console.log(
+    [
+      pad('MODEL', widths.model),
+      pad('ARTIFACT', widths.artifact),
+      pad('STATE', widths.state),
+      pad('ACTION', widths.action),
+    ].join(' ')
+  );
+  console.log(
+    [
+      '-'.repeat(widths.model),
+      '-'.repeat(widths.artifact),
+      '-'.repeat(widths.state),
+      '-'.repeat(widths.action),
+    ].join(' ')
+  );
+
+  for (const row of result.artifacts) {
+    console.log(
+      [
+        pad(row.modelIds.join(','), widths.model),
+        pad(row.artifactId, widths.artifact),
+        pad(row.state, widths.state),
+        pad(row.action, widths.action),
+      ].join(' ')
+    );
+    console.log(
+      '  repositories: ' +
+        row.downloadRepos.join(', ')
+    );
+    if (row.detail) {
+      console.log('  ' + row.detail);
+    }
+  }
+
+  console.log('');
+  console.log('SUMMARY');
+  for (const [key, value] of Object.entries(result.summary)) {
+    console.log(key + '=' + value);
+  }
+  console.log('');
+  console.log('report=' + reportPath);
+  console.log(
+    result.ok
+      ? 'MODEL_INIT_OK'
+      : 'MODEL_INIT_FAILED'
+  );
+}
+
 function main(argv = process.argv.slice(2)) {
   const args = parseArgs(argv);
 
@@ -1617,18 +2080,20 @@ function main(argv = process.argv.slice(2)) {
     return 0;
   }
 
-  if (!['plan', 'verify'].includes(args.command)) {
+  if (!['plan', 'verify', 'init'].includes(args.command)) {
     fail(
       'Command "' +
         args.command +
-        '" is not implemented yet. Available commands: plan, verify.'
+        '" is not implemented yet. Available commands: plan, verify, init.'
     );
   }
 
   const result =
     args.command === 'plan'
       ? createPlan(args)
-      : createVerification(args);
+      : args.command === 'verify'
+        ? createVerification(args)
+        : createInitialization(args);
   const reportPath = writeReport(result);
 
   if (args.json) {
@@ -1644,8 +2109,10 @@ function main(argv = process.argv.slice(2)) {
     );
   } else if (args.command === 'plan') {
     printHumanPlan(result, reportPath);
-  } else {
+  } else if (args.command === 'verify') {
     printHumanVerification(result, reportPath);
+  } else {
+    printHumanInitialization(result, reportPath);
   }
 
   return result.ok ? 0 : 1;
@@ -1664,8 +2131,11 @@ if (require.main === module) {
 }
 
 module.exports = {
+  createInitialization,
   createPlan,
   createVerification,
+  getHuggingFaceCredential,
+  huggingFaceDownloadReposForArtifact,
   defaultContainerProbeForArtifact,
   deriveAction,
   deriveModelState,
@@ -1681,6 +2151,7 @@ module.exports = {
   verifyRequiredFile,
   loadRegistry,
   parseArgs,
+  runHuggingFaceDownloadContainer,
   safeResolveUnderRoot,
   selectArtifacts,
   selectBindings,
