@@ -37,7 +37,7 @@ As of September 24, 2026:
 - Phase 4 Hugging Face initialization adapter: **complete and locally qualified**.
 - Phase 5 DiffSinger HTTP-ZIP initialization adapter: **complete and locally qualified**.
 - Phase 6 default-set `models:init` orchestration: **complete and locally qualified**.
-- Phase 7 conservative `models:repair`: **next**.
+- Phase 7 conservative `models:repair`: **implemented, awaiting local qualification**.
 - Later download/Mongo/runtime/recovery phases: **not started**.
 
 Phase 1 intentionally includes all application models currently marked
