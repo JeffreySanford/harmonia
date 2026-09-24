@@ -634,6 +634,13 @@ function printHuman(result, reportPath) {
         ? 'none (dry-run)'
         : 'conservative repair')
   );
+  console.log(
+    'database: ' +
+      (
+        result.databaseIntegration?.status ||
+        'filesystem-only'
+      )
+  );
   console.log('');
 
   for (const row of result.artifacts) {
