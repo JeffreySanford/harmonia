@@ -128,7 +128,7 @@ function usage() {
     'Implemented:',
     '  plan       Inspect registry + local cache; never downloads or repairs.',
     '  verify     Deep read-only local verification.',
-    '  init       Rehydrate selected Hugging Face artifacts (Phase 4).',
+    '  init       Rehydrate selected supported model artifacts.',
     '',
     'Planned commands:',
     '  inventory  Emit normalized observed inventory.',
@@ -2140,10 +2140,14 @@ function createInitialization(options = {}) {
     offlineBlocked: artifactRows.filter(
       (row) => row.action === 'offline-missing'
     ).length,
+    repairRequired: artifactRows.filter(
+      (row) => row.action === 'repair-required'
+    ).length,
     failed: artifactRows.filter(
       (row) =>
         row.action === 'download-failed' ||
-        row.action === 'verification-failed'
+        row.action === 'verification-failed' ||
+        row.action === 'repair-required'
     ).length,
   };
 
@@ -2165,8 +2169,8 @@ function createInitialization(options = {}) {
     models: modelRows,
     artifacts: artifactRows,
     warnings: [
-      'Phase 4 init currently supports selected Hugging Face artifacts only.',
-      'DiffSinger HTTP ZIP initialization and Mongo installation-state writes are not implemented yet.',
+      'models:init supports the registered Hugging Face and HTTP-ZIP source adapters.',
+      'Mongo installation-state writes and destructive repair are not implemented yet.',
     ],
   };
 }
@@ -2413,8 +2417,8 @@ function printHumanInitialization(result, reportPath) {
       ].join(' ')
     );
     console.log(
-      '  repositories: ' +
-        row.downloadRepos.join(', ')
+      '  sources: ' +
+        (row.downloadSources || []).join(', ')
     );
     if (row.detail) {
       console.log('  ' + row.detail);
@@ -2509,6 +2513,7 @@ module.exports = {
   inspectCheckpointArtifact,
   inspectHuggingFaceArtifact,
   inspectShallowPathPresence,
+  isSafeArchiveMemberPath,
   isSafeRelativePath,
   verifyArtifact,
   verifyCheckpointArtifact,
@@ -2517,6 +2522,7 @@ module.exports = {
   loadRegistry,
   parseArgs,
   runHuggingFaceDownloadContainer,
+  runHttpZipDownloadContainer,
   safeResolveUnderRoot,
   selectArtifacts,
   selectBindings,
