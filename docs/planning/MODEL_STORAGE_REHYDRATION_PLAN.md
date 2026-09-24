@@ -35,7 +35,7 @@ As of September 24, 2026:
   - [MODEL_PLAN_PHASE2.md](MODEL_PLAN_PHASE2.md)
 - Phase 3 read-only deep verification: **complete and locally qualified**.
 - Phase 4 Hugging Face initialization adapter: **complete and locally qualified**.
-- Phase 5 DiffSinger HTTP-ZIP initialization adapter: **next**.
+- Phase 5 DiffSinger HTTP-ZIP initialization adapter: **implemented, awaiting alternate-root qualification**.
 - Later download/Mongo/runtime/recovery phases: **not started**.
 
 Phase 1 intentionally includes all application models currently marked
