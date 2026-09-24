@@ -24,6 +24,23 @@ export type ModelAvailability =
   | 'api-only'
   | 'unreleased';
 
+export type ModelInstallationCatalogState =
+  | 'verified'
+  | 'missing'
+  | 'degraded'
+  | 'corrupt'
+  | 'unavailable'
+  | 'failed'
+  | 'unknown'
+  | 'not-managed';
+
+export interface ModelInstallationCatalogInfo {
+  installationState: ModelInstallationCatalogState;
+  installationArtifactCount: number;
+  installationVerifiedCount: number;
+  installationLastVerifiedAt: string | null;
+}
+
 export interface HardwareProfile {
   gpuAvailable: boolean;
   gpuName: string | null;
@@ -57,7 +74,9 @@ export interface MusicModelDefinition {
   notes?: string;
 }
 
-export interface MusicModelCatalogEntry extends MusicModelDefinition {
+export interface MusicModelCatalogEntry
+  extends MusicModelDefinition,
+    ModelInstallationCatalogInfo {
   providerName: string;
   hardwareFit: HardwareFit;
   selectable: boolean;
