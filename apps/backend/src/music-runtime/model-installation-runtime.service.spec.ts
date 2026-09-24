@@ -1,6 +1,19 @@
 import { BadRequestException } from '@nestjs/common';
 import { ModelInstallationRuntimeService } from './model-installation-runtime.service';
 
+interface TestVerificationResult {
+  ok: boolean;
+  artifacts: Array<{
+    artifactId: string;
+    state: string;
+    requiredForSuccess?: boolean;
+  }>;
+}
+
+interface TestableRuntimeService {
+  verifyModel(modelId: string): Promise<TestVerificationResult>;
+}
+
 describe('ModelInstallationRuntimeService', () => {
   function createService() {
     const exec = jest.fn();
@@ -24,7 +37,10 @@ describe('ModelInstallationRuntimeService', () => {
     const { service } = createService();
 
     jest
-      .spyOn(service as never, 'verifyModel' as never)
+      .spyOn(
+        service as unknown as TestableRuntimeService,
+        'verifyModel'
+      )
       .mockResolvedValue({
         ok: true,
         artifacts: [
@@ -39,7 +55,7 @@ describe('ModelInstallationRuntimeService', () => {
             requiredForSuccess: true,
           },
         ],
-      } as never);
+      });
 
     await expect(
       service.assertModelReady(
@@ -55,7 +71,10 @@ describe('ModelInstallationRuntimeService', () => {
     const { service } = createService();
 
     jest
-      .spyOn(service as never, 'verifyModel' as never)
+      .spyOn(
+        service as unknown as TestableRuntimeService,
+        'verifyModel'
+      )
       .mockResolvedValue({
         ok: false,
         artifacts: [
@@ -65,20 +84,27 @@ describe('ModelInstallationRuntimeService', () => {
             requiredForSuccess: true,
           },
         ],
-      } as never);
+      });
 
-    await expect(
-      service.assertModelReady(
+    try {
+      await service.assertModelReady(
         'fixture-model'
-      )
-    ).rejects.toEqual(
-      expect.objectContaining({
-        constructor: BadRequestException,
-        message: expect.stringContaining(
-          'artifact-a=missing'
-        ),
-      })
-    );
+      );
+      throw new Error(
+        'Expected readiness rejection'
+      );
+    } catch (error) {
+      expect(
+        error
+      ).toBeInstanceOf(
+        BadRequestException
+      );
+      expect(
+        (error as Error).message
+      ).toContain(
+        'artifact-a=missing'
+      );
+    }
   });
 
   it('updates lastUsedAt for all verified physical artifacts bound to the logical model', async () => {
