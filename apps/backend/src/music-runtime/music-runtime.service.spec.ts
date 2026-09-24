@@ -10,6 +10,8 @@ describe('MusicRuntimeService model readiness ordering', () => {
     const installations = {
       assertModelReady: jest.fn(),
       markModelUsed: jest.fn(),
+      getCatalogInstallationInfo:
+        jest.fn(),
     };
 
     const service =
@@ -46,14 +48,14 @@ describe('MusicRuntimeService model readiness ordering', () => {
         };
       };
 
-    jest
+    const reconcileSpy = jest
       .spyOn(
         internals,
         'reconcileRuntimeOwnership'
       )
       .mockResolvedValue();
 
-    jest
+    const hardwareSpy = jest
       .spyOn(
         internals,
         'detectHardware'
@@ -68,8 +70,197 @@ describe('MusicRuntimeService model readiness ordering', () => {
       service,
       internals,
       installations,
+      reconcileSpy,
+      hardwareSpy,
     };
   }
+
+  it('merges verified installation metadata into catalog entries', async () => {
+    const {
+      service,
+      installations,
+    } = createService();
+
+    installations.getCatalogInstallationInfo.mockResolvedValue({
+      'musicgen-small': {
+        installationState:
+          'verified',
+        installationArtifactCount: 1,
+        installationVerifiedCount: 1,
+        installationLastVerifiedAt:
+          '2026-09-24T18:00:00.000Z',
+      },
+      'musicgen-stereo-small': {
+        installationState:
+          'verified',
+        installationArtifactCount: 1,
+        installationVerifiedCount: 1,
+        installationLastVerifiedAt:
+          '2026-09-24T18:00:00.000Z',
+      },
+      'musicgen-medium': {
+        installationState:
+          'missing',
+        installationArtifactCount: 1,
+        installationVerifiedCount: 0,
+        installationLastVerifiedAt:
+          null,
+      },
+      'musicgen-stereo-medium': {
+        installationState:
+          'missing',
+        installationArtifactCount: 1,
+        installationVerifiedCount: 0,
+        installationLastVerifiedAt:
+          null,
+      },
+      'diffsinger-acoustic-hifigan': {
+        installationState:
+          'verified',
+        installationArtifactCount: 3,
+        installationVerifiedCount: 3,
+        installationLastVerifiedAt:
+          '2026-09-24T18:00:00.000Z',
+      },
+      'stable-audio-3-small-music': {
+        installationState:
+          'verified',
+        installationArtifactCount: 1,
+        installationVerifiedCount: 1,
+        installationLastVerifiedAt:
+          '2026-09-24T18:00:00.000Z',
+      },
+    });
+
+    const catalog =
+      await service.getCatalog();
+
+    const small =
+      catalog.models.find(
+        (model) =>
+          model.id ===
+          'musicgen-small'
+      );
+
+    const diffsinger =
+      catalog.models.find(
+        (model) =>
+          model.id ===
+          'diffsinger-acoustic-hifigan'
+      );
+
+    const planned =
+      catalog.models.find(
+        (model) =>
+          model.id ===
+          'stable-audio-3-medium'
+      );
+
+    expect(small).toEqual(
+      expect.objectContaining({
+        installationState:
+          'verified',
+        installationArtifactCount: 1,
+        installationVerifiedCount: 1,
+        selectable: true,
+      })
+    );
+
+    expect(diffsinger).toEqual(
+      expect.objectContaining({
+        installationState:
+          'verified',
+        installationArtifactCount: 3,
+        installationVerifiedCount: 3,
+      })
+    );
+
+    expect(planned).toEqual(
+      expect.objectContaining({
+        installationState:
+          'not-managed',
+        installationArtifactCount: 0,
+      })
+    );
+  });
+
+  it('disables a missing local model when hardware would otherwise support it', async () => {
+    const {
+      service,
+      installations,
+      hardwareSpy,
+    } = createService();
+
+    hardwareSpy.mockResolvedValue({
+      gpuAvailable: true,
+      gpuName: 'Large Test GPU',
+      vramTotalGb: 24,
+    });
+
+    installations.getCatalogInstallationInfo.mockResolvedValue({
+      'musicgen-medium': {
+        installationState:
+          'missing',
+        installationArtifactCount: 1,
+        installationVerifiedCount: 0,
+        installationLastVerifiedAt:
+          null,
+      },
+    });
+
+    const catalog =
+      await service.getCatalog();
+
+    const medium =
+      catalog.models.find(
+        (model) =>
+          model.id ===
+          'musicgen-medium'
+      );
+
+    expect(medium).toEqual(
+      expect.objectContaining({
+        hardwareFit:
+          'recommended',
+        installationState:
+          'missing',
+        selectable: false,
+      })
+    );
+
+    expect(
+      medium?.disabledReason
+    ).toContain(
+      'pnpm models:init --model musicgen-medium'
+    );
+  });
+
+  it('keeps unknown Mongo installation state advisory for an installed model', async () => {
+    const {
+      service,
+      installations,
+    } = createService();
+
+    installations.getCatalogInstallationInfo.mockResolvedValue({});
+
+    const catalog =
+      await service.getCatalog();
+
+    const small =
+      catalog.models.find(
+        (model) =>
+          model.id ===
+          'musicgen-small'
+      );
+
+    expect(small).toEqual(
+      expect.objectContaining({
+        installationState:
+          'unknown',
+        selectable: true,
+      })
+    );
+  });
 
   it('does not stop the current provider or build the target when filesystem readiness fails', async () => {
     const {
