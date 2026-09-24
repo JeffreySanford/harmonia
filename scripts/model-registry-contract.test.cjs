@@ -304,6 +304,112 @@ test('qualified composite and gated model contracts are represented explicitly',
   );
 });
 
+test('ACE-Step Turbo 0.6B binding excludes the unified 1.7B LM', () => {
+  const registry =
+    readJson(
+      'inventory/model_registry.json'
+    );
+  const schema =
+    readJson(
+      'inventory/model_registry.schema.json'
+    );
+
+  const bindings = new Map(
+    registry.modelBindings.map(
+      (binding) => [
+        binding.modelId,
+        binding,
+      ]
+    )
+  );
+  const artifacts = new Map(
+    registry.artifacts.map(
+      (artifact) => [
+        artifact.artifactId,
+        artifact,
+      ]
+    )
+  );
+
+  assert.deepEqual(
+    bindings.get(
+      'acestep-v15-turbo-06b'
+    )?.artifactIds,
+    [
+      'acestep-v15-turbo-core',
+      'acestep-5hz-lm-06b',
+    ]
+  );
+
+  const core =
+    artifacts.get(
+      'acestep-v15-turbo-core'
+    );
+  const lm =
+    artifacts.get(
+      'acestep-5hz-lm-06b'
+    );
+
+  assert.equal(
+    core?.source.layout,
+    'local-dir'
+  );
+  assert.equal(
+    core?.source.revision,
+    '19671f406d603126926c1b7e2adc169acbcade22'
+  );
+  assert.deepEqual(
+    core?.source.allowPatterns,
+    [
+      'acestep-v15-turbo/**',
+      'vae/**',
+      'Qwen3-Embedding-0.6B/**',
+    ]
+  );
+  assert.equal(
+    core.source.allowPatterns.some(
+      (pattern) =>
+        pattern.includes(
+          'acestep-5Hz-lm-1.7B'
+        )
+    ),
+    false
+  );
+
+  assert.equal(
+    lm?.source.repoId,
+    'ACE-Step/acestep-5Hz-lm-0.6B'
+  );
+  assert.equal(
+    lm?.source.revision,
+    'f802b6dfe8dd4db180c6bf1a45669a303130de3d'
+  );
+  assert.equal(
+    lm?.source.layout,
+    'local-dir'
+  );
+
+  assert.equal(
+    core?.defaultInstall,
+    false
+  );
+  assert.equal(
+    lm?.defaultInstall,
+    false
+  );
+
+  assert.deepEqual(
+    schema.definitions.source.properties.layout.enum,
+    [
+      'cache',
+      'local-dir',
+    ]
+  );
+  assert.ok(
+    schema.definitions.source.properties.allowPatterns
+  );
+});
+
 test('package exposes the committed Phase 1 model registry qualifier', () => {
   const pkg = readJson('package.json');
 
