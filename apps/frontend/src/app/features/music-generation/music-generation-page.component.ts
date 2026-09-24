@@ -364,6 +364,13 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  get isAceStepSelected(): boolean {
+    return (
+      this.selectedProviderId === 'ace-step-1.5' ||
+      this.selectedRuntimeModel?.providerId === 'ace-step-1.5'
+    );
+  }
+
   get diffsingerScoreDurationSeconds(): number {
     const durations = this.diffsingerNotesDuration
       .split(/[|\s]+/)
@@ -401,6 +408,13 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
           noteGroups.length > 0 &&
           noteGroups.length === durationGroups.length &&
           this.diffsingerScoreDurationSeconds > 0
+      );
+    }
+
+    if (this.isAceStepSelected) {
+      return Boolean(
+        this.genre &&
+          this.lyrics.trim()
       );
     }
 
@@ -512,6 +526,15 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
     if (this.isDiffSingerSelected && !this.hasRequiredGenerationInputs) {
       this.snackBar.open(
         'DiffSinger requires lyrics, pipe-separated notes, and matching note durations.',
+        'Close',
+        { duration: 5000 }
+      );
+      return;
+    }
+
+    if (this.isAceStepSelected && !this.lyrics.trim()) {
+      this.snackBar.open(
+        'ACE-Step requires supplied lyrics for this qualified full-song workflow.',
         'Close',
         { duration: 5000 }
       );
