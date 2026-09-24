@@ -42,7 +42,8 @@ As of September 24, 2026:
 - Phase 8B filesystem-to-Mongo installation synchronization: **complete and locally qualified**.
 - Phase 8C automatic lifecycle-to-Mongo synchronization: **complete and locally qualified**.
 - Phase 9 runtime readiness enforcement and `lastUsedAt`: **complete and locally qualified**.
-- Phase 10 catalog installation awareness: **next**.
+- Phase 10 catalog installation awareness: **complete and locally qualified**.
+- Phase 11 portable observed inventory (`models:inventory`): **next**.
 - Later download/Mongo/runtime/recovery phases: **not started**.
 
 Phase 1 intentionally includes all application models currently marked
