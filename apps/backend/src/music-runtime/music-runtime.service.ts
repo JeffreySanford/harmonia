@@ -562,7 +562,7 @@ export class MusicRuntimeService {
       ')',
       'body = urllib.request.urlopen(req, timeout=900).read().decode("utf-8")',
       'print(body)',
-    ].join('; ');
+    ].join('\n');
 
     const { stdout } = await execFileAsync(
       'docker',
