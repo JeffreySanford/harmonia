@@ -28,13 +28,20 @@ This preserves:
 
 Automatic synchronization runs after:
 
-- successful non-dry-run `models:init`;
-- successful non-dry-run `models:repair`.
+- successful non-dry-run `models:init` against the canonical operational
+  `models/` root;
+- successful non-dry-run `models:repair` against the canonical operational
+  `models/` root.
 
 Automatic synchronization does not run after:
 
 - `--dry-run`;
-- a failed init/repair result.
+- a failed init/repair result;
+- an alternate `--root`.
+
+Alternate roots are intentionally excluded so recovery/qualification trees
+cannot overwrite operational Mongo state. Operators may still run an explicit
+`models:db-sync --root <alternate-root>` when that is deliberately desired.
 
 Offline lifecycle commands may still synchronize metadata because DB sync
 performs no model-provider network access.
@@ -89,6 +96,7 @@ synchronized
 unavailable
 skipped-dry-run
 skipped-lifecycle-failed
+skipped-noncanonical-root
 ```
 
 ## Safety
@@ -110,10 +118,11 @@ The automatic hook:
 5. failed lifecycle does not call sync;
 6. default Mongo outage preserves successful filesystem exit;
 7. `--require-db` turns database sync failure into lifecycle failure;
-8. JSON output remains one parseable lifecycle document;
-9. live cache-hit init updates Mongo without changing model files;
-10. live repair no-op updates Mongo without changing model files;
-11. full startup/model regression remains green.
+8. alternate-root lifecycle skips automatic operational sync;
+9. JSON output remains one parseable lifecycle document;
+10. live cache-hit init updates Mongo without changing model files;
+11. live repair no-op updates Mongo without changing model files;
+12. full startup/model regression remains green.
 
 ## Completion boundary
 
