@@ -277,6 +277,97 @@
       "defaultInstall": true,
       "estimatedBytes": null,
       "notes": "Qualified on NVIDIA GeForce RTX 3080 with native 44.1 kHz stereo 32-bit float output. Registry pins the qualified Hugging Face snapshot resolved during access/inference qualification."
+    },
+    {
+      "artifactId": "acestep-v15-turbo-core",
+      "providerId": "ace-step-1.5",
+      "displayName": "ACE-Step 1.5 Turbo core checkpoints",
+      "runtimeModelIds": [
+        "acestep-v15-turbo"
+      ],
+      "source": {
+        "kind": "huggingface",
+        "repoId": "ACE-Step/Ace-Step1.5",
+        "revision": "19671f406d603126926c1b7e2adc169acbcade22",
+        "gated": false,
+        "layout": "local-dir",
+        "allowPatterns": [
+          "acestep-v15-turbo/**",
+          "vae/**",
+          "Qwen3-Embedding-0.6B/**"
+        ]
+      },
+      "destination": "ace-step-1.5/checkpoints",
+      "sharedDestination": true,
+      "verification": {
+        "strategy": "required-files",
+        "requiredFiles": [
+          "acestep-v15-turbo/config.json",
+          "acestep-v15-turbo/configuration_acestep_v15.py",
+          "acestep-v15-turbo/model.safetensors",
+          "acestep-v15-turbo/modeling_acestep_v15_turbo.py",
+          "acestep-v15-turbo/silence_latent.pt",
+          "vae/config.json",
+          "vae/diffusion_pytorch_model.safetensors",
+          "Qwen3-Embedding-0.6B/config.json",
+          "Qwen3-Embedding-0.6B/model.safetensors",
+          "Qwen3-Embedding-0.6B/tokenizer.json",
+          "Qwen3-Embedding-0.6B/tokenizer_config.json",
+          "Qwen3-Embedding-0.6B/merges.txt",
+          "Qwen3-Embedding-0.6B/vocab.json"
+        ]
+      },
+      "license": {
+        "acceptanceRequired": false,
+        "redistributionAllowed": true,
+        "commercialUse": "allowed",
+        "sourceUrl": "https://huggingface.co/ACE-Step/Ace-Step1.5",
+        "notes": "ACE-Step 1.5 model repository declares the MIT license. Harmonia selectively acquires only Turbo, VAE, and Qwen embedding subtrees for the 10 GB workstation target."
+      },
+      "defaultInstall": false,
+      "estimatedBytes": null,
+      "notes": "Phase 12B selective core artifact. The unified repository's 1.7B LM subtree is deliberately excluded."
+    },
+    {
+      "artifactId": "acestep-5hz-lm-06b",
+      "providerId": "ace-step-1.5",
+      "displayName": "ACE-Step 1.5 5Hz LM 0.6B",
+      "runtimeModelIds": [
+        "acestep-5Hz-lm-0.6B"
+      ],
+      "source": {
+        "kind": "huggingface",
+        "repoId": "ACE-Step/acestep-5Hz-lm-0.6B",
+        "revision": "f802b6dfe8dd4db180c6bf1a45669a303130de3d",
+        "gated": false,
+        "layout": "local-dir"
+      },
+      "destination": "ace-step-1.5/checkpoints/acestep-5Hz-lm-0.6B",
+      "sharedDestination": false,
+      "verification": {
+        "strategy": "required-files",
+        "requiredFiles": [
+          "config.json",
+          "model.safetensors",
+          "tokenizer.json",
+          "tokenizer_config.json",
+          "merges.txt",
+          "vocab.json",
+          "special_tokens_map.json",
+          "added_tokens.json",
+          "chat_template.jinja"
+        ]
+      },
+      "license": {
+        "acceptanceRequired": false,
+        "redistributionAllowed": true,
+        "commercialUse": "allowed",
+        "sourceUrl": "https://huggingface.co/ACE-Step/acestep-5Hz-lm-0.6B",
+        "notes": "ACE-Step 0.6B LM repository declares the MIT license and is the selected lightweight LM for the RTX 3080 10 GB qualification target."
+      },
+      "defaultInstall": false,
+      "estimatedBytes": null,
+      "notes": "Separate lightweight LM artifact for ACE-Step Turbo on 6-12 GB class GPUs."
     }
   ],
   "modelBindings": [
@@ -320,6 +411,14 @@
       "artifactIds": [
         "stable-audio-3-small-music"
       ]
+    },
+    {
+      "modelId": "acestep-v15-turbo-06b",
+      "artifactIds": [
+        "acestep-v15-turbo-core",
+        "acestep-5hz-lm-06b"
+      ],
+      "notes": "Phase 12 composite binding: selectively acquired Turbo/VAE/Qwen core plus separate 0.6B 5Hz LM."
     }
   ]
 }
