@@ -80,7 +80,8 @@
     "models:plan": "node scripts/model-manager.cjs plan",
     "test:model-manager": "node --test scripts/model-manager.test.cjs",
     "models:verify": "node scripts/model-manager.cjs verify",
-    "models:init": "node scripts/model-manager.cjs init"
+    "models:init": "node scripts/model-manager.cjs init",
+    "models:repair": "node scripts/model-repair.cjs"
   },
   "keywords": [],
   "author": "",
