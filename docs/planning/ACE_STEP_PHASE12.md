@@ -1,6 +1,6 @@
 # Phase 12 ACE-Step 1.5 Local Provider
 
-**Status:** Phase 12A and 12B complete and locally qualified; Phase 12C operational promotion/runtime selection in progress  
+**Status:** Phase 12A and 12B complete and locally qualified; Phase 12C operational promotion/runtime selection implemented, awaiting local qualification  
 **Date:** September 24, 2026  
 **Primary target:** `acestep-v15-turbo-06b`  
 **Reference GPU:** NVIDIA GeForce RTX 3080, 10 GB VRAM  
@@ -187,6 +187,33 @@ Add provider/catalog runtime metadata:
 - recover a running ACE-Step provider from its health/model state;
 - avoid restarting an already-ready matching model;
 - update `lastUsedAt` after successful selection.
+
+## Phase 12C operational runtime contract
+
+Phase 12C promotes the already-qualified alternate-root payload into the
+canonical `models/ace-step-1.5` root without another network download.
+
+Runtime behavior:
+
+- only `acestep-v15-turbo-06b` is marked installed/selectable;
+- SFT and XL ACE-Step variants remain planned;
+- provider metadata points to the isolated `harmonia/ace-step-1.5:dev` image;
+- Compose mounts the canonical checkpoint directory both at Harmonia's
+  `/workspace/models/ace-step-1.5/checkpoints` path and directly at upstream's
+  `/opt/ACE-Step-1.5/checkpoints` API-initializer path;
+- runtime stays lazy/offline at container boot;
+- filesystem deep verification remains mandatory before provider switching;
+- after API health, Harmonia calls upstream `POST /v1/init` for
+  `acestep-v15-turbo` plus `acestep-5Hz-lm-0.6B`;
+- the runtime does not transition to `ready` until the API confirms both the
+  requested DiT and 0.6B LM are initialized;
+- backend restart recovery maps ACE-Step `/health` state back to the logical
+  Harmonia model only when both DiT and LM are resident;
+- the 10 GB profile enables general CPU offload and DiT CPU offload;
+- the pinned upstream `/v1/init` route does not expose a quantization request
+  field, so Phase 12C relies on conservative offload for the first live load;
+  generation qualification will determine whether an additional quantization
+  adapter is necessary.
 
 ## Generation job contract
 
