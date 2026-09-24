@@ -70,6 +70,32 @@ This document describes the high-level architecture and design goals for the Har
 - **Hugging Face Hub**: Model downloads with token authentication
 - **Ollama Models**: Local LLM hosting for metadata generation
 
+## Model Artifact Lifecycle
+
+Harmonia uses isolated local provider runtimes for MusicGen, DiffSinger, Stable
+Audio 3, and future model families. Large model binaries are persisted in the
+host `models/` tree and bind-mounted into provider containers; they are not
+baked into provider images and are not stored as MongoDB blobs.
+
+The model lifecycle separates:
+
+- application model capabilities in the runtime catalog;
+- committed desired-state download/provenance manifests under `inventory/`;
+- local binary caches under `models/`;
+- operational installation/provenance state in MongoDB;
+- generated job artifacts under `exports/jobs/`.
+
+The target recovery workflow is an explicit, idempotent model manager
+(`models:plan`, `models:init`, `models:verify`, `models:inventory`, and
+`models:repair`). Ordinary application startup must not silently trigger
+multi-gigabyte downloads.
+
+See
+[MODEL_STORAGE_AND_REHYDRATION.md](MODEL_STORAGE_AND_REHYDRATION.md)
+for the architectural contract and
+[planning/MODEL_STORAGE_REHYDRATION_PLAN.md](planning/MODEL_STORAGE_REHYDRATION_PLAN.md)
+for implementation phases and acceptance criteria.
+
 ## Complete Data Flow (Song Generation)
 
 1. **User Input Phase**:
