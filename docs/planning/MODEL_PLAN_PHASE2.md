@@ -1,7 +1,7 @@
 # Phase 2 Model Plan Semantics
 
-**Status:** Implemented, awaiting local qualification  
-**Date:** September 23, 2026  
+**Status:** Complete and locally qualified  
+**Date:** September 24, 2026  
 **Command:** `pnpm models:plan`
 
 ## Purpose
@@ -280,15 +280,58 @@ Phase 2 qualification must exercise:
 The alternate-root run is especially important because it proves planning can
 describe recovery without touching the real cache.
 
+## Local qualification result
+
+Qualified locally on September 24, 2026.
+
+Observed default workstation plan:
+
+```text
+selectedModels=6
+selectedArtifacts=8
+verified=6
+missing=2
+degraded=0
+revisionMismatch=0
+unknown=0
+downloadsRequired=0
+repairsRequired=0
+authenticationRequired=0
+defaultSkipped=2
+```
+
+The six default-installed artifacts verified at marker level:
+
+- MusicGen Small;
+- MusicGen Stereo Small;
+- DiffSinger OpenCpop acoustic;
+- DiffSinger Xiaoma pitch estimator;
+- DiffSinger HiFi-GAN vocoder;
+- Stable Audio 3 Small-Music.
+
+MusicGen Medium and Stereo Medium remained absent and correctly reported
+`skipped-default`.
+
+Qualification also proved:
+
+- the alternate empty root remained read-only;
+- JSON output is machine-readable when invoked through the real Node executable;
+- invalid selectors fail before inspection;
+- Windows HF cache-link fallback handles only `EACCES`/`EPERM` directory entries;
+- normal missing files remain missing;
+- the startup contract suite remained green.
+
+`models:plan` is therefore complete. Deeper byte/link/runtime verification moves
+to Phase 3 `models:verify`.
+
 ## Phase 2 completion criterion
 
-Phase 2 is complete when:
+Phase 2 completion criteria are satisfied:
 
-- fixture tests pass;
-- the command parses and is package-exposed;
-- real cache plan is accurate enough to explain all eight artifacts;
-- current qualified Small/DiffSinger/Stable assets are detected correctly;
-- optional Medium artifacts are not scheduled by default;
-- empty alternate root produces download/authenticate/skipped actions without
-  creating model data;
-- no secrets appear in output/reports.
+- [x] fixture tests pass;
+- [x] the command parses and is package-exposed;
+- [x] real cache plan explains all eight artifacts;
+- [x] current qualified Small/DiffSinger/Stable assets are detected correctly;
+- [x] optional Medium artifacts are not scheduled by default;
+- [x] empty alternate root produces recovery actions without creating model data;
+- [x] no secrets appear in output/reports.
