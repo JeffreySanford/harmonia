@@ -44,11 +44,28 @@ function sanitizeDetail(
 
   let detail = String(value);
 
+  const literalRoot =
+    String(observedRoot);
+  const resolvedRoot =
+    path.resolve(
+      observedRoot
+    );
+
   const candidates = new Set([
-    path.resolve(observedRoot),
-    path
-      .resolve(observedRoot)
-      .replace(/\\/g, '/'),
+    literalRoot,
+    literalRoot.replace(
+      /\\/g,
+      '/'
+    ),
+    literalRoot.replace(
+      /\//g,
+      '\\'
+    ),
+    resolvedRoot,
+    resolvedRoot.replace(
+      /\\/g,
+      '/'
+    ),
   ]);
 
   for (const candidate of candidates) {
