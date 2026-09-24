@@ -7,7 +7,7 @@
     "build": "tsc -p .",
     "start": "node scripts/start-all.cjs",
     "start:all": "node scripts/start-all.cjs",
-    "test:startup": "node --test scripts/start-all.test.cjs scripts/runtime-contract.test.cjs scripts/model-registry-contract.test.cjs scripts/start-all.integration.test.cjs",
+    "test:startup": "node --test scripts/start-all.test.cjs scripts/runtime-contract.test.cjs scripts/model-registry-contract.test.cjs scripts/model-manager.test.cjs scripts/start-all.integration.test.cjs",
     "dev": "nx run-many --target=serve --projects=frontend,backend --parallel=2",
     "dev:frontend": "nx serve frontend",
     "dev:backend": "nx serve backend",
@@ -59,7 +59,7 @@
     "test:compose": "node scripts/validate-compose.cjs",
     "test:all": "pnpm test && pnpm test:startup && pnpm test:compose",
     "test:all:e2e": "pnpm test:all && pnpm test:e2e",
-    "lint:scripts": "node --check scripts/start-all.cjs && node --check scripts/start-all.test.cjs && node --check scripts/start-all.integration.test.cjs && node --check scripts/runtime-contract.test.cjs && node --check scripts/model-registry-contract.test.cjs && node --check scripts/qualify-model-registry-phase1.cjs && node --check scripts/validate-compose.cjs && node --check scripts/repair-local-db-auth.cjs && node --check scripts/qualify-musicgen-small.cjs && node --check scripts/qualify-musicgen-stereo-small.cjs && node --check scripts/qualify-diffsinger-runtime.cjs && node --check scripts/qualify-diffsinger-inference.cjs && node --check scripts/qualify-diffsinger-job.cjs && node --check scripts/qualify-stable-audio-3-small-music.cjs && node --check scripts/qualify-stable-audio-3-job.cjs && node --check scripts/setup-storybook.cjs && node --check scripts/run-storybook-tests.cjs",
+    "lint:scripts": "node --check scripts/start-all.cjs && node --check scripts/start-all.test.cjs && node --check scripts/start-all.integration.test.cjs && node --check scripts/runtime-contract.test.cjs && node --check scripts/model-registry-contract.test.cjs && node --check scripts/qualify-model-registry-phase1.cjs && node --check scripts/validate-compose.cjs && node --check scripts/repair-local-db-auth.cjs && node --check scripts/qualify-musicgen-small.cjs && node --check scripts/qualify-musicgen-stereo-small.cjs && node --check scripts/qualify-diffsinger-runtime.cjs && node --check scripts/qualify-diffsinger-inference.cjs && node --check scripts/qualify-diffsinger-job.cjs && node --check scripts/qualify-stable-audio-3-small-music.cjs && node --check scripts/qualify-stable-audio-3-job.cjs && node --check scripts/setup-storybook.cjs && node --check scripts/run-storybook-tests.cjs && node --check scripts/model-manager.cjs && node --check scripts/model-manager.test.cjs",
     "lint:compose": "node scripts/validate-compose.cjs",
     "repair:local-auth": "node scripts/repair-local-db-auth.cjs",
     "qualify:musicgen-small": "node scripts/qualify-musicgen-small.cjs",
@@ -76,7 +76,9 @@
     "qualify:stable-audio-3-small-music": "node scripts/qualify-stable-audio-3-small-music.cjs",
     "qualify:stable-audio-3-job": "node scripts/qualify-stable-audio-3-job.cjs",
     "test:model-registry": "node --test scripts/model-registry-contract.test.cjs",
-    "qualify:model-registry-phase1": "node scripts/qualify-model-registry-phase1.cjs"
+    "qualify:model-registry-phase1": "node scripts/qualify-model-registry-phase1.cjs",
+    "models:plan": "node scripts/model-manager.cjs plan",
+    "test:model-manager": "node --test scripts/model-manager.test.cjs"
   },
   "keywords": [],
   "author": "",
