@@ -35,6 +35,16 @@ export interface MusicProviderDefinition {
   composeProfile?: string;
 }
 
+export type ModelInstallationCatalogState =
+  | 'verified'
+  | 'missing'
+  | 'degraded'
+  | 'corrupt'
+  | 'unavailable'
+  | 'failed'
+  | 'unknown'
+  | 'not-managed';
+
 export interface MusicModelCatalogEntry {
   id: string;
   providerId: string;
@@ -51,6 +61,10 @@ export interface MusicModelCatalogEntry {
   commercialUse: 'allowed' | 'restricted' | 'review-required';
   notes?: string;
   hardwareFit: HardwareFit;
+  installationState: ModelInstallationCatalogState;
+  installationArtifactCount: number;
+  installationVerifiedCount: number;
+  installationLastVerifiedAt: string | null;
   selectable: boolean;
   disabledReason: string | null;
 }
