@@ -297,6 +297,18 @@ The Angular music-generation form now includes its existing lyrics field in
 non-DiffSinger job parameters, allowing ACE-Step to use supplied lyrics without
 introducing a parallel provider-specific page.
 
+### Phase 12D stale-backend qualification note
+
+If a previously launched Harmonia backend still owns port 3000 and serves an
+older in-memory catalog, Phase 12D must not treat that stale process as the
+current branch. The committed ACE-Step qualifier therefore supports
+`HARMONIA_QUALIFY_BACKEND_BASE` and `HARMONIA_QUALIFY_FRONTEND_BASE`.
+
+This allows qualification to launch the current built backend on an isolated
+port (for example 3112) while reusing an existing Harmonia frontend on 4200.
+The frontend `/downloads` proxy may still serve the generated artifact because
+both backend processes share the same host `exports` directory.
+
 ## Output qualification
 
 First gate:
