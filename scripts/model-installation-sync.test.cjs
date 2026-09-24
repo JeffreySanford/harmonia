@@ -488,7 +488,17 @@ test('Mongo outage is advisory unless requireDb is set', async () => {
         requireDb: true,
       }
     ),
-    /^MongoDB synchronization unavailable; filesystem verification remains authoritative\.$/
+    (error) => {
+      assert.equal(
+        error.message,
+        'MongoDB synchronization unavailable; filesystem verification remains authoritative.'
+      );
+      assert.doesNotMatch(
+        error.message,
+        /mongodb:\/\/|user:secret|127\.0\.0\.1|localhost|:\d{2,5}\b/i
+      );
+      return true;
+    }
   );
 });
 
