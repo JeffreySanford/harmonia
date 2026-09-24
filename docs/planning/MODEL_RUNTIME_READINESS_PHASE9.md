@@ -1,6 +1,6 @@
 # Phase 9 Runtime Readiness and Usage Metadata
 
-**Status:** Core readiness gate locally qualified; live API usage proof pending  
+**Status:** Complete and locally qualified  
 **Date:** September 24, 2026  
 **Runtime seam:** `MusicRuntimeService.selectModel()`
 
@@ -150,6 +150,31 @@ A subsequent isolated-backend live proof may use the already-running Stable Audi
 provider only when it is idle and `small-music` is already resident. In that case
 the same-ready fast path updates `lastUsedAt` without image reconciliation, Compose
 startup, container replacement, or GPU ownership changes.
+
+## Live API usage qualification result
+
+Qualified locally on September 24, 2026 against an already-running Stable
+Audio 3 provider.
+
+Observed behavior:
+
+- provider preflight found Stable Audio healthy, idle, CUDA-backed, and resident
+  with `small-music`;
+- filesystem readiness for `stable-audio-3-small-music` verified before API use;
+- an isolated backend selected the already-running model through
+  `/api/music/runtime/select`;
+- the first selection advanced `lastUsedAt` from null;
+- the Stable Audio container ID, start time, and restart count were unchanged;
+- a same-ready re-selection advanced `lastUsedAt` again without provider restart;
+- final provider health remained ready/idle with `small-music` resident;
+- the Mongo installation record remained `verified` with intact installation and
+  verification timestamps;
+- the final startup/model suite finished with 129 passing tests, zero failures,
+  and one intentionally skipped Compose lifecycle test;
+- the isolated qualification backend exited cleanly and the existing Stable Audio
+  provider remained running.
+
+All Phase 9 completion criteria are satisfied.
 
 ## Completion boundary
 
