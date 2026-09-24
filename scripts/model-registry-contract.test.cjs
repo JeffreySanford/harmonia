@@ -118,6 +118,29 @@ test('model registry contains no secret fields or absolute destinations', () => 
   }
 });
 
+test('model registry contains no secret-like values', () => {
+  const registry = readJson('inventory/model_registry.json');
+  const forbiddenValuePatterns = [
+    /hf_[A-Za-z0-9]{10,}/,
+    /Bearer\s+[A-Za-z0-9._~+\/-]+/i,
+    /(?:api[_-]?key|token|secret|password)\s*[=:]\s*[^\s"']+/i,
+  ];
+
+  walk(registry, (_key, value, fieldPath) => {
+    if (typeof value !== 'string') {
+      return;
+    }
+
+    for (const pattern of forbiddenValuePatterns) {
+      assert.equal(
+        pattern.test(value),
+        false,
+        `secret-like registry value is forbidden: ${fieldPath.join('.')}`
+      );
+    }
+  });
+});
+
 test('model registry source and verification contracts are complete', () => {
   const registry = readJson('inventory/model_registry.json');
 
