@@ -14,6 +14,7 @@ import { ModelInstallationRuntimeService } from './model-installation-runtime.se
 import {
   HardwareFit,
   HardwareProfile,
+  ModelInstallationCatalogInfo,
   MusicModelCatalogEntry,
   MusicModelDefinition,
   MusicProviderDefinition,
@@ -59,11 +60,31 @@ export class MusicRuntimeService {
     const hardware = await this.detectHardware();
     this.status = { ...this.status, hardware };
 
+    const managedModelIds = MUSIC_MODELS
+      .filter((model) => model.availability === 'installed')
+      .map((model) => model.id);
+
+    const installationInfo =
+      await this.modelInstallations.getCatalogInstallationInfo(
+        managedModelIds
+      );
+
     return {
       hardware,
       providers: MUSIC_PROVIDERS,
       models: MUSIC_MODELS.map((model) =>
-        this.toCatalogEntry(model, hardware)
+        this.toCatalogEntry(
+          model,
+          hardware,
+          model.availability === 'installed'
+            ? installationInfo[model.id]
+            : {
+                installationState: 'not-managed',
+                installationArtifactCount: 0,
+                installationVerifiedCount: 0,
+                installationLastVerifiedAt: null,
+              }
+        )
       ),
       status: this.status,
     };
@@ -916,7 +937,16 @@ export class MusicRuntimeService {
 
   private toCatalogEntry(
     model: MusicModelDefinition,
-    hardware: HardwareProfile
+    hardware: HardwareProfile,
+    installation: ModelInstallationCatalogInfo = {
+      installationState:
+        model.availability === 'installed'
+          ? 'unknown'
+          : 'not-managed',
+      installationArtifactCount: 0,
+      installationVerifiedCount: 0,
+      installationLastVerifiedAt: null,
+    }
   ): MusicModelCatalogEntry {
     const provider = this.getProvider(model.providerId);
     const hardwareFit = this.hardwareFit(model, hardware);
@@ -934,15 +964,48 @@ export class MusicRuntimeService {
       disabledReason = 'Provider runtime is planned but not installed yet.';
     } else if (model.availability !== 'installed') {
       disabledReason = 'Model runtime is not installed yet.';
+    } else if (
+      installation.installationState !== 'verified' &&
+      installation.installationState !== 'unknown'
+    ) {
+      disabledReason =
+        this.installationDisabledReason(
+          model.id,
+          installation.installationState
+        );
     }
 
     return {
       ...model,
+      ...installation,
       providerName: provider.name,
       hardwareFit,
       selectable: disabledReason === null,
       disabledReason,
     };
+  }
+
+  private installationDisabledReason(
+    modelId: string,
+    state: ModelInstallationCatalogInfo['installationState']
+  ): string {
+    if (state === 'missing') {
+      return `Model is not initialized locally. Run: pnpm models:init --model ${modelId}`;
+    }
+
+    if (
+      state === 'degraded' ||
+      state === 'corrupt' ||
+      state === 'failed'
+    ) {
+      return `Model installation needs repair. Run: pnpm models:repair --model ${modelId}`;
+    }
+
+    if (state === 'unavailable') {
+      return `Model installation is unavailable. Run: pnpm models:verify --model ${modelId}`;
+    }
+
+    return 'Model installation state is unavailable.';
   }
 
   private hardwareFit(
