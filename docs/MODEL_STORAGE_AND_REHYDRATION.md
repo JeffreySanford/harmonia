@@ -252,12 +252,18 @@ verified installation unless an explicit destructive flag is supplied.
 
 Add a `model_installations` collection for current operational state.
 
+The collection is keyed by physical `artifactId`, not only by application
+`modelId`. This is required because one application model can depend on
+multiple separately downloadable artifacts. DiffSinger is the first concrete
+example.
+
 Recommended document shape:
 
 ```text
-modelId
+artifactId
 providerId
-runtimeModelId
+modelIds[]
+runtimeModelIds[]
 sourceKind
 sourceRef
 sourceRevision
@@ -276,6 +282,9 @@ createdAt
 updatedAt
 ```
 
+Logical model readiness is derived from the registry binding: a model is ready
+only when every required `artifactId` is verified/installed.
+
 Recommended status values:
 
 ```text
@@ -289,13 +298,14 @@ failed
 
 Recommended indexes:
 
-- unique `modelId`
+- unique `artifactId` for the first single-workstation implementation
+- `modelIds`
 - `providerId + status`
 - `status + updatedAt`
 
-For a future multi-worker deployment, add a machine/worker identity to the
-unique key. The first local-workstation implementation may use one installation
-record per model.
+For a future multi-worker deployment, use a compound unique key such as
+`machineId + artifactId`. The logical model status remains a derived view over
+its required physical artifacts.
 
 ### What MongoDB must not contain
 
