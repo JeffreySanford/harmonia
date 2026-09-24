@@ -46,6 +46,36 @@ function createHuggingFaceFixture(root, artifact) {
   }
 }
 
+
+function createHuggingFaceRepoFixture(root, destination, repoId) {
+  const repoCache =
+    'models--' + repoId.replace(/\//g, '--');
+  const revision =
+    'fixture-' + repoId.replace(/[^a-z0-9]/gi, '');
+  const base = path.join(
+    root,
+    destination,
+    'hub',
+    repoCache
+  );
+
+  ensureFile(path.join(base, 'refs', 'main'), revision + '\n');
+  ensureFile(
+    path.join(base, 'snapshots', revision, 'fixture.bin'),
+    'dependency-fixture'
+  );
+}
+
+function createMusicGenDependencyFixtures(root, artifact) {
+  for (const repoId of huggingFaceDownloadReposForArtifact(artifact).slice(1)) {
+    createHuggingFaceRepoFixture(
+      root,
+      artifact.destination,
+      repoId
+    );
+  }
+}
+
 function createCheckpointFixture(root, artifact) {
   const base = path.join(root, artifact.destination);
 
@@ -604,6 +634,10 @@ test('models:init downloads and verifies a missing public HF artifact', () => {
       calls += 1;
       assert.equal(selectedArtifact.artifactId, artifact.artifactId);
       createHuggingFaceFixture(modelRoot, selectedArtifact);
+      createMusicGenDependencyFixtures(
+        modelRoot,
+        selectedArtifact
+      );
       return {
         repos: huggingFaceDownloadReposForArtifact(selectedArtifact).map(
           (repoId) => ({ repoId })
@@ -620,6 +654,42 @@ test('models:init downloads and verifies a missing public HF artifact', () => {
   assert.equal(result.artifacts[0].state, 'verified');
 });
 
+
+test('models:init repairs a missing MusicGen runtime dependency instead of reporting cache-hit', () => {
+  const root = tempRoot();
+  const registry = loadRegistry();
+  const artifact = registry.artifacts.find(
+    (candidate) => candidate.artifactId === 'musicgen-small'
+  );
+  createHuggingFaceFixture(root, artifact);
+  let calls = 0;
+
+  const result = createInitialization({
+    root,
+    modelIds: ['musicgen-small'],
+    providerIds: [],
+    artifactIds: [],
+    platform: 'linux',
+    downloadExecutor: (selectedArtifact, modelRoot) => {
+      calls += 1;
+      createMusicGenDependencyFixtures(
+        modelRoot,
+        selectedArtifact
+      );
+      return {
+        repos: huggingFaceDownloadReposForArtifact(selectedArtifact).map(
+          (repoId) => ({ repoId })
+        ),
+      };
+    },
+  });
+
+  assert.equal(calls, 1);
+  assert.equal(result.ok, true);
+  assert.equal(result.artifacts[0].action, 'downloaded');
+  assert.deepEqual(result.artifacts[0].missingRuntimeRepos, []);
+});
+
 test('models:init is idempotent for an already verified HF artifact', () => {
   const root = tempRoot();
   const registry = loadRegistry();
@@ -627,6 +697,7 @@ test('models:init is idempotent for an already verified HF artifact', () => {
     (candidate) => candidate.artifactId === 'musicgen-small'
   );
   createHuggingFaceFixture(root, artifact);
+  createMusicGenDependencyFixtures(root, artifact);
   let calls = 0;
 
   const result = createInitialization({
