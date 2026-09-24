@@ -239,7 +239,7 @@ export class JobsService {
       return;
     }
 
-    if (!['musicgen', 'diffsinger'].includes(model.providerId)) {
+    if (!['musicgen', 'diffsinger', 'stable-audio-3'].includes(model.providerId)) {
       await this.fail(
         jobId,
         userId,
@@ -271,7 +271,9 @@ export class JobsService {
         message:
           model.providerId === 'diffsinger'
             ? 'Starting singing synthesis'
-            : 'Starting music generation',
+            : model.providerId === 'stable-audio-3'
+              ? 'Starting Stable Audio generation'
+              : 'Starting music generation',
       });
 
       const runtime = await this.musicRuntime.beginGeneration(model.providerId);
@@ -285,16 +287,28 @@ export class JobsService {
       let providerMetadata: Record<string, unknown>;
 
       try {
-        if (model.providerId === 'musicgen') {
+        if (
+          model.providerId === 'musicgen' ||
+          model.providerId === 'stable-audio-3'
+        ) {
           const duration = Number(parameters['duration']);
           const prompt = this.buildGenerationPrompt(parameters);
 
-          await this.runMusicGenClient({
-            runtimeModelId: runtime.runtimeModelId,
-            prompt,
-            duration,
-            outputPath: containerPath,
-          });
+          if (model.providerId === 'musicgen') {
+            await this.runMusicGenClient({
+              runtimeModelId: runtime.runtimeModelId,
+              prompt,
+              duration,
+              outputPath: containerPath,
+            });
+          } else {
+            await this.runStableAudio3Client({
+              runtimeModelId: runtime.runtimeModelId,
+              prompt,
+              duration,
+              outputPath: containerPath,
+            });
+          }
 
           requestedDurationSeconds = duration;
           providerMetadata = {
@@ -393,7 +407,10 @@ export class JobsService {
       return;
     }
 
-    if (model.providerId !== 'musicgen') {
+    if (
+      model.providerId !== 'musicgen' &&
+      model.providerId !== 'stable-audio-3'
+    ) {
       throw new BadRequestException(
         `${model.providerId} generation jobs are not implemented yet.`
       );
@@ -592,6 +609,68 @@ export class JobsService {
             )
               .trim()
               .slice(-2000)}`
+          )
+        );
+      });
+    });
+  }
+
+  private runStableAudio3Client(options: {
+    runtimeModelId: string;
+    prompt: string;
+    duration: number;
+    outputPath: string;
+  }): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const child = spawn(
+        'docker',
+        [
+          'exec',
+          'harmonia-stable-audio-3',
+          'python',
+          '/workspace/scripts/stable_audio_3_provider_client.py',
+          '--output',
+          options.outputPath,
+          '--duration',
+          String(options.duration),
+          '--model',
+          options.runtimeModelId,
+          '--prompt',
+          options.prompt,
+        ],
+        {
+          cwd: process.cwd(),
+          windowsHide: true,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }
+      );
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout.on('data', (chunk: Buffer) => {
+        stdout += chunk.toString();
+      });
+      child.stderr.on('data', (chunk: Buffer) => {
+        stderr += chunk.toString();
+      });
+
+      child.once('error', reject);
+      child.once('close', (code) => {
+        if (code === 0) {
+          resolve();
+          return;
+        }
+
+        reject(
+          new Error(
+            `Stable Audio 3 provider exited with code ${code ?? 'unknown'}: ${(
+              stderr ||
+              stdout ||
+              'no provider output'
+            )
+              .trim()
+              .slice(-3000)}`
           )
         );
       });
