@@ -129,6 +129,34 @@ test('dry-run lifecycle skips database sync', () => {
   );
 });
 
+test('alternate model root skips automatic database sync', () => {
+  let calls = 0;
+
+  const state =
+    lifecycleDatabaseState(
+      {
+        ok: true,
+      },
+      {
+        root:
+          'generated/model-manager/recovery/models',
+      },
+      () => {
+        calls += 1;
+      }
+    );
+
+  assert.equal(calls, 0);
+  assert.equal(
+    state.status,
+    'skipped-noncanonical-root'
+  );
+  assert.equal(
+    state.required,
+    false
+  );
+});
+
 test('failed lifecycle skips database sync', () => {
   let calls = 0;
 
