@@ -55,8 +55,7 @@ It currently contains legacy absolute paths and older folder assumptions. It is
 useful as evidence of what existed at the time it was generated, but it is **not
 the download specification** and must not be used by `models:init`.
 
-The planned `models:inventory` command will modernize observed inventory to
-use:
+`models:inventory` modernizes observed inventory using:
 
 - model/artifact IDs;
 - relative paths;
@@ -91,21 +90,20 @@ Current commands:
 ```bash
 pnpm test:model-registry
 pnpm test:model-manager
+pnpm test:model-inventory
 pnpm models:plan
-```
-
-`models:plan` is read-only with respect to model data. It inspects the
-registry and local cache markers, writes a gitignored report under
-`generated/model-manager/`, and performs no download or repair.
-
-Planned lifecycle commands:
-
-```bash
-pnpm models:init
 pnpm models:verify
-pnpm models:inventory
+pnpm models:init
 pnpm models:repair
+pnpm models:inventory
+pnpm models:db-schema
+pnpm models:db-sync
 ```
+
+`models:plan` is marker-level and read-only. `models:verify` performs deep
+read-only verification. `models:inventory` projects the same verification
+evidence into portable generated JSON under `generated/model-manager/` and
+does not mutate model bytes.
 
 See:
 
