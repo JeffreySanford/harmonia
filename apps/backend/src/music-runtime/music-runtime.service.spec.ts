@@ -130,6 +130,14 @@ describe('MusicRuntimeService model readiness ordering', () => {
         installationLastVerifiedAt:
           '2026-09-24T18:00:00.000Z',
       },
+      'acestep-v15-turbo-06b': {
+        installationState:
+          'verified',
+        installationArtifactCount: 2,
+        installationVerifiedCount: 2,
+        installationLastVerifiedAt:
+          '2026-09-24T18:00:00.000Z',
+      },
     });
 
     const catalog =
@@ -147,6 +155,13 @@ describe('MusicRuntimeService model readiness ordering', () => {
         (model) =>
           model.id ===
           'diffsinger-acoustic-hifigan'
+      );
+
+    const ace =
+      catalog.models.find(
+        (model) =>
+          model.id ===
+          'acestep-v15-turbo-06b'
       );
 
     const planned =
@@ -172,6 +187,16 @@ describe('MusicRuntimeService model readiness ordering', () => {
           'verified',
         installationArtifactCount: 3,
         installationVerifiedCount: 3,
+      })
+    );
+
+    expect(ace).toEqual(
+      expect.objectContaining({
+        installationState:
+          'verified',
+        installationArtifactCount: 2,
+        installationVerifiedCount: 2,
+        selectable: true,
       })
     );
 
