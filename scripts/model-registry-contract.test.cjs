@@ -361,9 +361,9 @@ test('ACE-Step Turbo 0.6B binding excludes the unified 1.7B LM', () => {
   assert.deepEqual(
     core?.source.allowPatterns,
     [
-      'acestep-v15-turbo/**',
-      'vae/**',
-      'Qwen3-Embedding-0.6B/**',
+      'acestep-v15-turbo/*',
+      'vae/*',
+      'Qwen3-Embedding-0.6B/*',
     ]
   );
   assert.equal(
