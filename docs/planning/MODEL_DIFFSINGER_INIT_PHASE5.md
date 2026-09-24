@@ -109,6 +109,16 @@ semantics belong to `models:repair`.
 - makes no network request;
 - makes no final model mutation.
 
+## Python 3.8 qualification preflight
+
+The pinned DiffSinger image uses Python 3.8. Qualification should parse the
+initializer without attempting to write bytecode beside the read-only
+`/workspace/scripts` mount. Use either in-memory `compile(...)` or direct
+`py_compile.compile(..., cfile="/tmp/...")`.
+
+Do not use the default `py_compile` output path against a read-only scripts
+mount because it tries to create `/workspace/scripts/__pycache__`.
+
 ## Qualification target
 
 Use a fresh alternate root and prove:
