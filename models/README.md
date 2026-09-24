@@ -134,20 +134,25 @@ composite models such as DiffSinger.
 
 ## Model lifecycle commands
 
-The planned canonical operator workflow is:
+The canonical operator workflow is being implemented incrementally.
+
+Available now:
 
 ```bash
+pnpm test:model-registry
+pnpm test:model-manager
 pnpm models:plan
+```
+
+`models:plan` is read-only and performs marker-level cache inspection only.
+
+Planned next:
+
+```bash
 pnpm models:init
 pnpm models:verify
 pnpm models:inventory
 pnpm models:repair
-```
-
-The first implemented contract command is:
-
-```bash
-pnpm test:model-registry
 ```
 
 Ordinary `pnpm start:all --gpu` should never silently download multi-gigabyte
