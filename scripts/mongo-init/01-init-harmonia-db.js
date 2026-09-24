@@ -111,6 +111,97 @@ db.createCollection('jobs', {
   validationAction: 'error'
 });
 
+db.createCollection('model_installations', {
+  validator: {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: [
+        'artifactId',
+        'providerId',
+        'modelIds',
+        'runtimeModelIds',
+        'sourceKind',
+        'sourceRef',
+        'localPath',
+        'status',
+        'verificationStrategy',
+        'licenseAcceptanceRequired',
+        'gated'
+      ],
+      properties: {
+        artifactId: { bsonType: 'string' },
+        providerId: { bsonType: 'string' },
+        modelIds: {
+          bsonType: 'array',
+          items: { bsonType: 'string' }
+        },
+        runtimeModelIds: {
+          bsonType: 'array',
+          items: { bsonType: 'string' }
+        },
+        sourceKind: {
+          enum: ['huggingface', 'http-zip']
+        },
+        sourceRef: { bsonType: 'string' },
+        sourceRevision: {
+          bsonType: ['string', 'null']
+        },
+        localPath: {
+          bsonType: 'string',
+          pattern: '^(?!/)(?![A-Za-z]:[\\\\/]).+'
+        },
+        status: {
+          enum: [
+            'missing',
+            'verified',
+            'degraded',
+            'corrupt',
+            'unavailable',
+            'failed'
+          ]
+        },
+        fileCount: {
+          bsonType: 'number',
+          minimum: 0
+        },
+        bytes: {
+          bsonType: 'number',
+          minimum: 0
+        },
+        verificationStrategy: {
+          bsonType: 'string'
+        },
+        verifiedAt: {
+          bsonType: ['date', 'null']
+        },
+        installedAt: {
+          bsonType: ['date', 'null']
+        },
+        lastUsedAt: {
+          bsonType: ['date', 'null']
+        },
+        licenseAcceptanceRequired: {
+          bsonType: 'bool'
+        },
+        gated: {
+          bsonType: 'bool'
+        },
+        lastError: {
+          bsonType: ['string', 'null']
+        },
+        createdAt: {
+          bsonType: 'date'
+        },
+        updatedAt: {
+          bsonType: 'date'
+        }
+      }
+    }
+  },
+  validationLevel: 'strict',
+  validationAction: 'error'
+});
+
 db.createCollection('events', {
   validator: {
     $jsonSchema: {
@@ -133,6 +224,10 @@ db.model_artifacts.createIndex({ 'hashes.sha256': 1 });
 db.jobs.createIndex({ userId: 1, createdAt: -1 });
 db.jobs.createIndex({ userId: 1, status: 1, createdAt: -1 });
 db.jobs.createIndex({ userId: 1, jobType: 1, createdAt: -1 });
+db.model_installations.createIndex({ artifactId: 1 }, { unique: true });
+db.model_installations.createIndex({ providerId: 1, status: 1 });
+db.model_installations.createIndex({ status: 1, verifiedAt: -1 });
+db.model_installations.createIndex({ modelIds: 1 });
 db.inventory_versions.createIndex({ version_tag: 1 }, { unique: true });
 db.inventory_versions.createIndex({ created_at: -1 });
 db.events.createIndex({ created_at: 1 }, { expireAfterSeconds: 2592000 });
