@@ -481,6 +481,58 @@ function huggingFaceDownloadReposForArtifact(artifact) {
   return [...new Set(repos.filter(Boolean))];
 }
 
+function huggingFaceRepoHasSnapshot(
+  artifactRoot,
+  repoId
+) {
+  const repoCacheRoot =
+    huggingFaceRepoCacheRoot(artifactRoot, repoId);
+
+  if (!fs.existsSync(repoCacheRoot)) {
+    return false;
+  }
+
+  const mainRevision =
+    readTextIfExists(
+      path.join(repoCacheRoot, 'refs', 'main')
+    );
+
+  if (
+    mainRevision &&
+    fs.existsSync(
+      path.join(
+        repoCacheRoot,
+        'snapshots',
+        mainRevision
+      )
+    )
+  ) {
+    return true;
+  }
+
+  return listSnapshotRevisions(repoCacheRoot).length > 0;
+}
+
+function missingHuggingFaceDownloadRepos(
+  artifact,
+  modelRoot
+) {
+  const artifactRoot = safeResolveUnderRoot(
+    modelRoot,
+    artifact.destination
+  );
+
+  return huggingFaceDownloadReposForArtifact(
+    artifact
+  ).filter(
+    (repoId) =>
+      !huggingFaceRepoHasSnapshot(
+        artifactRoot,
+        repoId
+      )
+  );
+}
+
 function runHuggingFaceDownloadContainer(
   artifact,
   modelRoot,
@@ -521,7 +573,7 @@ function runHuggingFaceDownloadContainer(
     'repos = json.loads(sys.argv[1])',
     'primary = sys.argv[2]',
     'revision = None if sys.argv[3] == "-" else sys.argv[3]',
-    'token = os.environ.get("HF_TOKEN") or None',
+    'token = sys.stdin.read().strip() or None',
     'result = []',
     'for repo_id in repos:',
     '    selected_revision = revision if repo_id == primary else None',
@@ -541,6 +593,7 @@ function runHuggingFaceDownloadContainer(
   const args = [
     'run',
     '--rm',
+    '-i',
     '--mount',
     'type=bind,source=' +
       resolvedRoot +
@@ -548,15 +601,6 @@ function runHuggingFaceDownloadContainer(
     '-e',
     'HF_HOME=' + hfHome,
   ];
-
-  const childEnv = {
-    ...process.env,
-  };
-
-  if (credential) {
-    childEnv.HF_TOKEN = credential;
-    args.push('-e', 'HF_TOKEN');
-  }
 
   args.push(
     '--entrypoint',
@@ -573,9 +617,10 @@ function runHuggingFaceDownloadContainer(
   const execution = spawn('docker', args, {
     cwd: repoRoot,
     encoding: 'utf8',
-    env: childEnv,
+    env: process.env,
+    input: credential || '',
     windowsHide: true,
-    stdio: ['ignore', 'pipe', 'inherit'],
+    stdio: ['pipe', 'pipe', 'inherit'],
     timeout: options.timeout || 4 * 60 * 60 * 1000,
     maxBuffer: 16 * 1024 * 1024,
   });
@@ -1657,13 +1702,22 @@ function createInitialization(options = {}) {
       downloadRepos:
         huggingFaceDownloadReposForArtifact(artifact),
     };
+    const missingRuntimeReposBefore =
+      missingHuggingFaceDownloadRepos(
+        artifact,
+        modelRoot
+      );
 
-    if (before.state === 'verified') {
+    if (
+      before.state === 'verified' &&
+      missingRuntimeReposBefore.length === 0
+    ) {
       return {
         ...base,
         state: 'verified',
         action: 'cache-hit',
         resolvedRevision: before.resolvedRevision,
+        missingRuntimeRepos: [],
         detail: before.detail,
       };
     }
@@ -1674,6 +1728,7 @@ function createInitialization(options = {}) {
         state: before.state,
         action: 'authenticate',
         resolvedRevision: before.resolvedRevision,
+        missingRuntimeRepos: missingRuntimeReposBefore,
         detail:
           'gated Hugging Face artifact requires a configured credential before initialization',
       };
@@ -1685,6 +1740,7 @@ function createInitialization(options = {}) {
         state: before.state,
         action: 'offline-missing',
         resolvedRevision: before.resolvedRevision,
+        missingRuntimeRepos: missingRuntimeReposBefore,
         detail:
           'artifact is not locally verified and initialization is offline',
       };
@@ -1696,6 +1752,7 @@ function createInitialization(options = {}) {
         state: before.state,
         action: 'would-download',
         resolvedRevision: before.resolvedRevision,
+        missingRuntimeRepos: missingRuntimeReposBefore,
         detail:
           'dry-run: selected Hugging Face repositories would be initialized',
       };
@@ -1715,15 +1772,29 @@ function createInitialization(options = {}) {
         modelRoot,
         options
       );
+      const missingRuntimeRepos =
+        missingHuggingFaceDownloadRepos(
+          artifact,
+          modelRoot
+        );
+      const verified =
+        after.state === 'verified' &&
+        missingRuntimeRepos.length === 0;
 
       return {
         ...base,
-        state: after.state,
+        state:
+          verified
+            ? 'verified'
+            : after.state === 'verified'
+              ? 'corrupt'
+              : after.state,
         action:
-          after.state === 'verified'
+          verified
             ? 'downloaded'
             : 'verification-failed',
         resolvedRevision: after.resolvedRevision,
+        missingRuntimeRepos,
         downloadedRepos: Array.isArray(download?.repos)
           ? download.repos.map((row) => ({
               repoId: row.repoId,
@@ -1731,7 +1802,11 @@ function createInitialization(options = {}) {
                 row.resolvedRevision || null,
             }))
           : [],
-        detail: after.detail,
+        detail:
+          missingRuntimeRepos.length > 0
+            ? 'runtime dependency repositories are still missing: ' +
+              missingRuntimeRepos.join(', ')
+            : after.detail,
       };
     } catch (error) {
       return {
@@ -2136,6 +2211,7 @@ module.exports = {
   createVerification,
   getHuggingFaceCredential,
   huggingFaceDownloadReposForArtifact,
+  missingHuggingFaceDownloadRepos,
   defaultContainerProbeForArtifact,
   deriveAction,
   deriveModelState,
