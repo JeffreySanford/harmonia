@@ -1919,6 +1919,15 @@ function createInitialization(options = {}) {
             modelRoot
           )
         : [];
+    const destinationExistsBefore =
+      isHttpZip
+        ? fs.existsSync(
+            safeResolveUnderRoot(
+              modelRoot,
+              artifact.destination
+            )
+          )
+        : false;
 
     if (
       before.state === 'verified' &&
@@ -1980,7 +1989,7 @@ function createInitialization(options = {}) {
 
     if (
       isHttpZip &&
-      before.state !== 'missing'
+      destinationExistsBefore
     ) {
       return {
         ...base,
