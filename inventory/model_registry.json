@@ -248,7 +248,7 @@
       "source": {
         "kind": "huggingface",
         "repoId": "stabilityai/stable-audio-3-small-music",
-        "revision": null,
+        "revision": "0fef1392cd842149a2b6d445e181c97608faac06",
         "gated": true
       },
       "destination": "stable-audio-3/huggingface",
@@ -268,7 +268,7 @@
       },
       "defaultInstall": true,
       "estimatedBytes": null,
-      "notes": "Qualified on NVIDIA GeForce RTX 3080 with native 44.1 kHz stereo 32-bit float output."
+      "notes": "Qualified on NVIDIA GeForce RTX 3080 with native 44.1 kHz stereo 32-bit float output. Registry pins the qualified Hugging Face snapshot resolved during access/inference qualification."
     }
   ],
   "modelBindings": [
