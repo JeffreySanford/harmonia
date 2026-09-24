@@ -32,6 +32,56 @@ describe('JobsService generation contract', () => {
     ).not.toThrow();
   });
 
+  it('accepts ACE-Step generation with supplied lyrics at 30 seconds', () => {
+    expect(() =>
+      (service as any).validateGenerationRequest({
+        jobType: 'generate',
+        modelId: 'acestep-v15-turbo-06b',
+        parameters: {
+          title: 'Phase 12D',
+          prompt:
+            'uplifting alternative rock with electric guitar and steady drums',
+          lyrics:
+            '[Verse]\nRunning north beneath the open sky\n[Chorus]\nTrue north keeps us moving',
+          duration: 30,
+          bpm: 118,
+        },
+      })
+    ).not.toThrow();
+  });
+
+  it('rejects ACE-Step generation without supplied lyrics', () => {
+    expect(() =>
+      (service as any).validateGenerationRequest({
+        jobType: 'generate',
+        modelId: 'acestep-v15-turbo-06b',
+        parameters: {
+          prompt: 'alternative rock',
+          duration: 30,
+          bpm: 118,
+        },
+      })
+    ).toThrow(
+      'ACE-Step generation requires supplied lyrics.'
+    );
+  });
+
+  it('enforces the ACE-Step 10 second upstream minimum duration', () => {
+    expect(() =>
+      (service as any).validateGenerationRequest({
+        jobType: 'generate',
+        modelId: 'acestep-v15-turbo-06b',
+        parameters: {
+          prompt: 'alternative rock',
+          lyrics: 'Keep moving forward',
+          duration: 9,
+        },
+      })
+    ).toThrow(
+      'Generation duration must be at least 10 seconds.'
+    );
+  });
+
   it('rejects generation without a model', () => {
     expect(() =>
       (service as any).validateGenerationRequest({
