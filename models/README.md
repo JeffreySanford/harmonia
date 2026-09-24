@@ -147,9 +147,10 @@ pnpm models:init --model <modelId>
 ```
 
 `models:plan` is marker-level and read-only. `models:verify` performs deeper
-read-only byte/link checks. Phase 4 `models:init` currently requires an
-explicit selector and supports Hugging Face artifacts only; qualify it against
-an alternate root before using it for recovery.
+read-only byte/link checks. `models:init` currently requires an explicit selector and supports the
+registered Hugging Face and DiffSinger HTTP-ZIP artifacts. Hugging Face recovery
+is locally qualified; DiffSinger recovery should be qualified against an
+alternate root before using it for workstation recovery.
 
 Planned next:
 
