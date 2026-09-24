@@ -24,6 +24,12 @@ operational documentation:
   behavior, locking, and exit-code contracts.
 - [Acceptance Matrix](MODEL_REHYDRATION_ACCEPTANCE_MATRIX.md) — phase-by-phase
   qualification scenarios and the release gate for future local providers.
+- [Model Manager CLI Specification](MODEL_MANAGER_CLI_SPEC.md) — exact command,
+  selector, dry-run/offline, reporting, locking, authentication, and exit-code
+  contract.
+- [Model Installation MongoDB Schema](MODEL_INSTALLATION_MONGO_SCHEMA.md) —
+  artifact-granular operational state, readiness derivation, indexes, error
+  sanitization, and migration strategy.
 
 When an implementation plan is completed, its durable design decisions should
 remain represented by the corresponding architecture/operations documents.
