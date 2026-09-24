@@ -1,6 +1,6 @@
 # Phase 8 Mongo Model Installation Metadata
 
-**Status:** Schema implemented, awaiting live Mongo qualification  
+**Status:** Phase 8A schema complete and locally qualified; Phase 8B sync next  
 **Date:** September 24, 2026  
 **Collection:** `model_installations`
 
@@ -146,6 +146,27 @@ The Mongoose schema must mirror the Mongo validator and use collection
 8. backend TypeScript build remains green;
 9. existing jobs/users collections remain unchanged;
 10. full startup/model regression remains green.
+
+## Phase 8A local qualification result
+
+Qualified against the existing persistent MongoDB volume on September 24, 2026.
+
+Observed behavior:
+
+- backend startup/model regression: 111 passing, zero failing, one intentionally skipped;
+- backend production build completed successfully;
+- Mongo container was running and healthy;
+- first schema sync created `model_installations`; second sync updated it through `collMod`;
+- valid installation metadata was accepted;
+- missing `artifactId`, invalid lifecycle status, absolute Unix path, absolute Windows path,
+  and an unmodeled secret-like field were all rejected with Mongo validation code 121;
+- duplicate `artifactId` was rejected by the unique index with code 11000;
+- temporary qualification rows were deleted and the collection returned to zero documents;
+- jobs/users document counts remained unchanged;
+- the expected four application indexes plus `_id_` were present.
+
+Phase 8A is complete. Phase 8B connects deep filesystem verification evidence to
+idempotent `model_installations` upserts.
 
 ## Completion boundary
 
