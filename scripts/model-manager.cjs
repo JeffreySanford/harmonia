@@ -560,7 +560,10 @@ function runHuggingFaceDownloadContainer(
   const resolvedRoot = path.resolve(modelRoot);
   fs.mkdirSync(resolvedRoot, { recursive: true });
 
-  const repos = huggingFaceDownloadReposForArtifact(artifact);
+  const repos =
+    Array.isArray(options.repos) && options.repos.length > 0
+      ? [...new Set(options.repos)]
+      : huggingFaceDownloadReposForArtifact(artifact);
   const credential = options.credential || null;
   const hfHome =
     '/workspace/models/' +
@@ -1746,6 +1749,15 @@ function createInitialization(options = {}) {
       };
     }
 
+    const reposToFetch = [
+      ...new Set([
+        ...(before.state === 'verified'
+          ? []
+          : [artifact.source.repoId]),
+        ...missingRuntimeReposBefore,
+      ]),
+    ];
+
     if (normalized.dryRun) {
       return {
         ...base,
@@ -1753,6 +1765,7 @@ function createInitialization(options = {}) {
         action: 'would-download',
         resolvedRevision: before.resolvedRevision,
         missingRuntimeRepos: missingRuntimeReposBefore,
+        pendingDownloadRepos: reposToFetch,
         detail:
           'dry-run: selected Hugging Face repositories would be initialized',
       };
@@ -1764,6 +1777,7 @@ function createInitialization(options = {}) {
         modelRoot,
         {
           credential,
+          repos: reposToFetch,
           verbose: normalized.verbose,
         }
       );
