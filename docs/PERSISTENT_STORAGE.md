@@ -46,7 +46,7 @@ WAV blobs in MongoDB. Mongo records pointers and metadata for those files.
 - **users**: Authentication and account metadata (authentication stored in separate Auth system if possible).
 - **projects**: Logical grouping for models, datasets, runs, collaborators, and permissions.
 - **model_artifacts**: One doc per logical model snapshot/provenance record (path, version, checksums, license metadata, source_url, size, tags); this is metadata only, not the checkpoint bytes.
-- **model_installations**: Current local installation state for a model (model/provider/runtime ids, local path, source revision, status, bytes, file count, verification timestamps, and sanitized errors).
+- **model_installations**: Current local installation state keyed by physical model artifact (artifact/provider ids, referencing model ids, runtime ids, local path, source revision, status, bytes, file count, verification timestamps, and sanitized errors). Logical model readiness is derived from its required artifact set.
 - **datasets**: Dataset manifests and provenance records.
 - **licenses**: Snapshot of license text files and parsed license metadata (spdx, commercial_use boolean, notes).
 - **checksums**: Records of computed checksums per artifact and audit history (useful for re-verification).
