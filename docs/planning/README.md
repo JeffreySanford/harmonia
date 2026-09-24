@@ -48,7 +48,9 @@ operational documentation:
 - [Phase 8B Installation Synchronization](MODEL_INSTALLATIONS_SYNC_PHASE8B.md) —
   completed filesystem-verification projection into idempotent Mongo operational records.
 - [Phase 8C Automatic Lifecycle Synchronization](MODEL_INSTALLATIONS_AUTO_SYNC_PHASE8C.md) —
-  post-init/post-repair operational metadata synchronization for the canonical model root.
+  completed post-init/post-repair operational metadata synchronization for the canonical model root.
+- [Phase 9 Runtime Readiness](MODEL_RUNTIME_READINESS_PHASE9.md) —
+  filesystem readiness enforcement before provider switching plus advisory `lastUsedAt` updates.
 - [Model Installation MongoDB Schema](MODEL_INSTALLATION_MONGO_SCHEMA.md) —
   artifact-granular operational state, readiness derivation, indexes, error
   sanitization, and migration strategy.
