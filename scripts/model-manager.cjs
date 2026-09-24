@@ -4,6 +4,10 @@ const path = require('node:path');
 const { execFileSync, spawnSync } = require('node:child_process');
 const { parseEnv } = require('node:util');
 const Ajv = require('ajv');
+const {
+  applyDatabaseRequirement,
+  lifecycleDatabaseState,
+} = require('./model-installation-sync-runner.cjs');
 
 const repoRoot = path.resolve(__dirname, '..');
 const registryPath = path.join(repoRoot, 'inventory', 'model_registry.json');
@@ -2239,7 +2243,7 @@ function createInitialization(options = {}) {
     artifacts: artifactRows,
     warnings: [
       'models:init supports the registered Hugging Face and HTTP-ZIP source adapters.',
-      'Mongo installation-state writes and destructive repair are not implemented yet.',
+      'CLI models:init synchronizes installation metadata after a successful non-dry-run lifecycle; direct createInitialization callers remain filesystem-only.',
     ],
   };
 }
@@ -2530,6 +2534,19 @@ function main(argv = process.argv.slice(2)) {
       : args.command === 'verify'
         ? createVerification(args)
         : createInitialization(args);
+  if (args.command === 'init') {
+    const databaseIntegration =
+      lifecycleDatabaseState(
+        result,
+        args
+      );
+
+    applyDatabaseRequirement(
+      result,
+      databaseIntegration
+    );
+  }
+
   const reportPath = writeReport(result);
 
   if (args.json) {
