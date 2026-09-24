@@ -63,7 +63,7 @@ function sanitizeError(value) {
 
   let text = String(value)
     .replace(
-      /(mongodb(?:\+srv)?:\/\/[^:\s/@]+:)[^@\s]+@/gi,
+      /([A-Za-z][A-Za-z0-9+.-]*:\/\/[^:\s/@]+:)[^@\s]+@/g,
       '$1***@'
     )
     .replace(
