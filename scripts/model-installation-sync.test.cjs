@@ -379,9 +379,9 @@ test('later missing observation preserves installedAt and stores sanitized error
     row.lastError,
     /super-secret|user:secret/
   );
-  assert.match(
-    row.lastError,
-    /password=***/
+  assert.equal(
+    row.lastError.includes('password=***'),
+    true
   );
 });
 
