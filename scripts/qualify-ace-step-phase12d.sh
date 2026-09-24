@@ -11,6 +11,10 @@ export NX_ISOLATE_PLUGINS=false
 export NX_DAEMON=false
 export NX_NO_CLOUD=true
 
+# Git Bash/MSYS rewrites POSIX-looking arguments passed to Windows executables.
+# Docker container paths must remain literal /workspace/... paths.
+export MSYS_NO_PATHCONV=1
+
 OUT="generated/ace-step-phase12d"
 MODEL_ID="acestep-v15-turbo-06b"
 PORT=3112
@@ -136,10 +140,25 @@ echo "PHASE12D_PROVIDER_HEALTHY_OK"
 
 echo
 echo "6. READ-ONLY CLIENT MOUNT"
+
+echo "=== ACE MOUNTS ==="
+docker inspect \
+  --format '{{json .Mounts}}' \
+  harmonia-ace-step-1.5 \
+  > "$OUT/ace-mounts.json"
+
+cat "$OUT/ace-mounts.json"
+echo
+
 MOUNT_STATE="$(
-  docker inspect \
-    --format '{{range .Mounts}}{{if eq .Destination "/workspace/scripts"}}{{.Destination}}|{{.RW}}{{end}}{{end}}' \
-    harmonia-ace-step-1.5
+  "$NODE_BIN" - "$OUT/ace-mounts.json" <<'NODE'
+const fs = require('node:fs');
+const mounts = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+const scripts = mounts.find((mount) => mount.Destination === '/workspace/scripts');
+if (scripts) {
+  process.stdout.write(`${scripts.Destination}|${scripts.RW}`);
+}
+NODE
 )"
 
 if [[ "$MOUNT_STATE" != "/workspace/scripts|false" ]]; then
@@ -147,24 +166,51 @@ if [[ "$MOUNT_STATE" != "/workspace/scripts|false" ]]; then
   exit 1
 fi
 
-docker exec harmonia-ace-step-1.5 \
+echo "PHASE12D_SCRIPT_MOUNT_READ_ONLY_OK"
+
+echo "=== CLIENT FILE ==="
+if ! docker exec harmonia-ace-step-1.5 \
   test -f /workspace/scripts/ace_step_provider_client.py
+then
+  echo "STOP: ACE provider client file is not visible inside the container."
+  echo "Directory listing:"
+  docker exec harmonia-ace-step-1.5 \
+    sh -lc 'ls -la /workspace/scripts || true'
+  exit 1
+fi
 
 docker exec harmonia-ace-step-1.5 \
+  ls -l /workspace/scripts/ace_step_provider_client.py
+
+echo "PHASE12D_PROVIDER_CLIENT_FILE_OK"
+
+echo "=== IN-MEMORY PYTHON COMPILE ==="
+if ! docker exec harmonia-ace-step-1.5 \
   /opt/ACE-Step-1.5/.venv/bin/python \
   -c 'p="/workspace/scripts/ace_step_provider_client.py"; s=open(p,encoding="utf-8").read(); compile(s,p,"exec"); print("ACE_STEP_CLIENT_IN_MEMORY_COMPILE_OK")'
+then
+  echo "STOP: ACE provider client failed in-memory Python compilation."
+  exit 1
+fi
 
-docker exec harmonia-ace-step-1.5 \
+echo "=== CLIENT HELP ==="
+if ! docker exec harmonia-ace-step-1.5 \
   /opt/ACE-Step-1.5/.venv/bin/python \
   /workspace/scripts/ace_step_provider_client.py \
   --help \
   > "$OUT/client-help-phase12d.txt"
+then
+  echo "STOP: ACE provider client --help failed."
+  exit 1
+fi
 
 for argument in --output --duration --model --prompt --lyrics --bpm --vocal-language --seed; do
-  grep -q -- "$argument" "$OUT/client-help-phase12d.txt"
+  if ! grep -q -- "$argument" "$OUT/client-help-phase12d.txt"; then
+    echo "STOP: ACE provider client help is missing $argument."
+    exit 1
+  fi
 done
 
-echo "PHASE12D_SCRIPT_MOUNT_READ_ONLY_OK"
 echo "PHASE12D_PROVIDER_CLIENT_GREEN"
 
 echo
