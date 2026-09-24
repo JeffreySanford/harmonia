@@ -128,7 +128,7 @@ function usage() {
     'Implemented:',
     '  plan       Inspect registry + local cache; never downloads or repairs.',
     '  verify     Deep read-only local verification.',
-    '  init       Rehydrate selected supported model artifacts.',
+    '  init       Rehydrate the default set or explicitly selected artifacts.',
     '',
     'Planned commands:',
     '  inventory  Emit normalized observed inventory.',
