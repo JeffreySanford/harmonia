@@ -439,7 +439,11 @@ function repairOne(
   const sharedHfDestructiveRepair =
     artifact.source.kind === 'huggingface' &&
     destinationExists &&
-    before.state !== 'missing';
+    before.state !== 'missing' &&
+    !(
+      before.state === 'verified' &&
+      missingRuntimeRepos.length > 0
+    );
 
   if (sharedHfDestructiveRepair) {
     return {
