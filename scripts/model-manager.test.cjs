@@ -6,6 +6,7 @@ const path = require('node:path');
 
 const {
   createPlan,
+  inspectShallowPathPresence,
   loadRegistry,
   safeResolveUnderRoot,
   wildcardToRegExp,
@@ -228,6 +229,102 @@ test('model root resolution prevents artifact escape', () => {
     safeResolveUnderRoot(root, 'musicgen/huggingface'),
     path.join(root, 'musicgen', 'huggingface')
   );
+});
+
+
+test('Windows shallow HF inspection accepts EACCES-visible cache entries', () => {
+  const blocked = Object.assign(new Error('permission denied'), {
+    code: 'EACCES',
+  });
+  const fakeFs = {
+    existsSync: () => false,
+    lstatSync: () => {
+      throw blocked;
+    },
+    readdirSync: () => ['model_config.json'],
+  };
+
+  assert.deepEqual(
+    inspectShallowPathPresence(
+      path.join('cache', 'model_config.json'),
+      fakeFs,
+      'win32'
+    ),
+    {
+      present: true,
+      mode: 'directory-entry',
+    }
+  );
+
+  assert.deepEqual(
+    inspectShallowPathPresence(
+      path.join('cache', 'missing.json'),
+      fakeFs,
+      'win32'
+    ),
+    {
+      present: false,
+      mode: 'missing',
+    }
+  );
+});
+
+test('shallow HF inspection does not hide normal missing files', () => {
+  const missing = Object.assign(new Error('not found'), {
+    code: 'ENOENT',
+  });
+  const fakeFs = {
+    existsSync: () => false,
+    lstatSync: () => {
+      throw missing;
+    },
+    readdirSync: () => ['model_config.json'],
+  };
+
+  assert.deepEqual(
+    inspectShallowPathPresence(
+      path.join('cache', 'model_config.json'),
+      fakeFs,
+      'win32'
+    ),
+    {
+      present: false,
+      mode: 'missing',
+    }
+  );
+
+  assert.deepEqual(
+    inspectShallowPathPresence(
+      path.join('cache', 'model_config.json'),
+      fakeFs,
+      'linux'
+    ),
+    {
+      present: false,
+      mode: 'missing',
+    }
+  );
+});
+
+test('MusicGen registry uses AudioCraft checkpoint markers', () => {
+  const registry = loadRegistry();
+
+  for (const artifactId of [
+    'musicgen-small',
+    'musicgen-stereo-small',
+    'musicgen-medium',
+    'musicgen-stereo-medium',
+  ]) {
+    const artifact = registry.artifacts.find(
+      (candidate) => candidate.artifactId === artifactId
+    );
+
+    assert.ok(artifact, `missing registry artifact ${artifactId}`);
+    assert.deepEqual(artifact.verification.requiredFiles, [
+      'state_dict.bin',
+      'compression_state_dict.bin',
+    ]);
+  }
 });
 
 test('checkpoint wildcard matching handles DiffSinger checkpoint names', () => {
