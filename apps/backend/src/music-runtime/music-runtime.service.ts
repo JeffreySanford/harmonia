@@ -10,6 +10,7 @@ import {
   MUSIC_PROVIDERS,
 } from './music-model.catalog';
 import { MusicRuntimeGateway } from './music-runtime.gateway';
+import { ModelInstallationRuntimeService } from './model-installation-runtime.service';
 import {
   HardwareFit,
   HardwareProfile,
@@ -48,7 +49,10 @@ export class MusicRuntimeService {
     error: null,
   };
 
-  constructor(private readonly gateway: MusicRuntimeGateway) {}
+  constructor(
+    private readonly gateway: MusicRuntimeGateway,
+    private readonly modelInstallations: ModelInstallationRuntimeService
+  ) {}
 
   async getCatalog(): Promise<MusicRuntimeCatalogResponse> {
     await this.reconcileRuntimeOwnership();
@@ -168,8 +172,11 @@ export class MusicRuntimeService {
       this.status.modelId === model.id &&
       this.status.state === 'ready'
     ) {
+      await this.modelInstallations.markModelUsed(model.id);
       return this.status;
     }
+
+    await this.modelInstallations.assertModelReady(model.id);
 
     if (
       this.status.providerId &&
@@ -226,6 +233,8 @@ export class MusicRuntimeService {
         100,
         true
       );
+
+      await this.modelInstallations.markModelUsed(model.id);
 
       return this.status;
     } catch (error) {
