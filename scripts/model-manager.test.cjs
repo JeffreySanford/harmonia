@@ -6,7 +6,9 @@ const path = require('node:path');
 
 const {
   createPlan,
+  createVerification,
   inspectShallowPathPresence,
+  verifyRequiredFile,
   loadRegistry,
   safeResolveUnderRoot,
   wildcardToRegExp,
@@ -327,6 +329,203 @@ test('MusicGen registry uses AudioCraft checkpoint markers', () => {
   }
 });
 
+
+test('models:verify deeply verifies the complete default fixture cache', () => {
+  const root = tempRoot();
+  createDefaultInstallFixture(root);
+
+  const result = createVerification({
+    root,
+    modelIds: [],
+    providerIds: [],
+    artifactIds: [],
+    platform: 'linux',
+  });
+
+  assert.equal(result.command, 'verify');
+  assert.equal(result.ok, true);
+  assert.equal(result.summary.selectedModels, 6);
+  assert.equal(result.summary.selectedArtifacts, 8);
+  assert.equal(result.summary.verified, 6);
+  assert.equal(result.summary.missing, 2);
+  assert.equal(result.summary.corrupt, 0);
+  assert.equal(result.summary.unavailable, 0);
+  assert.equal(result.summary.optionalSkipped, 2);
+});
+
+test('models:verify rejects a zero-byte required Hugging Face file', () => {
+  const root = tempRoot();
+  createDefaultInstallFixture(root);
+  const registry = loadRegistry();
+  const artifact = registry.artifacts.find(
+    (candidate) => candidate.artifactId === 'musicgen-small'
+  );
+  const repoCache =
+    'models--' + artifact.source.repoId.replace(/\//g, '--');
+  const revision =
+    'fixture-' + artifact.artifactId.replace(/[^a-z0-9]/gi, '');
+  const filePath = path.join(
+    root,
+    artifact.destination,
+    'hub',
+    repoCache,
+    'snapshots',
+    revision,
+    'state_dict.bin'
+  );
+
+  fs.writeFileSync(filePath, '');
+
+  const result = createVerification({
+    root,
+    modelIds: ['musicgen-small'],
+    providerIds: [],
+    artifactIds: [],
+    platform: 'linux',
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.summary.corrupt, 1);
+  assert.equal(result.artifacts[0].state, 'corrupt');
+  assert.match(result.artifacts[0].detail, /zero bytes/);
+});
+
+test('models:verify fails an explicitly selected missing optional model', () => {
+  const root = tempRoot();
+
+  const result = createVerification({
+    root,
+    modelIds: ['musicgen-medium'],
+    providerIds: [],
+    artifactIds: [],
+    platform: 'linux',
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.summary.selectedModels, 1);
+  assert.equal(result.summary.missing, 1);
+  assert.equal(result.summary.optionalSkipped, 0);
+  assert.equal(result.artifacts[0].state, 'missing');
+});
+
+test('models:verify allows unselected optional models to remain absent', () => {
+  const root = tempRoot();
+  createDefaultInstallFixture(root);
+
+  const result = createVerification({
+    root,
+    modelIds: [],
+    providerIds: [],
+    artifactIds: [],
+    platform: 'linux',
+  });
+
+  const medium = result.artifacts.find(
+    (row) => row.artifactId === 'musicgen-medium'
+  );
+
+  assert.equal(medium.state, 'missing');
+  assert.equal(medium.requiredForSuccess, false);
+  assert.equal(result.summary.optionalSkipped, 2);
+  assert.equal(result.ok, true);
+});
+
+test('deep verification uses a container probe for Windows EACCES cache links', () => {
+  const blocked = Object.assign(new Error('permission denied'), {
+    code: 'EACCES',
+  });
+  const fakeFs = {
+    statSync: () => {
+      throw blocked;
+    },
+  };
+  let calls = 0;
+
+  const result = verifyRequiredFile('snapshot/model.safetensors', {
+    fsApi: fakeFs,
+    platform: 'win32',
+    containerProbe: (filePath) => {
+      calls += 1;
+      assert.equal(filePath, 'snapshot/model.safetensors');
+      return {
+        verified: true,
+        size: 1234,
+      };
+    },
+  });
+
+  assert.equal(calls, 1);
+  assert.deepEqual(result, {
+    state: 'verified',
+    mode: 'container-readonly',
+    size: 1234,
+    detail: 'verified non-empty file through read-only Linux container',
+  });
+});
+
+test('deep verification reports unavailable when Windows cache links cannot be probed', () => {
+  const blocked = Object.assign(new Error('permission denied'), {
+    code: 'EPERM',
+  });
+  const fakeFs = {
+    statSync: () => {
+      throw blocked;
+    },
+  };
+
+  const result = verifyRequiredFile('snapshot/model_config.json', {
+    fsApi: fakeFs,
+    platform: 'win32',
+    containerProbe: () => ({
+      verified: false,
+      unavailable: true,
+      detail: 'Docker image unavailable',
+    }),
+  });
+
+  assert.equal(result.state, 'unavailable');
+  assert.equal(result.mode, 'container-readonly');
+  assert.match(result.detail, /Docker image unavailable/);
+});
+
+test('models:verify rejects a zero-byte DiffSinger checkpoint', () => {
+  const root = tempRoot();
+  const registry = loadRegistry();
+  const artifacts = registry.artifacts.filter(
+    (candidate) => candidate.providerId === 'diffsinger'
+  );
+
+  for (const artifact of artifacts) {
+    createCheckpointFixture(root, artifact);
+  }
+
+  const acoustic = artifacts.find(
+    (artifact) => artifact.artifactId === 'diffsinger-opencpop-acoustic'
+  );
+  const checkpoint = acoustic.verification.checkpointGlobs[0].replace(
+    '*',
+    '160000'
+  );
+  fs.writeFileSync(path.join(root, acoustic.destination, checkpoint), '');
+
+  const result = createVerification({
+    root,
+    modelIds: [],
+    providerIds: ['diffsinger'],
+    artifactIds: [],
+    platform: 'linux',
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.summary.corrupt, 1);
+  assert.equal(
+    result.artifacts.find(
+      (row) => row.artifactId === 'diffsinger-opencpop-acoustic'
+    ).state,
+    'corrupt'
+  );
+});
+
 test('checkpoint wildcard matching handles DiffSinger checkpoint names', () => {
   const matcher = wildcardToRegExp('model_ckpt_steps_*.ckpt');
 
@@ -342,6 +541,10 @@ test('package exposes the read-only model plan command', () => {
   assert.equal(
     pkg.scripts['models:plan'],
     'node scripts/model-manager.cjs plan'
+  );
+  assert.equal(
+    pkg.scripts['models:verify'],
+    'node scripts/model-manager.cjs verify'
   );
   assert.equal(
     pkg.scripts['test:model-manager'],
