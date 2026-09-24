@@ -218,6 +218,14 @@ test('model installation Mongo contract is consistent across fresh, existing, an
       source,
       /modelIds: 1/
     );
+    assert.match(
+      source,
+      /additionalProperties: false/
+    );
+    assert.match(
+      source,
+      /_id: \{ bsonType: 'objectId' \}/
+    );
     assert.equal(
       source.includes(
         "pattern: '^(?!/)(?![A-Za-z]:"
@@ -229,6 +237,10 @@ test('model installation Mongo contract is consistent across fresh, existing, an
   assert.match(
     schema,
     /collection: 'model_installations'/
+  );
+  assert.match(
+    schema,
+    /versionKey: false/
   );
   assert.match(
     schema,
