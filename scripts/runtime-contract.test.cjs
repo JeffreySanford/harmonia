@@ -679,7 +679,7 @@ test('Stable Audio 3 persistent jobs use the resident provider and preserve nati
   );
   assert.match(
     jobs,
-    /\['musicgen', 'diffsinger', 'stable-audio-3'\]/
+    /'musicgen'[\s\S]*'diffsinger'[\s\S]*'stable-audio-3'[\s\S]*'ace-step-1\.5'/
   );
   assert.match(jobs, /runStableAudio3Client/);
   assert.match(jobs, /harmonia-stable-audio-3/);
@@ -1056,7 +1056,11 @@ test('ACE-Step durable generation submits supplied lyrics through async API and 
   );
   assert.match(
     client,
-    /\/v1\/audio/
+    /generated\.get\("file"\)[\s\S]*generated\.get\("url"\)[\s\S]*generated\.get\("first_audio_path"\)/
+  );
+  assert.match(
+    client,
+    /download_audio\(str\(audio_url\), output_path\)/
   );
   assert.match(
     client,
