@@ -1025,6 +1025,10 @@ test('models:init refuses to overwrite an incomplete DiffSinger destination', ()
   assert.equal(result.ok, false);
   assert.equal(result.summary.repairRequired, 1);
   assert.equal(
+    result.artifacts[0].state,
+    'missing'
+  );
+  assert.equal(
     result.artifacts[0].action,
     'repair-required'
   );
