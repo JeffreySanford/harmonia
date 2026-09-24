@@ -149,6 +149,8 @@ async function main() {
   const tokenConfigured = Boolean(
     process.env.HF_TOKEN ||
       env.HF_TOKEN ||
+      process.env.HUGGINGFACE_API_KEY ||
+      env.HUGGINGFACE_API_KEY ||
       process.env.HUGGING_FACE_HUB_TOKEN ||
       env.HUGGING_FACE_HUB_TOKEN ||
       process.env.HUGGINGFACE_HUB_TOKEN ||
