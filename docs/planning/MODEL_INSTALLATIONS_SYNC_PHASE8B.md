@@ -144,13 +144,14 @@ Repeated synchronization of unchanged verified filesystem state:
 6. later successful verification clears lastError;
 7. Mongo outage is advisory by default;
 8. `--require-db` makes outage fatal;
-9. live sync against the existing reconstructed model root upserts all eight
-   registry artifacts;
+9. live sync against the operational `models/` root upserts all eight registry
+   artifacts;
 10. six installed defaults are verified and two optional Medium variants are
     missing;
 11. second live sync remains eight records with preserved installedAt;
 12. no model cache files are modified;
-13. full startup/model regression remains green.
+13. the separate reconstructed recovery root remains untouched;
+14. full startup/model regression remains green.
 
 ## Completion boundary
 
