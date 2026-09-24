@@ -309,6 +309,14 @@ port (for example 3112) while reusing an existing Harmonia frontend on 4200.
 The frontend `/downloads` proxy may still serve the generated artifact because
 both backend processes share the same host `exports` directory.
 
+### Phase 12D read-only client-mount note
+
+The ACE-Step provider mounts `./scripts` at `/workspace/scripts:ro` by design.
+Qualification must therefore avoid `python -m py_compile` on the mounted source,
+because `py_compile` may attempt to create `__pycache__` beside the file.
+Use an in-memory `compile(source, path, 'exec')` syntax check instead; the runtime
+client itself only reads the script and writes generated audio under `/workspace/exports`.
+
 ## Output qualification
 
 First gate:
