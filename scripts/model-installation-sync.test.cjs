@@ -537,3 +537,24 @@ test('error sanitizer removes URI userinfo and token-like values', () => {
     /HF_TOKEN=***/
   );
 });
+
+
+test('package exposes installation metadata sync commands', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const pkg = JSON.parse(
+    fs.readFileSync(
+      path.join(__dirname, '..', 'package.json'),
+      'utf8'
+    )
+  );
+
+  assert.equal(
+    pkg.scripts['models:db-sync'],
+    'node scripts/model-installation-sync.cjs'
+  );
+  assert.equal(
+    pkg.scripts['test:model-installations'],
+    'node --test scripts/model-installation-sync.test.cjs'
+  );
+});
