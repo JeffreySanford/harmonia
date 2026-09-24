@@ -1,6 +1,6 @@
 # Phase 12 ACE-Step 1.5 Local Provider
 
-**Status:** Planned  
+**Status:** Phase 12A provider shell implemented, awaiting local boot qualification  
 **Date:** September 24, 2026  
 **Primary target:** `acestep-v15-turbo-06b`  
 **Reference GPU:** NVIDIA GeForce RTX 3080, 10 GB VRAM  
