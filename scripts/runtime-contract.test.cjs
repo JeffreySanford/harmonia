@@ -181,6 +181,112 @@ test('Mongo jobs validator matches the persistent JobRecord contract', () => {
 });
 
 
+test('model installation Mongo contract is consistent across fresh, existing, and backend schemas', () => {
+  const init = read('scripts/mongo-init/01-init-harmonia-db.js');
+  const sync = read('scripts/sync-model-installations-schema.cjs');
+  const schema = read(
+    'apps/backend/src/schemas/model-installation.schema.ts'
+  );
+  const pkg = JSON.parse(read('package.json'));
+
+  for (const source of [init, sync]) {
+    assert.match(
+      source,
+      /model_installations/
+    );
+    assert.match(
+      source,
+      /artifactId.*providerId.*modelIds.*runtimeModelIds.*sourceKind.*sourceRef.*localPath.*status.*verificationStrategy.*licenseAcceptanceRequired.*gated/s
+    );
+    assert.match(
+      source,
+      /'missing'.*'verified'.*'degraded'.*'corrupt'.*'unavailable'.*'failed'/s
+    );
+    assert.match(
+      source,
+      /artifactId: 1.*unique: true/s
+    );
+    assert.match(
+      source,
+      /providerId: 1, status: 1/
+    );
+    assert.match(
+      source,
+      /status: 1, verifiedAt: -1/
+    );
+    assert.match(
+      source,
+      /modelIds: 1/
+    );
+    assert.match(
+      source,
+      /^(?!/)(?![A-Za-z]:/
+    );
+  }
+
+  assert.match(
+    schema,
+    /collection: 'model_installations'/
+  );
+  assert.match(
+    schema,
+    /export type ModelInstallationStatus/
+  );
+  assert.match(
+    schema,
+    /artifactId: string/
+  );
+  assert.match(
+    schema,
+    /localPath: string/
+  );
+  assert.match(
+    schema,
+    /status: ModelInstallationStatus/
+  );
+  assert.match(
+    schema,
+    /sourceRevision: string | null/
+  );
+  assert.match(
+    schema,
+    /verifiedAt: Date | null/
+  );
+  assert.match(
+    schema,
+    /installedAt: Date | null/
+  );
+  assert.match(
+    schema,
+    /lastUsedAt: Date | null/
+  );
+  assert.match(
+    schema,
+    /lastError: string | null/
+  );
+
+  assert.equal(
+    pkg.scripts['models:db-schema'],
+    'node scripts/sync-model-installations-schema.cjs'
+  );
+
+  assert.match(
+    sync,
+    /collMod: "model_installations"/
+  );
+  assert.match(
+    sync,
+    /MODEL_INSTALLATIONS_SCHEMA_SYNC_OK/
+  );
+
+  for (const source of [init, sync, schema]) {
+    assert.doesNotMatch(
+      source,
+      /accessToken|authorizationHeader|checkpointBytes|wavPayload/i
+    );
+  }
+});
+
 test('backend never falls back to unauthenticated MongoDB access', () => {
   const appModule = read('apps/backend/src/app/app.module.ts');
 
