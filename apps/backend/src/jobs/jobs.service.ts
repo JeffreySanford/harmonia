@@ -849,12 +849,24 @@ export class JobsService {
           return;
         }
 
+        const resultLine =
+          lines[
+            lines.length - 1
+          ];
+
+        if (!resultLine) {
+          reject(
+            new Error(
+              'ACE-Step provider returned no final JSON result.'
+            )
+          );
+          return;
+        }
+
         try {
           resolve(
             JSON.parse(
-              lines[
-                lines.length - 1
-              ]
+              resultLine
             ) as Record<string, unknown>
           );
         } catch {
