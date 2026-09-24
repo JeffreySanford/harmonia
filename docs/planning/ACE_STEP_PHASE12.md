@@ -105,9 +105,9 @@ The registry now binds `acestep-v15-turbo-06b` to two optional physical artifact
    - pinned revision: `19671f406d603126926c1b7e2adc169acbcade22`;
    - direct local-dir destination: `ace-step-1.5/checkpoints`;
    - allowed subtrees only:
-     - `acestep-v15-turbo/**`;
-     - `vae/**`;
-     - `Qwen3-Embedding-0.6B/**`.
+     - `acestep-v15-turbo/*`;
+     - `vae/*`;
+     - `Qwen3-Embedding-0.6B/*`.
 2. `acestep-5hz-lm-06b`
    - repository: `ACE-Step/acestep-5Hz-lm-0.6B`;
    - pinned revision: `f802b6dfe8dd4db180c6bf1a45669a303130de3d`;
