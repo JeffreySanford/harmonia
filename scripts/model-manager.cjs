@@ -533,6 +533,73 @@ function missingHuggingFaceDownloadRepos(
   );
 }
 
+function normalizePinnedHuggingFaceMainRef(
+  artifact,
+  modelRoot
+) {
+  if (
+    artifact.source.kind !== 'huggingface' ||
+    !artifact.source.revision
+  ) {
+    return {
+      changed: false,
+      reason: 'artifact is not pinned',
+    };
+  }
+
+  const artifactRoot = safeResolveUnderRoot(
+    modelRoot,
+    artifact.destination
+  );
+  const repoCacheRoot = huggingFaceRepoCacheRoot(
+    artifactRoot,
+    artifact.source.repoId
+  );
+  const snapshotPath = path.join(
+    repoCacheRoot,
+    'snapshots',
+    artifact.source.revision
+  );
+
+  if (!fs.existsSync(snapshotPath)) {
+    return {
+      changed: false,
+      reason: 'pinned snapshot is not present',
+    };
+  }
+
+  const refsDir = path.join(repoCacheRoot, 'refs');
+  const refPath = path.join(refsDir, 'main');
+  let existing = null;
+
+  try {
+    existing = fs.readFileSync(refPath, 'utf8');
+  } catch (error) {
+    if (error?.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+
+  if (existing === artifact.source.revision) {
+    return {
+      changed: false,
+      reason: 'main ref already normalized',
+    };
+  }
+
+  fs.mkdirSync(refsDir, { recursive: true });
+  fs.writeFileSync(
+    refPath,
+    artifact.source.revision,
+    'utf8'
+  );
+
+  return {
+    changed: true,
+    reason: 'main ref normalized to pinned revision',
+  };
+}
+
 function runHuggingFaceDownloadContainer(
   artifact,
   modelRoot,
@@ -593,7 +660,7 @@ function runHuggingFaceDownloadContainer(
     '        cache = Path(os.environ["HF_HOME"]) / "hub" / ("models--" + repo_id.replace("/", "--"))',
     '        refs = cache / "refs"',
     '        refs.mkdir(parents=True, exist_ok=True)',
-    '        (refs / "main").write_text(resolved + "\\n")',
+    '        (refs / "main").write_text(resolved)',
     '    result.append({',
     '        "repoId": repo_id,',
     '        "resolvedRevision": resolved,',
@@ -1723,13 +1790,25 @@ function createInitialization(options = {}) {
       before.state === 'verified' &&
       missingRuntimeReposBefore.length === 0
     ) {
+      const normalizedRef =
+        normalizePinnedHuggingFaceMainRef(
+          artifact,
+          modelRoot
+        );
+
       return {
         ...base,
         state: 'verified',
         action: 'cache-hit',
         resolvedRevision: before.resolvedRevision,
         missingRuntimeRepos: [],
-        detail: before.detail,
+        cacheRefNormalized:
+          Boolean(normalizedRef.changed),
+        detail:
+          normalizedRef.changed
+            ? before.detail +
+              '; normalized local refs/main to pinned revision'
+            : before.detail,
       };
     }
 
@@ -1789,6 +1868,11 @@ function createInitialization(options = {}) {
           verbose: normalized.verbose,
         }
       );
+      const normalizedRef =
+        normalizePinnedHuggingFaceMainRef(
+          artifact,
+          modelRoot
+        );
       const after = verifyArtifact(
         artifact,
         modelRoot,
@@ -1817,6 +1901,8 @@ function createInitialization(options = {}) {
             : 'verification-failed',
         resolvedRevision: after.resolvedRevision,
         missingRuntimeRepos,
+        cacheRefNormalized:
+          Boolean(normalizedRef.changed),
         downloadedRepos: Array.isArray(download?.repos)
           ? download.repos.map((row) => ({
               repoId: row.repoId,
@@ -2234,6 +2320,7 @@ module.exports = {
   getHuggingFaceCredential,
   huggingFaceDownloadReposForArtifact,
   missingHuggingFaceDownloadRepos,
+  normalizePinnedHuggingFaceMainRef,
   defaultContainerProbeForArtifact,
   deriveAction,
   deriveModelState,
