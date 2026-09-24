@@ -96,6 +96,10 @@ const musicGenSmall: MusicModelCatalogEntry = {
   commercialUse: 'review-required',
   notes: 'Storybook runtime fixture',
   hardwareFit: 'recommended',
+  installationState: 'verified',
+  installationArtifactCount: 1,
+  installationVerifiedCount: 1,
+  installationLastVerifiedAt: '2026-09-24T18:30:00.000Z',
   selectable: true,
   disabledReason: null,
 };
@@ -125,6 +129,10 @@ const diffSingerModel: MusicModelCatalogEntry = {
   commercialUse: 'review-required',
   notes: 'Pinned OpenCpop score synthesis fixture',
   hardwareFit: 'recommended',
+  installationState: 'verified',
+  installationArtifactCount: 3,
+  installationVerifiedCount: 3,
+  installationLastVerifiedAt: '2026-09-24T18:30:00.000Z',
   selectable: true,
   disabledReason: null,
 };
@@ -144,6 +152,10 @@ const musicGenMedium: MusicModelCatalogEntry = {
   commercialUse: 'review-required',
   notes: 'Visible but unavailable on the 10 GB Storybook hardware fixture',
   hardwareFit: 'unsupported',
+  installationState: 'missing',
+  installationArtifactCount: 1,
+  installationVerifiedCount: 0,
+  installationLastVerifiedAt: null,
   selectable: false,
   disabledReason: 'Requires at least 16 GB VRAM.',
 };
