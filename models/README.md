@@ -142,15 +142,18 @@ Available now:
 pnpm test:model-registry
 pnpm test:model-manager
 pnpm models:plan
+pnpm models:verify
+pnpm models:init --model <modelId>
 ```
 
-`models:plan` is read-only and performs marker-level cache inspection only.
+`models:plan` is marker-level and read-only. `models:verify` performs deeper
+read-only byte/link checks. Phase 4 `models:init` currently requires an
+explicit selector and supports Hugging Face artifacts only; qualify it against
+an alternate root before using it for recovery.
 
 Planned next:
 
 ```bash
-pnpm models:init
-pnpm models:verify
 pnpm models:inventory
 pnpm models:repair
 ```
