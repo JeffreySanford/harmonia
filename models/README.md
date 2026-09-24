@@ -118,7 +118,7 @@ Never commit:
 
 MongoDB stores operational metadata and provenance, not checkpoint blobs.
 
-Planned `model_installations` records are keyed by physical `artifactId` and
+`model_installations` records are keyed by physical `artifactId` and
 track:
 
 - source/revision;
@@ -148,6 +148,7 @@ pnpm models:init --model <modelId>
 pnpm models:repair --artifact <artifactId>
 pnpm models:db-schema
 pnpm models:db-sync
+pnpm models:inventory
 ```
 
 `models:plan` is marker-level and read-only. `models:verify` performs deeper
@@ -161,11 +162,9 @@ DiffSinger destinations require `--force` before quarantine + replacement.
 Shared Hugging Face cache directories are never destructively quarantined by
 the initial repair implementation.
 
-Planned next:
-
-```bash
-pnpm models:inventory
-```
+`models:inventory` writes a portable observed-state snapshot derived from
+deep verification evidence. It emits only registry-relative paths and generated
+evidence files under `generated/model-manager/`.
 
 Ordinary `pnpm start:all --gpu` should never silently download multi-gigabyte
 models.
