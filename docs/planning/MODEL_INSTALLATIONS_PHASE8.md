@@ -1,6 +1,6 @@
 # Phase 8 Mongo Model Installation Metadata
 
-**Status:** Planned  
+**Status:** Schema implemented, awaiting live Mongo qualification  
 **Date:** September 24, 2026  
 **Collection:** `model_installations`
 
