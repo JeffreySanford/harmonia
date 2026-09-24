@@ -12,6 +12,8 @@ const {
   isSafeArchiveMemberPath,
   normalizePinnedHuggingFaceMainRef,
   inspectShallowPathPresence,
+  runHuggingFaceDownloadContainer,
+  verifyArtifact,
   verifyRequiredFile,
   loadRegistry,
   safeResolveUnderRoot,
@@ -52,6 +54,37 @@ function createHuggingFaceFixture(root, artifact) {
   }
 }
 
+
+function createHuggingFaceLocalDirFixture(
+  root,
+  artifact
+) {
+  const base = path.join(
+    root,
+    artifact.destination
+  );
+
+  ensureFile(
+    path.join(
+      base,
+      '.harmonia-revision'
+    ),
+    artifact.source.revision
+  );
+
+  for (
+    const required
+    of artifact.verification.requiredFiles || []
+  ) {
+    ensureFile(
+      path.join(
+        base,
+        required
+      ),
+      'local-dir-fixture'
+    );
+  }
+}
 
 function createHuggingFaceRepoFixture(root, destination, repoId) {
   const repoCache =
@@ -155,13 +188,13 @@ test('models:plan reports a complete default cache without mutation actions', ()
   });
 
   assert.equal(result.command, 'plan');
-  assert.equal(result.summary.selectedModels, 6);
-  assert.equal(result.summary.selectedArtifacts, 8);
+  assert.equal(result.summary.selectedModels, 7);
+  assert.equal(result.summary.selectedArtifacts, 10);
   assert.equal(result.summary.verified, 6);
-  assert.equal(result.summary.missing, 2);
+  assert.equal(result.summary.missing, 4);
   assert.equal(result.summary.downloadsRequired, 0);
   assert.equal(result.summary.authenticationRequired, 0);
-  assert.equal(result.summary.defaultSkipped, 2);
+  assert.equal(result.summary.defaultSkipped, 4);
 
   const stable = result.artifacts.find(
     (row) => row.artifactId === 'stable-audio-3-small-music'
@@ -188,10 +221,10 @@ test('models:plan identifies missing default artifacts and gated authentication'
     auth: { huggingFace: false },
   });
 
-  assert.equal(result.summary.missing, 8);
+  assert.equal(result.summary.missing, 10);
   assert.equal(result.summary.downloadsRequired, 5);
   assert.equal(result.summary.authenticationRequired, 1);
-  assert.equal(result.summary.defaultSkipped, 2);
+  assert.equal(result.summary.defaultSkipped, 4);
 
   const stable = result.artifacts.find(
     (row) => row.artifactId === 'stable-audio-3-small-music'
@@ -416,6 +449,223 @@ test('Stable Audio registry verifies weights and bundled text encoder assets', (
   ]);
 });
 
+test('explicit ACE-Step model selection resolves the selective two-artifact composite', () => {
+  const root = tempRoot();
+
+  const plan = createPlan({
+    root,
+    modelIds: [
+      'acestep-v15-turbo-06b',
+    ],
+    providerIds: [],
+    artifactIds: [],
+  });
+
+  assert.equal(
+    plan.summary.selectedModels,
+    1
+  );
+  assert.equal(
+    plan.summary.selectedArtifacts,
+    2
+  );
+  assert.equal(
+    plan.summary.missing,
+    2
+  );
+  assert.equal(
+    plan.summary.downloadsRequired,
+    2
+  );
+  assert.deepEqual(
+    plan.artifacts
+      .map(
+        (row) => row.artifactId
+      )
+      .sort(),
+    [
+      'acestep-5hz-lm-06b',
+      'acestep-v15-turbo-core',
+    ]
+  );
+});
+
+test('Hugging Face local-dir verification requires the pinned revision marker and non-empty files', () => {
+  const root = tempRoot();
+  const registry = loadRegistry();
+  const artifact =
+    registry.artifacts.find(
+      (candidate) =>
+        candidate.artifactId ===
+        'acestep-v15-turbo-core'
+    );
+
+  assert.ok(artifact);
+
+  createHuggingFaceLocalDirFixture(
+    root,
+    artifact
+  );
+
+  const verified = verifyArtifact(
+    artifact,
+    root,
+    {
+      platform: 'linux',
+    }
+  );
+
+  assert.equal(
+    verified.state,
+    'verified'
+  );
+  assert.equal(
+    verified.resolvedRevision,
+    artifact.source.revision
+  );
+  assert.equal(
+    verified.checks.length,
+    artifact.verification.requiredFiles.length
+  );
+
+  ensureFile(
+    path.join(
+      root,
+      artifact.destination,
+      '.harmonia-revision'
+    ),
+    'wrong-revision'
+  );
+
+  const wrongRevision =
+    verifyArtifact(
+      artifact,
+      root,
+      {
+        platform: 'linux',
+      }
+    );
+
+  assert.equal(
+    wrongRevision.state,
+    'corrupt'
+  );
+  assert.match(
+    wrongRevision.detail,
+    /expected local-dir revision/
+  );
+});
+
+test('ACE-Step local-dir download uses only registry allow patterns and keeps credentials off the Docker command', () => {
+  const root = tempRoot();
+  const registry = loadRegistry();
+  const artifact =
+    registry.artifacts.find(
+      (candidate) =>
+        candidate.artifactId ===
+        'acestep-v15-turbo-core'
+    );
+  const secret =
+    'hf_phase12b_secret_should_not_escape';
+  let invocation = null;
+
+  assert.ok(artifact);
+
+  const result =
+    runHuggingFaceDownloadContainer(
+      artifact,
+      root,
+      {
+        credential: secret,
+        spawnSyncApi:
+          (
+            command,
+            args,
+            options
+          ) => {
+            invocation = {
+              command,
+              args,
+              options,
+            };
+
+            return {
+              status: 0,
+              stdout:
+                JSON.stringify({
+                  repos: [
+                    {
+                      repoId:
+                        artifact.source.repoId,
+                      resolvedRevision:
+                        artifact.source.revision,
+                    },
+                  ],
+                }) + '\n',
+            };
+          },
+      }
+    );
+
+  assert.ok(invocation);
+  assert.equal(
+    invocation.command,
+    'docker'
+  );
+
+  const serializedArgs =
+    JSON.stringify(
+      invocation.args
+    );
+
+  assert.equal(
+    serializedArgs.includes(secret),
+    false
+  );
+  assert.equal(
+    invocation.options.input,
+    secret
+  );
+  assert.match(
+    serializedArgs,
+    /HF_HUB_OFFLINE=0/
+  );
+  assert.match(
+    serializedArgs,
+    /TRANSFORMERS_OFFLINE=0/
+  );
+
+  for (
+    const pattern
+    of artifact.source.allowPatterns
+  ) {
+    assert.ok(
+      serializedArgs.includes(
+        pattern
+      )
+    );
+  }
+
+  assert.equal(
+    serializedArgs.includes(
+      'acestep-5Hz-lm-1.7B'
+    ),
+    false
+  );
+
+  assert.deepEqual(
+    result.repos,
+    [
+      {
+        repoId:
+          artifact.source.repoId,
+        resolvedRevision:
+          artifact.source.revision,
+      },
+    ]
+  );
+});
+
 test('models:verify deeply verifies the complete default fixture cache', () => {
   const root = tempRoot();
   createDefaultInstallFixture(root);
@@ -430,13 +680,13 @@ test('models:verify deeply verifies the complete default fixture cache', () => {
 
   assert.equal(result.command, 'verify');
   assert.equal(result.ok, true);
-  assert.equal(result.summary.selectedModels, 6);
-  assert.equal(result.summary.selectedArtifacts, 8);
+  assert.equal(result.summary.selectedModels, 7);
+  assert.equal(result.summary.selectedArtifacts, 10);
   assert.equal(result.summary.verified, 6);
-  assert.equal(result.summary.missing, 2);
+  assert.equal(result.summary.missing, 4);
   assert.equal(result.summary.corrupt, 0);
   assert.equal(result.summary.unavailable, 0);
-  assert.equal(result.summary.optionalSkipped, 2);
+  assert.equal(result.summary.optionalSkipped, 4);
 });
 
 test('models:verify rejects a zero-byte required Hugging Face file', () => {
@@ -512,7 +762,7 @@ test('models:verify allows unselected optional models to remain absent', () => {
 
   assert.equal(medium.state, 'missing');
   assert.equal(medium.requiredForSuccess, false);
-  assert.equal(result.summary.optionalSkipped, 2);
+  assert.equal(result.summary.optionalSkipped, 4);
   assert.equal(result.ok, true);
 });
 
