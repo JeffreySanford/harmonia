@@ -1,6 +1,6 @@
 # Phase 4 Hugging Face Initialization Adapter
 
-**Status:** Implemented, awaiting local qualification  
+**Status:** Complete and locally qualified  
 **Date:** September 24, 2026  
 **Scope:** MusicGen and Stable Audio 3  
 **Future command:** `pnpm models:init`
@@ -94,9 +94,41 @@ cache hit and perform no unnecessary download.
 Large Stable Audio rehydration may be qualified separately after public
 MusicGen initialization proves the adapter mechanics.
 
+## Local qualification result
+
+Qualified locally on September 24, 2026.
+
+The alternate-root recovery cache reached approximately 21 GB and proved:
+
+- MusicGen Small rehydrates from an empty root;
+- MusicGen Stereo Small rehydrates from an empty root;
+- shared MusicGen EnCodec/T5 repositories are restored;
+- both MusicGen variants load with Docker networking disabled;
+- Stable Audio 3 Small-Music rehydrates at the pinned qualified revision;
+- Stable Audio 3 model config, 2.27 GB weights, bundled T5 config/weights,
+  and tokenizer all deep-verify;
+- Stable Audio 3 loads through the real provider loader with Docker
+  networking disabled;
+- repeated initialization is a pure cache hit;
+- the original workstation `models/` cache remains unchanged and green;
+- the full startup/model regression suite remains green.
+
+Qualification also exposed and fixed a Hugging Face Hub 1.32 cache-ref
+compatibility detail: pinned `refs/main` must contain the exact commit SHA
+without a trailing newline.
+
+`models:init` is now qualified for Harmonia's Hugging Face-backed models.
+The next recovery adapter is the DiffSinger HTTP-ZIP source.
+
 ## Completion criterion
 
-Phase 4 is complete when the public MusicGen Small adapter can populate and
-re-verify an empty alternate root idempotently, and the gated/offline failure
-contracts are covered without leaking credentials or touching the working
-cache.
+Phase 4 completion criteria are satisfied:
+
+- [x] MusicGen Small initializes and verifies from an empty alternate root;
+- [x] MusicGen Stereo Small initializes and verifies from an empty alternate root;
+- [x] shared runtime dependencies are restored;
+- [x] Stable Audio 3 initializes at the pinned revision;
+- [x] all three HF-backed models load completely offline;
+- [x] repeated initialization is idempotent;
+- [x] gated/offline failure contracts do not leak credentials;
+- [x] the default workstation cache remains untouched.
