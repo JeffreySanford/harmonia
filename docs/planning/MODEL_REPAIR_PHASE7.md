@@ -1,6 +1,6 @@
 # Phase 7 Conservative Model Repair
 
-**Status:** Implemented, awaiting local qualification  
+**Status:** Complete and locally qualified  
 **Date:** September 24, 2026  
 **Command:** `pnpm models:repair`  
 **Engine:** `scripts/model-repair.cjs`
@@ -150,9 +150,36 @@ without mutating the model root.
 10. original workstation cache remains green;
 11. full startup/model regression remains green.
 
+## Local qualification result
+
+Qualified locally on September 24, 2026.
+
+Observed behavior:
+
+- a complete reconstructed default root returned six repair no-ops;
+- missing MusicGen runtime dependencies repaired safely through the resumable
+  Hugging Face cache path without requiring force;
+- incomplete DiffSinger content returned `force-required` without mutation;
+- forced DiffSinger repair quarantined the old directory before replacement;
+- the quarantine preserved the original sentinel evidence;
+- the replacement deep-verified successfully;
+- a second repair was an offline no-op;
+- offline incomplete repair preserved the original directory and created no
+  quarantine content;
+- the complete 23 GB recovery root and original workstation cache remained
+  unchanged and green;
+- the full startup/model suite finished with 110 passing tests, zero failures,
+  and one intentionally skipped Compose lifecycle test.
+
+`models:repair` is now qualified for the Phase 7 conservative repair scope.
+
 ## Completion criterion
 
-Phase 7 is complete when missing artifacts can be restored, suspect non-empty
-DiffSinger destinations require explicit force, forced replacement quarantines
-rather than deletes the old content, verified artifacts remain untouched, and
-the complete reconstructed root is a repair no-op.
+Phase 7 completion criteria are satisfied:
+
+- [x] verified artifacts remain untouched;
+- [x] missing resumable HF content repairs safely;
+- [x] suspect DiffSinger destinations require explicit force;
+- [x] forced replacement quarantines rather than deletes;
+- [x] offline and dry-run paths do not mutate incomplete content;
+- [x] the fully reconstructed default root is a repair no-op.
