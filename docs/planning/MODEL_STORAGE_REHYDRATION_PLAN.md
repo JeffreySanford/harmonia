@@ -21,12 +21,17 @@ contracts:
 As of September 23, 2026:
 
 - Phase 0 architecture/documentation contract: **complete**.
-- Phase 1 desired-state registry: **implemented, awaiting local qualification**.
+- Phase 1 desired-state registry: **complete and locally qualified**.
   - `inventory/model_registry.json`
   - `inventory/model_registry.schema.json`
   - `scripts/model-registry-contract.test.cjs`
   - `pnpm test:model-registry`
-- Phase 2 core model lifecycle CLI: **not started**.
+- Phase 2 core model lifecycle CLI: **read-only planning implemented, awaiting local qualification**.
+  - `scripts/model-manager.cjs`
+  - `scripts/model-manager.test.cjs`
+  - `pnpm models:plan`
+  - `pnpm test:model-manager`
+  - [MODEL_PLAN_PHASE2.md](MODEL_PLAN_PHASE2.md)
 - Later download/Mongo/runtime/recovery phases: **not started**.
 
 Phase 1 intentionally includes all application models currently marked
@@ -459,7 +464,7 @@ This order deliberately implements read-only visibility before mutation.
 ## Definition of done
 
 - [x] All installed local catalog models map to registry entries.
-- [ ] `models:plan` identifies missing/cached models without mutation.
+- [ ] `models:plan` identifies missing/cached models without mutation. (Implemented; local qualification pending.)
 - [ ] `models:init` can populate an empty alternate root.
 - [ ] `models:init` is idempotent on a complete root.
 - [ ] `models:verify` performs no downloads.
