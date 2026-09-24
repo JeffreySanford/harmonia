@@ -123,6 +123,40 @@ services:
     networks:
       - harmonia-net
 
+  stable-audio-3:
+    build:
+      context: .
+      dockerfile: Dockerfile.stable-audio-3
+    image: harmonia/stable-audio-3:dev
+    container_name: harmonia-stable-audio-3
+    restart: "no"
+    profiles:
+      - model-stable-audio-3
+    environment:
+      HF_HOME: /workspace/models/stable-audio-3/huggingface
+      HF_TOKEN: ${HUGGINGFACE_HUB_TOKEN:-}
+      HUGGINGFACE_HUB_TOKEN: ${HUGGINGFACE_HUB_TOKEN:-}
+      HARMONIA_STABLE_AUDIO_3_MODEL: small-music
+      HARMONIA_STABLE_AUDIO_3_PORT: "8766"
+    volumes:
+      - ./models/stable-audio-3:/workspace/models/stable-audio-3
+      - ./generated:/workspace/generated
+      - ./exports:/workspace/exports
+      - ./artifacts:/workspace/artifacts
+    command:
+      - python
+      - /workspace/scripts/stable_audio_3_provider_server.py
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "test -f /tmp/harmonia-runtime-ready && python -c \"import urllib.request; r=urllib.request.urlopen('http://127.0.0.1:8766/health', timeout=2); raise SystemExit(0 if r.status == 200 else 1)\""
+      start_period: 60s
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      - harmonia-net
+
   musicgen:
     build:
       context: .
