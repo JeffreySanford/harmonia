@@ -47,8 +47,16 @@ container with the selected destination mounted read-write.
 For pinned artifacts, the adapter also writes the local `refs/main` cache alias
 to the resolved qualified snapshot. This is required because provider loaders
 such as Stable Audio 3 resolve the default `main` ref even when Harmonia's
-registry pins an exact commit. The alias changes local cache metadata only; it
-does not alter the remote repository or registry revision.
+registry pins an exact commit.
+
+The ref file must contain the exact commit SHA with no trailing newline.
+Hugging Face Hub 1.32 reads the cached ref without trimming whitespace during
+offline fallback; a newline therefore produces a snapshot lookup that cannot
+match the real cache path. `models:init` normalizes this metadata on both a
+fresh download and an existing verified cache hit.
+
+The alias changes local cache metadata only; it does not alter the remote
+repository or registry revision.
 
 For qualification, downloads go only to an alternate root under
 `generated/model-manager/`.
