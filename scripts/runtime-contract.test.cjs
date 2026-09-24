@@ -989,6 +989,97 @@ test('ACE-Step runtime selection initializes Turbo and 0.6B LM before ready and 
   );
 });
 
+test('ACE-Step durable generation submits supplied lyrics through async API and downloads WAV', () => {
+  const client = read(
+    'scripts/ace_step_provider_client.py'
+  );
+  const jobs = read(
+    'apps/backend/src/jobs/jobs.service.ts'
+  );
+  const component = read(
+    'apps/frontend/src/app/features/music-generation/music-generation-page.component.ts'
+  );
+  const compose = read(
+    'docker-compose.yml'
+  );
+
+  assert.match(
+    jobs,
+    /'ace-step-1\.5'/
+  );
+  assert.match(
+    jobs,
+    /runAceStepClient/
+  );
+  assert.match(
+    jobs,
+    /ACE-Step generation requires supplied lyrics/
+  );
+  assert.match(
+    jobs,
+    /minimumDuration[\s\S]*model\.providerId === 'ace-step-1\.5'[\s\S]*\? 10/
+  );
+  assert.match(
+    jobs,
+    /ace_step_provider_client\.py/
+  );
+  assert.match(
+    jobs,
+    /aceStep: ace/
+  );
+
+  assert.match(
+    component,
+    /lyrics: this\.lyrics\.trim\(\)/
+  );
+
+  assert.match(
+    compose,
+    /\.\/scripts:\/workspace\/scripts:ro/
+  );
+
+  assert.match(
+    client,
+    /\/release_task/
+  );
+  assert.match(
+    client,
+    /\/query_result/
+  );
+  assert.match(
+    client,
+    /\/v1\/audio/
+  );
+  assert.match(
+    client,
+    /"thinking": True/
+  );
+  assert.match(
+    client,
+    /"audio_format": "wav"/
+  );
+  assert.match(
+    client,
+    /"batch_size": 1/
+  );
+  assert.match(
+    client,
+    /"lm_model_path": "acestep-5Hz-lm-0\.6B"/
+  );
+  assert.match(
+    client,
+    /"use_cot_caption": False/
+  );
+  assert.match(
+    client,
+    /"use_cot_language": False/
+  );
+  assert.match(
+    client,
+    /generated\.get\("lyrics", payload\["lyrics"\]\)/
+  );
+});
+
 test('music model catalog includes local and higher-capacity disabled tiers', () => {
   const catalog = read(
     'apps/backend/src/music-runtime/music-model.catalog.ts'
