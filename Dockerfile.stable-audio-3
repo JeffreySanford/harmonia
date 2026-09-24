@@ -1,0 +1,61 @@
+FROM python:3.11-slim-bookworm
+
+LABEL org.opencontainers.image.title="harmonia-stable-audio-3"
+LABEL org.opencontainers.image.description="Isolated Stable Audio 3 provider runtime for Harmonia."
+
+ARG STABLE_AUDIO_3_REF=779434a908193105335fd8d833418603625b2859
+
+ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=America/Chicago
+ENV TMPDIR=/tmp
+ENV TEMP=/tmp
+ENV TMP=/tmp
+ENV HF_HOME=/workspace/models/stable-audio-3/huggingface
+ENV HARMONIA_STABLE_AUDIO_3_REF=${STABLE_AUDIO_3_REF}
+WORKDIR /workspace
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    git \
+    build-essential \
+    ffmpeg \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone https://github.com/Stability-AI/stable-audio-3.git /opt/stable-audio-3 \
+    && cd /opt/stable-audio-3 \
+    && git checkout --detach "${STABLE_AUDIO_3_REF}" \
+    && test "$(git rev-parse HEAD)" = "${STABLE_AUDIO_3_REF}"
+
+# Stable Audio 3 currently pins PyTorch 2.7.1 / torchaudio 2.7.1 and its
+# Linux CUDA runtime to cu126. Install the provider's CUDA pair first so pip
+# does not silently resolve a different torch build.
+RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel \
+    && python -m pip install --no-cache-dir \
+      --index-url https://download.pytorch.org/whl/cu126 \
+      torch==2.7.1 torchaudio==2.7.1 \
+    && python -m pip install --no-cache-dir -e /opt/stable-audio-3
+
+RUN python - <<'PY'
+import torch
+import torchaudio
+from stable_audio_3 import StableAudioModel
+
+assert torch.__version__.startswith("2.7.1"), torch.__version__
+assert torchaudio.__version__.startswith("2.7.1"), torchaudio.__version__
+print("Stable Audio 3 Python stack import check passed")
+PY
+
+COPY entrypoint.stable-audio-3.sh /workspace/entrypoint.stable-audio-3.sh
+COPY scripts/stable_audio_3_provider_server.py /workspace/scripts/stable_audio_3_provider_server.py
+COPY scripts/stable_audio_3_provider_client.py /workspace/scripts/stable_audio_3_provider_client.py
+
+RUN sed -i 's/\r$//' /workspace/entrypoint.stable-audio-3.sh \
+    && chmod +x /workspace/entrypoint.stable-audio-3.sh \
+      /workspace/scripts/stable_audio_3_provider_server.py \
+      /workspace/scripts/stable_audio_3_provider_client.py
+
+ENTRYPOINT ["/workspace/entrypoint.stable-audio-3.sh"]
+CMD ["sleep", "infinity"]
