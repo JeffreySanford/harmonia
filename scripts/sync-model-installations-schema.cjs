@@ -8,6 +8,7 @@ const mongoContainer = 'harmonia-mongo-i9';
 const validator = {
   $jsonSchema: {
     bsonType: 'object',
+    additionalProperties: false,
     required: [
       'artifactId',
       'providerId',
@@ -22,6 +23,7 @@ const validator = {
       'gated',
     ],
     properties: {
+      _id: { bsonType: 'objectId' },
       artifactId: { bsonType: 'string' },
       providerId: { bsonType: 'string' },
       modelIds: {
