@@ -125,6 +125,45 @@ services:
     networks:
       - harmonia-net
 
+  ace-step-1.5:
+    build:
+      context: .
+      dockerfile: Dockerfile.ace-step-1.5
+    image: harmonia/ace-step-1.5:dev
+    container_name: harmonia-ace-step-1.5
+    restart: "no"
+    profiles:
+      - model-ace-step-1.5
+    environment:
+      ACESTEP_API_HOST: 0.0.0.0
+      ACESTEP_API_PORT: "8001"
+      ACESTEP_NO_INIT: "true"
+      ACESTEP_CONFIG_PATH: acestep-v15-turbo
+      ACESTEP_LM_MODEL_PATH: acestep-5Hz-lm-0.6B
+      ACESTEP_INIT_LLM: "true"
+      ACESTEP_LLM_BACKEND: pt
+      ACESTEP_OFFLOAD_TO_CPU: "true"
+      ACESTEP_OFFLOAD_DIT_TO_CPU: "false"
+      ACESTEP_CHECKPOINTS_DIR: /workspace/models/ace-step-1.5/checkpoints
+      HF_HOME: /workspace/models/ace-step-1.5/huggingface
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+    volumes:
+      - ./models/ace-step-1.5:/workspace/models/ace-step-1.5
+      - ./generated:/workspace/generated
+      - ./exports:/workspace/exports
+      - ./artifacts:/workspace/artifacts
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "curl -fsS http://127.0.0.1:8001/health >/dev/null || exit 1"
+      start_period: 120s
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      - harmonia-net
+
   stable-audio-3:
     build:
       context: .
