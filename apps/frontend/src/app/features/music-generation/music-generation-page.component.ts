@@ -557,6 +557,7 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
       : {
           title: this.musicTitle.trim(),
           prompt: this.buildMusicPrompt(),
+          lyrics: this.lyrics.trim(),
           duration: this.duration,
           genre: this.genre,
           mood: this.mood,
