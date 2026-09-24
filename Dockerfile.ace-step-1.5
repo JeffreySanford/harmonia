@@ -1,0 +1,74 @@
+FROM nvidia/cuda:12.8.1-runtime-ubuntu22.04
+
+LABEL org.opencontainers.image.title="harmonia-ace-step-1.5"
+LABEL org.opencontainers.image.description="Pinned isolated ACE-Step 1.5 API provider runtime for Harmonia."
+
+ARG ACESTEP_REF=ca1e85fe9430179831e6bc6be790c332190a3866
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV PYTHONUNBUFFERED=1
+ENV TOKENIZERS_PARALLELISM=false
+ENV ACESTEP_API_HOST=0.0.0.0
+ENV ACESTEP_API_PORT=8001
+ENV ACESTEP_NO_INIT=true
+ENV ACESTEP_CONFIG_PATH=acestep-v15-turbo
+ENV ACESTEP_LM_MODEL_PATH=acestep-5Hz-lm-0.6B
+ENV ACESTEP_INIT_LLM=true
+ENV ACESTEP_LLM_BACKEND=pt
+ENV ACESTEP_OFFLOAD_TO_CPU=true
+ENV ACESTEP_OFFLOAD_DIT_TO_CPU=false
+ENV ACESTEP_CHECKPOINTS_DIR=/workspace/models/ace-step-1.5/checkpoints
+ENV HF_HOME=/workspace/models/ace-step-1.5/huggingface
+ENV HF_HUB_OFFLINE=1
+ENV TRANSFORMERS_OFFLINE=1
+ENV HARMONIA_ACESTEP_REF=${ACESTEP_REF}
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    software-properties-common \
+    build-essential \
+    ca-certificates \
+    curl \
+    ffmpeg \
+    git \
+    libffi-dev \
+    libsndfile1 \
+    libsndfile1-dev \
+    libssl-dev \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+      python3.11 \
+      python3.11-dev \
+      python3.11-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=ghcr.io/astral-sh/uv:0.7 /uv /uvx /bin/
+
+RUN git clone https://github.com/ace-step/ACE-Step-1.5.git /opt/ACE-Step-1.5 \
+    && cd /opt/ACE-Step-1.5 \
+    && git checkout --detach "${ACESTEP_REF}" \
+    && test "$(git rev-parse HEAD)" = "${ACESTEP_REF}"
+
+WORKDIR /opt/ACE-Step-1.5
+
+RUN uv sync --frozen --no-dev --python python3.11
+
+RUN uv run --no-sync python - <<'PY'
+import torch
+import acestep
+print("ACE-Step import check passed")
+print("torch=" + torch.__version__)
+PY
+
+RUN mkdir -p \
+    /workspace/models/ace-step-1.5/checkpoints \
+    /workspace/models/ace-step-1.5/huggingface \
+    /workspace/generated \
+    /workspace/exports
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=120s --retries=6 \
+  CMD curl -fsS http://127.0.0.1:8001/health >/dev/null || exit 1
+
+CMD ["uv", "run", "--no-sync", "acestep-api", "--host", "0.0.0.0", "--port", "8001"]
