@@ -16,3 +16,6 @@ allowBuilds:
   'nx@22.7.12': true
 
 strictDepBuilds: true
+
+# Corepack pins pnpm; disable pnpm's internal version-manager env lockfile.
+pmOnFail: ignore
