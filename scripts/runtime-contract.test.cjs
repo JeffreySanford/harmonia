@@ -1441,3 +1441,16 @@ test('qualified generator showcase exposes one preset per qualified model', () =
   assert.match(runner, /SHOWCASE_DATE/);
   assert.match(runner, /SHOWCASE_ONLY/);
 });
+
+
+test('qualified showcase fresh runner owns an isolated backend', () => {
+  const runner = read('scripts/run-qualified-showcase.sh');
+
+  assert.match(runner, /PORT=3114/);
+  assert.match(runner, /HARMONIA_SHOWCASE_BACKEND_BASE/);
+  assert.match(runner, /backend-3114\.log/);
+  assert.match(runner, /SHOWCASE_FRESH_BACKEND_READY/);
+  assert.match(runner, /SHOWCASE FAILURE DIAGNOSTICS/);
+  assert.match(runner, /QUALIFIED GENERATOR SHOWCASE: GREEN/);
+  assert.match(runner, /QUALIFIED_GENERATOR_SHOWCASE_MANIFEST_5_OF_5_OK/);
+});
