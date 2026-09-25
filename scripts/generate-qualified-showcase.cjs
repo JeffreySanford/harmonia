@@ -39,10 +39,33 @@ function sleep(ms) {
 }
 
 async function request(url, options = {}, timeout = 30000) {
-  const response = await fetch(url, {
-    ...options,
-    signal: AbortSignal.timeout(timeout),
-  });
+  let response;
+
+  try {
+    response = await fetch(url, {
+      ...options,
+      signal: AbortSignal.timeout(timeout),
+    });
+  } catch (error) {
+    const cause =
+      error && typeof error === 'object' && error.cause
+        ? ` cause=${JSON.stringify({
+            name: error.cause.name,
+            code: error.cause.code,
+            errno: error.cause.errno,
+            syscall: error.cause.syscall,
+            address: error.cause.address,
+            port: error.cause.port,
+            message: error.cause.message,
+          })}`
+        : '';
+
+    throw new Error(
+      `${options.method || 'GET'} ${url} fetch failed: ${
+        error instanceof Error ? error.message : String(error)
+      }${cause}`
+    );
+  }
 
   const text = await response.text();
   let body = null;
