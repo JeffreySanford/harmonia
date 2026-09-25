@@ -1,4 +1,11 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+} from '@nestjs/common';
 import { IsNotEmpty, IsString } from 'class-validator';
 import { MusicRuntimeService } from './music-runtime.service';
 
@@ -23,8 +30,9 @@ export class MusicRuntimeController {
   }
 
   @Post('select')
+  @HttpCode(HttpStatus.ACCEPTED)
   selectModel(@Body() body: SelectMusicModelDto) {
-    return this.runtime.selectModel(body.modelId);
+    return this.runtime.requestModelSelection(body.modelId);
   }
 
   @Post('stop')

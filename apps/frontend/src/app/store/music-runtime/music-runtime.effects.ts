@@ -52,8 +52,8 @@ export class MusicRuntimeEffects {
       ofType(MusicRuntimeActions.selectModel),
       exhaustMap(({ modelId }) =>
         this.runtime.selectModel(modelId).pipe(
-          map((status) =>
-            MusicRuntimeActions.selectModelSuccess({ status })
+          map((acceptance) =>
+            MusicRuntimeActions.selectModelAccepted({ acceptance })
           ),
           catchError((error) =>
             of(

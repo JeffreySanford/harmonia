@@ -1,6 +1,7 @@
 import { createAction, props } from '@ngrx/store';
 import {
   MusicRuntimeCatalogResponse,
+  MusicRuntimeSelectionAccepted,
   MusicRuntimeStatus,
 } from './music-runtime.state';
 
@@ -23,9 +24,9 @@ export const selectModel = createAction(
   '[Music Runtime] Select Model',
   props<{ modelId: string }>()
 );
-export const selectModelSuccess = createAction(
-  '[Music Runtime] Select Model Success',
-  props<{ status: MusicRuntimeStatus }>()
+export const selectModelAccepted = createAction(
+  '[Music Runtime] Select Model Accepted',
+  props<{ acceptance: MusicRuntimeSelectionAccepted }>()
 );
 export const selectModelFailure = createAction(
   '[Music Runtime] Select Model Failure',
