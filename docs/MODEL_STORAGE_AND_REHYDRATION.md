@@ -1,7 +1,7 @@
 # Model Storage, Inventory, and Rehydration Architecture
 
-**Status:** Planned architecture  
-**Date:** September 23, 2026  
+**Status:** Planned architecture
+**Date:** September 23, 2026
 **Scope:** Local model binaries, model provenance, inventory, verification, and deterministic restoration.
 
 ## 1. Purpose

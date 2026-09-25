@@ -1,7 +1,7 @@
 # Phase 11 Portable Observed Model Inventory
 
-**Status:** Complete and locally qualified  
-**Date:** September 24, 2026  
+**Status:** Complete and locally qualified
+**Date:** September 24, 2026
 **Command:** `pnpm models:inventory`
 
 ## Purpose
@@ -159,7 +159,7 @@ Observed behavior:
 - operational inventory reported six verified artifacts and two optional missing MusicGen Medium artifacts;
 - concrete deep-verification evidence covered 15 files totaling 6,852,319,710 bytes;
 - DiffSinger acoustic, pitch, and HiFi-GAN artifacts emitted portable size/file evidence;
-- Stable Audio preserved pinned revision `0fef1392cd842149a2b6d445e181c97608faac06`; 
+- Stable Audio preserved pinned revision `0fef1392cd842149a2b6d445e181c97608faac06`;
 - all local artifact paths were registry-relative and generated report paths were repo-relative;
 - secret-shaped values were absent;
 - repeated inventory generation preserved observed evidence while advancing generation timestamps;

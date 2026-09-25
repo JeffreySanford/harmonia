@@ -15,6 +15,8 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { Command } from 'commander';
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from '../apps/backend/src/app/app.module';
 import {
   Observable,
   of,
@@ -51,18 +53,29 @@ interface PipelineResult {
 }
 
 class HarmoniaDemoCLI {
-  private dslParser: SongDslParserService;
-  private stemExporter: StemExportService;
-  private instrumentCatalog: InstrumentCatalogService;
-
-  constructor() {
-    // Initialize services
-    this.dslParser = new SongDslParserService();
-    this.instrumentCatalog = new InstrumentCatalogService();
-    this.stemExporter = new StemExportService(this.instrumentCatalog);
-  }
+  private dslParser!: SongDslParserService;
+  private stemExporter!: StemExportService;
+  private instrumentCatalog!: InstrumentCatalogService;
 
   async run(): Promise<void> {
+    // Resolve services through Harmonia's actual Nest dependency graph.
+    // StemExportService now depends on MusicRuntimeService and should not
+    // be manually constructed by the legacy CLI.
+    const appContext =
+      await NestFactory.createApplicationContext(
+        AppModule,
+        { logger: ['error', 'warn'] }
+      );
+
+    this.dslParser =
+      appContext.get(SongDslParserService);
+
+    this.instrumentCatalog =
+      appContext.get(InstrumentCatalogService);
+
+    this.stemExporter =
+      appContext.get(StemExportService);
+
     const program = new Command();
 
     program

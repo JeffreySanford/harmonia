@@ -1,6 +1,6 @@
 # Model Rehydration Failure and Recovery Semantics
 
-**Status:** Planning specification  
+**Status:** Planning specification
 **Date:** September 23, 2026
 
 ## 1. Purpose

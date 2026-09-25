@@ -170,8 +170,8 @@ test('Mongo jobs validator matches the persistent JobRecord contract', () => {
     assert.doesNotMatch(source, /'running'.*'success'/s);
   }
 
-  assert.match(schema, /jobType: JobRecordType/);
-  assert.match(schema, /status: JobRecordStatus/);
+  assert.match(schema, /jobType!?: JobRecordType/);
+  assert.match(schema, /status!?: JobRecordStatus/);
   assert.match(repair, /collMod: "jobs"/);
   assert.match(repair, /JOBS_SCHEMA_SYNC_OK/);
   assert.match(repair, /status_1_worker_id_1/);
@@ -248,35 +248,35 @@ test('model installation Mongo contract is consistent across fresh, existing, an
   );
   assert.match(
     schema,
-    /artifactId: string/
+    /artifactId!?: string/
   );
   assert.match(
     schema,
-    /localPath: string/
+    /localPath!?: string/
   );
   assert.match(
     schema,
-    /status: ModelInstallationStatus/
+    /status!?: ModelInstallationStatus/
   );
   assert.match(
     schema,
-    /sourceRevision: string \| null/
+    /sourceRevision!?: string \| null/
   );
   assert.match(
     schema,
-    /verifiedAt: Date \| null/
+    /verifiedAt!?: Date \| null/
   );
   assert.match(
     schema,
-    /installedAt: Date \| null/
+    /installedAt!?: Date \| null/
   );
   assert.match(
     schema,
-    /lastUsedAt: Date \| null/
+    /lastUsedAt!?: Date \| null/
   );
   assert.match(
     schema,
-    /lastError: string \| null/
+    /lastError!?: string \| null/
   );
 
   assert.equal(

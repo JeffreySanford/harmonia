@@ -1,9 +1,9 @@
 # Phase 12 ACE-Step 1.5 Local Provider
 
-**Status:** Phase 12 complete and locally qualified end to end  
-**Date:** September 24, 2026  
-**Primary target:** `acestep-v15-turbo-06b`  
-**Reference GPU:** NVIDIA GeForce RTX 3080, 10 GB VRAM  
+**Status:** Phase 12 complete and locally qualified end to end
+**Date:** September 24, 2026
+**Primary target:** `acestep-v15-turbo-06b`
+**Reference GPU:** NVIDIA GeForce RTX 3080, 10 GB VRAM
 **Pinned upstream revision:** `ca1e85fe9430179831e6bc6be790c332190a3866`
 
 ## Goal
@@ -237,7 +237,7 @@ Observed behavior:
 - live catalog on the RTX 3080 reported ACE-Step verified, recommended, and selectable;
 - deterministic fresh provider boot completed successfully;
 - official `POST /v1/init` loaded `acestep-v15-turbo` plus `acestep-5Hz-lm-0.6B`;
-- upstream `/health` confirmed `models_initialized=true` and `llm_initialized=true`; 
+- upstream `/health` confirmed `models_initialized=true` and `llm_initialized=true`;
 - resident load used roughly 5.1 GB of the 10 GB RTX 3080 at the sampled point;
 - qualified weight sizes were unchanged and no `.incomplete` runtime-download files appeared;
 - backend restart recovered the resident ACE-Step runtime without replacing or restarting the provider;

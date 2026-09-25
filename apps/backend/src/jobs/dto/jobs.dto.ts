@@ -10,10 +10,10 @@ import {
 
 export class CreateJobDto {
   @IsIn(['generate', 'convert', 'analyze', 'train'])
-  jobType: 'generate' | 'convert' | 'analyze' | 'train';
+  jobType!: 'generate' | 'convert' | 'analyze' | 'train';
 
   @IsObject()
-  parameters: Record<string, unknown>;
+  parameters!: Record<string, unknown>;
 
   @IsOptional()
   @IsInt()

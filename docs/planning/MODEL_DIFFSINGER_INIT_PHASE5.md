@@ -1,8 +1,8 @@
 # Phase 5 DiffSinger HTTP-ZIP Initialization Adapter
 
-**Status:** Complete and locally qualified  
-**Date:** September 24, 2026  
-**Scope:** DiffSinger acoustic, pitch-estimator, and HiFi-GAN packages  
+**Status:** Complete and locally qualified
+**Date:** September 24, 2026
+**Scope:** DiffSinger acoustic, pitch-estimator, and HiFi-GAN packages
 **Command:** `pnpm models:init --provider diffsinger`
 
 ## Purpose

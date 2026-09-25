@@ -1,6 +1,6 @@
 # Model Rehydration Acceptance Matrix
 
-**Status:** Planning specification  
+**Status:** Planning specification
 **Date:** September 23, 2026
 
 This matrix defines the evidence required before each model-lifecycle phase is

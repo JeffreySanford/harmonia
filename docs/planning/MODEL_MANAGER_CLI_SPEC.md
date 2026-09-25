@@ -1,7 +1,7 @@
 # Model Manager CLI Specification
 
-**Status:** Planning specification  
-**Date:** September 23, 2026  
+**Status:** Planning specification
+**Date:** September 23, 2026
 **Parent plan:** [MODEL_STORAGE_REHYDRATION_PLAN.md](MODEL_STORAGE_REHYDRATION_PLAN.md)
 
 ## 1. Purpose

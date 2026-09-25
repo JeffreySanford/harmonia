@@ -1,7 +1,7 @@
 # Phase 8 Mongo Model Installation Metadata
 
-**Status:** Phase 8A schema complete and locally qualified; Phase 8B sync next  
-**Date:** September 24, 2026  
+**Status:** Phase 8A schema complete and locally qualified; Phase 8B sync next
+**Date:** September 24, 2026
 **Collection:** `model_installations`
 
 ## Purpose

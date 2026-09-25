@@ -25,51 +25,51 @@ export class ModelInstallation {
     required: true,
     trim: true,
   })
-  artifactId: string;
+  artifactId!: string;
 
   @Prop({
     required: true,
     trim: true,
   })
-  providerId: string;
+  providerId!: string;
 
   @Prop({
     type: [String],
     required: true,
     default: [],
   })
-  modelIds: string[];
+  modelIds!: string[];
 
   @Prop({
     type: [String],
     required: true,
     default: [],
   })
-  runtimeModelIds: string[];
+  runtimeModelIds!: string[];
 
   @Prop({
     required: true,
     enum: ['huggingface', 'http-zip'],
   })
-  sourceKind: ModelInstallationSourceKind;
+  sourceKind!: ModelInstallationSourceKind;
 
   @Prop({
     required: true,
     trim: true,
   })
-  sourceRef: string;
+  sourceRef!: string;
 
   @Prop({
     type: String,
     default: null,
   })
-  sourceRevision: string | null;
+  sourceRevision!: string | null;
 
   @Prop({
     required: true,
     trim: true,
   })
-  localPath: string;
+  localPath!: string;
 
   @Prop({
     required: true,
@@ -82,69 +82,69 @@ export class ModelInstallation {
       'failed',
     ],
   })
-  status: ModelInstallationStatus;
+  status!: ModelInstallationStatus;
 
   @Prop({
     type: Number,
     min: 0,
     default: 0,
   })
-  fileCount: number;
+  fileCount!: number;
 
   @Prop({
     type: Number,
     min: 0,
     default: 0,
   })
-  bytes: number;
+  bytes!: number;
 
   @Prop({
     required: true,
     trim: true,
   })
-  verificationStrategy: string;
+  verificationStrategy!: string;
 
   @Prop({
     type: Date,
     default: null,
   })
-  verifiedAt: Date | null;
+  verifiedAt!: Date | null;
 
   @Prop({
     type: Date,
     default: null,
   })
-  installedAt: Date | null;
+  installedAt!: Date | null;
 
   @Prop({
     type: Date,
     default: null,
   })
-  lastUsedAt: Date | null;
+  lastUsedAt!: Date | null;
 
   @Prop({
     required: true,
     default: false,
   })
-  licenseAcceptanceRequired: boolean;
+  licenseAcceptanceRequired!: boolean;
 
   @Prop({
     required: true,
     default: false,
   })
-  gated: boolean;
+  gated!: boolean;
 
   @Prop({
     type: String,
     default: null,
   })
-  lastError: string | null;
+  lastError!: string | null;
 
   @Prop()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Prop()
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 
 export const ModelInstallationSchema =

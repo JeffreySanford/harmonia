@@ -1,8 +1,8 @@
 # Model Storage and Rehydration Implementation Plan
 
-**Status:** Planned  
-**Created:** September 23, 2026  
-**Updated:** September 24, 2026  
+**Status:** Planned
+**Created:** September 23, 2026
+**Updated:** September 24, 2026
 **Architecture:** [../MODEL_STORAGE_AND_REHYDRATION.md](../MODEL_STORAGE_AND_REHYDRATION.md)
 
 ## Supporting planning specifications

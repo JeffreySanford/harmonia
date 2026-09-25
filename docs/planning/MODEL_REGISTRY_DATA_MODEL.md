@@ -1,7 +1,7 @@
 # Model Registry Data Model Design
 
-**Status:** Planning specification  
-**Date:** September 23, 2026  
+**Status:** Planning specification
+**Date:** September 23, 2026
 **Parent architecture:** [../MODEL_STORAGE_AND_REHYDRATION.md](../MODEL_STORAGE_AND_REHYDRATION.md)
 
 ## 1. Goal

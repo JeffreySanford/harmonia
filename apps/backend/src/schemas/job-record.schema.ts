@@ -16,14 +16,14 @@ export type JobRecordType = 'generate' | 'convert' | 'analyze' | 'train';
 @Schema({ timestamps: true, collection: 'jobs' })
 export class JobRecord {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
-  userId: Types.ObjectId;
+  userId!: Types.ObjectId;
 
   @Prop({
     required: true,
     enum: ['generate', 'convert', 'analyze', 'train'],
     index: true,
   })
-  jobType: JobRecordType;
+  jobType!: JobRecordType;
 
   @Prop({
     required: true,
@@ -31,10 +31,10 @@ export class JobRecord {
     default: 'pending',
     index: true,
   })
-  status: JobRecordStatus;
+  status!: JobRecordStatus;
 
   @Prop({ default: 0 })
-  priority: number;
+  priority!: number;
 
   @Prop({ index: true })
   modelId?: string;
@@ -43,10 +43,10 @@ export class JobRecord {
   datasetId?: string;
 
   @Prop({ type: Object, default: {} })
-  parameters: Record<string, unknown>;
+  parameters!: Record<string, unknown>;
 
   @Prop({ type: Object, default: null })
-  progress: {
+  progress!: {
     current: number;
     total: number;
     percentage: number;
@@ -54,26 +54,26 @@ export class JobRecord {
   } | null;
 
   @Prop({ type: Object, default: null })
-  result: {
+  result!: {
     outputPath?: string;
     metadata?: Record<string, unknown>;
     error?: string;
   } | null;
 
   @Prop({ type: Date, default: null })
-  startedAt: Date | null;
+  startedAt!: Date | null;
 
   @Prop({ type: Date, default: null })
-  completedAt: Date | null;
+  completedAt!: Date | null;
 
   @Prop({ type: Number, default: null })
-  estimatedDuration: number | null;
+  estimatedDuration!: number | null;
 
   @Prop()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Prop()
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 
 export const JobRecordSchema = SchemaFactory.createForClass(JobRecord);
