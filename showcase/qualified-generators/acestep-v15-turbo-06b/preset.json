@@ -1,0 +1,15 @@
+{
+  "modelId": "acestep-v15-turbo-06b",
+  "slug": "true-north-keeps-us-moving",
+  "title": "True North Keeps Us Moving",
+  "description": "Full-song supplied-lyrics sample for the qualified ACE-Step Turbo + 0.6B path.",
+  "parameters": {
+    "title": "True North Keeps Us Moving",
+    "prompt": "uplifting alternative rock with a heartland Americana undertone, 118 BPM, electric guitar, warm bass, steady live drums, subtle synth atmosphere, warm clean vocal, anthemic chorus, wide modern production, emotionally resilient rather than overly triumphant",
+    "lyrics": "[Verse]\\nUnder northern skies we find our way\\nThrough the long blue dark before the day\\nEvery mile leaves another line\\nBut the road still points to true north signs\\n\\n[Chorus]\\nTrue north keeps us moving\\nWhen the road is hard to see\\nTrue north keeps us moving\\nToward the place we're meant to be",
+    "duration": 30,
+    "bpm": 118,
+    "vocalLanguage": "en",
+    "seed": 12012026
+  }
+}
