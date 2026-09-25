@@ -29,6 +29,9 @@ overrides:
   # Security Batch 5 — tar 7.x advisory floor only.
   'tar@>=7.0.0 <7.5.21': 7.5.21
 
+  # Security Batch 6 — backend JWT verification patch.
+  'jws@>=3.0.0 <3.2.3': 3.2.3
+
 allowBuilds:
   '@nestjs/core': true
   '@scarf/scarf': true
