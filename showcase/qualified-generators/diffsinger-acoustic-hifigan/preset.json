@@ -1,0 +1,15 @@
+{
+  "modelId": "diffsinger-acoustic-hifigan",
+  "slug": "northbound-mandarin",
+  "title": "向北 / Northbound",
+  "description": "Original short Mandarin lyric using the qualified OpenCpop score-native voice.",
+  "styleNote": "Clear Mandarin pop singing using the pinned OpenCpop acoustic model and HiFi-GAN vocoder; expression is governed by score rather than free-text style.",
+  "parameters": {
+    "title": "Northbound Mandarin",
+    "text": "SP向北走过长夜里SP晨光照亮前方路",
+    "notes": "rest|C4|C4|G4|G4|A4|A4|G4|rest|F4|F4|E4|E4|D4|D4|C4",
+    "notesDuration": "1|0.5|0.5|0.5|0.5|0.5|0.5|0.75|0.25|0.5|0.5|0.5|0.5|0.5|0.5|0.75",
+    "inputType": "word"
+  },
+  "lyricTranslation": "Toward the north, walking through the long night; morning light illuminates the road ahead."
+}
