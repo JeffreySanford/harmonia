@@ -1,0 +1,21 @@
+{
+  "modelId": "musicgen-stereo-small",
+  "slug": "midnight-prairie",
+  "title": "Midnight Prairie",
+  "description": "Wide atmospheric indie-electronic instrumental intended to showcase stereo space.",
+  "parameters": {
+    "title": "Midnight Prairie",
+    "prompt": "wide cinematic indie-electronic instrumental, 105 BPM, shimmering stereo electric guitars, analog synth pads, pulsing bass, restrained live drums, expansive prairie-at-night atmosphere, no vocals, spacious modern mix",
+    "duration": 12,
+    "genre": "Indie Electronic",
+    "mood": "Nocturnal, expansive, reflective",
+    "bpm": 105,
+    "instruments": [
+      "stereo electric guitars",
+      "analog synth pads",
+      "bass",
+      "drums"
+    ],
+    "vocalsStyle": "instrumental"
+  }
+}
