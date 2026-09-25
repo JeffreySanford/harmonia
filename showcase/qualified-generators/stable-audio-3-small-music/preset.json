@@ -1,0 +1,21 @@
+{
+  "modelId": "stable-audio-3-small-music",
+  "slug": "aurora-circuit",
+  "title": "Aurora Circuit",
+  "description": "Polished cinematic electronic/post-rock instrumental with a gradual uplifting build.",
+  "parameters": {
+    "title": "Aurora Circuit",
+    "prompt": "cinematic electronic post-rock instrumental, 110 BPM, warm analog arpeggio, deep bass, atmospheric electric guitar swells, crisp restrained drums, gradual uplifting build, no vocals, polished spacious stereo master",
+    "duration": 15,
+    "genre": "Cinematic Electronic Post-Rock",
+    "mood": "Luminous, patient, uplifting",
+    "bpm": 110,
+    "instruments": [
+      "analog arpeggiator",
+      "bass",
+      "electric guitar swells",
+      "drums"
+    ],
+    "vocalsStyle": "instrumental"
+  }
+}
