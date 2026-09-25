@@ -6,6 +6,7 @@ const {
   readFileSync,
   writeFileSync,
 } = require('node:fs');
+const http = require('node:http');
 const path = require('node:path');
 const { parseEnv } = require('node:util');
 
@@ -87,6 +88,91 @@ async function request(url, options = {}, timeout = 30000) {
   }
 
   return { response, body };
+}
+
+async function requestLong(url, options = {}, timeout = selectTimeoutMs) {
+  return new Promise((resolve, reject) => {
+    const target = new URL(url);
+    const body =
+      options.body == null
+        ? null
+        : Buffer.isBuffer(options.body)
+          ? options.body
+          : Buffer.from(String(options.body));
+
+    const headers = {
+      ...(options.headers || {}),
+    };
+
+    if (body && !Object.keys(headers).some((key) => key.toLowerCase() === 'content-length')) {
+      headers['content-length'] = String(body.length);
+    }
+
+    const req = http.request(
+      {
+        protocol: target.protocol,
+        hostname: target.hostname,
+        port: target.port,
+        path: `${target.pathname}${target.search}`,
+        method: options.method || 'GET',
+        headers,
+      },
+      (response) => {
+        const chunks = [];
+
+        response.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+        response.on('end', () => {
+          const text = Buffer.concat(chunks).toString('utf8');
+          let parsed = null;
+
+          if (text) {
+            try {
+              parsed = JSON.parse(text);
+            } catch {
+              parsed = text;
+            }
+          }
+
+          if ((response.statusCode || 500) >= 400) {
+            reject(
+              new Error(
+                `${options.method || 'GET'} ${url} -> HTTP ${response.statusCode}: ${
+                  typeof parsed === 'string' ? parsed : JSON.stringify(parsed)
+                }`
+              )
+            );
+            return;
+          }
+
+          resolve({
+            response: {
+              ok: true,
+              status: response.statusCode || 200,
+            },
+            body: parsed,
+          });
+        });
+      }
+    );
+
+    req.setTimeout(timeout, () => {
+      req.destroy(
+        new Error(
+          `${options.method || 'GET'} ${url} timed out after ${Math.round(
+            timeout / 1000
+          )} seconds`
+        )
+      );
+    });
+
+    req.once('error', reject);
+
+    if (body) {
+      req.write(body);
+    }
+
+    req.end();
+  });
 }
 
 async function firstHealthyBackend() {
@@ -255,7 +341,82 @@ async function generateOne({
   console.log(` ${preset.title}`);
   console.log('============================================================');
 
-  const selected = await request(
+  const modelDir = path.join(exportRoot, preset.modelId);
+  mkdirSync(modelDir, { recursive: true });
+
+  const basename = `${dateStamp}--${preset.slug}`;
+  const showcaseWav = path.join(modelDir, `${basename}.wav`);
+  const requestFile = path.join(modelDir, `${basename}.request.json`);
+  const jobFile = path.join(modelDir, `${basename}.job.json`);
+  const requestedDuration = expectedDuration(preset);
+
+  if (
+    existsSync(showcaseWav) &&
+    existsSync(requestFile) &&
+    existsSync(jobFile)
+  ) {
+    const job = JSON.parse(readFileSync(jobFile, 'utf8'));
+    const wav = readWav(showcaseWav);
+    const outputPath = job.result?.outputPath;
+
+    if (
+      job.status !== 'completed' ||
+      !outputPath ||
+      !outputPath.startsWith('/downloads/jobs/') ||
+      wav.durationSeconds < requestedDuration * 0.9
+    ) {
+      throw new Error(
+        `Existing showcase artifact is incomplete for ${preset.modelId}`
+      );
+    }
+
+    const backendDownload = await fetch(`${backendBase}${outputPath}`, {
+      signal: AbortSignal.timeout(30000),
+    });
+    const frontendDownload = await fetch(`${frontendBase}${outputPath}`, {
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!backendDownload.ok || !frontendDownload.ok) {
+      throw new Error(
+        `Existing showcase download validation failed for ${preset.modelId}: backend=${backendDownload.status}, frontend=${frontendDownload.status}`
+      );
+    }
+
+    const startedAt = Date.parse(job.startedAt || '');
+    const completedAt = Date.parse(job.completedAt || '');
+    const generationElapsedSeconds =
+      Number.isFinite(startedAt) && Number.isFinite(completedAt)
+        ? Math.max(0, (completedAt - startedAt) / 1000)
+        : 0;
+
+    const result = {
+      date: dateStamp,
+      modelId: preset.modelId,
+      title: preset.title,
+      slug: preset.slug,
+      jobId: job.id,
+      runtimeModelId: job.result?.metadata?.runtimeModelId || null,
+      sourceDownloadPath: outputPath,
+      showcasePath: path.relative(root, showcaseWav).replace(/\\/g, '/'),
+      requestedDurationSeconds: requestedDuration,
+      generationElapsedSeconds,
+      wav,
+      backendDownloadStatus: backendDownload.status,
+      frontendDownloadStatus: frontendDownload.status,
+      reusedExisting: true,
+    };
+
+    console.log(
+      `SHOWCASE_REUSE ${preset.modelId}: ${result.showcasePath} (${wav.durationSeconds.toFixed(
+        2
+      )}s)`
+    );
+
+    return result;
+  }
+
+  const selected = await requestLong(
     `${backendBase}/api/music/runtime/select`,
     {
       method: 'POST',
@@ -331,7 +492,6 @@ async function generateOne({
   }
 
   const wav = readWav(jobArtifactPath);
-  const requestedDuration = expectedDuration(preset);
 
   if (
     !Number.isFinite(requestedDuration) ||
@@ -391,14 +551,6 @@ async function generateOne({
       `Frontend download failed for ${preset.modelId}: HTTP ${frontendDownload.status}`
     );
   }
-
-  const modelDir = path.join(exportRoot, preset.modelId);
-  mkdirSync(modelDir, { recursive: true });
-
-  const basename = `${dateStamp}--${preset.slug}`;
-  const showcaseWav = path.join(modelDir, `${basename}.wav`);
-  const requestFile = path.join(modelDir, `${basename}.request.json`);
-  const jobFile = path.join(modelDir, `${basename}.job.json`);
 
   copyFileSync(jobArtifactPath, showcaseWav);
   writeFileSync(
