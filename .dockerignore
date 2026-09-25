@@ -9,3 +9,11 @@ __pycache__
 *.pyc
 logs
 npm-debug.log*
+
+# Runtime/model data is bind-mounted and must never enter provider build contexts
+models
+exports
+artifacts
+generated
+backups
+coverage
