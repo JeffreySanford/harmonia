@@ -1454,3 +1454,34 @@ test('qualified showcase fresh runner owns an isolated backend', () => {
   assert.match(runner, /QUALIFIED GENERATOR SHOWCASE: GREEN/);
   assert.match(runner, /QUALIFIED_GENERATOR_SHOWCASE_MANIFEST_5_OF_5_OK/);
 });
+
+
+test('showcase resumes dated samples and excludes runtime data from Docker contexts', () => {
+  const runner = read('scripts/generate-qualified-showcase.cjs');
+  const dockerignore = read('.dockerignore');
+
+  assert.match(runner, /async function requestLong/);
+  assert.match(
+    runner,
+    /const selected = await requestLong/
+  );
+  assert.match(runner, /SHOWCASE_REUSE/);
+  assert.match(runner, /reusedExisting: true/);
+
+  for (const ignored of [
+    'models',
+    'exports',
+    'artifacts',
+    'generated',
+    'backups',
+  ]) {
+    assert.equal(
+      dockerignore
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .includes(ignored),
+      true,
+      `Expected .dockerignore to exclude ${ignored}`
+    );
+  }
+});
