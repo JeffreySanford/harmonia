@@ -32,6 +32,10 @@ overrides:
   # Security Batch 6 — backend JWT verification patch.
   'jws@>=3.0.0 <3.2.3': 3.2.3
 
+  # Security Batch 8A — remove vulnerable serialize-javascript
+  # through the patched terser-webpack-plugin 5.x parent.
+  'terser-webpack-plugin@>=5.0.0 <5.3.17': 5.3.17
+
   # Security Batch 7 — safe same-major tooling advisory floors.
   'minimatch@>=3.0.0 <3.1.4': 3.1.4
   'minimatch@>=9.0.0 <9.0.7': 9.0.7
