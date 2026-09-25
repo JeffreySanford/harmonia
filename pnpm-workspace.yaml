@@ -6,6 +6,14 @@ overrides:
   axios: 1.18.1
   fast-xml-parser: 5.7.0
 
+  # Security Batch 2 — runtime-compatible major lines only.
+  # Do not replace legacy major versions used by dev tooling.
+  'multer@>=2.0.0 <2.3.0': 2.3.0
+  'path-to-regexp@>=8.0.0 <8.4.0': 8.4.0
+  'engine.io@>=6.0.0 <6.6.7': 6.6.7
+  'socket.io-parser@>=4.0.0 <4.2.7': 4.2.7
+  'ws@>=8.0.0 <8.21.0': 8.21.0
+
 allowBuilds:
   '@nestjs/core': true
   '@scarf/scarf': true
