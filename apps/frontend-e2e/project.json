@@ -9,11 +9,11 @@
     "e2e": {
       "executor": "@nx/playwright:playwright",
       "options": {
-        "config": "playwright.config.ts"
+        "config": "apps/frontend-e2e/playwright.config.ts"
       },
       "configurations": {
         "ci": {
-          "config": "playwright.config.ts"
+          "config": "apps/frontend-e2e/playwright.config.ts"
         }
       }
     }
