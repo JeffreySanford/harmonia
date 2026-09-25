@@ -198,6 +198,57 @@ test('Windows startup disables Nx plugin isolation to avoid plugin worker hangs'
   assert.match(startup, /NX_ISOLATE_PLUGINS/);
 });
 
+
+test('backend Node runtime packages are production dependencies', () => {
+  const packageJson = JSON.parse(read('package.json'));
+
+  const dependencies = packageJson.dependencies ?? {};
+  const devDependencies = packageJson.devDependencies ?? {};
+
+  const runtimePackages = [
+    '@nestjs/bull',
+    '@nestjs/common',
+    '@nestjs/config',
+    '@nestjs/core',
+    '@nestjs/jwt',
+    '@nestjs/mongoose',
+    '@nestjs/passport',
+    '@nestjs/platform-express',
+    '@nestjs/platform-socket.io',
+    '@nestjs/websockets',
+    'bull',
+    'class-transformer',
+    'class-validator',
+    'mongoose',
+    'passport',
+    'passport-jwt',
+    'rxjs',
+    'socket.io',
+  ];
+
+  for (const packageName of runtimePackages) {
+    assert.ok(
+      dependencies[packageName],
+      `${packageName} must be a production dependency`,
+    );
+
+    assert.ok(
+      !devDependencies[packageName],
+      `${packageName} must not remain a devDependency`,
+    );
+  }
+
+  assert.ok(
+    devDependencies['mongodb-memory-server'],
+    'mongodb-memory-server must remain test-only tooling',
+  );
+
+  assert.ok(
+    !dependencies['mongodb-memory-server'],
+    'mongodb-memory-server must never become a runtime dependency',
+  );
+});
+
 test('mongodb-memory-server is isolated to test tooling', () => {
   const pkg = JSON.parse(read('package.json'));
 
