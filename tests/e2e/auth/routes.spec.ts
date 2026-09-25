@@ -21,6 +21,12 @@ test.describe('Protected Routes', () => {
       password: ADMIN_USER.password,
     });
     expect(loginProtected.responseStatus).toBe(200);
+    expect(loginProtected.body?.user?.role).toBe('admin');
+
+    await page.waitForURL('**/library', {
+      timeout: 10000,
+    });
+
     await page.goto(`${FRONTEND_URL}/profile`);
     await expect(page).toHaveURL(/.*\/profile/);
     await page.goto(`${FRONTEND_URL}/admin`);

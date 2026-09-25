@@ -11,12 +11,7 @@ test.describe('Registration Flow (E2E)', () => {
   });
 
   test('Scenario 1: User Registration Flow', async ({ page }) => {
-    // open user menu and sign up
-    await page.click('nav button.user-menu-trigger');
-    await page.click('button:has-text("Sign Up")', { force: true });
-    await page.waitForSelector(
-      'mat-dialog-content input[formControlName="email"]'
-    );
+    // registerViaModal owns opening the registration UI.
 
     const uniqueId = Date.now();
     const randomSfx = Math.random().toString(36).slice(2, 8);

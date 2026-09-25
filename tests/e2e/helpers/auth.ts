@@ -64,49 +64,117 @@ export function waitForToken(page: Page, timeout = 5000) {
 
 async function openAuthModal(
   page: Page,
-  label: 'Sign In' | 'Sign Up'
+  mode: 'login' | 'register'
 ): Promise<void> {
-  const direct = page
-    .getByRole('button', {
-      name: label,
-      exact: true,
-    })
-    .first();
+  const fieldSelector =
+    mode === 'login'
+      ? 'input[formControlName="emailOrUsername"]'
+      : 'input[formControlName="email"]';
 
-  if (await direct.isVisible().catch(() => false)) {
-    await direct.click({
-      force: true,
-      timeout: 5000,
-    });
+  const existingField = page.locator(fieldSelector);
+
+  if (
+    await existingField
+      .first()
+      .isVisible()
+      .catch(() => false)
+  ) {
     return;
   }
 
-  const menuTrigger = page.locator('.user-menu-trigger');
+  // Close a guest/user menu left open by an earlier helper.
+  await page.keyboard.press('Escape').catch(() => undefined);
 
-  await menuTrigger.waitFor({
+  if (mode === 'login') {
+    const landingSignIn = page
+      .locator('.landing-actions')
+      .getByRole('button', {
+        name: 'Sign In',
+        exact: true,
+      });
+
+    if (
+      await landingSignIn
+        .isVisible()
+        .catch(() => false)
+    ) {
+      await landingSignIn.click();
+
+      await page
+        .locator(fieldSelector)
+        .first()
+        .waitFor({
+          state: 'visible',
+          timeout: 5000,
+        });
+
+      return;
+    }
+  } else {
+    const landingCreate = page
+      .locator('.landing-actions')
+      .getByRole('button', {
+        name: 'Create Account',
+        exact: true,
+      });
+
+    if (
+      await landingCreate
+        .isVisible()
+        .catch(() => false)
+    ) {
+      await landingCreate.click();
+
+      await page
+        .locator(fieldSelector)
+        .first()
+        .waitFor({
+          state: 'visible',
+          timeout: 5000,
+        });
+
+      return;
+    }
+  }
+
+  const trigger = page.locator(
+    'nav button.user-menu-trigger'
+  );
+
+  await trigger.waitFor({
     state: 'visible',
     timeout: 5000,
   });
 
-  await menuTrigger.click({
-    force: true,
-  });
+  await trigger.click();
 
-  const menuItem = page
-    .getByRole('menuitem', {
-      name: label,
+  const menuLabel =
+    mode === 'login'
+      ? 'Sign In'
+      : 'Sign Up';
+
+  const menuItem = page.getByRole(
+    'menuitem',
+    {
+      name: menuLabel,
       exact: true,
-    })
-    .first();
+    }
+  );
 
   await menuItem.waitFor({
     state: 'visible',
     timeout: 5000,
   });
 
-  await menuItem.click({
-    force: true,
-  });
+  await menuItem.click();
+
+  await page
+    .locator(fieldSelector)
+    .first()
+    .waitFor({
+      state: 'visible',
+      timeout: 5000,
+    });
 }
 
 export function loginViaModal$(
@@ -143,7 +211,7 @@ export function loginViaModal$(
         }
       });
       // Open the current visible login entry point.
-      await openAuthModal(page, 'Sign In');
+      await openAuthModal(page, 'login');
 
       await page
         .waitForFunction(
@@ -191,7 +259,7 @@ export function loginViaModal$(
           await page.fill('input[formControlName="password"]', creds.password);
         } catch (e) {
           // If element isn't present, re-open modal
-          await openAuthModal(page, 'Sign In');
+          await openAuthModal(page, 'login');
           await page.waitForSelector(
             'mat-dialog-content input[formControlName="emailOrUsername"]'
           );
@@ -291,61 +359,8 @@ export function loginViaModal$(
         return;
       }
 
-      // If we exit loop without success, attempt a backend fallback POST for login
-      // if no backend response was captured from the UI. This helps stabilize
-      // E2E tests in embedded/overlay cases where UI event wiring fails.
-      try {
-        const lastStatus = lastResponse?.status?.() ?? 0;
-        if (lastStatus !== 200) {
-          console.warn(
-            'loginViaModal: no successful response from UI; attempting backend fallback login'
-          );
-          const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
-          const loginUrl = `${backendUrl}/api/auth/login`;
-          try {
-            const fallbackResp = await page.request.post(loginUrl, {
-              data: JSON.stringify({
-                emailOrUsername: creds.emailOrUsername,
-                password: creds.password,
-              }),
-              headers: { 'Content-Type': 'application/json' },
-            });
-            const body = await fallbackResp.json().catch(() => null);
-            console.warn(
-              'loginViaModal: fallbackResp status',
-              fallbackResp.status(),
-              'body:',
-              body
-            );
-            if (fallbackResp.ok()) {
-              const tokenVal =
-                body?.accessToken || body?.access_token || body?.token || null;
-              const refreshVal =
-                body?.refreshToken || body?.refresh_token || null;
-              try {
-                await page.evaluate(
-                  (t: string, r: string) => {
-                    if (t)
-                      (window as any).localStorage.setItem('auth_token', t);
-                    if (r)
-                      (window as any).localStorage.setItem('refresh_token', r);
-                  },
-                  tokenVal,
-                  refreshVal
-                );
-              } catch (e) {}
-              lastResponse = {
-                status: () => fallbackResp.status(),
-                json: async () => body,
-              };
-            }
-          } catch (fallbackErr) {
-            console.warn('loginViaModal: fallback login error', fallbackErr);
-          }
-        }
-      } catch (fallbackErrOuter) {
-        // swallow fallback check errors
-      }
+      // UI login did not succeed. Keep this as a real E2E failure;
+      // do not bypass Angular/NgRx by injecting backend tokens.
 
       // If we exit loop without success, return last response info
       let lastBody: any = null;
@@ -385,21 +400,59 @@ export function loginViaModal(
 /**
  * Logout helper used previously in main test file
  */
-export async function logoutIfNeeded(page: Page) {
-  try {
-    const userMenu = page
-      .locator('nav button:not(:has-text("Sign In")):not(:has-text("Sign Up"))')
-      .first();
-    const isLoggedIn = await userMenu.isVisible().catch(() => false);
+export async function logoutIfNeeded(
+  page: Page
+): Promise<void> {
+  const token = await page
+    .evaluate(() =>
+      window.localStorage.getItem('auth_token')
+    )
+    .catch(() => null);
 
-    if (isLoggedIn) {
-      await userMenu.click();
-      await page.click('button:has-text("Logout")');
-      await page.waitForURL('http://localhost:4200/');
-    }
-  } catch (error) {
-    // Not logged in or error occurred, continue
+  if (!token) {
+    await page.keyboard
+      .press('Escape')
+      .catch(() => undefined);
+
+    return;
   }
+
+  const trigger = page.locator(
+    'nav button.user-menu-trigger'
+  );
+
+  await trigger.waitFor({
+    state: 'visible',
+    timeout: 5000,
+  });
+
+  await trigger.click();
+
+  const logout = page.getByRole(
+    'menuitem',
+    {
+      name: 'Logout',
+      exact: true,
+    }
+  );
+
+  await logout.waitFor({
+    state: 'visible',
+    timeout: 5000,
+  });
+
+  await logout.click();
+
+  await page.waitForURL('**/', {
+    timeout: 10000,
+  });
+
+  await page.waitForFunction(
+    () =>
+      window.localStorage.getItem('auth_token') === null,
+    null,
+    { timeout: 5000 }
+  );
 }
 
 export function registerViaModal$(
@@ -436,7 +489,7 @@ export function registerViaModal$(
         }
       });
       // Open the current visible registration entry point.
-      await openAuthModal(page, 'Sign Up');
+      await openAuthModal(page, 'register');
 
       await page
         .waitForFunction(
@@ -480,7 +533,7 @@ export function registerViaModal$(
           await page.fill('input[formControlName="email"]', creds.email);
           await page.fill('input[formControlName="password"]', creds.password);
         } catch (e) {
-          await openAuthModal(page, 'Sign Up');
+          await openAuthModal(page, 'register');
           await page.waitForSelector(
             'mat-dialog-content input[formControlName="email"]'
           );

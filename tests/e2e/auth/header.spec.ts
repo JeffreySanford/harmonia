@@ -10,7 +10,18 @@ test.describe('Header Menu (Guest)', () => {
   test('Header Menu - Landing shows guest options', async ({ page }) => {
     await expect(page.locator('nav button.user-menu-trigger')).toBeVisible();
     await page.click('nav button.user-menu-trigger');
-    await expect(page.locator('button:has-text("Sign In")')).toBeVisible();
-    await expect(page.locator('button:has-text("Sign Up")')).toBeVisible();
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Sign In',
+        exact: true,
+      })
+    ).toBeVisible();
+
+    await expect(
+      page.getByRole('menuitem', {
+        name: 'Sign Up',
+        exact: true,
+      })
+    ).toBeVisible();
   });
 });
