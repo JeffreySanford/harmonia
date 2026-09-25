@@ -1,0 +1,21 @@
+{
+  "modelId": "musicgen-small",
+  "slug": "northern-transmission",
+  "title": "Northern Transmission",
+  "description": "Compact instrumental alternative/roots-rock cue with a memorable rising hook.",
+  "parameters": {
+    "title": "Northern Transmission",
+    "prompt": "driving instrumental alternative rock with an Americana edge, 118 BPM, palm-muted electric guitar, warm bass, live drums, subtle synth texture, memorable rising hook, no vocals, clean punchy production",
+    "duration": 12,
+    "genre": "Alternative Rock",
+    "mood": "Determined, open-road, uplifting",
+    "bpm": 118,
+    "instruments": [
+      "electric guitar",
+      "bass",
+      "drums",
+      "subtle synth"
+    ],
+    "vocalsStyle": "instrumental"
+  }
+}
