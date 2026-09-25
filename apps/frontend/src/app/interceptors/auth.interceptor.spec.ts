@@ -90,6 +90,30 @@ describe('AuthInterceptor', () => {
     req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
   });
 
+  it('should not recursively dispatch logout when logout itself returns 401', () => {
+    const dispatchSpy = spyOn(store, 'dispatch');
+
+    httpClient.post('/api/auth/logout', {}).subscribe({
+      error: () => {
+        expect(dispatchSpy).not.toHaveBeenCalledWith(
+          AuthActions.logout()
+        );
+        expect(router.navigate).not.toHaveBeenCalledWith(['/']);
+      },
+    });
+
+    const req = httpMock.expectOne('/api/auth/logout');
+
+    expect(
+      req.request.headers.get('Authorization')
+    ).toBe('Bearer test-token');
+
+    req.flush('Unauthorized', {
+      status: 401,
+      statusText: 'Unauthorized',
+    });
+  });
+
   it('should not add Authorization header when no token exists', () => {
     store.overrideSelector(AuthSelectors.selectAuthToken, null);
     store.refreshState();

@@ -5,7 +5,17 @@
 
 import { createReducer, on } from '@ngrx/store';
 import { initialAuthState } from './auth.state';
+import type { AuthState } from './auth.state';
 import * as AuthActions from './auth.actions';
+
+const createGuestAuthState = (): AuthState => ({
+  user: null,
+  token: null,
+  refreshToken: null,
+  isAuthenticated: false,
+  loading: false,
+  error: null,
+});
 
 export const authReducer = createReducer(
   initialAuthState,
@@ -62,7 +72,7 @@ export const authReducer = createReducer(
     loading: true,
   })),
 
-  on(AuthActions.logoutSuccess, () => initialAuthState),
+  on(AuthActions.logoutSuccess, () => createGuestAuthState()),
 
   // Token refresh
   on(AuthActions.refreshToken, (state) => ({
@@ -96,5 +106,5 @@ export const authReducer = createReducer(
     loading: false,
   })),
 
-  on(AuthActions.sessionInvalid, () => initialAuthState)
+  on(AuthActions.sessionInvalid, () => createGuestAuthState())
 );

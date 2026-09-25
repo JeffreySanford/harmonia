@@ -77,7 +77,11 @@ export class AuthInterceptor implements HttpInterceptor {
         return next.handle(authRequest).pipe(
           catchError((error: HttpErrorResponse) => {
             // Only logout on 401 if we had a token (user was authenticated)
-            if (error.status === 401 && token) {
+            if (
+              error.status === 401 &&
+              token &&
+              !request.url.includes('/auth/logout')
+            ) {
               // Token expired or invalid - logout and redirect
               this.ngZone.run(() => {
                 this.store.dispatch(AuthActions.logout());
