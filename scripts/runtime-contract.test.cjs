@@ -1,10 +1,27 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { existsSync, readFileSync } = require('node:fs');
+const { existsSync, readFileSync, readdirSync } = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const read = (file) => readFileSync(path.join(root, file), 'utf8');
+
+const walkFiles = (relativeDir) => {
+  const base = path.join(root, relativeDir);
+  const files = [];
+
+  for (const entry of readdirSync(base, { withFileTypes: true })) {
+    const relative = path.join(relativeDir, entry.name);
+
+    if (entry.isDirectory()) {
+      files.push(...walkFiles(relative));
+    } else if (entry.isFile()) {
+      files.push(relative);
+    }
+  }
+
+  return files;
+};
 
 test('runtime uses one canonical Compose definition plus an optional GPU override', () => {
   assert.equal(existsSync(path.join(root, 'docker-compose.yml')), true);
@@ -180,6 +197,73 @@ test('Windows startup disables Nx plugin isolation to avoid plugin worker hangs'
   assert.match(startup, /process\.platform === 'win32' \? 'false' : undefined/);
   assert.match(startup, /NX_ISOLATE_PLUGINS/);
 });
+
+test('mongodb-memory-server is isolated to test tooling', () => {
+  const pkg = JSON.parse(read('package.json'));
+
+  assert.equal(
+    pkg.dependencies['mongodb-memory-server'],
+    undefined
+  );
+
+  assert.ok(
+    pkg.devDependencies['mongodb-memory-server']
+  );
+
+  assert.equal(
+    pkg.scripts['test:mongo-memory'],
+    'node scripts/test_mongoose_memory.js'
+  );
+
+  assert.equal(
+    pkg.scripts['test:mongo'],
+    'pnpm test:mongo-memory'
+  );
+
+  const backendFiles = walkFiles('apps/backend')
+    .filter((file) => /\.(?:ts|js|cjs|mjs)$/.test(file));
+
+  for (const file of backendFiles) {
+    const source = read(file);
+
+    assert.doesNotMatch(
+      source,
+      /mongodb-memory-server|MongoMemoryServer/,
+      `${file} must not depend on in-memory MongoDB`
+    );
+  }
+
+  const compose = read('docker-compose.yml');
+  const appModule = read(
+    'apps/backend/src/app/app.module.ts'
+  );
+
+  assert.match(
+    compose,
+    /image:\s*mongo:7\.0/
+  );
+
+  assert.match(
+    compose,
+    /mongo-data:\/data\/db/
+  );
+
+  assert.match(
+    appModule,
+    /MongooseModule\.forRootAsync/
+  );
+
+  assert.match(
+    appModule,
+    /MONGODB_URI/
+  );
+
+  assert.match(
+    appModule,
+    /127\.0\.0\.1:27017\/harmonia\?authSource=harmonia/
+  );
+});
+
 
 test('Mongo initialization never falls back to a default application password', () => {
   const init = read('scripts/mongo-init/01-init-harmonia-db.js');

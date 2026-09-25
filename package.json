@@ -22,7 +22,7 @@
     "test:backend": "nx test backend",
     "test:watch": "nx test frontend --watch",
     "test:coverage": "nx run-many --target=test --projects=frontend,backend --coverage",
-    "test:mongo": "node scripts/test_mongoose_memory.js",
+    "test:mongo": "pnpm test:mongo-memory",
     "test:e2e": "playwright test",
     "test:e2e:auth": "playwright test tests/e2e/authentication.spec.ts",
     "test:e2e:headed": "playwright test --headed",
@@ -90,7 +90,8 @@
     "models:inventory": "node scripts/model-inventory.cjs",
     "test:model-inventory": "node --test scripts/model-inventory.test.cjs",
     "qualify:ace-step-job": "node scripts/qualify-ace-step-job.cjs",
-    "showcase:qualified-generators": "node scripts/generate-qualified-showcase.cjs"
+    "showcase:qualified-generators": "node scripts/generate-qualified-showcase.cjs",
+    "test:mongo-memory": "node scripts/test_mongoose_memory.js"
   },
   "keywords": [],
   "author": "",
@@ -104,7 +105,6 @@
     "axios": "^1.18.0",
     "bcrypt": "^6.0.0",
     "commander": "^14.0.2",
-    "mongodb-memory-server": "^8.11.0",
     "reflect-metadata": "^0.1.13",
     "swagger-ui-express": "^5.0.1",
     "tslib": "^2.3.0",
@@ -201,7 +201,8 @@
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.1",
     "typescript": "~5.9.2",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "mongodb-memory-server": "^8.11.0"
   },
   "lint-staged": {
     "*.ts": [
