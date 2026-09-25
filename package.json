@@ -4,6 +4,7 @@
   "description": "Harmonia — repository scaffold",
   "private": true,
   "scripts": {
+    "typecheck": "tsc -p . --noEmit",
     "build": "tsc -p .",
     "start": "node scripts/start-all.cjs",
     "start:all": "node scripts/start-all.cjs",

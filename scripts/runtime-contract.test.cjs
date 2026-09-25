@@ -66,6 +66,39 @@ test('package exposes authoritative start, test, lint, and build commands', () =
   assert.equal(pkg.scripts.predev, undefined);
 });
 
+test('CI enforces the root strict TypeScript-zero contract', () => {
+  const pkg = JSON.parse(read('package.json'));
+  const ci = read('.github/workflows/ci.yml');
+
+  assert.equal(
+    pkg.scripts.typecheck,
+    'tsc -p . --noEmit'
+  );
+
+  assert.match(
+    ci,
+    /- name: Strict TypeScript check\s+run: pnpm typecheck/
+  );
+
+  const typecheckIndex = ci.indexOf(
+    'run: pnpm typecheck'
+  );
+
+  const buildIndex = ci.indexOf(
+    'run: pnpm build:all'
+  );
+
+  assert.ok(
+    typecheckIndex >= 0,
+    'CI must run root strict TypeScript'
+  );
+
+  assert.ok(
+    buildIndex > typecheckIndex,
+    'root typecheck must run before application builds'
+  );
+});
+
 test('CI reads the pinned pnpm version from packageManager', () => {
   const pkg = JSON.parse(read('package.json'));
   const ci = read('.github/workflows/ci.yml');
