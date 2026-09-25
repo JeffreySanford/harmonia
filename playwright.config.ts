@@ -55,13 +55,13 @@ export default defineConfig({
   // Web Server Configuration
   webServer: [
     {
-      command: 'npx nx serve backend',
+      command: 'corepack pnpm@12.6.0 exec nx serve backend',
       url: 'http://localhost:3000/api/__health',
       reuseExistingServer: false,
       timeout: 120000,
     },
     {
-      command: 'npx nx serve frontend',
+      command: 'corepack pnpm@12.6.0 exec nx serve frontend',
       url: 'http://localhost:4200',
       reuseExistingServer: false,
       timeout: 120000,
