@@ -1436,7 +1436,7 @@ test('qualified generator showcase exposes one preset per qualified model', () =
     assert.equal(runner.includes(modelId), true);
   }
 
-  assert.match(runner, /exports[\\/]showcase/);
+  assert.match(runner, /path\.join\(root, 'exports', 'showcase'\)/);
   assert.match(runner, /QUALIFIED_GENERATOR_SHOWCASE_OK/);
   assert.match(runner, /SHOWCASE_DATE/);
   assert.match(runner, /SHOWCASE_ONLY/);
