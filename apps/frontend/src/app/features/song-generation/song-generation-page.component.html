@@ -12,6 +12,15 @@
     </mat-card-header>
 
     <mat-card-content>
+      <div
+        *ngIf="error$ | async as error"
+        class="error-message"
+        role="alert"
+      >
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ error }}</span>
+      </div>
+
       <!-- Step 1: Narrative Input -->
       <section class="input-section">
         <h3 class="section-title">

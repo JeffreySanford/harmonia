@@ -630,23 +630,8 @@ export function registerViaModal$(
             force: true,
           }
         );
-        // As a safeguard, dispatch a programmatic submit event in case the
-        // click didn't propagate (some builds have animation layers or overlay
-        // focus quirks). This is not harmful and helps ensure the form submits.
-        await page.evaluate(() => {
-          try {
-            const registerForm =
-              document.querySelector('form[ng-reflect-form-group]') ||
-              document.querySelector('form');
-            if (registerForm) {
-              registerForm.dispatchEvent(
-                new Event('submit', { bubbles: true, cancelable: true })
-              );
-            }
-          } catch (e) {
-            // ignore
-          }
-        });
+        // The button click owns Angular form submission.
+        // Do not dispatch a second synthetic submit event.
 
         let registerResponse: any = null;
         try {

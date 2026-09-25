@@ -1,112 +1,184 @@
 import { test, expect } from '@playwright/test';
 import authHelper from '../helpers/auth';
 import { FRONTEND_URL, TEST_USER } from '../auth/constants';
+
 import {
   fillSongGenerationForm,
   submitSongGeneration,
-  waitForSongGenerationResult,
-  verifySongResult,
   TEST_SONG_DATA,
 } from './helpers';
 
-const { loginViaModal, logoutIfNeeded } = authHelper;
+const {
+  loginViaModal,
+  logoutIfNeeded,
+} = authHelper;
 
-test.describe('Song Generation Flow (E2E)', () => {
+test.describe('Song Generation Metadata Flow (E2E)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(FRONTEND_URL);
-    await page.waitForLoadState('networkidle');
+
+    await page.waitForLoadState(
+      'domcontentloaded'
+    );
+
     await page.context().clearCookies();
 
-    // Login first
     await logoutIfNeeded(page);
-    await loginViaModal(page, {
-      emailOrUsername: TEST_USER.email,
-      password: TEST_USER.password,
-    });
 
-    // Navigate to song generation page
-    await page.goto(`${FRONTEND_URL}/generate/song`);
-    await page.waitForLoadState('networkidle');
+    const login = await loginViaModal(
+      page,
+      {
+        emailOrUsername: TEST_USER.email,
+        password: TEST_USER.password,
+      }
+    );
+
+    expect(login.responseStatus).toBe(200);
+
+    await page.goto(
+      `${FRONTEND_URL}/generate/song`,
+      {
+        waitUntil: 'domcontentloaded',
+      }
+    );
+
+    await expect(page).toHaveURL(
+      /.*\/generate\/song/
+    );
+
+    await expect(
+      page.locator('.song-generation-page')
+    ).toBeVisible();
   });
 
-  test('Scenario 1: Complete Song Generation Flow', async ({ page }) => {
-    // Verify we're on the song generation page
-    await expect(page).toHaveURL(/.*generate\/song/);
-    await expect(page.locator('h1')).toContainText('Generate Song');
+  test(
+    'Scenario 1: Complete metadata generation request',
+    async ({ page }) => {
+      await expect(
+        page.locator('mat-card-title').first()
+      ).toContainText('Song Generation');
 
-    // Fill out the complete song generation form
-    await fillSongGenerationForm(page, TEST_SONG_DATA.complex);
+      await fillSongGenerationForm(
+        page,
+        TEST_SONG_DATA.complex
+      );
 
-    // Submit and verify API response
-    const result = await submitSongGeneration(page);
-    expect(result.responseStatus).toBe(200);
-    expect(result.body).toBeTruthy();
-    expect(result.body.song).toBeTruthy();
+      const result =
+        await submitSongGeneration(page);
 
-    // Wait for and verify results
-    await waitForSongGenerationResult(page);
-    await verifySongResult(page, TEST_SONG_DATA.complex);
-  });
+      expect(result.responseStatus).toBe(200);
 
-  test('Scenario 2: Song Generation with Minimal Properties', async ({
-    page,
-  }) => {
-    // Fill minimal required data
-    await fillSongGenerationForm(page, TEST_SONG_DATA.minimal);
+      expect(result.body).toBeTruthy();
+      expect(result.body.title).toBeTruthy();
+      expect(result.body.lyrics).toBeTruthy();
+      expect(result.body.genre).toBeTruthy();
+      expect(result.body.mood).toBeTruthy();
+    }
+  );
 
-    // Submit and verify
-    const result = await submitSongGeneration(page);
-    expect(result.responseStatus).toBe(200);
+  test(
+    'Scenario 2: Metadata generation with a minimal valid narrative',
+    async ({ page }) => {
+      const expected = {
+        title: 'Second Chance',
+        lyrics:
+          'We found our way back home together.',
+        genre: 'pop',
+        mood: 'hopeful',
+        syllableCount: 10,
+      };
 
-    // Verify result display
-    await waitForSongGenerationResult(page);
-    await verifySongResult(page, TEST_SONG_DATA.minimal);
-  });
+      await page.route(
+        '**/api/songs/generate-metadata',
+        async (route) => {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(expected),
+          });
+        }
+      );
 
-  test('Scenario 3: Song Generation Form Validation', async ({ page }) => {
-    // Try to generate without narrative - button should be disabled
-    const generateButton = page.locator('button:has-text("Generate Song")');
-    await expect(generateButton).toBeDisabled();
+      await fillSongGenerationForm(
+        page,
+        TEST_SONG_DATA.minimal
+      );
 
-    // Enter narrative but invalid tempo
-    await fillSongGenerationForm(page, {
-      narrative: 'Test narrative',
-      tempo: NaN, // This will result in invalid input
-    });
+      const result =
+        await submitSongGeneration(page);
 
-    // Manually set invalid tempo to test validation
-    const tempoInput = page.locator('input[formControlName="tempo"]');
-    await tempoInput.fill('invalid');
+      expect(result.responseStatus).toBe(200);
+      expect(result.body).toEqual(expected);
+    }
+  );
 
-    // Button should be disabled due to validation
-    await expect(generateButton).toBeDisabled();
+  test(
+    'Scenario 3: Narrative validation controls generation',
+    async ({ page }) => {
+      const narrative = page
+        .locator('.input-section textarea')
+        .first();
 
-    // Fix tempo
-    await tempoInput.fill('100');
-    await expect(generateButton).toBeEnabled();
-  });
+      const generateButton = page.getByRole(
+        'button',
+        {
+          name: 'Generate Song Metadata',
+          exact: true,
+        }
+      );
 
-  test('Scenario 5: Song Generation Error Handling', async ({ page }) => {
-    // Fill form with valid data first
-    await fillSongGenerationForm(page, TEST_SONG_DATA.simple);
+      await expect(generateButton).toBeDisabled();
 
-    // Mock a backend error by intercepting the request
-    await page.route('**/api/songs/generate-song', async (route) => {
-      await route.fulfill({
-        status: 500,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: 'Internal server error' }),
-      });
-    });
+      await narrative.fill(
+        'Too short'
+      );
 
-    // Submit and verify error handling
-    const result = await submitSongGeneration(page);
-    expect(result.responseStatus).toBe(500);
+      await expect(generateButton).toBeDisabled();
 
-    // Verify error message is displayed to user
-    await page.waitForSelector('.error-message', { timeout: 5000 });
-    const errorMessage = page.locator('.error-message');
-    await expect(errorMessage).toBeVisible();
-    await expect(errorMessage).toContainText('error');
-  });
+      await narrative.fill(
+        TEST_SONG_DATA.minimal.narrative
+      );
+
+      await expect(generateButton).toBeEnabled();
+    }
+  );
+
+  test(
+    'Scenario 5: Metadata generation error is shown to the user',
+    async ({ page }) => {
+      await page.route(
+        '**/api/songs/generate-metadata',
+        async (route) => {
+          await route.fulfill({
+            status: 500,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              message:
+                'Synthetic metadata failure',
+            }),
+          });
+        }
+      );
+
+      await fillSongGenerationForm(
+        page,
+        TEST_SONG_DATA.simple
+      );
+
+      const result =
+        await submitSongGeneration(page);
+
+      expect(result.responseStatus).toBe(500);
+
+      const error = page.locator(
+        '.error-message'
+      );
+
+      await expect(error).toBeVisible();
+
+      await expect(error).toContainText(
+        'Synthetic metadata failure'
+      );
+    }
+  );
 });

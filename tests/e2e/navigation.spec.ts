@@ -59,12 +59,27 @@ test.describe('Navigation & Session E2E Tests', () => {
     await page.evaluate(() =>
       localStorage.setItem('auth_token', 'expired.jwt.token')
     );
-    // Reload the page
-    await page.reload();
-    await page.waitForLoadState('networkidle');
+    // Reload the page. The app has background health traffic,
+    // so do not wait for global network idle here.
+    await page.reload({
+      waitUntil: 'domcontentloaded',
+    });
 
-    // Should redirect to / after token invalidation
-    await expect(page).toHaveURL(FRONTEND_URL + '/');
+    // Invalid session should clear persisted auth and redirect home.
+    await expect(page).toHaveURL(
+      FRONTEND_URL + '/',
+      { timeout: 10000 }
+    );
+
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() =>
+            localStorage.getItem('auth_token')
+          ),
+        { timeout: 10000 }
+      )
+      .toBeNull();
   });
 
   test('Login modal shows backend health indicator in dev', async ({
