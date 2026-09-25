@@ -1407,3 +1407,37 @@ test('provider unhealthy state escapes the health wait loop immediately', () => 
 
   assert.match(backend, /error\.message\.includes\('became unhealthy'\)/);
 });
+
+
+test('qualified generator showcase exposes one preset per qualified model', () => {
+  const pkg = JSON.parse(read('package.json'));
+  const runner = read('scripts/generate-qualified-showcase.cjs');
+
+  assert.equal(
+    pkg.scripts['showcase:qualified-generators'],
+    'node scripts/generate-qualified-showcase.cjs'
+  );
+
+  for (const modelId of [
+    'musicgen-small',
+    'musicgen-stereo-small',
+    'diffsinger-acoustic-hifigan',
+    'stable-audio-3-small-music',
+    'acestep-v15-turbo-06b',
+  ]) {
+    const preset = JSON.parse(
+      read('showcase/qualified-generators/' + modelId + '/preset.json')
+    );
+
+    assert.equal(preset.modelId, modelId);
+    assert.ok(preset.slug);
+    assert.ok(preset.title);
+    assert.ok(preset.parameters);
+    assert.equal(runner.includes(modelId), true);
+  }
+
+  assert.match(runner, /exports[\\/]showcase/);
+  assert.match(runner, /QUALIFIED_GENERATOR_SHOWCASE_OK/);
+  assert.match(runner, /SHOWCASE_DATE/);
+  assert.match(runner, /SHOWCASE_ONLY/);
+});
