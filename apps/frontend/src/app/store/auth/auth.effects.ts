@@ -60,7 +60,7 @@ export class AuthEffects {
     () =>
       this.actions$.pipe(
         ofType(AuthActions.loginSuccess),
-        tap(({ token, refreshToken }) => {
+        tap(({ user, token, refreshToken }) => {
           // Emit debug logs in development/test to help e2e debugging
           if (typeof window !== 'undefined') {
             try {
@@ -79,6 +79,12 @@ export class AuthEffects {
             }
           }
           try {
+            if (user) {
+              (window as any).localStorage.setItem(
+                'auth_user',
+                JSON.stringify(user)
+              );
+            }
             if (token) {
               (window as any).localStorage.setItem('auth_token', token);
             }
@@ -169,7 +175,7 @@ export class AuthEffects {
     () =>
       this.actions$.pipe(
         ofType(AuthActions.registerSuccess),
-        tap(({ token, refreshToken }) => {
+        tap(({ user, token, refreshToken }) => {
           if (typeof window !== 'undefined') {
             try {
               const tokenInfo = token
@@ -187,6 +193,12 @@ export class AuthEffects {
             }
           }
           try {
+            if (user) {
+              (window as any).localStorage.setItem(
+                'auth_user',
+                JSON.stringify(user)
+              );
+            }
             if (token) {
               (window as any).localStorage.setItem('auth_token', token);
             }
@@ -256,6 +268,14 @@ export class AuthEffects {
       this.actions$.pipe(
         ofType(AuthActions.logoutSuccess),
         tap(() => {
+          try {
+            window.localStorage.removeItem('auth_user');
+            window.localStorage.removeItem('auth_token');
+            window.localStorage.removeItem('refresh_token');
+          } catch {
+            // Ignore unavailable browser storage.
+          }
+
           this.router.navigate(['/']);
         })
       ),
@@ -290,6 +310,41 @@ export class AuthEffects {
         )
       )
     )
+  );
+
+  sessionValidPersistence$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(AuthActions.sessionValid),
+        tap(({ user }) => {
+          try {
+            window.localStorage.setItem(
+              'auth_user',
+              JSON.stringify(user)
+            );
+          } catch {
+            // Ignore unavailable browser storage.
+          }
+        })
+      ),
+    { dispatch: false }
+  );
+
+  sessionInvalidPersistence$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(AuthActions.sessionInvalid),
+        tap(() => {
+          try {
+            window.localStorage.removeItem('auth_user');
+            window.localStorage.removeItem('auth_token');
+            window.localStorage.removeItem('refresh_token');
+          } catch {
+            // Ignore unavailable browser storage.
+          }
+        })
+      ),
+    { dispatch: false }
   );
 
   checkSession$ = createEffect(() =>

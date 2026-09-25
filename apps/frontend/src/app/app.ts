@@ -62,7 +62,12 @@ export class App implements OnInit {
       .subscribe((isAuth) => {
         if (!isAuth) {
           const url = this.router.url;
-          const protectedPaths = ['/library', '/profile', '/admin'];
+          const protectedPaths = [
+            '/library',
+            '/profile',
+            '/admin',
+            '/generate',
+          ];
           if (protectedPaths.some((p) => url.startsWith(p))) {
             this.ngZone.run(() => this.router.navigate(['/']));
           }
@@ -77,7 +82,12 @@ export class App implements OnInit {
         if (prev && !current) {
           const url = this.router.url;
           // Map of protected paths that require auth
-          const protectedPaths = ['/library', '/profile', '/admin'];
+          const protectedPaths = [
+            '/library',
+            '/profile',
+            '/admin',
+            '/generate',
+          ];
           const inProtected = protectedPaths.some((p) => url.startsWith(p));
           if (inProtected) {
             this.ngZone.run(() => this.router.navigate(['/']));

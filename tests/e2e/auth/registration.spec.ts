@@ -13,10 +13,12 @@ test.describe('Registration Flow (E2E)', () => {
   test('Scenario 1: User Registration Flow', async ({ page }) => {
     // registerViaModal owns opening the registration UI.
 
-    const uniqueId = Date.now();
-    const randomSfx = Math.random().toString(36).slice(2, 8);
+    const uniqueId = Date.now().toString(36).slice(-7);
+    const randomSfx = Math.random().toString(36).slice(2, 5);
     const regUsername = `e2e_${uniqueId}_${randomSfx}`;
     const regEmail = `e2e_${uniqueId}_${randomSfx}@harmonia.local`;
+
+    expect(regUsername.length).toBeLessThanOrEqual(20);
 
     const reg = await registerViaModal(page, {
       username: regUsername,
