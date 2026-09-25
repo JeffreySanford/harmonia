@@ -61,6 +61,54 @@ export function waitForToken(page: Page, timeout = 5000) {
  * - `loginViaModal$(...)` returns a hot `Observable` (ReplaySubject) which emits once and completes.
  * - `loginViaModal(...)` returns a `Promise` (backwards-compatible wrapper that awaits the Observable).
  */
+
+async function openAuthModal(
+  page: Page,
+  label: 'Sign In' | 'Sign Up'
+): Promise<void> {
+  const direct = page
+    .getByRole('button', {
+      name: label,
+      exact: true,
+    })
+    .first();
+
+  if (await direct.isVisible().catch(() => false)) {
+    await direct.click({
+      force: true,
+      timeout: 5000,
+    });
+    return;
+  }
+
+  const menuTrigger = page.locator('.user-menu-trigger');
+
+  await menuTrigger.waitFor({
+    state: 'visible',
+    timeout: 5000,
+  });
+
+  await menuTrigger.click({
+    force: true,
+  });
+
+  const menuItem = page
+    .getByRole('menuitem', {
+      name: label,
+      exact: true,
+    })
+    .first();
+
+  await menuItem.waitFor({
+    state: 'visible',
+    timeout: 5000,
+  });
+
+  await menuItem.click({
+    force: true,
+  });
+}
+
 export function loginViaModal$(
   page: Page,
   creds: { emailOrUsername: string; password: string },
@@ -94,59 +142,31 @@ export function loginViaModal$(
           // ignore if clearing fails
         }
       });
-      // Open the login modal: prefer top-level 'Sign In' button if present;
-      // otherwise, open the user menu and select Sign In from the dropdown.
-      try {
-        await page.click('nav button:has-text("Sign In")', {
-          force: true,
-          timeout: 2000,
-        });
-        // Wait for the login modal to be created & initialize (AuthUiService + LoginModalComponent)
-        await page
-          .waitForFunction(
-            () =>
-              !!(window as any).localStorage.getItem('e2e_login_modal_open'),
-            null,
-            { timeout: 2000 }
-          )
-          .catch(() => null);
-        await page
-          .waitForFunction(
-            () =>
-              !!(window as any).localStorage.getItem('e2e_login_modal_init'),
-            null,
-            { timeout: 2000 }
-          )
-          .catch(() => null);
-      } catch (e) {
-        // Not visible as top-level; click avatar/menu then select Sign In
-        await page
-          .locator(
-            'nav button:not(:has-text("Sign In")):not(:has-text("Sign Up"))'
-          )
-          .first()
-          .click({ force: true });
-        await page.waitForSelector('button:has-text("Sign In")', {
-          timeout: 2000,
-        });
-        await page.click('button:has-text("Sign In")', { force: true });
-        await page
-          .waitForFunction(
-            () =>
-              !!(window as any).localStorage.getItem('e2e_login_modal_open'),
-            null,
-            { timeout: 2000 }
-          )
-          .catch(() => null);
-        await page
-          .waitForFunction(
-            () =>
-              !!(window as any).localStorage.getItem('e2e_login_modal_init'),
-            null,
-            { timeout: 2000 }
-          )
-          .catch(() => null);
-      }
+      // Open the current visible login entry point.
+      await openAuthModal(page, 'Sign In');
+
+      await page
+        .waitForFunction(
+          () =>
+            !!(window as any).localStorage.getItem(
+              'e2e_login_modal_open'
+            ),
+          null,
+          { timeout: 2000 }
+        )
+        .catch(() => null);
+
+      await page
+        .waitForFunction(
+          () =>
+            !!(window as any).localStorage.getItem(
+              'e2e_login_modal_init'
+            ),
+          null,
+          { timeout: 2000 }
+        )
+        .catch(() => null);
+
       // Support either a modal or navigation to a standalone login page
       try {
         await page.waitForSelector(
@@ -171,7 +191,7 @@ export function loginViaModal$(
           await page.fill('input[formControlName="password"]', creds.password);
         } catch (e) {
           // If element isn't present, re-open modal
-          await page.click('nav button:has-text("Sign In")', { force: true });
+          await openAuthModal(page, 'Sign In');
           await page.waitForSelector(
             'mat-dialog-content input[formControlName="emailOrUsername"]'
           );
@@ -415,59 +435,31 @@ export function registerViaModal$(
           // ignore if clearing fails
         }
       });
-      // Open the register modal: prefer top-level 'Sign Up' button if present;
-      // otherwise, open the user menu and select Sign Up from the dropdown.
-      try {
-        await page.click('nav button:has-text("Sign Up")', {
-          force: true,
-          timeout: 2000,
-        });
-        // Wait for the login modal to be created & initialize (AuthUiService + LoginModalComponent)
-        await page
-          .waitForFunction(
-            () =>
-              !!(window as any).localStorage.getItem('e2e_login_modal_open'),
-            null,
-            { timeout: 2000 }
-          )
-          .catch(() => null);
-        await page
-          .waitForFunction(
-            () =>
-              !!(window as any).localStorage.getItem('e2e_login_modal_init'),
-            null,
-            { timeout: 2000 }
-          )
-          .catch(() => null);
-      } catch (e) {
-        // Not visible as top-level; click avatar/menu then select Sign Up
-        await page
-          .locator(
-            'nav button:not(:has-text("Sign In")):not(:has-text("Sign Up"))'
-          )
-          .first()
-          .click({ force: true });
-        await page.waitForSelector('button:has-text("Sign Up")', {
-          timeout: 2000,
-        });
-        await page.click('button:has-text("Sign Up")', { force: true });
-        await page
-          .waitForFunction(
-            () =>
-              !!(window as any).localStorage.getItem('e2e_login_modal_open'),
-            null,
-            { timeout: 2000 }
-          )
-          .catch(() => null);
-        await page
-          .waitForFunction(
-            () =>
-              !!(window as any).localStorage.getItem('e2e_login_modal_init'),
-            null,
-            { timeout: 2000 }
-          )
-          .catch(() => null);
-      }
+      // Open the current visible registration entry point.
+      await openAuthModal(page, 'Sign Up');
+
+      await page
+        .waitForFunction(
+          () =>
+            !!(window as any).localStorage.getItem(
+              'e2e_login_modal_open'
+            ),
+          null,
+          { timeout: 2000 }
+        )
+        .catch(() => null);
+
+      await page
+        .waitForFunction(
+          () =>
+            !!(window as any).localStorage.getItem(
+              'e2e_login_modal_init'
+            ),
+          null,
+          { timeout: 2000 }
+        )
+        .catch(() => null);
+
       // Support either a modal or navigation to a standalone registration page
       try {
         await page.waitForSelector(
@@ -488,7 +480,7 @@ export function registerViaModal$(
           await page.fill('input[formControlName="email"]', creds.email);
           await page.fill('input[formControlName="password"]', creds.password);
         } catch (e) {
-          await page.click('nav button:has-text("Sign Up")', { force: true });
+          await openAuthModal(page, 'Sign Up');
           await page.waitForSelector(
             'mat-dialog-content input[formControlName="email"]'
           );

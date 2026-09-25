@@ -72,7 +72,13 @@ test.describe('Navigation & Session E2E Tests', () => {
   }) => {
     await page.goto(FRONTEND_URL);
     // Open login modal
-    await page.click('nav button:has-text("Sign In")', { force: true });
+    await page
+      .getByRole('button', {
+        name: 'Sign In',
+        exact: true,
+      })
+      .first()
+      .click({ force: true });
     await page.waitForSelector(
       'mat-dialog-content input[formControlName="emailOrUsername"]'
     );
