@@ -13,10 +13,12 @@ def test_diffsinger_infer_helper_missing_imports():
     # Ensure the helper exits non-zero on host (missing container runtime/imports) and reports the problem
     assert proc.returncode != 0
     combined = (proc.stdout or '') + (proc.stderr or '')
-    # Accept either the explicit failed-import message, programmatic inference failure, or inability to chdir to /opt/DiffSinger
+    normalized = combined.replace('\\', '/')
+    # Accept either the explicit failed-import message, programmatic inference failure, or inability to chdir to /opt/DiffSinger.
+    # Normalize separators so the host-failure contract is identical on Windows and POSIX runners.
     assert (
         'Failed import/set_hparams' in combined
         or 'programmatic inference failed' in combined
-        or '/opt/DiffSinger' in combined
+        or '/opt/DiffSinger' in normalized
         or 'Failed' in combined
     )
