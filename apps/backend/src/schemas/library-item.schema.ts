@@ -6,25 +6,25 @@ export type LibraryItemDocument = LibraryItem & Document;
 @Schema({ timestamps: true })
 export class LibraryItem {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
-  userId: Types.ObjectId;
+  userId!: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Song', index: true })
   songId?: Types.ObjectId;  // Optional: Link to original song metadata
 
   @Prop({ required: true, enum: ['song', 'music', 'audio', 'style'] })
-  type: 'song' | 'music' | 'audio' | 'style';
+  type!: 'song' | 'music' | 'audio' | 'style';
 
   @Prop({ required: true })
-  title: string;
+  title!: string;
 
   @Prop()
   description?: string;
 
   @Prop({ required: true })
-  fileUrl: string;  // S3 URL or local file path
+  fileUrl!: string;  // S3 URL or local file path
 
   @Prop({ enum: ['wav', 'mp3', 'flac', 'json'] })
-  fileType: string;
+  fileType!: string;
 
   @Prop()
   fileSize?: number;  // In bytes
@@ -36,7 +36,7 @@ export class LibraryItem {
   thumbnailUrl?: string;  // Waveform image or album art
 
   @Prop({ type: Object })
-  metadata: {
+  metadata!: {
     genre?: string;
     mood?: string;
     bpm?: number;
@@ -47,17 +47,17 @@ export class LibraryItem {
   };
 
   @Prop({ default: false })
-  isPublic: boolean;  // Future: Share with others
+  isPublic!: boolean;  // Future: Share with others
 
   @Prop({ default: 0 })
-  playCount: number;
+  playCount!: number;
 
   @Prop({ default: 0 })
-  downloadCount: number;
+  downloadCount!: number;
 
   // Timestamps added by @Schema({ timestamps: true })
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt!: Date;
+  updatedAt!: Date;
 }
 
 export const LibraryItemSchema = SchemaFactory.createForClass(LibraryItem);

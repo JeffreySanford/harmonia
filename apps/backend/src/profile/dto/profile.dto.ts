@@ -32,21 +32,21 @@ export class UpdateProfileDto {
 
 export class ChangePasswordDto {
   @IsString()
-  currentPassword: string;
+  currentPassword!: string;
 
   @IsString()
-  newPassword: string;
+  newPassword!: string;
 }
 
 export class ProfileResponseDto {
-  id: string;
-  username: string;
-  email: string;
+  id!: string;
+  username!: string;
+  email!: string;
   firstName?: string;
   lastName?: string;
   bio?: string;
   avatarUrl?: string;
-  isPublic: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  isPublic!: boolean;
+  createdAt!: Date;
+  updatedAt!: Date;
 }

@@ -1,4 +1,4 @@
-import { InstrumentCatalogService } from '../apps/backend/src/songs/instrument-catalog.service';
+import { InstrumentCatalogService } from './apps/backend/src/songs/instrument-catalog.service';
 
 async function testService() {
   console.log('Testing instrument catalog service...');

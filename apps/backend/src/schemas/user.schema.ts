@@ -47,20 +47,20 @@ export interface UserDocument extends Document {
 @Schema({ timestamps: true })
 export class User {
   @Prop({ required: true, unique: true, lowercase: true, trim: true })
-  email: string;
+  email!: string;
 
   @Prop({ required: true, unique: true, trim: true })
-  username: string;
+  username!: string;
 
   @Prop({ required: true })
-  password: string;
+  password!: string;
 
   @Prop({
     default: 'user',
     enum: ['user', 'admin', 'guest'],
     type: String,
   })
-  role: string;
+  role!: string;
 
   // Profile fields
   @Prop()
@@ -76,13 +76,13 @@ export class User {
   avatarUrl?: string;
 
   @Prop({ default: false })
-  isPublic: boolean;
+  isPublic!: boolean;
 
   @Prop()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Prop()
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

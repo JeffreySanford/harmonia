@@ -28,9 +28,9 @@ import { IsString, IsNotEmpty } from 'class-validator';
 export class LoginDto {
   @IsString({ message: 'Please provide email or username' })
   @IsNotEmpty({ message: 'Email or username cannot be empty' })
-  emailOrUsername: string;
+  emailOrUsername!: string;
 
   @IsString({ message: 'Please provide password' })
   @IsNotEmpty({ message: 'Password cannot be empty' })
-  password: string;
+  password!: string;
 }

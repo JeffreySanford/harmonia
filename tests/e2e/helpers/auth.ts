@@ -790,17 +790,31 @@ export function registerViaModal$(
                     body?.refreshToken || body?.refresh_token || null;
                   try {
                     await page.evaluate(
-                      (t: string, r: string) => {
-                        if (t)
-                          (window as any).localStorage.setItem('auth_token', t);
-                        if (r)
-                          (window as any).localStorage.setItem(
-                            'refresh_token',
-                            r
+                      ({
+                        token,
+                        refreshToken,
+                      }: {
+                        token: string | null;
+                        refreshToken: string | null;
+                      }) => {
+                        if (token) {
+                          window.localStorage.setItem(
+                            'auth_token',
+                            token
                           );
+                        }
+
+                        if (refreshToken) {
+                          window.localStorage.setItem(
+                            'refresh_token',
+                            refreshToken
+                          );
+                        }
                       },
-                      tokenVal,
-                      refreshVal
+                      {
+                        token: tokenVal,
+                        refreshToken: refreshVal,
+                      }
                     );
                   } catch (e) {
                     // ignore

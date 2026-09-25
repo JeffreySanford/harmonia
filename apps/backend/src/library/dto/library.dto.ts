@@ -13,17 +13,17 @@ export class CreateLibraryItemDto {
   songId?: string;
 
   @IsEnum(['song', 'music', 'audio', 'style'])
-  type: 'song' | 'music' | 'audio' | 'style';
+  type!: 'song' | 'music' | 'audio' | 'style';
 
   @IsString()
-  title: string;
+  title!: string;
 
   @IsOptional()
   @IsString()
   description?: string;
 
   @IsString()
-  fileUrl: string;
+  fileUrl!: string;
 
   @IsOptional()
   @IsEnum(['wav', 'mp3', 'flac', 'json'])

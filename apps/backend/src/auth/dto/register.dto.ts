@@ -21,7 +21,7 @@ import { IsEmail, IsString, MinLength, MaxLength, Matches } from 'class-validato
  */
 export class RegisterDto {
   @IsEmail({}, { message: 'Please provide a valid email address' })
-  email: string;
+  email!: string;
 
   @IsString()
   @MinLength(3, { message: 'Username must be at least 3 characters long' })
@@ -29,9 +29,9 @@ export class RegisterDto {
   @Matches(/^[a-zA-Z0-9_]+$/, {
     message: 'Username can only contain letters, numbers, and underscores'
   })
-  username: string;
+  username!: string;
 
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
-  password: string;
+  password!: string;
 }

@@ -11,11 +11,11 @@ export class GenerateMetadataDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(1000)
-  narrative: string;
+  narrative!: string;
 
   @IsInt()
   @Min(1)
-  duration: number; // seconds
+  duration!: number; // seconds
 
   @IsOptional()
   @IsString()

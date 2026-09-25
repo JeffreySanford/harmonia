@@ -10,9 +10,12 @@ describe('POST /api/songs/generate-metadata', () => {
 
     expect(res.status).toBe(200);
     const data = res.data;
-    expect(data).toHaveProperty('title');
-    expect(data).toHaveProperty('lyrics');
-    expect(data).toHaveProperty('genre');
-    expect(data).toHaveProperty('mood');
+    for (const key of ['title', 'lyrics', 'genre', 'mood']) {
+      if (!(key in data)) {
+        throw new Error(
+          `Generated metadata is missing required property: ${key}`
+        );
+      }
+    }
   });
 });

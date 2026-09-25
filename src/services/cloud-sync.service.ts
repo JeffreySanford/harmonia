@@ -53,7 +53,7 @@ export interface SyncResult {
 @Injectable()
 export class CloudSyncService {
   private readonly logger = new Logger(CloudSyncService.name);
-  private config: SyncConfig;
+  private config!: SyncConfig;
 
   constructor(private configService: ConfigService) {
     this.loadConfig();
@@ -71,9 +71,10 @@ export class CloudSyncService {
       ),
       endpoint: this.configService.get<string>('CLOUD_SYNC_ENDPOINT'),
       apiKey: this.configService.get<string>('CLOUD_SYNC_API_KEY'),
-      bucket: this.configService.get<string>(
-        'AWS_S3_BUCKET' || 'B2_BUCKET_NAME' || 'GCS_BUCKET_NAME'
-      ),
+      bucket:
+        this.configService.get<string>('AWS_S3_BUCKET') ||
+        this.configService.get<string>('B2_BUCKET_NAME') ||
+        this.configService.get<string>('GCS_BUCKET_NAME'),
       region: this.configService.get<string>('AWS_REGION', 'us-east-1'),
     };
 

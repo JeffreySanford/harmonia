@@ -13,7 +13,7 @@ export class AnalyzeLyricsDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(10000) // Allow longer lyrics for analysis
-  lyrics: string;
+  lyrics!: string;
 
   @IsOptional()
   @IsBoolean()
