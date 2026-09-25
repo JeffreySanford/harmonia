@@ -111,15 +111,15 @@
     "zone.js": "^0.15.1"
   },
   "devDependencies": {
-    "@angular-devkit/core": "~20.3.13",
-    "@angular-devkit/schematics": "~20.3.13",
+    "@angular-devkit/core": "~20.3.37",
+    "@angular-devkit/schematics": "~20.3.37",
     "@angular-eslint/eslint-plugin": "^20.7.0",
     "@angular-eslint/eslint-plugin-template": "^20.7.0",
     "@angular-eslint/template-parser": "^20.7.0",
     "@angular/animations": "^20.3.32",
-    "@angular/build": "~20.3.13",
+    "@angular/build": "~20.3.37",
     "@angular/cdk": "^20.2.14",
-    "@angular/cli": "^20.3.13",
+    "@angular/cli": "^20.3.37",
     "@angular/common": "^20.3.32",
     "@angular/compiler": "20.3.32",
     "@angular/compiler-cli": "~20.3.32",
@@ -161,7 +161,7 @@
     "@nx/webpack": "22.7.12",
     "@nx/workspace": "22.7.12",
     "@playwright/test": "^1.36.0",
-    "@schematics/angular": "~20.3.13",
+    "@schematics/angular": "~20.3.37",
     "@storybook/angular": "10.6.0",
     "@storybook/test-runner": "0.24.0",
     "@swc-node/register": "~1.9.1",
@@ -189,6 +189,7 @@
     "jest-preset-angular": "~15.0.3",
     "jest-util": "^29.7.0",
     "lint-staged": "^15.5.2",
+    "mongodb-memory-server": "^8.11.0",
     "mongoose": "^7.3.0",
     "nx": "22.7.12",
     "passport": "^0.7.0",
@@ -201,8 +202,7 @@
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.1",
     "typescript": "~5.9.2",
-    "webpack-cli": "^5.1.4",
-    "mongodb-memory-server": "^8.11.0"
+    "webpack-cli": "^5.1.4"
   },
   "lint-staged": {
     "*.ts": [
