@@ -36,6 +36,12 @@ overrides:
   # through the patched terser-webpack-plugin 5.x parent.
   'terser-webpack-plugin@>=5.0.0 <5.3.17': 5.3.17
 
+  # Security Batch 8B — isolate the adm-zip 0.6.1 security floor
+  # to the two Module Federation DTS-plugin parent versions.
+  # Avoid a global adm-zip override or Module Federation upgrade.
+  '@module-federation/dts-plugin@0.21.6>adm-zip': 0.6.1
+  '@module-federation/dts-plugin@2.9.1>adm-zip': 0.6.1
+
   # Security Batch 7 — safe same-major tooling advisory floors.
   'minimatch@>=3.0.0 <3.1.4': 3.1.4
   'minimatch@>=9.0.0 <9.0.7': 9.0.7
