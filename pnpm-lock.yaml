@@ -23,6 +23,11 @@ overrides:
   yaml@1.10.2: 1.10.3
   yaml@2.8.2: 2.8.3
   body-parser@1.20.4: 1.20.6
+  '@storybook/test-runner@0.24.0>uuid': 11.1.1
+  istanbul-lib-processinfo@2.0.3>uuid: 11.1.1
+  jest-junit@16.0.0>uuid: 11.1.1
+  sockjs@0.3.24>uuid: 11.1.1
+  mongodb-memory-server-core@8.16.1>uuid: 11.1.1
   multer@>=2.0.0 <2.3.0: 2.3.0
   path-to-regexp@>=8.0.0 <8.4.0: 8.4.0
   engine.io@>=6.0.0 <6.6.7: 6.6.7
@@ -10528,16 +10533,6 @@ packages:
     resolution: {integrity: sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==}
     hasBin: true
 
-  uuid@8.3.2:
-    resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
-    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
-    hasBin: true
-
-  uuid@9.0.1:
-    resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
-    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
-    hasBin: true
-
   v8-compile-cache-lib@3.0.1:
     resolution: {integrity: sha512-wa7YjyUGfNZngI/vtK0UHAN+lgDCxBPCylVXGp0zu59Fz5aiGtNXaq3DhIov063MorB+VfufLh3JlF2KdTK3xg==}
 
@@ -16626,7 +16621,7 @@ snapshots:
       playwright-core: 1.57.0
       rimraf: 3.0.2
       storybook: 10.6.0(prettier@2.8.8)(react@19.2.0)
-      uuid: 8.3.2
+      uuid: 11.1.1
     transitivePeerDependencies:
       - '@swc/helpers'
       - '@types/node'
@@ -20190,7 +20185,7 @@ snapshots:
       istanbul-lib-coverage: 3.2.2
       p-map: 3.0.0
       rimraf: 3.0.2
-      uuid: 8.3.2
+      uuid: 11.1.1
 
   istanbul-lib-report@3.0.1:
     dependencies:
@@ -20571,7 +20566,7 @@ snapshots:
     dependencies:
       mkdirp: 1.0.4
       strip-ansi: 6.0.1
-      uuid: 8.3.2
+      uuid: 11.1.1
       xml: 1.0.1
 
   jest-leak-detector@29.7.0:
@@ -21804,7 +21799,7 @@ snapshots:
       semver: 7.7.3
       tar-stream: 2.2.0
       tslib: 2.8.1
-      uuid: 9.0.1
+      uuid: 11.1.1
       yauzl: 2.10.0
     transitivePeerDependencies:
       - aws-crt
@@ -23568,7 +23563,7 @@ snapshots:
   sockjs@0.3.24:
     dependencies:
       faye-websocket: 0.11.4
-      uuid: 8.3.2
+      uuid: 11.1.1
       websocket-driver: 0.7.5
 
   socks-proxy-agent@8.0.5(supports-color@8.1.1):
@@ -24329,10 +24324,6 @@ snapshots:
   utils-merge@1.0.1: {}
 
   uuid@11.1.1: {}
-
-  uuid@8.3.2: {}
-
-  uuid@9.0.1: {}
 
   v8-compile-cache-lib@3.0.1: {}
 

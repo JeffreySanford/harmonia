@@ -31,6 +31,14 @@ overrides:
   'yaml@2.8.2': 2.8.3
   'body-parser@1.20.4': 1.20.6
 
+  # Security S4-B4b — dev/test UUID parents only.
+  # Preserve parent isolation; never force uuid 11 globally.
+  '@storybook/test-runner@0.24.0>uuid': 11.1.1
+  'istanbul-lib-processinfo@2.0.3>uuid': 11.1.1
+  'jest-junit@16.0.0>uuid': 11.1.1
+  'sockjs@0.3.24>uuid': 11.1.1
+  'mongodb-memory-server-core@8.16.1>uuid': 11.1.1
+
   # Security Batch 2 — runtime-compatible major lines only.
   # Do not replace legacy major versions used by dev tooling.
   'multer@>=2.0.0 <2.3.0': 2.3.0

@@ -140,3 +140,15 @@ def test_dev_build_security_override_floors():
 
     for spec, floor in cases:
         assert workspace_override_version(spec) >= floor
+
+def test_dev_uuid_parent_scoped_security_floors():
+    cases = [
+        ("\x27@storybook/test-runner@0.24.0>uuid\x27", (11, 1, 1)),
+        ("\x27istanbul-lib-processinfo@2.0.3>uuid\x27", (11, 1, 1)),
+        ("\x27jest-junit@16.0.0>uuid\x27", (11, 1, 1)),
+        ("\x27sockjs@0.3.24>uuid\x27", (11, 1, 1)),
+        ("\x27mongodb-memory-server-core@8.16.1>uuid\x27", (11, 1, 1)),
+    ]
+
+    for spec, floor in cases:
+        assert workspace_override_version(spec) >= floor
