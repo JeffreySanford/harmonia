@@ -73,3 +73,44 @@ def test_mongoose_security_floor():
     assert package_json_dependency_version(
         "mongoose"
     ) >= (7, 8, 10)
+
+WORKSPACE = REPO_ROOT / "pnpm-workspace.yaml"
+
+
+def workspace_override_version(spec: str) -> tuple[int, ...]:
+    text = WORKSPACE.read_text(encoding="utf-8")
+
+    match = re.search(
+        rf"(?m)^  {re.escape(spec)}: ([0-9]+(?:\.[0-9]+)*)$",
+        text,
+    )
+
+    assert match is not None, (
+        f"missing security override {spec}"
+    )
+
+    return tuple(
+        int(part)
+        for part in match.group(1).split(".")
+    )
+
+
+def test_file_type_override_security_floor():
+    # GHSA-5v7r-6r5c-r473 and GHSA-j47w-4g3g-c36v.
+    assert workspace_override_version(
+        "\x27file-type@>=20.0.0 <=21.3.1\x27"
+    ) >= (21, 3, 2)
+
+
+def test_fflate_override_security_floor():
+    # GHSA-px8p-9vwx-vf98 / CVE-2026-45820.
+    assert workspace_override_version(
+        "\x27fflate@>=0.8.0 <0.8.3\x27"
+    ) >= (0, 8, 3)
+
+
+def test_body_parser_override_security_floor():
+    # GHSA-v422-hmwv-36x6.
+    assert workspace_override_version(
+        "\x27body-parser@>=2.0.0 <2.3.0\x27"
+    ) >= (2, 3, 0)

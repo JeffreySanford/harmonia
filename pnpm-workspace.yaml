@@ -6,6 +6,12 @@ overrides:
   axios: 1.18.1
   fast-xml-parser: 5.7.0
 
+  # Security S4-B3a — vulnerable production transitives only.
+  # Keep ranges narrow; uuid/Bull is handled separately in B3b.
+  'file-type@>=20.0.0 <=21.3.1': 21.3.2
+  'fflate@>=0.8.0 <0.8.3': 0.8.3
+  'body-parser@>=2.0.0 <2.3.0': 2.3.0
+
   # Security Batch 2 — runtime-compatible major lines only.
   # Do not replace legacy major versions used by dev tooling.
   'multer@>=2.0.0 <2.3.0': 2.3.0
