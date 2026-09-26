@@ -135,11 +135,83 @@ test('CI reads the pinned pnpm version from packageManager', () => {
   assert.equal(pkg.packageManager, 'pnpm@12.6.0');
 
   for (const workflow of [ci, mongooseWorkflow]) {
-    assert.match(workflow, /uses: pnpm\/action-setup@v4/);
+    assert.match(workflow, /uses: pnpm\/action-setup@v5/);
 
     assert.doesNotMatch(workflow, /version:\s*10\.23\.0/);
   }
 
+});
+
+
+test('GitHub Actions use Node 24-compatible action majors', () => {
+  const ci = read('.github/workflows/ci.yml');
+  const mongoose = read('.github/workflows/test_mongoose.yml');
+  const license = read('.github/workflows/license_check.yml');
+  const smoke = read('.github/workflows/smoke.yml');
+  const release = read('.github/workflows/release.yml');
+
+  const required = [
+    [ci, /actions\/checkout@v5/],
+    [ci, /pnpm\/action-setup@v5/],
+    [ci, /actions\/setup-node@v5/],
+    [ci, /actions\/setup-python@v6/],
+    [ci, /actions\/cache@v5/],
+    [ci, /docker\/setup-qemu-action@v4/],
+    [ci, /docker\/setup-buildx-action@v4/],
+    [ci, /docker\/build-push-action@v7/],
+
+    [mongoose, /actions\/checkout@v5/],
+    [mongoose, /actions\/setup-node@v5/],
+    [mongoose, /pnpm\/action-setup@v5/],
+
+    [license, /actions\/checkout@v5/],
+    [license, /actions\/setup-python@v6/],
+
+    [smoke, /actions\/checkout@v5/],
+    [smoke, /actions\/setup-python@v6/],
+    [smoke, /actions\/upload-artifact@v6/],
+    [smoke, /actions\/github-script@v8/],
+
+    [release, /actions\/checkout@v5/],
+    [release, /actions\/setup-python@v6/],
+    [release, /actions\/github-script@v8/],
+  ];
+
+  for (const [workflow, pattern] of required) {
+    assert.match(workflow, pattern);
+  }
+
+  const operationalWorkflows =
+    walkFiles('.github/workflows')
+      .map(read)
+      .join('\n');
+
+  const retiredActionMajors = [
+    /actions\/checkout@v4/,
+    /actions\/setup-node@v4/,
+    /actions\/setup-python@v4/,
+    /actions\/setup-python@v5/,
+    /actions\/cache@v4/,
+    /actions\/upload-artifact@v4/,
+    /actions\/upload-artifact@v5/,
+    /actions\/github-script@v7/,
+    /pnpm\/action-setup@v4/,
+    /docker\/setup-qemu-action@v3/,
+    /docker\/setup-buildx-action@v3/,
+    /docker\/build-push-action@v6/,
+  ];
+
+  for (const pattern of retiredActionMajors) {
+    assert.doesNotMatch(
+      operationalWorkflows,
+      pattern
+    );
+  }
+
+  assert.match(
+    ci,
+    /node-version:\s*"20\.19\.0"/
+  );
 });
 
 test('hosted smoke CI skips absent local artifacts without opening alert storms', () => {
