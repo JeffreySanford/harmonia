@@ -184,13 +184,11 @@ export function loginViaModal$(
 ): Observable<{
   responseStatus: number;
   authToken?: string | null;
-  refreshToken?: string | null;
   body?: any;
 }> {
   const subject = new ReplaySubject<{
     responseStatus: number;
     authToken?: string | null;
-    refreshToken?: string | null;
     body?: any;
   }>(1);
 
@@ -307,16 +305,13 @@ export function loginViaModal$(
           break;
         }
 
-        // When successful (200), ensure localStorage tokens are set
+        // When successful (200), ensure the access token is set
         await waitForToken(page, 5000);
         const authToken = await page.evaluate(() =>
           (window as any).localStorage.getItem('auth_token')
         );
-        const refreshToken = await page.evaluate(() =>
-          (window as any).localStorage.getItem('refresh_token')
-        );
-        if (!authToken || !refreshToken) {
-          console.warn('Login reported 200 but tokens missing in localStorage');
+        if (!authToken) {
+          console.warn('Login reported 200 but access token missing in localStorage');
           await page.waitForTimeout(250);
         }
 
@@ -352,7 +347,6 @@ export function loginViaModal$(
         subject.next({
           responseStatus: status,
           authToken,
-          refreshToken,
           body,
         });
         subject.complete();
@@ -462,13 +456,11 @@ export function registerViaModal$(
 ): Observable<{
   responseStatus: number;
   authToken?: string | null;
-  refreshToken?: string | null;
   body?: any;
 }> {
   const subject = new ReplaySubject<{
     responseStatus: number;
     authToken?: string | null;
-    refreshToken?: string | null;
     body?: any;
   }>(1);
 
@@ -780,22 +772,18 @@ export function registerViaModal$(
                 );
 
                 if (fallbackResp && fallbackResp.ok()) {
-                  // Save tokens to localStorage and mark success
+                  // Save the access token to localStorage and mark success
                   const tokenVal =
                     body?.accessToken ||
                     body?.access_token ||
                     body?.token ||
                     null;
-                  const refreshVal =
-                    body?.refreshToken || body?.refresh_token || null;
                   try {
                     await page.evaluate(
                       ({
                         token,
-                        refreshToken,
                       }: {
                         token: string | null;
-                        refreshToken: string | null;
                       }) => {
                         if (token) {
                           window.localStorage.setItem(
@@ -804,16 +792,9 @@ export function registerViaModal$(
                           );
                         }
 
-                        if (refreshToken) {
-                          window.localStorage.setItem(
-                            'refresh_token',
-                            refreshToken
-                          );
-                        }
                       },
                       {
                         token: tokenVal,
-                        refreshToken: refreshVal,
                       }
                     );
                   } catch (e) {
@@ -922,12 +903,9 @@ export function registerViaModal$(
         const authToken = await page.evaluate(() =>
           (window as any).localStorage.getItem('auth_token')
         );
-        const refreshToken = await page.evaluate(() =>
-          (window as any).localStorage.getItem('refresh_token')
-        );
-        if (!authToken || !refreshToken) {
+        if (!authToken) {
           console.warn(
-            'Register reported 201 but tokens missing in localStorage'
+            'Register reported 201 but access token missing in localStorage'
           );
           await page.waitForTimeout(250);
         }
@@ -960,7 +938,6 @@ export function registerViaModal$(
         subject.next({
           responseStatus: status,
           authToken,
-          refreshToken,
           body,
         });
         subject.complete();

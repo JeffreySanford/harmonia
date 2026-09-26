@@ -1,75 +1,147 @@
 /**
  * Auth State
- * Manages authentication, user session, and permissions
+ *
+ * Access-token state remains browser-readable.
+ * Refresh credentials are owned exclusively by the HttpOnly cookie.
  */
 
 export interface User {
   id: string;
   email: string;
   username: string;
-  role: 'admin' | 'user' | 'guest';
+  role:
+    | 'admin'
+    | 'user'
+    | 'guest';
   createdAt: string;
 }
 
 export interface AuthState {
   user: User | null;
   token: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
 }
 
-function readStoredValue(key: string): string | null {
-  if (typeof window === 'undefined') {
+function readStoredValue(
+  key:
+    string
+): string | null {
+  if (
+    typeof window ===
+    'undefined'
+  ) {
     return null;
   }
 
   try {
-    return window.localStorage.getItem(key);
+    return window.localStorage
+      .getItem(
+        key
+      );
   } catch {
     return null;
   }
 }
 
-function readStoredUser(): User | null {
-  const raw = readStoredValue('auth_user');
+function removeLegacyRefreshToken():
+  void {
+  if (
+    typeof window ===
+    'undefined'
+  ) {
+    return;
+  }
+
+  try {
+    window.localStorage
+      .removeItem(
+        'refresh_token'
+      );
+  } catch {
+    // Browser storage may be unavailable.
+  }
+}
+
+function readStoredUser():
+  User | null {
+  const raw =
+    readStoredValue(
+      'auth_user'
+    );
 
   if (!raw) {
     return null;
   }
 
   try {
-    const user = JSON.parse(raw) as User;
+    const user =
+      JSON.parse(raw) as
+        Partial<User>;
 
     if (
-      !user ||
-      typeof user.id !== 'string' ||
-      typeof user.email !== 'string' ||
-      typeof user.username !== 'string' ||
-      !['admin', 'user', 'guest'].includes(user.role)
+      typeof user.id !==
+        'string' ||
+      typeof user.email !==
+        'string' ||
+      typeof user.username !==
+        'string' ||
+      (
+        user.role !==
+          'admin' &&
+        user.role !==
+          'user' &&
+        user.role !==
+          'guest'
+      )
     ) {
       return null;
     }
 
-    return user;
+    return {
+      id:
+        user.id,
+      email:
+        user.email,
+      username:
+        user.username,
+      role:
+        user.role,
+      createdAt:
+        typeof user.createdAt ===
+        'string'
+          ? user.createdAt
+          : '',
+    };
   } catch {
     return null;
   }
 }
 
-const persistedUser = readStoredUser();
-const persistedToken = readStoredValue('auth_token');
-const persistedRefreshToken =
-  readStoredValue('refresh_token');
+removeLegacyRefreshToken();
 
-export const initialAuthState: AuthState = {
-  user: persistedUser,
-  token: persistedToken,
-  refreshToken: persistedRefreshToken,
-  isAuthenticated: Boolean(
-    persistedUser && persistedToken
-  ),
-  loading: false,
-  error: null,
-};
+const persistedUser =
+  readStoredUser();
+
+const persistedToken =
+  readStoredValue(
+    'auth_token'
+  );
+
+export const initialAuthState:
+  AuthState = {
+    user:
+      persistedUser,
+    token:
+      persistedToken,
+    isAuthenticated:
+      Boolean(
+        persistedUser &&
+        persistedToken
+      ),
+    loading:
+      false,
+    error:
+      null,
+  };

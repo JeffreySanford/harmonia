@@ -5,22 +5,39 @@ export type AuthUserRole =
   | 'user'
   | 'guest';
 
-export type AuthTokenType =
-  | 'access'
-  | 'refresh';
-
-export interface AuthTokenPayload {
+interface BaseAuthTokenPayload {
   sub: string;
   username: string;
   role: AuthUserRole;
-  typ: AuthTokenType;
 }
+
+export interface AccessTokenPayload
+  extends BaseAuthTokenPayload {
+  typ: 'access';
+}
+
+export interface RefreshTokenPayload
+  extends BaseAuthTokenPayload {
+  typ: 'refresh';
+  sid: string;
+  fid: string;
+}
+
+export type AuthTokenPayload =
+  | AccessTokenPayload
+  | RefreshTokenPayload;
 
 export interface AuthenticatedRequestUser {
   userId: string;
   username: string;
   email: string;
   role: AuthUserRole;
+}
+
+export interface AuthenticatedRefreshRequestUser
+  extends AuthenticatedRequestUser {
+  sessionId: string;
+  familyId: string;
 }
 
 export interface AuthSecrets {

@@ -29,10 +29,10 @@ import {
 } from '../schemas/user.schema';
 import {
   ACCESS_TOKEN_SECONDS,
-  AuthTokenPayload,
+  AccessTokenPayload,
+  AuthenticatedRefreshRequestUser,
   AuthUserRole,
   normalizeAuthRole,
-  REFRESH_TOKEN_SECONDS,
   requireIndependentAuthSecrets,
 } from './auth-token.config';
 import {
@@ -41,6 +41,10 @@ import {
 import {
   RegisterDto,
 } from './dto/register.dto';
+import {
+  RefreshSessionPrincipal,
+  RefreshSessionService,
+} from './refresh-session.service';
 
 export interface AuthUser {
   id: string;
@@ -50,16 +54,28 @@ export interface AuthUser {
   createdAt: string;
 }
 
-export interface AuthTokens {
+export interface AccessTokenResponse {
   accessToken: string;
-  refreshToken: string;
   expiresIn: number;
 }
 
 export interface AuthResponse
-  extends AuthTokens
-{
+  extends AccessTokenResponse {
   user: AuthUser;
+}
+
+export interface IssuedAuthSession {
+  response:
+    AuthResponse;
+  refreshToken:
+    string;
+}
+
+export interface RotatedAuthSession {
+  response:
+    AccessTokenResponse;
+  refreshToken:
+    string;
 }
 
 export interface SessionUser {
@@ -80,9 +96,6 @@ export class AuthService {
   private readonly accessSecret:
     string;
 
-  private readonly refreshSecret:
-    string;
-
   constructor(
     @InjectModel(User.name)
     private readonly userModel:
@@ -91,25 +104,22 @@ export class AuthService {
     private readonly jwtService:
       JwtService,
 
+    private readonly refreshSessions:
+      RefreshSessionService,
+
     configService:
       ConfigService
   ) {
-    const secrets =
+    this.accessSecret =
       requireIndependentAuthSecrets(
         configService
-      );
-
-    this.accessSecret =
-      secrets.access;
-
-    this.refreshSecret =
-      secrets.refresh;
+      ).access;
   }
 
   register(
     registerDto:
       RegisterDto
-  ): Observable<AuthResponse> {
+  ): Observable<IssuedAuthSession> {
     return from(
       this.userModel.findOne({
         $or: [
@@ -167,7 +177,7 @@ export class AuthService {
       switchMap(
         (user) =>
           from(
-            this.createAuthResponse(
+            this.createAuthSession(
               user
             )
           )
@@ -178,7 +188,7 @@ export class AuthService {
   login(
     loginDto:
       LoginDto
-  ): Observable<AuthResponse> {
+  ): Observable<IssuedAuthSession> {
     const identifier =
       loginDto
         .emailOrUsername
@@ -235,7 +245,7 @@ export class AuthService {
       switchMap(
         (user) =>
           from(
-            this.createAuthResponse(
+            this.createAuthSession(
               user
             )
           )
@@ -244,45 +254,63 @@ export class AuthService {
   }
 
   refresh(
-    userId: string
-  ): Observable<AuthTokens> {
+    identity:
+      AuthenticatedRefreshRequestUser,
+    presentedToken:
+      string
+  ): Observable<RotatedAuthSession> {
     return from(
-      this.userModel
-        .findById(
-          userId
-        )
+      this.createAccessToken(
+        identity
+      )
     ).pipe(
-      map(
-        (user) => {
-          if (!user) {
-            throw new UnauthorizedException(
-              'User not found'
-            );
-          }
-
-          return user;
-        }
-      ),
-
       switchMap(
-        (user) =>
+        (accessToken) =>
           from(
-            this.createTokens(
-              user
+            this.refreshSessions
+              .rotate(
+                identity,
+                presentedToken
+              )
+          ).pipe(
+            map(
+              (rotated) => ({
+                response: {
+                  accessToken,
+                  expiresIn:
+                    ACCESS_TOKEN_SECONDS,
+                },
+                refreshToken:
+                  rotated.refreshToken,
+              })
             )
           )
       )
     );
   }
 
+  logout(
+    identity:
+      AuthenticatedRefreshRequestUser,
+    presentedToken:
+      string
+  ): Observable<void> {
+    return from(
+      this.refreshSessions.revoke(
+        identity,
+        presentedToken
+      )
+    );
+  }
+
   validateSession(
-    userId: string
+    userId:
+      string
   ): Observable<SessionUser | null> {
     return from(
-      this.userModel
-        .findById(
-          userId
-        )
+      this.userModel.findById(
+        userId
+      )
     ).pipe(
       map(
         (user) => {
@@ -308,7 +336,8 @@ export class AuthService {
   }
 
   cleanupTestUser(
-    email: string
+    email:
+      string
   ): Observable<CleanupTestUserResult> {
     if (
       process.env.NODE_ENV !==
@@ -338,88 +367,82 @@ export class AuthService {
     );
   }
 
-  private async createAuthResponse(
+  private async createAuthSession(
     user:
       UserDocument
-  ): Promise<AuthResponse> {
-    const tokens =
-      await this.createTokens(
+  ): Promise<IssuedAuthSession> {
+    const principal =
+      this.toPrincipal(
         user
       );
 
+    const accessToken =
+      await this.createAccessToken(
+        principal
+      );
+
+    const refresh =
+      await this.refreshSessions
+        .issue(
+          principal
+        );
+
     return {
-      user:
-        this.toAuthUser(
-          user
-        ),
-      ...tokens,
+      response: {
+        user:
+          this.toAuthUser(
+            user
+          ),
+        accessToken,
+        expiresIn:
+          ACCESS_TOKEN_SECONDS,
+      },
+      refreshToken:
+        refresh.refreshToken,
     };
   }
 
-  private async createTokens(
-    user:
-      UserDocument
-  ): Promise<AuthTokens> {
-    const role =
-      normalizeAuthRole(
-        user.role
-      );
-
-    const accessPayload:
-      AuthTokenPayload = {
+  private async createAccessToken(
+    principal:
+      RefreshSessionPrincipal
+  ): Promise<string> {
+    const payload:
+      AccessTokenPayload = {
         sub:
-          user._id.toString(),
+          principal.userId,
         username:
-          user.username,
-        role,
+          principal.username,
+        role:
+          principal.role,
         typ:
           'access',
       };
 
-    const refreshPayload:
-      AuthTokenPayload = {
-        sub:
-          user._id.toString(),
-        username:
-          user.username,
-        role,
-        typ:
-          'refresh',
-      };
+    return this.jwtService
+      .signAsync(
+        payload,
+        {
+          secret:
+            this.accessSecret,
+          expiresIn:
+            ACCESS_TOKEN_SECONDS,
+        }
+      );
+  }
 
-    const [
-      accessToken,
-      refreshToken,
-    ] =
-      await Promise.all([
-        this.jwtService
-          .signAsync(
-            accessPayload,
-            {
-              secret:
-                this.accessSecret,
-              expiresIn:
-                ACCESS_TOKEN_SECONDS,
-            }
-          ),
-
-        this.jwtService
-          .signAsync(
-            refreshPayload,
-            {
-              secret:
-                this.refreshSecret,
-              expiresIn:
-                REFRESH_TOKEN_SECONDS,
-            }
-          ),
-      ]);
-
+  private toPrincipal(
+    user:
+      UserDocument
+  ): RefreshSessionPrincipal {
     return {
-      accessToken,
-      refreshToken,
-      expiresIn:
-        ACCESS_TOKEN_SECONDS,
+      userId:
+        user._id.toString(),
+      username:
+        user.username,
+      role:
+        normalizeAuthRole(
+          user.role
+        ),
     };
   }
 

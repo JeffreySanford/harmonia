@@ -1,9 +1,13 @@
-import { Module } from '@nestjs/common';
+import {
+  Module,
+} from '@nestjs/common';
 import {
   ConfigModule,
   ConfigService,
 } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
+import {
+  JwtModule,
+} from '@nestjs/jwt';
 import {
   MongooseModule,
 } from '@nestjs/mongoose';
@@ -14,6 +18,10 @@ import {
   ThrottlerGuard,
   ThrottlerModule,
 } from '@nestjs/throttler';
+import {
+  RefreshSession,
+  RefreshSessionSchema,
+} from '../schemas/refresh-session.schema';
 import {
   User,
   UserSchema,
@@ -29,6 +37,9 @@ import {
   AuthService,
 } from './auth.service';
 import {
+  RefreshSessionService,
+} from './refresh-session.service';
+import {
   JwtStrategy,
 } from './strategies/jwt.strategy';
 import {
@@ -38,13 +49,16 @@ import {
 @Module({
   imports: [
     PassportModule.register({
-      defaultStrategy: 'jwt',
+      defaultStrategy:
+        'jwt',
     }),
 
     ThrottlerModule.forRoot([
       {
-        ttl: 60_000,
-        limit: 100,
+        ttl:
+          60_000,
+        limit:
+          100,
       },
     ]),
 
@@ -78,6 +92,12 @@ import {
         schema:
           UserSchema,
       },
+      {
+        name:
+          RefreshSession.name,
+        schema:
+          RefreshSessionSchema,
+      },
     ]),
   ],
 
@@ -87,6 +107,7 @@ import {
 
   providers: [
     AuthService,
+    RefreshSessionService,
     JwtStrategy,
     RefreshJwtStrategy,
     ThrottlerGuard,

@@ -1,186 +1,176 @@
 import {
-  Controller,
-  Post,
   Body,
+  Controller,
+  Delete,
   Get,
-  UseGuards,
-  Request,
+  Headers,
   HttpCode,
   HttpStatus,
-  Delete,
   Param,
+  Post,
+  Request,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
 import {
-  ApiTags,
+  ApiBearerAuth,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
+  ApiTags,
 } from '@nestjs/swagger';
 import {
   Throttle,
   ThrottlerGuard,
 } from '@nestjs/throttler';
-import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { RefreshJwtAuthGuard } from './guards/refresh-jwt-auth.guard';
+import {
+  map,
+} from 'rxjs/operators';
+import {
+  AuthenticatedRefreshRequestUser,
+  AuthenticatedRequestUser,
+} from './auth-token.config';
+import {
+  AuthService,
+} from './auth.service';
+import {
+  clearRefreshCookie,
+  RefreshCookieResponse,
+  requireRefreshCookie,
+  setRefreshCookie,
+} from './refresh-cookie';
+import {
+  LoginDto,
+} from './dto/login.dto';
+import {
+  RegisterDto,
+} from './dto/register.dto';
+import {
+  JwtAuthGuard,
+} from './guards/jwt-auth.guard';
+import {
+  RefreshJwtAuthGuard,
+} from './guards/refresh-jwt-auth.guard';
 
-/**
- * Auth Controller
- *
- * REST API endpoints for authentication.
- *
- * **Endpoints**:
- * - POST /auth/register - Register new user
- * - POST /auth/login - Login with credentials
- * - POST /auth/refresh - Refresh access token
- * - GET /auth/session - Validate current session
- * - POST /auth/logout - Logout user (stateless)
- *
- * **Authentication**:
- * - /register and /login are public
- * - /refresh, /session, /logout require valid JWT (JwtAuthGuard)
- *
- * **Response Format**:
- * ```json
- * {
- *   "user": {
- *     "id": "507f1f77bcf86cd799439011",
- *     "email": "user@example.com",
- *     "username": "johndoe",
- *     "role": "user"
- *   },
- *   "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
- *   "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
- *   "expiresIn": 900
- * }
- * ```
- *
- * @see {@link file://./../../docs/AUTHENTICATION_SYSTEM.md} for API specification
- */
+interface AccessRequest {
+  user:
+    AuthenticatedRequestUser;
+}
+
+interface RefreshRequest {
+  user:
+    AuthenticatedRefreshRequestUser;
+}
+
 @Controller('auth')
 @ApiTags('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private readonly authService:
+      AuthService
+  ) {}
 
-  /**
-   * Register new user
-   *
-   * POST /api/auth/register
-   *
-   * @param registerDto - Registration data (email, username, password)
-   * @returns User object and JWT tokens
-   * @throws 409 Conflict if email/username exists
-   * @throws 400 Bad Request if validation fails
-   */
   @Post('register')
   @UseGuards(ThrottlerGuard)
   @Throttle({
     default: {
-      limit: 5,
-      ttl: 60_000,
+      limit:
+        5,
+      ttl:
+        60_000,
     },
   })
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Register new user account' })
-  @ApiResponse({
-    status: 201,
-    description: 'User successfully registered',
-    schema: {
-      type: 'object',
-      properties: {
-        user: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', example: '507f1f77bcf86cd799439011' },
-            email: { type: 'string', example: 'user@example.com' },
-            username: { type: 'string', example: 'johndoe' },
-            role: { type: 'string', example: 'user' },
-          },
-        },
-        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIs...' },
-        refreshToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIs...' },
-        expiresIn: { type: 'number', example: 900 },
-      },
-    },
+  @ApiOperation({
+    summary:
+      'Register new user account',
   })
-  @ApiResponse({ status: 409, description: 'Email or username already exists' })
-  @ApiResponse({ status: 400, description: 'Invalid input data' })
-  register(@Body() registerDto: RegisterDto) {
-    // Debug logging in development/test only (mask sensitive fields)
-    if (
-      process.env.NODE_ENV === 'development' ||
-      process.env.NODE_ENV === 'test'
-    ) {
-      const safe = { email: registerDto.email, username: registerDto.username };
-      console.debug('[AuthController.register] register payload:', safe);
-    }
-    return this.authService.register(registerDto);
+  @ApiResponse({
+    status:
+      201,
+    description:
+      'Account created and refresh session established',
+  })
+  register(
+    @Body()
+    registerDto:
+      RegisterDto,
+
+    @Res({
+      passthrough:
+        true,
+    })
+    response:
+      RefreshCookieResponse
+  ) {
+    return this.authService
+      .register(
+        registerDto
+      )
+      .pipe(
+        map(
+          (session) => {
+            setRefreshCookie(
+              response,
+              session.refreshToken
+            );
+
+            return session.response;
+          }
+        )
+      );
   }
 
-  /**
-   * Login with credentials
-   *
-   * POST /api/auth/login
-   *
-   * @param loginDto - Login credentials (emailOrUsername, password)
-   * @returns User object and JWT tokens
-   * @throws 401 Unauthorized if credentials invalid
-   */
   @Post('login')
   @UseGuards(ThrottlerGuard)
   @Throttle({
     default: {
-      limit: 5,
-      ttl: 60_000,
+      limit:
+        5,
+      ttl:
+        60_000,
     },
   })
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Authenticate user with credentials' })
-  @ApiResponse({
-    status: 200,
-    description: 'User successfully authenticated',
-    schema: {
-      type: 'object',
-      properties: {
-        user: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', example: '507f1f77bcf86cd799439011' },
-            email: { type: 'string', example: 'user@example.com' },
-            username: { type: 'string', example: 'johndoe' },
-            role: { type: 'string', example: 'user' },
-          },
-        },
-        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIs...' },
-        refreshToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIs...' },
-        expiresIn: { type: 'number', example: 900 },
-      },
-    },
+  @ApiOperation({
+    summary:
+      'Authenticate user',
   })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  login(@Body() loginDto: LoginDto) {
-    if (
-      process.env.NODE_ENV === 'development' ||
-      process.env.NODE_ENV === 'test'
-    ) {
-      const safe = { emailOrUsername: loginDto.emailOrUsername };
-      console.debug('[AuthController.login] login payload:', safe);
-    }
-    return this.authService.login(loginDto);
+  @ApiResponse({
+    status:
+      200,
+    description:
+      'Authenticated and refresh session established',
+  })
+  login(
+    @Body()
+    loginDto:
+      LoginDto,
+
+    @Res({
+      passthrough:
+        true,
+    })
+    response:
+      RefreshCookieResponse
+  ) {
+    return this.authService
+      .login(
+        loginDto
+      )
+      .pipe(
+        map(
+          (session) => {
+            setRefreshCookie(
+              response,
+              session.refreshToken
+            );
+
+            return session.response;
+          }
+        )
+      );
   }
 
-  /**
-   * Refresh access token
-   *
-   * POST /api/auth/refresh
-   * Requires: Authorization Bearer <refresh_token>
-   *
-   * @param req - Request object with user from JWT
-   * @returns New access and refresh tokens
-   * @throws 401 Unauthorized if token invalid
-   */
   @Post('refresh')
   @UseGuards(
     ThrottlerGuard,
@@ -188,126 +178,147 @@ export class AuthController {
   )
   @Throttle({
     default: {
-      limit: 20,
-      ttl: 60_000,
+      limit:
+        20,
+      ttl:
+        60_000,
     },
   })
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Refresh access token using refresh token' })
-  @ApiResponse({
-    status: 200,
-    description: 'Tokens successfully refreshed',
-    schema: {
-      type: 'object',
-      properties: {
-        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIs...' },
-        refreshToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIs...' },
-        expiresIn: { type: 'number', example: 900 },
-      },
-    },
+  @ApiOperation({
+    summary:
+      'Rotate refresh session',
   })
-  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
-  async refresh(@Request() req: { user: { userId: string } }) {
-    return this.authService.refresh(req.user.userId);
+  refresh(
+    @Request()
+    request:
+      RefreshRequest,
+
+    @Headers('cookie')
+    cookieHeader:
+      string | undefined,
+
+    @Res({
+      passthrough:
+        true,
+    })
+    response:
+      RefreshCookieResponse
+  ) {
+    const presentedToken =
+      requireRefreshCookie(
+        cookieHeader
+      );
+
+    return this.authService
+      .refresh(
+        request.user,
+        presentedToken
+      )
+      .pipe(
+        map(
+          (session) => {
+            setRefreshCookie(
+              response,
+              session.refreshToken
+            );
+
+            return session.response;
+          }
+        )
+      );
   }
 
-  /**
-   * Validate current session
-   *
-   * GET /api/auth/session
-   * Requires: Authorization Bearer <access_token>
-   *
-   * @param req - Request object with user from JWT
-   * @returns User object if session valid
-   * @throws 401 Unauthorized if token invalid
-   */
   @Get('session')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Validate current user session' })
-  @ApiResponse({
-    status: 200,
-    description: 'Session is valid',
-    schema: {
-      type: 'object',
-      properties: {
-        user: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', example: '507f1f77bcf86cd799439011' },
-            email: { type: 'string', example: 'user@example.com' },
-            username: { type: 'string', example: 'johndoe' },
-            role: { type: 'string', example: 'user' },
-          },
-        },
-      },
-    },
+  @ApiOperation({
+    summary:
+      'Validate current access session',
   })
-  @ApiResponse({ status: 401, description: 'Invalid or expired access token' })
-  async checkSession(@Request() req: { user: { userId: string } }) {
-    return this.authService.validateSession(req.user.userId);
+  checkSession(
+    @Request()
+    request:
+      AccessRequest
+  ) {
+    return this.authService
+      .validateSession(
+        request.user.userId
+      );
   }
 
-  /**
-   * Logout user
-   *
-   * POST /api/auth/logout
-   * Requires: Authorization Bearer <access_token>
-   *
-   * For stateless JWT authentication, logout is handled client-side
-   * by removing tokens from storage. This endpoint exists for:
-   * - Future Redis session invalidation
-   * - Audit logging
-   * - Consistent API design
-   *
-   * @returns Success message
-   */
   @Post('logout')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(
+    RefreshJwtAuthGuard
+  )
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Logout user (client-side token removal)' })
-  @ApiResponse({
-    status: 200,
-    description: 'User successfully logged out',
-    schema: {
-      type: 'object',
-      properties: {
-        message: { type: 'string', example: 'Logged out successfully' },
-        success: { type: 'boolean', example: true },
-      },
-    },
+  @ApiOperation({
+    summary:
+      'Revoke refresh session',
   })
-  async logout() {
-    // For stateless JWT, logout is client-side (remove token from storage)
-    // If using Redis sessions, invalidate session here:
-    // await this.redisService.delete(`session:${req.user.userId}`);
+  logout(
+    @Request()
+    request:
+      RefreshRequest,
 
-    return {
-      message: 'Logged out successfully',
-      success: true,
-    };
+    @Headers('cookie')
+    cookieHeader:
+      string | undefined,
+
+    @Res({
+      passthrough:
+        true,
+    })
+    response:
+      RefreshCookieResponse
+  ) {
+    const presentedToken =
+      requireRefreshCookie(
+        cookieHeader
+      );
+
+    return this.authService
+      .logout(
+        request.user,
+        presentedToken
+      )
+      .pipe(
+        map(
+          () => {
+            clearRefreshCookie(
+              response
+            );
+
+            return {
+              message:
+                'Logged out successfully',
+              success:
+                true,
+            };
+          }
+        )
+      );
   }
 
-  /**
-   * Cleanup test user (E2E testing only)
-   *
-   * DELETE /api/auth/test-user/:email
-   *
-   * Removes test user from database. Only works in test environment.
-   *
-   * @param email - Email of test user to remove
-   * @returns Success message
-   */
   @Delete('test-user/:email')
   @HttpCode(HttpStatus.OK)
-  async cleanupTestUser(@Param('email') email: string) {
-    // Only allow in test environment
-    if (process.env.NODE_ENV !== 'test') {
-      throw new Error('Test user cleanup only allowed in test environment');
+  async cleanupTestUser(
+    @Param('email')
+    email:
+      string
+  ) {
+    if (
+      process.env.NODE_ENV !==
+      'test'
+    ) {
+      throw new Error(
+        'Test user cleanup only allowed in test environment'
+      );
     }
 
-    return this.authService.cleanupTestUser(email);
+    return this.authService
+      .cleanupTestUser(
+        email
+      );
   }
 }
