@@ -1,4 +1,11 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   ApiTags,
@@ -8,6 +15,7 @@ import {
 } from '@nestjs/swagger';
 import { map, catchError, of } from 'rxjs';
 import * as path from 'path';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GenerateMetadataDto } from './dto/generate-metadata.dto';
 import { AnalyzeLyricsDto } from './dto/analyze-lyrics.dto';
 import { OllamaService } from '../llm/ollama.service';
@@ -20,6 +28,8 @@ import { PaletteSuggestionService } from './palette-suggestion.service';
 
 @Controller('songs')
 @ApiTags('songs')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(JwtAuthGuard)
 export class SongsController {
   constructor(
     private readonly ollama: OllamaService,
@@ -506,8 +516,8 @@ export class SongsController {
       },
     },
   })
-  validateInstrumentCatalog(@Body() body: { catalogPath?: string }) {
-    return this.instrumentCatalog.loadCatalog(body.catalogPath).pipe(
+  validateInstrumentCatalog() {
+    return this.instrumentCatalog.loadCatalog().pipe(
       map((result) => {
         if (result.valid) {
           const catalog = this.instrumentCatalog.getCatalog();

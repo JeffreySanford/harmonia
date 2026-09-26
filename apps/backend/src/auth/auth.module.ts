@@ -53,6 +53,6 @@ import { User, UserSchema } from '../schemas/user.schema';
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],
-  exports: [AuthService], // Export for use in other modules
+  exports: [AuthService, JwtModule], // Share configured JWT verification with socket gateways
 })
 export class AuthModule {}

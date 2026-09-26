@@ -199,7 +199,7 @@ export class JobsService {
     await job.save();
 
     const dto = this.toDto(job);
-    this.gateway.emitJobCompleted(dto as unknown as Record<string, unknown>);
+    this.gateway.emitJobCompleted(dto);
     return dto;
   }
 
