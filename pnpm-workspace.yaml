@@ -75,6 +75,12 @@ overrides:
 
   'smol-toml@>=1.0.0 <1.7.1': 1.7.1
 
+  # Security refresh — jsdiff 4.x DoS patched floor.
+  'diff@>=4.0.0 <4.0.4': 4.0.4
+
+  # Security refresh — qs 6.x DoS patched floor.
+  'qs@>=6.0.0 <6.16.0': 6.16.0
+
 allowBuilds:
   '@nestjs/core': true
   '@scarf/scarf': true
