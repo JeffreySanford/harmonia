@@ -120,3 +120,23 @@ def test_bull_uuid_override_security_floor():
     assert workspace_override_version(
         "\x27bull@4.16.5>uuid\x27"
     ) >= (11, 1, 1)
+
+def test_dev_build_security_override_floors():
+    cases = [
+        ("\x27@babel/core@7.28.5\x27", (7, 29, 6)),
+        ("\x27@tootallnate/once@2.0.0\x27", (2, 0, 1)),
+        ("\x27follow-redirects@1.15.11\x27", (1, 16, 0)),
+        ("\x27http-proxy-middleware@2.0.9\x27", (2, 0, 10)),
+        ("\x27postcss@>=8.0.0 <8.5.23\x27", (8, 5, 23)),
+        ("\x27postcss-selector-parser@7.1.1\x27", (7, 1, 3)),
+        ("\x27webpack@5.103.0\x27", (5, 104, 1)),
+        ("\x27webpack-dev-server@5.2.2\x27", (5, 2, 6)),
+        ("\x27ajv@6.12.6\x27", (6, 14, 0)),
+        ("\x27ajv@8.17.1\x27", (8, 18, 0)),
+        ("\x27yaml@1.10.2\x27", (1, 10, 3)),
+        ("\x27yaml@2.8.2\x27", (2, 8, 3)),
+        ("\x27body-parser@1.20.4\x27", (1, 20, 6)),
+    ]
+
+    for spec, floor in cases:
+        assert workspace_override_version(spec) >= floor
