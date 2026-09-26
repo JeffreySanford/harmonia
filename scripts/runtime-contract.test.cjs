@@ -212,6 +212,11 @@ test('GitHub Actions use Node 24-compatible action majors', () => {
     ci,
     /node-version:\s*"20\.19\.0"/
   );
+
+  assert.match(
+    mongoose,
+    /package-manager-cache:\s*false/
+  );
 });
 
 test('hosted smoke CI skips absent local artifacts without opening alert storms', () => {

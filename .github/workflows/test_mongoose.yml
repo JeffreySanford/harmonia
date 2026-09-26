@@ -40,6 +40,9 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '20.19.0'
+          # setup-node v5 otherwise auto-detects pnpm from packageManager
+          # before pnpm/action-setup has installed the executable.
+          package-manager-cache: false
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v5
