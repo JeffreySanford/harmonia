@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+const {
+  selectRuntimeModel,
+} = require('./runtime-selection-client.cjs');
 const { existsSync, readFileSync } = require('node:fs');
 const path = require('node:path');
 const { parseEnv } = require('node:util');
@@ -143,29 +146,18 @@ async function main() {
 
   console.log(`Authenticated as ${login.body.user?.username || username}.`);
 
-  const select = await request(`${backendBase}/api/music/runtime/select`, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${token}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({ modelId: 'diffsinger-acoustic-hifigan' }),
+  const { acceptance, status } = await selectRuntimeModel({
+    backendBase,
+    token,
+    modelId: 'diffsinger-acoustic-hifigan',
+    expectedProviderId: 'diffsinger',
+    timeoutMs: 20 * 60 * 1000,
+    pollMs,
   });
 
   console.log(
-    `Runtime selected: ${select.body?.modelName || select.body?.modelId || 'diffsinger-acoustic-hifigan'} (${select.body?.state || 'unknown'})`
+    `Runtime ready: ${status.modelName || 'diffsinger-acoustic-hifigan'} operation=${acceptance.operationId}`
   );
-
-  const status = await request(`${backendBase}/api/music/runtime/status`);
-  if (
-    status.body?.modelId !== 'diffsinger-acoustic-hifigan' ||
-    status.body?.state !== 'ready' ||
-    status.body?.healthy !== true
-  ) {
-    throw new Error(
-      `DiffSinger is not ready after selection: ${JSON.stringify(status.body)}`
-    );
-  }
 
   const created = await request(`${backendBase}/api/jobs`, {
     method: 'POST',

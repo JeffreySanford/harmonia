@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+const {
+  authenticateQualificationUser,
+  selectRuntimeModel,
+} = require('./runtime-selection-client.cjs');
 const { execFileSync } = require('node:child_process');
 const {
   existsSync,
@@ -180,28 +184,26 @@ async function main() {
   await request(`${backendBase}/api/__health`);
   console.log('Backend is reachable.');
 
-  const selected = await request(
-    `${backendBase}/api/music/runtime/select`,
-    {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ modelId }),
-    },
-    5 * 60 * 1000
+  const auth = await authenticateQualificationUser({
+    backendBase,
+  });
+
+  console.log(
+    `Authenticated as ${auth.username}.`
   );
 
-  if (
-    selected?.providerId !== 'diffsinger' ||
-    selected?.modelId !== modelId ||
-    selected?.state !== 'ready' ||
-    selected?.healthy !== true
-  ) {
-    throw new Error(
-      `DiffSinger runtime did not reach healthy/ready: ${JSON.stringify(selected)}`
-    );
-  }
+  const { acceptance, status } = await selectRuntimeModel({
+    backendBase,
+    token: auth.token,
+    modelId,
+    expectedProviderId: 'diffsinger',
+    timeoutMs: 20 * 60 * 1000,
+    pollMs: 2000,
+  });
 
-  console.log(`Runtime selected: ${selected.modelName || modelId} (ready)`);
+  console.log(
+    `Runtime ready: ${status.modelName || modelId} operation=${acceptance.operationId}`
+  );
 
   docker([
     'exec',

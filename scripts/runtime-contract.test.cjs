@@ -1923,11 +1923,26 @@ test('showcase resumes dated samples and excludes runtime data from Docker conte
   const runner = read('scripts/generate-qualified-showcase.cjs');
   const dockerignore = read('.dockerignore');
 
-  assert.match(runner, /async function requestLong/);
   assert.match(
     runner,
-    /const selected = await requestLong/
+    /runtime-selection-client\.cjs/
   );
+
+  assert.match(
+    runner,
+    /selectRuntimeModel\s*\(/
+  );
+
+  assert.doesNotMatch(
+    runner,
+    /async function requestLong/
+  );
+
+  assert.doesNotMatch(
+    runner,
+    /requestLong\s*\(/
+  );
+
   assert.match(runner, /SHOWCASE_REUSE/);
   assert.match(runner, /reusedExisting: true/);
 
@@ -3362,10 +3377,37 @@ test('security S3-C keeps qualification artifacts on authenticated routes', () =
 });
 
 test('security S3-C2 authenticates runtime selection in qualification scripts', () => {
+  const selector = read(
+    'scripts/runtime-selection-client.cjs'
+  );
+
+  assert.match(
+    selector,
+    /\/api\/music\/runtime\/select/
+  );
+
+  assert.match(
+    selector,
+    /authorization:\s*`Bearer \$\{token\}`/
+  );
+
+  assert.match(
+    selector,
+    /state\s*!==\s*['"]accepted['"]/
+  );
+
+  assert.match(
+    selector,
+    /operationId/
+  );
+
   const scriptPaths = [
     'scripts/qualify-musicgen-small.cjs',
     'scripts/qualify-musicgen-stereo-small.cjs',
+    'scripts/qualify-diffsinger-runtime.cjs',
+    'scripts/qualify-diffsinger-inference.cjs',
     'scripts/qualify-diffsinger-job.cjs',
+    'scripts/qualify-stable-audio-3-small-music.cjs',
     'scripts/qualify-stable-audio-3-job.cjs',
     'scripts/qualify-ace-step-job.cjs',
     'scripts/generate-qualified-showcase.cjs',
@@ -3376,7 +3418,143 @@ test('security S3-C2 authenticates runtime selection in qualification scripts', 
 
     assert.match(
       script,
-      /\/api\/music\/runtime\/select[\s\S]{0,400}authorization:\s*`Bearer \$\{token\}`/
+      /runtime-selection-client\.cjs/,
+      `${scriptPath} must use the authenticated selector`
+    );
+
+    assert.match(
+      script,
+      /selectRuntimeModel\s*\(/,
+      `${scriptPath} must use protected async selection`
+    );
+
+    assert.doesNotMatch(
+      script,
+      /\/api\/music\/runtime\/select/,
+      `${scriptPath} must not bypass the shared authenticated selector`
     );
   }
+});
+
+test('qualification clients use authenticated async runtime selection helper', () => {
+  const helperPath =
+    'scripts/runtime-selection-client.cjs';
+
+  assert.equal(
+    existsSync(
+      path.join(
+        root,
+        helperPath
+      )
+    ),
+    true,
+    'shared runtime selection helper must exist'
+  );
+
+  const helper = read(helperPath);
+
+  assert.match(
+    helper,
+    /async function selectRuntimeModel/
+  );
+
+  assert.match(
+    helper,
+    /async function authenticateQualificationUser/
+  );
+
+  assert.match(
+    helper,
+    /\/api\/music\/runtime\/select/
+  );
+
+  assert.match(
+    helper,
+    /\/api\/music\/runtime\/status/
+  );
+
+  assert.match(
+    helper,
+    /authorization:\s*`Bearer \$\{token\}`/
+  );
+
+  assert.match(
+    helper,
+    /state\s*!==\s*['"]accepted['"]/
+  );
+
+  assert.match(
+    helper,
+    /operationId/
+  );
+
+  assert.match(
+    helper,
+    /state\s*===\s*['"]error['"]/
+  );
+
+  assert.match(
+    helper,
+    /state\s*===\s*['"]ready['"]/
+  );
+
+  const clients = [
+    'scripts/qualify-musicgen-small.cjs',
+    'scripts/qualify-musicgen-stereo-small.cjs',
+    'scripts/qualify-diffsinger-runtime.cjs',
+    'scripts/qualify-diffsinger-inference.cjs',
+    'scripts/qualify-diffsinger-job.cjs',
+    'scripts/qualify-stable-audio-3-small-music.cjs',
+    'scripts/qualify-stable-audio-3-job.cjs',
+    'scripts/qualify-ace-step-job.cjs',
+    'scripts/generate-qualified-showcase.cjs',
+  ];
+
+  for (const clientPath of clients) {
+    const client = read(clientPath);
+
+    assert.match(
+      client,
+      /runtime-selection-client\.cjs/,
+      `${clientPath} must use the shared runtime selection client`
+    );
+
+    assert.match(
+      client,
+      /selectRuntimeModel\s*\(/,
+      `${clientPath} must wait for async correlated runtime readiness`
+    );
+
+    assert.doesNotMatch(
+      client,
+      /\/api\/music\/runtime\/select/,
+      `${clientPath} must not implement runtime selection independently`
+    );
+  }
+
+  const directQualificationClients = [
+    'scripts/qualify-diffsinger-runtime.cjs',
+    'scripts/qualify-diffsinger-inference.cjs',
+    'scripts/qualify-stable-audio-3-small-music.cjs',
+  ];
+
+  for (const clientPath of directQualificationClients) {
+    const client = read(clientPath);
+
+    assert.match(
+      client,
+      /authenticateQualificationUser\s*\(/,
+      `${clientPath} must authenticate before protected runtime mutation`
+    );
+  }
+
+  const pkg = JSON.parse(
+    read('package.json')
+  );
+
+  assert.match(
+    pkg.scripts['lint:scripts'],
+    /runtime-selection-client\.cjs/,
+    'shared runtime selection helper must participate in script syntax checks'
+  );
 });

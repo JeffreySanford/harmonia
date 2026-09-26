@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+const {
+  selectRuntimeModel,
+} = require('./runtime-selection-client.cjs');
 const { existsSync, readFileSync } = require('node:fs');
 const path = require('node:path');
 const { parseEnv } = require('node:util');
@@ -134,32 +137,17 @@ async function main() {
 
   console.log(`Authenticated as ${login.body.user?.username || username}.`);
 
-  const selected = await request(
-    `${backendBase}/api/music/runtime/select`,
-    {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${token}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({ modelId }),
-    },
-    10 * 60 * 1000
-  );
-
-  if (
-    selected.body?.providerId !== 'stable-audio-3' ||
-    selected.body?.modelId !== modelId ||
-    selected.body?.state !== 'ready' ||
-    selected.body?.healthy !== true
-  ) {
-    throw new Error(
-      `Stable Audio runtime did not reach ready: ${JSON.stringify(selected.body)}`
-    );
-  }
+  const { acceptance, status } = await selectRuntimeModel({
+    backendBase,
+    token,
+    modelId,
+    expectedProviderId: 'stable-audio-3',
+    timeoutMs: 15 * 60 * 1000,
+    pollMs,
+  });
 
   console.log(
-    `Runtime selected: ${selected.body.modelName || modelId} (ready)`
+    `Runtime ready: ${status.modelName || modelId} operation=${acceptance.operationId}`
   );
 
   const requestedDuration = 8;

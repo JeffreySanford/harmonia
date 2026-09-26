@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 const {
+  selectRuntimeModel,
+} = require('./runtime-selection-client.cjs');
+const {
   copyFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
   writeFileSync,
 } = require('node:fs');
-const http = require('node:http');
 const path = require('node:path');
 const { parseEnv } = require('node:util');
 
@@ -88,91 +90,6 @@ async function request(url, options = {}, timeout = 30000) {
   }
 
   return { response, body };
-}
-
-async function requestLong(url, options = {}, timeout = selectTimeoutMs) {
-  return new Promise((resolve, reject) => {
-    const target = new URL(url);
-    const body =
-      options.body == null
-        ? null
-        : Buffer.isBuffer(options.body)
-          ? options.body
-          : Buffer.from(String(options.body));
-
-    const headers = {
-      ...(options.headers || {}),
-    };
-
-    if (body && !Object.keys(headers).some((key) => key.toLowerCase() === 'content-length')) {
-      headers['content-length'] = String(body.length);
-    }
-
-    const req = http.request(
-      {
-        protocol: target.protocol,
-        hostname: target.hostname,
-        port: target.port,
-        path: `${target.pathname}${target.search}`,
-        method: options.method || 'GET',
-        headers,
-      },
-      (response) => {
-        const chunks = [];
-
-        response.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
-        response.on('end', () => {
-          const text = Buffer.concat(chunks).toString('utf8');
-          let parsed = null;
-
-          if (text) {
-            try {
-              parsed = JSON.parse(text);
-            } catch {
-              parsed = text;
-            }
-          }
-
-          if ((response.statusCode || 500) >= 400) {
-            reject(
-              new Error(
-                `${options.method || 'GET'} ${url} -> HTTP ${response.statusCode}: ${
-                  typeof parsed === 'string' ? parsed : JSON.stringify(parsed)
-                }`
-              )
-            );
-            return;
-          }
-
-          resolve({
-            response: {
-              ok: true,
-              status: response.statusCode || 200,
-            },
-            body: parsed,
-          });
-        });
-      }
-    );
-
-    req.setTimeout(timeout, () => {
-      req.destroy(
-        new Error(
-          `${options.method || 'GET'} ${url} timed out after ${Math.round(
-            timeout / 1000
-          )} seconds`
-        )
-      );
-    });
-
-    req.once('error', reject);
-
-    if (body) {
-      req.write(body);
-    }
-
-    req.end();
-  });
 }
 
 async function firstHealthyBackend() {
@@ -435,33 +352,16 @@ async function generateOne({
     return result;
   }
 
-  const selected = await requestLong(
-    `${backendBase}/api/music/runtime/select`,
-    {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${token}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({ modelId: preset.modelId }),
-    },
-    selectTimeoutMs
-  );
-
-  if (
-    selected.body?.modelId !== preset.modelId ||
-    selected.body?.state !== 'ready' ||
-    selected.body?.healthy !== true
-  ) {
-    throw new Error(
-      `Runtime selection failed for ${preset.modelId}: ${JSON.stringify(
-        selected.body
-      )}`
-    );
-  }
+  const { acceptance, status } = await selectRuntimeModel({
+    backendBase,
+    token,
+    modelId: preset.modelId,
+    timeoutMs: selectTimeoutMs,
+    pollMs,
+  });
 
   console.log(
-    `Runtime ready: ${selected.body.modelName || preset.modelId}`
+    `Runtime ready: ${status.modelName || preset.modelId} operation=${acceptance.operationId}`
   );
 
   const createPayload = {
