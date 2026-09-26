@@ -34,20 +34,10 @@ import {
   MusicModelCatalogEntry,
   MusicRuntimeStatus,
 } from '../../store/music-runtime/music-runtime.state';
-
-interface ImportedSong {
-  title: string;
-  lyrics: string;
-  genre: string;
-  mood: string;
-  duration: number;
-}
-
-interface InstrumentOption {
-  value: string;
-  label: string;
-  icon: string;
-}
+import {
+  ImportedSong,
+  InstrumentOption,
+} from './music-generation-page.types';
 
 /**
  * Music Generation Page Component
