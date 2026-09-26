@@ -68,6 +68,12 @@
         "jestConfig": "apps/backend/jest.config.ts",
         "passWithNoTests": true
       }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/backend/src"]
+      }
     }
   }
 }
