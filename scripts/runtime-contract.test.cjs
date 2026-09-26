@@ -770,7 +770,9 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
   assert.match(musicStory, /applicationConfig/);
   assert.match(musicStory, /provideNoopAnimations/);
   assert.match(musicModule, /exports: \[MusicGenerationPageComponent\]/);
-  assert.match(musicStory, /\/downloads\/jobs\/storybook-musicgen-job\/music\.wav/);
+  assert.match(musicStory, /\/api\/jobs\/storybook-musicgen-job\/artifact/);
+  assert.match(musicStory, /getArtifact/);
+  assert.doesNotMatch(musicStory, /\/downloads\/jobs\//);
 
   const testRunnerJest = read(
     'apps/frontend/.storybook/test-runner-jest.config.js'
