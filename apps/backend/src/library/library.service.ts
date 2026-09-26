@@ -15,7 +15,7 @@ import {
   LibraryItemDocument,
 } from '../schemas/library-item.schema';
 
-interface UploadedFile {
+export interface LibraryUploadFile {
   fieldname: string;
   originalname: string;
   encoding: string;
@@ -369,7 +369,7 @@ export class LibraryService {
   }
 
   private validateUploadFile(
-    file: UploadedFile
+    file: LibraryUploadFile
   ): {
     fileType: 'wav' | 'mp3' | 'flac' | 'json';
     extension: string;
@@ -457,7 +457,7 @@ export class LibraryService {
   }
 
   uploadFile(
-    file: UploadedFile,
+    file: LibraryUploadFile,
     body: any,
     userId: string
   ): Observable<any> {

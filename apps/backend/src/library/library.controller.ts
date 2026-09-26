@@ -24,6 +24,7 @@ import {
 } from './dto/library.dto';
 import {
   LibraryService,
+  LibraryUploadFile,
   MAX_LIBRARY_UPLOAD_BYTES,
 } from './library.service';
 
@@ -91,7 +92,7 @@ export class LibraryController {
     })
   )
   uploadFile(
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: LibraryUploadFile,
     @Body()
     body: {
       title: string;
