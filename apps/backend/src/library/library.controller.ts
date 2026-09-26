@@ -22,7 +22,10 @@ import {
   LibraryFiltersDto,
   UpdateLibraryItemDto,
 } from './dto/library.dto';
-import { LibraryService } from './library.service';
+import {
+  LibraryService,
+  MAX_LIBRARY_UPLOAD_BYTES,
+} from './library.service';
 
 interface AuthenticatedRequest {
   user: AuthenticatedRequestUser;
@@ -80,7 +83,13 @@ export class LibraryController {
   }
 
   @Post('upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: MAX_LIBRARY_UPLOAD_BYTES,
+      },
+    })
+  )
   uploadFile(
     @UploadedFile() file: Express.Multer.File,
     @Body()
@@ -128,10 +137,11 @@ export class LibraryController {
 
   @Post(':id/play')
   incrementPlayCount(
-    @Param('id') id: string
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest
   ) {
     return this.libraryService
-      .incrementPlayCount(id)
+      .incrementPlayCount(id, req.user.userId)
       .pipe(
         map(() => ({
           message: 'Play count incremented',
@@ -141,10 +151,11 @@ export class LibraryController {
 
   @Post(':id/download')
   incrementDownloadCount(
-    @Param('id') id: string
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest
   ) {
     return this.libraryService
-      .incrementDownloadCount(id)
+      .incrementDownloadCount(id, req.user.userId)
       .pipe(
         map(() => ({
           message: 'Download count incremented',
