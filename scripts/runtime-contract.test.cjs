@@ -37,6 +37,7 @@ test('runtime uses one canonical Compose definition plus an optional GPU overrid
   assert.match(compose, /model-musicgen/);
   assert.match(compose, /127\.0\.0\.1:27017:27017/);
   assert.match(compose, /127\.0\.0\.1:8081:8081/);
+
   assert.doesNotMatch(compose, /8000:8000/);
 });
 
@@ -53,12 +54,15 @@ test('application port contract is 4200 frontend and 3000 backend', () => {
   assert.match(proxy, /localhost:3000/);
   assert.match(proxy, /"\/downloads"/);
   assert.match(auth, /private readonly apiUrl\s*=\s*['\"]\/api\/auth['\"]/);
+
   assert.doesNotMatch(auth, /localhost:3000\/api\/auth/);
   assert.match(backend, /process\.env\.PORT \|\| 3000/);
   assert.match(playwright, /localhost:3000\/api\/__health/);
   assert.match(playwright, /localhost:4200/);
   assert.match(websocket, /localhost:3000/);
+
   assert.doesNotMatch(websocket, /localhost:3333/);
+
   assert.doesNotMatch(workflow, /localhost:3333/);
 });
 
@@ -76,7 +80,9 @@ test('package exposes authoritative start, test, lint, and build commands', () =
     pkg.scripts['build:all'],
     'nx run-many --target=build --projects=frontend,backend'
   );
+
   assert.doesNotMatch(pkg.scripts.test, /--all/);
+
   assert.doesNotMatch(pkg.scripts['build:all'], /--all/);
   assert.equal(pkg.scripts['docker:build'], undefined);
   assert.equal(pkg.scripts['docker:run'], undefined);
@@ -125,6 +131,7 @@ test('CI reads the pinned pnpm version from packageManager', () => {
 
   for (const workflow of [ci, mongooseWorkflow]) {
     assert.match(workflow, /uses: pnpm\/action-setup@v4/);
+
     assert.doesNotMatch(workflow, /version:\s*10\.23\.0/);
   }
 });
@@ -137,6 +144,7 @@ test('hosted smoke CI skips absent local artifacts without opening alert storms'
 
   assert.match(smoke, /successful skip/);
   assert.match(smoke, /normalize_artifact_path/);
+
   assert.doesNotMatch(workflow, /actions\/cache@/);
   assert.match(workflow, /cancel-in-progress:\s*true/);
   assert.match(workflow, /github\.event_name == 'schedule'/);
@@ -187,7 +195,9 @@ test('dependency build scripts use pnpm 12 allowBuilds policy', () => {
   assert.match(workspace, /'msgpackr-extract@3\.0\.3': true/);
   assert.match(workspace, /'nx@22\.7\.12': true/);
   assert.match(workspace, /^strictDepBuilds:\s*true$/m);
+
   assert.doesNotMatch(workspace, /onlyBuiltDependencies:/);
+
   assert.doesNotMatch(workspace, /dangerouslyAllowAllBuilds:\s*true/);
 });
 
@@ -277,6 +287,7 @@ test('mongodb-memory-server is isolated to test tooling', () => {
   for (const file of backendFiles) {
     const source = read(file);
 
+
     assert.doesNotMatch(
       source,
       /mongodb-memory-server|MongoMemoryServer/,
@@ -319,6 +330,7 @@ test('mongodb-memory-server is isolated to test tooling', () => {
 test('Mongo initialization never falls back to a default application password', () => {
   const init = read('scripts/mongo-init/01-init-harmonia-db.js');
   assert.match(init, /MONGO_HARMONIA_PASSWORD is required/);
+
   assert.doesNotMatch(init, /changeme/);
 });
 
@@ -334,7 +346,9 @@ test('Mongo jobs validator matches the persistent JobRecord contract', () => {
       source,
       /'pending'.*'queued'.*'processing'.*'completed'.*'failed'.*'cancelled'/s
     );
+
     assert.doesNotMatch(source, /required: \['type', 'status'\]/);
+
     assert.doesNotMatch(source, /'running'.*'success'/s);
   }
 
@@ -462,6 +476,7 @@ test('model installation Mongo contract is consistent across fresh, existing, an
   );
 
   for (const source of [init, sync, schema]) {
+
     assert.doesNotMatch(
       source,
       /accessToken|authorizationHeader|checkpointBytes|wavPayload/i
@@ -613,6 +628,7 @@ test('backend never falls back to unauthenticated MongoDB access', () => {
   assert.match(appModule, /harmonia_app/);
   assert.match(appModule, /authSource=harmonia/);
   assert.match(appModule, /encodeURIComponent\(appPassword\)/);
+
   assert.doesNotMatch(appModule, /mongodb:\/\/localhost:27017\/harmonia/);
 });
 
@@ -633,6 +649,7 @@ test('local auth repair synchronizes app credentials and seeds the test user', (
   assert.match(repair, /LOCAL_DB_AUTH_REPAIR_OK/);
   assert.match(repair, /synchronizeJobsCollectionSchema\(\)/);
   assert.match(repair, /JOBS_SCHEMA_SYNC_OK/);
+
   assert.doesNotMatch(repair, /MONGO_HARMONIA_PASSWORD=.*password/i);
 });
 
@@ -695,6 +712,7 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
   assert.match(setup, /node scripts\/run-storybook-tests\.cjs/);
   assert.match(setup, /storybookPort = 4401/);
   assert.match(setup, /--ci=true/);
+
   assert.doesNotMatch(setup, /--noOpen=true/);
   assert.match(setup, /--host=127\.0\.0\.1/);
   assert.match(setup, /normalizeGeneratedStorybookTargets/);
@@ -771,7 +789,9 @@ test('music generation UI switches to score-native DiffSinger inputs', () => {
 test('backend MusicGen execution targets the isolated provider container', () => {
   const service = read('apps/backend/src/songs/stem-export.service.ts');
   assert.match(service, /harmonia-musicgen/);
+
   assert.doesNotMatch(service, /harmonia-worker/);
+
   assert.doesNotMatch(service, /harmonia-dev/);
 });
 
@@ -856,12 +876,16 @@ test('DiffSinger real inference qualification rejects placeholder audio', () => 
   assert.match(helper, /0102_xiaoma_pe/);
   assert.match(helper, /0109_hifigan_bigpopcs_hop128/);
   assert.match(helper, /DiffSingerE2EInfer\.example_run/);
+
   assert.doesNotMatch(helper, /CategorizedModule|_loose_load_ckpt/);
+
   assert.doesNotMatch(wrapper, /write_placeholder_wav/);
+
   assert.doesNotMatch(wrapper, /placeholder written/);
   assert.match(wrapper, /is_valid_wav/);
   assert.match(vocalPhase, /isValidWav/);
   assert.match(vocalPhase, /throw new Error/);
+
   assert.doesNotMatch(
     vocalPhase,
     /DiffSinger failed; placeholder/
@@ -954,11 +978,13 @@ test('DiffSinger is isolated from the generic worker image', () => {
   const diffsinger = read('Dockerfile.diffsinger');
   const compose = read('docker-compose.yml');
 
+
   assert.doesNotMatch(worker, /\/opt\/DiffSinger|HiFi-GAN|openvpi\/DiffSinger/);
   assert.match(diffsinger, /openvpi\/DiffSinger/);
   assert.match(diffsinger, /017bd488a61ebdb8909a8d272ec6211076fa4a7e/);
   assert.match(diffsinger, /python3\.8/);
   assert.match(diffsinger, /torch==1\.8\.2/);
+
   assert.doesNotMatch(diffsinger, /git clone --depth=1/);
   assert.match(diffsinger, /git checkout --detach/);
   assert.match(diffsinger, /entrypoint\.diffsinger\.sh/);
@@ -975,8 +1001,11 @@ test('DiffSinger pretrained inference stack is cached outside the provider image
   const downloader = read('scripts/download_diffsinger_pretrained.sh');
   const compose = read('docker-compose.yml');
 
+
   assert.doesNotMatch(dockerfile, /0228_opencpop_ds100_rel\.zip/);
+
   assert.doesNotMatch(dockerfile, /0102_xiaoma_pe\.zip/);
+
   assert.doesNotMatch(dockerfile, /0109_hifigan_bigpopcs_hop128\.zip/);
 
   for (const source of [entrypoint, downloader]) {
@@ -1020,8 +1049,11 @@ test('music generation UI submits real jobs and never fakes an audio artifact', 
   const controller = read('apps/backend/src/jobs/jobs.controller.ts');
   const compose = read('docker-compose.yml');
 
+
   assert.doesNotMatch(component, /sample-audio\.mp3/);
+
   assert.doesNotMatch(component, /Audio generation wiring is the next/);
+
   assert.doesNotMatch(component, /setInterval\(/);
   assert.match(component, /MusicRuntimeActions\.selectModel/);
   assert.match(component, /JobsActions\.createJob/);
@@ -1045,6 +1077,7 @@ test('ACE-Step 1.5 provider image is pinned isolated and boot-safe without model
   const catalog = read(
     'apps/backend/src/music-runtime/music-model.catalog.ts'
   );
+
 
   assert.doesNotMatch(worker, /ACE-Step|acestep/i);
   assert.match(
@@ -1125,6 +1158,7 @@ test('ACE-Step 1.5 provider image is pinned isolated and boot-safe without model
     aceCompose,
     'ACE-Step Compose service block is missing'
   );
+
 
   assert.doesNotMatch(
     aceCompose,
@@ -1412,9 +1446,11 @@ test('MusicGen is isolated in its AudioCraft-compatible provider image', () => {
     'apps/backend/src/music-runtime/music-model.catalog.ts'
   );
 
+
   assert.doesNotMatch(worker, /audiocraft/i);
   assert.match(musicgen, /python3\.9/);
   assert.match(musicgen, /bootstrap\.pypa\.io\/pip\/3\.9\/get-pip\.py/);
+
   assert.doesNotMatch(musicgen, /bootstrap\.pypa\.io\/get-pip\.py/);
   assert.match(musicgen, /torch==2\.1\.0/);
   assert.match(musicgen, /audiocraft==1\.3\.0/);
@@ -1469,6 +1505,7 @@ test('MusicGen startup validates dependencies once and healthcheck uses readines
   assert.match(server, /ThreadingHTTPServer/);
   assert.match(compose, /test -f \/tmp\/harmonia-runtime-ready/);
   assert.match(compose, /127\.0\.0\.1:8765\/health/);
+
   assert.doesNotMatch(
     compose,
     /python3\.9 -c 'import torch, audiocraft/
@@ -1516,8 +1553,11 @@ test('provider selection reconciles stale images once per backend process', () =
 test('backend MusicGen failures propagate instead of synthesizing placeholder audio', () => {
   const service = read('apps/backend/src/songs/stem-export.service.ts');
 
+
   assert.doesNotMatch(service, /generateBasicInstrumentAudio/);
+
   assert.doesNotMatch(service, /generateWavPlaceholder/);
+
   assert.doesNotMatch(service, /using basic instrument audio/i);
   assert.match(service, /reject\(new Error\(/);
 });
@@ -1535,10 +1575,13 @@ test('generic worker excludes heavyweight model frameworks', () => {
     'scipy',
     'audiocraft',
   ]) {
+
     assert.doesNotMatch(requirements, new RegExp(packageName, 'i'));
   }
 
+
   assert.doesNotMatch(gpu, /^\s*worker:\s*$/m);
+
   assert.doesNotMatch(startup, /--gpu cannot be combined with --no-worker/);
   assert.match(startup, /--gpu enables NVIDIA runtime for selected model providers/);
 });
@@ -1560,6 +1603,7 @@ test('MusicGen generation reuses a resident provider model', () => {
   assert.match(dockerfile, /musicgen_provider_server\.py/);
   assert.match(dockerfile, /musicgen_provider_client\.py/);
   assert.match(compose, /musicgen_provider_server\.py/);
+
   assert.doesNotMatch(compose, /musicgen:[\s\S]{0,600}sleep[\s\S]{0,20}infinity/);
   assert.match(server, /Reusing resident MusicGen model/);
   assert.match(server, /torch\.cuda\.empty_cache\(\)/);
@@ -1746,6 +1790,7 @@ test('async runtime selection acknowledges immediately and completes through run
     controller,
     /requestModelSelection\(body\.modelId\)/
   );
+
   assert.doesNotMatch(
     controller,
     /return this\.runtime\.selectModel\(body\.modelId\)/
@@ -1848,6 +1893,7 @@ test('async runtime selection acknowledges immediately and completes through run
     frontendEffects,
     /selectModelAccepted/
   );
+
   assert.doesNotMatch(
     frontendEffects,
     /selectModelSuccess\(\{\s*status\s*\}\)/
@@ -2005,6 +2051,7 @@ test('runtime selection operation id correlates lifecycle events end to end', ()
     /['"]error['"]/
   );
 
+
   assert.doesNotMatch(
     frontendReducer,
     /\[['"]ready['"],\s*['"]stopped['"],\s*['"]error['"]\]\.includes\(status\.state\)/
@@ -2045,10 +2092,12 @@ test('security S1 authenticates job sockets and protects runtime mutation bounda
   );
 
   // No placeholder identity may survive.
+
   assert.doesNotMatch(
     jobsGateway,
     /mock-user-id/
   );
+
 
   assert.doesNotMatch(
     jobsGateway,
@@ -2089,6 +2138,7 @@ test('security S1 authenticates job sockets and protects runtime mutation bounda
     /emitJobCompleted\(dto\)/
   );
 
+
   assert.doesNotMatch(
     jobsService,
     /emitJobCompleted\(dto\s+as/
@@ -2126,10 +2176,12 @@ test('security S1 authenticates job sockets and protects runtime mutation bounda
     runtimeGateway,
     authModule,
   ]) {
+
     assert.doesNotMatch(
       source,
       /(^|[^A-Za-z0-9_])any([^A-Za-z0-9_]|$)/
     );
+
 
     assert.doesNotMatch(
       source,
@@ -2156,6 +2208,7 @@ test('security S1 authenticates job sockets and protects runtime mutation bounda
       /process\.env\.CORS_ORIGIN/
     );
 
+
     assert.doesNotMatch(
       gateway,
       /origin:\s*['"]\*['"]/
@@ -2181,6 +2234,7 @@ test('security S1 authenticates job sockets and protects runtime mutation bounda
 
   // An HTTP caller must not choose an arbitrary filesystem path for catalog
   // validation.
+
   assert.doesNotMatch(
     songs,
     /catalogPath/
@@ -2234,10 +2288,12 @@ test('security S2A separates access and refresh token trust boundaries', () => {
     '.env.example'
   );
 
+
   assert.doesNotMatch(
     authModule,
     /default-secret-change-in-production/
   );
+
 
   assert.doesNotMatch(
     accessStrategy,
@@ -2299,6 +2355,7 @@ test('security S2A separates access and refresh token trust boundaries', () => {
     /refreshToken\(\)/
   );
 
+
   assert.doesNotMatch(
     frontend,
     /Bearer \$\{[^}]*access/
@@ -2321,10 +2378,12 @@ test('security S2A separates access and refresh token trust boundaries', () => {
       'apps/frontend/src/app/services/auth.service.spec.ts'
     ),
   ]) {
+
     assert.doesNotMatch(
       source,
       /(^|[^A-Za-z0-9_])any([^A-Za-z0-9_]|$)/
     );
+
 
     assert.doesNotMatch(
       source,
@@ -2390,6 +2449,7 @@ test('security S2B-A uses hashed single-use HttpOnly refresh sessions', () => {
     /tokenHash/
   );
 
+
   assert.doesNotMatch(
     sessionSchema,
     /refreshToken/
@@ -2450,6 +2510,7 @@ test('security S2B-A uses hashed single-use HttpOnly refresh sessions', () => {
     /extractRefreshCookieFromHeader/
   );
 
+
   assert.doesNotMatch(
     refreshStrategy,
     /fromAuthHeaderAsBearerToken/
@@ -2507,10 +2568,12 @@ test('security S2B-A uses hashed single-use HttpOnly refresh sessions', () => {
     controllerSpec,
     refreshStrategy,
   ]) {
+
     assert.doesNotMatch(
       source,
       /(^|[^A-Za-z0-9_])any([^A-Za-z0-9_]|$)/
     );
+
 
     assert.doesNotMatch(
       source,
@@ -2553,20 +2616,24 @@ test('security S2B-B keeps refresh credentials out of browser-readable state', (
   );
 
   // Refresh credentials are not modeled in browser-readable responses/state.
+
   assert.doesNotMatch(
     service,
     /refreshToken:\s*string/
   );
+
 
   assert.doesNotMatch(
     state,
     /refreshToken:\s*/
   );
 
+
   assert.doesNotMatch(
     actions,
     /refreshToken:\s*string/
   );
+
 
   assert.doesNotMatch(
     reducer,
@@ -2579,10 +2646,12 @@ test('security S2B-B keeps refresh credentials out of browser-readable state', (
     state,
     effects,
   ]) {
+
     assert.doesNotMatch(
       source,
       /getItem\(\s*['"]refresh_token['"]/
     );
+
 
     assert.doesNotMatch(
       source,
@@ -2612,10 +2681,12 @@ test('security S2B-B keeps refresh credentials out of browser-readable state', (
   );
 
   // Refresh no longer uses a browser-managed bearer credential.
+
   assert.doesNotMatch(
     service,
     /HttpHeaders/
   );
+
 
   assert.doesNotMatch(
     service,
@@ -2623,10 +2694,12 @@ test('security S2B-B keeps refresh credentials out of browser-readable state', (
   );
 
   // E2E must prove the new browser contract instead of recreating the old one.
+
   assert.doesNotMatch(
     e2e,
     /refresh_token/
   );
+
 
   assert.doesNotMatch(
     e2e,
@@ -2653,14 +2726,198 @@ test('security S2B-B keeps refresh credentials out of browser-readable state', (
     serviceSpec,
     reducerSpec,
   ]) {
+
     assert.doesNotMatch(
       source,
       /(^|[^A-Za-z0-9_])any([^A-Za-z0-9_]|$)/
     );
+
 
     assert.doesNotMatch(
       source,
       /(^|[^A-Za-z0-9_])unknown([^A-Za-z0-9_]|$)/
     );
   }
+});
+
+test('security S3-A makes generated and uploaded files private', () => {
+  const appModule = read(
+    'apps/backend/src/app/app.module.ts'
+  );
+
+  const libraryController = read(
+    'apps/backend/src/library/library.controller.ts'
+  );
+
+  const libraryService = read(
+    'apps/backend/src/library/library.service.ts'
+  );
+
+  const jobsController = read(
+    'apps/backend/src/jobs/jobs.controller.ts'
+  );
+
+  const jobsService = read(
+    'apps/backend/src/jobs/jobs.service.ts'
+  );
+
+  // Private artifacts must never be exposed as anonymous static trees.
+
+  assert.doesNotMatch(
+    appModule,
+    /ServeStaticModule/
+  );
+
+
+  assert.doesNotMatch(
+    appModule,
+    /serveRoot:\s*['"]\/uploads['"]/
+  );
+
+
+  assert.doesNotMatch(
+    appModule,
+    /serveRoot:\s*['"]\/downloads['"]/
+  );
+
+  // Library files are retrieved only through an authenticated,
+  // ownership-aware API route.
+  assert.match(
+    libraryController,
+    /@Get\(['"]:id\/file['"]\)/
+  );
+
+  assert.match(
+    libraryController,
+    /JwtAuthGuard/
+  );
+
+  assert.match(
+    libraryService,
+    /resolveOwnedFile/
+  );
+
+  // Generated job artifacts follow the same ownership boundary.
+  assert.match(
+    jobsController,
+    /@Get\(['"]:id\/artifact['"]\)/
+  );
+
+  assert.match(
+    jobsController,
+    /JwtAuthGuard/
+  );
+
+  assert.match(
+    jobsService,
+    /resolveOwnedArtifact/
+  );
+
+  // Storage paths are resolved by the server rather than accepted
+  // from request path parameters.
+
+  assert.doesNotMatch(
+    libraryController,
+    /filename.*@Param/
+  );
+
+
+  assert.doesNotMatch(
+    jobsController,
+    /filename.*@Param/
+  );
+});
+
+test('security S3-A2 fetches private artifacts through authenticated HTTP', () => {
+  const jobsService = read(
+    'apps/frontend/src/app/services/jobs.service.ts'
+  );
+
+  const generationPage = read(
+    'apps/frontend/src/app/features/music-generation/music-generation-page.component.ts'
+  );
+
+  const backendJobs = read(
+    'apps/backend/src/jobs/jobs.service.ts'
+  );
+
+  // Generated artifacts are advertised only through the guarded API.
+
+  assert.doesNotMatch(
+    backendJobs,
+    /\/downloads\/jobs\//
+  );
+
+  assert.match(
+    backendJobs,
+    /\/api\/jobs\/\$\{jobId\}\/artifact/
+  );
+
+  // Angular retrieves the protected file through HttpClient so the
+  // existing auth interceptor can attach the access bearer token.
+  assert.match(
+    jobsService,
+    /getArtifact\(\s*id:\s*string\s*\)/
+  );
+
+  assert.match(
+    jobsService,
+    /responseType:\s*['"]blob['"]/
+  );
+
+  assert.match(
+    jobsService,
+    /\/artifact/
+  );
+
+  // The audio element receives only a local object URL, never the
+  // protected API URL directly.
+  assert.match(
+    generationPage,
+    /JobsService/
+  );
+
+  assert.match(
+    generationPage,
+    /createObjectURL/
+  );
+
+  assert.match(
+    generationPage,
+    /revokeObjectURL/
+  );
+
+
+  assert.doesNotMatch(
+    generationPage,
+    /generatedAudioUrl\s*=\s*typeof\s+outputPath/
+  );
+
+  // Failed generation must never attempt artifact retrieval.
+  const failedJobBranchStart = generationPage.indexOf(
+    "} else if (job.status === 'failed') {"
+  );
+
+  const cancelledJobBranchStart = generationPage.indexOf(
+    "} else if (job.status === 'cancelled') {",
+    failedJobBranchStart
+  );
+
+  assert.ok(
+    failedJobBranchStart >= 0,
+    'Failed-job branch must exist.'
+  );
+
+  assert.ok(
+    cancelledJobBranchStart > failedJobBranchStart,
+    'Cancelled-job branch must follow failed-job branch.'
+  );
+
+  assert.doesNotMatch(
+    generationPage.slice(
+      failedJobBranchStart,
+      cancelledJobBranchStart
+    ),
+    /loadGeneratedArtifact/
+  );
 });

@@ -4,7 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { Observable, from } from 'rxjs';
@@ -23,6 +23,13 @@ interface UploadedFile {
   path?: string;
   size: number;
   filename?: string;
+}
+
+export interface ResolvedPrivateFile {
+  filePath: string;
+  filename: string;
+  contentType: string;
+  size: number;
 }
 
 @Injectable()
@@ -124,6 +131,109 @@ export class LibraryService {
         throw error;
       })
     );
+  }
+
+  async resolveOwnedFile(
+    id: string,
+    userId: string
+  ): Promise<ResolvedPrivateFile> {
+    if (
+      !Types.ObjectId.isValid(id) ||
+      !Types.ObjectId.isValid(userId)
+    ) {
+      throw new NotFoundException(
+        'Library item not found'
+      );
+    }
+
+    const item = await this.libraryItemModel
+      .findOne({
+        _id: new Types.ObjectId(id),
+        userId: new Types.ObjectId(userId),
+      })
+      .exec();
+
+    if (!item) {
+      throw new NotFoundException(
+        'Library item not found'
+      );
+    }
+
+    const expectedPrefix =
+      `/uploads/library/${userId}/`;
+
+    if (!item.fileUrl.startsWith(expectedPrefix)) {
+      throw new NotFoundException(
+        'Library file not found'
+      );
+    }
+
+    const storageName =
+      item.fileUrl.slice(expectedPrefix.length);
+
+    if (
+      !storageName ||
+      path.basename(storageName) !== storageName
+    ) {
+      throw new NotFoundException(
+        'Library file not found'
+      );
+    }
+
+    const userRoot = path.resolve(
+      this.uploadDir,
+      userId
+    );
+
+    const filePath = path.resolve(
+      userRoot,
+      storageName
+    );
+
+    if (
+      !filePath.startsWith(
+        `${userRoot}${path.sep}`
+      )
+    ) {
+      throw new NotFoundException(
+        'Library file not found'
+      );
+    }
+
+    let stat;
+
+    try {
+      stat = await fs.stat(filePath);
+    } catch {
+      throw new NotFoundException(
+        'Library file not found'
+      );
+    }
+
+    if (!stat.isFile()) {
+      throw new NotFoundException(
+        'Library file not found'
+      );
+    }
+
+    const extension =
+      path.extname(storageName).toLowerCase();
+
+    const contentTypes: Record<string, string> = {
+      '.wav': 'audio/wav',
+      '.mp3': 'audio/mpeg',
+      '.flac': 'audio/flac',
+      '.json': 'application/json',
+    };
+
+    return {
+      filePath,
+      filename: storageName,
+      contentType:
+        contentTypes[extension] ||
+        'application/octet-stream',
+      size: stat.size,
+    };
   }
 
   delete(id: string, userId: string): Observable<void> {
