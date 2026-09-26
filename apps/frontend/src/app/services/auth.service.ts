@@ -4,11 +4,9 @@ import {
 } from '@angular/core';
 import {
   HttpClient,
-  HttpHeaders,
 } from '@angular/common/http';
 import {
   Observable,
-  throwError,
 } from 'rxjs';
 import {
   User,
@@ -28,13 +26,11 @@ export interface RegisterRequest {
 export interface AuthResponse {
   user: User;
   accessToken: string;
-  refreshToken: string;
-  expiresIn?: number;
+  expiresIn: number;
 }
 
 export interface RefreshResponse {
   accessToken: string;
-  refreshToken: string;
   expiresIn: number;
 }
 
@@ -42,7 +38,10 @@ export interface SessionResponse {
   id: string;
   email: string;
   username: string;
-  role: string;
+  role:
+    | 'admin'
+    | 'user'
+    | 'guest';
 }
 
 export interface LogoutResponse {
@@ -67,7 +66,11 @@ export class AuthService {
     return this.http
       .post<AuthResponse>(
         `${this.apiUrl}/login`,
-        credentials
+        credentials,
+        {
+          withCredentials:
+            true,
+        }
       );
   }
 
@@ -78,7 +81,11 @@ export class AuthService {
     return this.http
       .post<AuthResponse>(
         `${this.apiUrl}/register`,
-        data
+        data,
+        {
+          withCredentials:
+            true,
+        }
       );
   }
 
@@ -87,34 +94,23 @@ export class AuthService {
     return this.http
       .post<LogoutResponse>(
         `${this.apiUrl}/logout`,
-        {}
+        {},
+        {
+          withCredentials:
+            true,
+        }
       );
   }
 
   refreshToken():
     Observable<RefreshResponse> {
-    const refreshToken =
-      this.readRefreshToken();
-
-    if (!refreshToken) {
-      return throwError(
-        () =>
-          new Error(
-            'Refresh token is unavailable.'
-          )
-      );
-    }
-
     return this.http
       .post<RefreshResponse>(
         `${this.apiUrl}/refresh`,
         {},
         {
-          headers:
-            new HttpHeaders({
-              Authorization:
-                `Bearer ${refreshToken}`,
-            }),
+          withCredentials:
+            true,
         }
       );
   }
@@ -125,25 +121,5 @@ export class AuthService {
       .get<SessionResponse>(
         `${this.apiUrl}/session`
       );
-  }
-
-  private readRefreshToken():
-    string | null {
-    if (
-      typeof window ===
-      'undefined'
-    ) {
-      return null;
-    }
-
-    try {
-      return window
-        .localStorage
-        .getItem(
-          'refresh_token'
-        );
-    } catch {
-      return null;
-    }
   }
 }

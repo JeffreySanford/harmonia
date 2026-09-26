@@ -64,7 +64,6 @@ describe('App', () => {
         user: null,
         isAuthenticated: false,
         token: null,
-        refreshToken: null,
         loading: false,
         error: null,
       },

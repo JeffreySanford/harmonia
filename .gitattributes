@@ -1,2 +1,5 @@
 # Linux/container scripts must retain LF endings even on Windows workstations.
 *.sh text eol=lf
+*.ts text eol=lf
+*.cjs text eol=lf
+.gitattributes text eol=lf

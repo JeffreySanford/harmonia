@@ -21,11 +21,17 @@ import {
   User,
 } from '../schemas/user.schema';
 import {
-  AuthTokenPayload,
+  AccessTokenPayload,
+  AuthenticatedRefreshRequestUser,
 } from './auth-token.config';
 import {
   AuthService,
 } from './auth.service';
+import {
+  IssuedRefreshSession,
+  RefreshSessionPrincipal,
+  RefreshSessionService,
+} from './refresh-session.service';
 
 interface TestUser {
   _id: {
@@ -35,9 +41,9 @@ interface TestUser {
   username: string;
   role: string;
   createdAt: Date;
+
   comparePassword(
-    candidate:
-      string
+    candidate: string
   ): Promise<boolean>;
 }
 
@@ -60,10 +66,13 @@ interface DeleteResult {
   deletedCount: number;
 }
 
+interface ExecutableDelete {
+  exec(): Promise<DeleteResult>;
+}
+
 type FindOne =
   (
-    filter:
-      UserLookupFilter
+    filter: UserLookupFilter
   ) =>
     Promise<TestUser | null>;
 
@@ -75,28 +84,53 @@ type FindById =
 
 type DeleteOne =
   (
-    filter:
-      DeleteFilter
+    filter: DeleteFilter
   ) =>
-    Promise<DeleteResult>;
+    ExecutableDelete;
 
 interface SignOptions {
   secret: string;
   expiresIn: number;
 }
 
-type SignToken =
+type SignAccessToken =
   (
-    payload:
-      AuthTokenPayload,
-    options:
-      SignOptions
+    payload: AccessTokenPayload,
+    options: SignOptions
   ) =>
     Promise<string>;
 
+type IssueRefreshSession =
+  (
+    principal:
+      RefreshSessionPrincipal
+  ) =>
+    Promise<IssuedRefreshSession>;
+
+type RotateRefreshSession =
+  (
+    identity:
+      AuthenticatedRefreshRequestUser,
+    token:
+      string
+  ) =>
+    Promise<IssuedRefreshSession>;
+
+type RevokeRefreshSession =
+  (
+    identity:
+      AuthenticatedRefreshRequestUser,
+    token:
+      string
+  ) =>
+    Promise<void>;
+
 describe(
-  'AuthService token boundary',
+  'AuthService rotating sessions',
   () => {
+    const userId =
+      '507f1f77bcf86cd799439011';
+
     const accessSecret =
       'access-secret-for-tests-012345678901234567890';
 
@@ -116,39 +150,46 @@ describe(
       jest.fn();
 
     const signAsync:
-      jest.MockedFunction<SignToken> =
-      jest.fn(
-        async (
-          payload,
-          _options
-        ) =>
-          payload.typ ===
-          'access'
-            ? 'access-token'
-            : 'refresh-token'
-      );
+      jest.MockedFunction<SignAccessToken> =
+      jest.fn();
+
+    const issue:
+      jest.MockedFunction<IssueRefreshSession> =
+      jest.fn();
+
+    const rotate:
+      jest.MockedFunction<RotateRefreshSession> =
+      jest.fn();
+
+    const revoke:
+      jest.MockedFunction<RevokeRefreshSession> =
+      jest.fn();
 
     let service:
       AuthService;
 
     function createUser(
-      passwordValid =
-        true
+      passwordValid = true
     ): TestUser {
       return {
         _id: {
           toString:
             () =>
-              '507f1f77bcf86cd799439011',
+              userId,
         },
+
         email:
           'test@example.com',
+
         username:
           'testuser',
+
         role:
           'user',
+
         createdAt:
           new Date(0),
+
         comparePassword:
           async (
             _candidate
@@ -157,9 +198,46 @@ describe(
       };
     }
 
+    function issuedRefresh(
+      refreshToken:
+        string
+    ): IssuedRefreshSession {
+      return {
+        refreshToken,
+        sessionId:
+          'session-2',
+        familyId:
+          'family-1',
+      };
+    }
+
     beforeEach(
       async () => {
         jest.clearAllMocks();
+
+        signAsync
+          .mockResolvedValue(
+            'access-token'
+          );
+
+        issue
+          .mockResolvedValue(
+            issuedRefresh(
+              'refresh-token'
+            )
+          );
+
+        rotate
+          .mockResolvedValue(
+            issuedRefresh(
+              'rotated-refresh-token'
+            )
+          );
+
+        revoke
+          .mockResolvedValue(
+            undefined
+          );
 
         const configService = {
           get(
@@ -200,6 +278,16 @@ describe(
 
                 {
                   provide:
+                    RefreshSessionService,
+                  useValue: {
+                    issue,
+                    rotate,
+                    revoke,
+                  },
+                },
+
+                {
+                  provide:
                     ConfigService,
                   useValue:
                     configService,
@@ -210,6 +298,7 @@ describe(
                     getModelToken(
                       User.name
                     ),
+
                   useValue: {
                     findOne,
                     findById,
@@ -228,7 +317,7 @@ describe(
     );
 
     it(
-      'uses separate token types and secrets',
+      'returns the refresh credential only in the internal session envelope',
       async () => {
         const user =
           createUser();
@@ -249,7 +338,8 @@ describe(
           );
 
         expect(
-          result.accessToken
+          result.response
+            .accessToken
         ).toBe(
           'access-token'
         );
@@ -260,50 +350,150 @@ describe(
           'refresh-token'
         );
 
-        const accessCall =
+        expect(
+          Object.prototype
+            .hasOwnProperty
+            .call(
+              result.response,
+              'refreshToken'
+            )
+        ).toBe(
+          false
+        );
+
+        expect(issue)
+          .toHaveBeenCalledWith({
+            userId,
+            username:
+              user.username,
+            role:
+              'user',
+          });
+
+        const signCall =
           signAsync.mock.calls[0];
 
-        const refreshCall =
-          signAsync.mock.calls[1];
-
-        if (
-          !accessCall ||
-          !refreshCall
-        ) {
+        if (!signCall) {
           throw new Error(
-            'Expected two token signing calls.'
+            'Expected access-token signing call.'
           );
         }
 
         expect(
-          accessCall[0].typ
-        ).toBe(
-          'access'
-        );
+          signCall[0]
+        ).toEqual({
+          sub:
+            userId,
+          username:
+            user.username,
+          role:
+            'user',
+          typ:
+            'access',
+        });
 
         expect(
-          accessCall[1].secret
+          signCall[1].secret
         ).toBe(
           accessSecret
         );
 
         expect(
-          refreshCall[0].typ
+          signAsync
+        ).toHaveBeenCalledTimes(
+          1
+        );
+      }
+    );
+
+    it(
+      'delegates refresh credential issuance to the session service',
+      async () => {
+        const identity:
+          AuthenticatedRefreshRequestUser = {
+            userId,
+            username:
+              'testuser',
+            email:
+              'test@example.com',
+            role:
+              'user',
+            sessionId:
+              'session-1',
+            familyId:
+              'family-1',
+          };
+
+        const result =
+          await firstValueFrom(
+            service.refresh(
+              identity,
+              'presented-refresh-token'
+            )
+          );
+
+        expect(rotate)
+          .toHaveBeenCalledWith(
+            identity,
+            'presented-refresh-token'
+          );
+
+        expect(
+          result.response
+            .accessToken
         ).toBe(
-          'refresh'
+          'access-token'
         );
 
         expect(
-          refreshCall[1].secret
+          result.refreshToken
         ).toBe(
-          refreshSecret
+          'rotated-refresh-token'
         );
 
         expect(
-          accessCall[1].secret
-        ).not.toBe(
-          refreshCall[1].secret
+          Object.prototype
+            .hasOwnProperty
+            .call(
+              result.response,
+              'refreshToken'
+            )
+        ).toBe(
+          false
         );
+      }
+    );
+
+    it(
+      'revokes the refresh-session family on logout',
+      async () => {
+        const identity:
+          AuthenticatedRefreshRequestUser = {
+            userId,
+            username:
+              'testuser',
+            email:
+              'test@example.com',
+            role:
+              'user',
+            sessionId:
+              'session-1',
+            familyId:
+              'family-1',
+          };
+
+        await firstValueFrom(
+          service.logout(
+            identity,
+            'presented-refresh-token'
+          )
+        );
+
+        expect(revoke)
+          .toHaveBeenCalledWith(
+            identity,
+            'presented-refresh-token'
+          );
       }
     );
 
@@ -327,6 +517,10 @@ describe(
         ).rejects.toThrow(
           UnauthorizedException
         );
+
+        expect(issue)
+          .not
+          .toHaveBeenCalled();
       }
     );
 
@@ -350,11 +544,15 @@ describe(
         ).rejects.toThrow(
           UnauthorizedException
         );
+
+        expect(issue)
+          .not
+          .toHaveBeenCalled();
       }
     );
 
     it(
-      'returns a concrete session projection',
+      'returns a concrete access-session projection',
       async () => {
         const user =
           createUser();
@@ -367,20 +565,21 @@ describe(
         const result =
           await firstValueFrom(
             service.validateSession(
-              user._id.toString()
+              userId
             )
           );
 
-        expect(result).toEqual({
-          id:
-            user._id.toString(),
-          email:
-            user.email,
-          username:
-            user.username,
-          role:
-            'user',
-        });
+        expect(result)
+          .toEqual({
+            id:
+              userId,
+            email:
+              user.email,
+            username:
+              user.username,
+            role:
+              'user',
+          });
       }
     );
   }

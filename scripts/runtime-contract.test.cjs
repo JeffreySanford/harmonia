@@ -2206,6 +2206,10 @@ test('security S2A separates access and refresh token trust boundaries', () => {
     'apps/backend/src/auth/auth.service.ts'
   );
 
+  const refreshSessionService = read(
+    'apps/backend/src/auth/refresh-session.service.ts'
+  );
+
   const accessStrategy = read(
     'apps/backend/src/auth/strategies/jwt.strategy.ts'
   );
@@ -2256,7 +2260,7 @@ test('security S2A separates access and refresh token trust boundaries', () => {
   );
 
   assert.match(
-    authService,
+    refreshSessionService,
     /typ:\s*'refresh'/
   );
 
@@ -2292,7 +2296,7 @@ test('security S2A separates access and refresh token trust boundaries', () => {
 
   assert.match(
     frontend,
-    /Bearer \$\{refreshToken\}/
+    /refreshToken\(\)/
   );
 
   assert.doesNotMatch(
@@ -2304,6 +2308,7 @@ test('security S2A separates access and refresh token trust boundaries', () => {
     tokenConfig,
     authModule,
     authService,
+    refreshSessionService,
     accessStrategy,
     refreshStrategy,
     refreshGuard,
@@ -2315,6 +2320,338 @@ test('security S2A separates access and refresh token trust boundaries', () => {
     read(
       'apps/frontend/src/app/services/auth.service.spec.ts'
     ),
+  ]) {
+    assert.doesNotMatch(
+      source,
+      /(^|[^A-Za-z0-9_])any([^A-Za-z0-9_]|$)/
+    );
+
+    assert.doesNotMatch(
+      source,
+      /(^|[^A-Za-z0-9_])unknown([^A-Za-z0-9_]|$)/
+    );
+  }
+});
+
+
+test('security S2B-A uses hashed single-use HttpOnly refresh sessions', () => {
+  const tokenConfig = read(
+    'apps/backend/src/auth/auth-token.config.ts'
+  );
+
+  const sessionSchema = read(
+    'apps/backend/src/schemas/refresh-session.schema.ts'
+  );
+
+  const refreshCookie = read(
+    'apps/backend/src/auth/refresh-cookie.ts'
+  );
+
+  const sessionService = read(
+    'apps/backend/src/auth/refresh-session.service.ts'
+  );
+
+  const sessionSpec = read(
+    'apps/backend/src/auth/refresh-session.service.spec.ts'
+  );
+
+  const authService = read(
+    'apps/backend/src/auth/auth.service.ts'
+  );
+
+  const authServiceSpec = read(
+    'apps/backend/src/auth/auth.service.spec.ts'
+  );
+
+  const controller = read(
+    'apps/backend/src/auth/auth.controller.ts'
+  );
+
+  const controllerSpec = read(
+    'apps/backend/src/auth/auth.controller.spec.ts'
+  );
+
+  const refreshStrategy = read(
+    'apps/backend/src/auth/strategies/refresh-jwt.strategy.ts'
+  );
+
+  assert.match(
+    tokenConfig,
+    /sid:\s*string/
+  );
+
+  assert.match(
+    tokenConfig,
+    /fid:\s*string/
+  );
+
+  assert.match(
+    sessionSchema,
+    /tokenHash/
+  );
+
+  assert.doesNotMatch(
+    sessionSchema,
+    /refreshToken/
+  );
+
+  assert.match(
+    sessionSchema,
+    /expireAfterSeconds:\s*0/
+  );
+
+  assert.match(
+    sessionService,
+    /createHash\(\s*'sha256'\s*\)/
+  );
+
+  assert.match(
+    sessionService,
+    /findOneAndUpdate/
+  );
+
+  assert.match(
+    sessionService,
+    /revokedAt:\s*null/
+  );
+
+  assert.match(
+    sessionService,
+    /revokeReason:\s*'rotated'/
+  );
+
+  assert.match(
+    sessionService,
+    /reuse-detected/
+  );
+
+  assert.match(
+    sessionService,
+    /rotation-write-failed/
+  );
+
+  assert.match(
+    refreshCookie,
+    /httpOnly:\s*true/
+  );
+
+  assert.match(
+    refreshCookie,
+    /sameSite:\s*'strict'/
+  );
+
+  assert.match(
+    refreshCookie,
+    /REFRESH_COOKIE_NAME/
+  );
+
+  assert.match(
+    refreshStrategy,
+    /extractRefreshCookieFromHeader/
+  );
+
+  assert.doesNotMatch(
+    refreshStrategy,
+    /fromAuthHeaderAsBearerToken/
+  );
+
+  assert.match(
+    controller,
+    /setRefreshCookie/
+  );
+
+  assert.match(
+    controller,
+    /requireRefreshCookie/
+  );
+
+  assert.match(
+    controller,
+    /clearRefreshCookie/
+  );
+
+  assert.match(
+    controller,
+    /return\s+session\.response/
+  );
+
+  assert.match(
+    authService,
+    /RefreshSessionService/
+  );
+
+  assert.match(
+    authServiceSpec,
+    /hasOwnProperty/
+  );
+
+  assert.match(
+    controllerSpec,
+    /httpOnly:\s*true/
+  );
+
+  assert.match(
+    sessionSpec,
+    /reuse-detected/
+  );
+
+  for (const source of [
+    tokenConfig,
+    sessionSchema,
+    refreshCookie,
+    sessionService,
+    sessionSpec,
+    authService,
+    authServiceSpec,
+    controller,
+    controllerSpec,
+    refreshStrategy,
+  ]) {
+    assert.doesNotMatch(
+      source,
+      /(^|[^A-Za-z0-9_])any([^A-Za-z0-9_]|$)/
+    );
+
+    assert.doesNotMatch(
+      source,
+      /(^|[^A-Za-z0-9_])unknown([^A-Za-z0-9_]|$)/
+    );
+  }
+});
+
+test('security S2B-B keeps refresh credentials out of browser-readable state', () => {
+  const service = read(
+    'apps/frontend/src/app/services/auth.service.ts'
+  );
+
+  const state = read(
+    'apps/frontend/src/app/store/auth/auth.state.ts'
+  );
+
+  const actions = read(
+    'apps/frontend/src/app/store/auth/auth.actions.ts'
+  );
+
+  const reducer = read(
+    'apps/frontend/src/app/store/auth/auth.reducer.ts'
+  );
+
+  const effects = read(
+    'apps/frontend/src/app/store/auth/auth.effects.ts'
+  );
+
+  const serviceSpec = read(
+    'apps/frontend/src/app/services/auth.service.spec.ts'
+  );
+
+  const reducerSpec = read(
+    'apps/frontend/src/app/store/auth/auth.reducer.spec.ts'
+  );
+
+  const e2e = read(
+    'tests/e2e/helpers/auth.ts'
+  );
+
+  // Refresh credentials are not modeled in browser-readable responses/state.
+  assert.doesNotMatch(
+    service,
+    /refreshToken:\s*string/
+  );
+
+  assert.doesNotMatch(
+    state,
+    /refreshToken:\s*/
+  );
+
+  assert.doesNotMatch(
+    actions,
+    /refreshToken:\s*string/
+  );
+
+  assert.doesNotMatch(
+    reducer,
+    /(^|[^.A-Za-z0-9_])refreshToken\s*[,}:]/m
+  );
+
+  // Browser code may purge the old key, but may never read or write it.
+  for (const source of [
+    service,
+    state,
+    effects,
+  ]) {
+    assert.doesNotMatch(
+      source,
+      /getItem\(\s*['"]refresh_token['"]/
+    );
+
+    assert.doesNotMatch(
+      source,
+      /setItem\(\s*['"]refresh_token['"]/
+    );
+  }
+
+  // Login/register establish the cookie, refresh/logout consume it.
+  assert.match(
+    service,
+    /login\([\s\S]{0,700}withCredentials:\s*true/
+  );
+
+  assert.match(
+    service,
+    /register\([\s\S]{0,700}withCredentials:\s*true/
+  );
+
+  assert.match(
+    service,
+    /logout\(\)[\s\S]{0,700}withCredentials:\s*true/
+  );
+
+  assert.match(
+    service,
+    /refreshToken\(\)[\s\S]{0,700}withCredentials:\s*true/
+  );
+
+  // Refresh no longer uses a browser-managed bearer credential.
+  assert.doesNotMatch(
+    service,
+    /HttpHeaders/
+  );
+
+  assert.doesNotMatch(
+    service,
+    /Bearer\s+\$\{refreshToken\}/
+  );
+
+  // E2E must prove the new browser contract instead of recreating the old one.
+  assert.doesNotMatch(
+    e2e,
+    /refresh_token/
+  );
+
+  assert.doesNotMatch(
+    e2e,
+    /refreshToken\?:/
+  );
+
+  assert.match(
+    serviceSpec,
+    /HttpOnly refresh/
+  );
+
+  assert.match(
+    reducerSpec,
+    /replaces only the access token after refresh/
+  );
+
+  // New S2B frontend auth code keeps the concrete-type rule.
+  for (const source of [
+    service,
+    state,
+    actions,
+    reducer,
+    effects,
+    serviceSpec,
+    reducerSpec,
   ]) {
     assert.doesNotMatch(
       source,

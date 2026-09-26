@@ -18,16 +18,31 @@ import {
   ExtractJwt,
   Strategy,
 } from 'passport-jwt';
+import type {
+  Request,
+} from 'express';
 import {
   User,
   UserDocument,
 } from '../../schemas/user.schema';
 import {
-  AuthenticatedRequestUser,
+  AuthenticatedRefreshRequestUser,
   AuthTokenPayload,
   normalizeAuthRole,
   requireAuthSecret,
 } from '../auth-token.config';
+import {
+  extractRefreshCookieFromHeader,
+} from '../refresh-cookie';
+
+function refreshCookieExtractor(
+  request:
+    Request
+): string | null {
+  return extractRefreshCookieFromHeader(
+    request.headers.cookie
+  );
+}
 
 @Injectable()
 export class RefreshJwtStrategy
@@ -46,8 +61,9 @@ export class RefreshJwtStrategy
   ) {
     super({
       jwtFromRequest:
-        ExtractJwt
-          .fromAuthHeaderAsBearerToken(),
+        ExtractJwt.fromExtractors([
+          refreshCookieExtractor,
+        ]),
       ignoreExpiration:
         false,
       secretOrKey:
@@ -61,7 +77,7 @@ export class RefreshJwtStrategy
   async validate(
     payload:
       AuthTokenPayload
-  ): Promise<AuthenticatedRequestUser> {
+  ): Promise<AuthenticatedRefreshRequestUser> {
     if (
       payload.typ !==
       'refresh'
@@ -94,6 +110,10 @@ export class RefreshJwtStrategy
         normalizeAuthRole(
           user.role
         ),
+      sessionId:
+        payload.sid,
+      familyId:
+        payload.fid,
     };
   }
 }
