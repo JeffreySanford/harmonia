@@ -2,7 +2,7 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { BehaviorSubject, map, Observable } from 'rxjs';
+import { BehaviorSubject, map, Observable, of } from 'rxjs';
 import {
   Meta,
   StoryObj,
@@ -11,6 +11,7 @@ import {
 } from '@storybook/angular';
 import { expect, fn } from 'storybook/test';
 
+import { JobsService } from '../../services/jobs.service';
 import { WebSocketService } from '../../services/websocket.service';
 import { initialAuthState } from '../../store/auth/auth.state';
 import * as JobsActions from '../../store/jobs/jobs.actions';
@@ -285,7 +286,7 @@ const completedStore = new MusicStoryStore(
       },
       result: {
         outputPath:
-          '/downloads/jobs/storybook-musicgen-job/music.wav',
+          '/api/jobs/storybook-musicgen-job/artifact',
       },
       createdAt: '2026-09-23T18:30:13.692Z',
       startedAt: '2026-09-23T18:30:14.000Z',
@@ -314,6 +315,17 @@ const websocket = {
   unsubscribeFromJob: fn(),
 };
 
+const jobsService = {
+  getArtifact: fn().mockReturnValue(
+    of(
+      new Blob(
+        ['storybook-protected-audio'],
+        { type: 'audio/wav' }
+      )
+    )
+  ),
+};
+
 const snackBar = {
   open: fn(),
 };
@@ -336,6 +348,7 @@ const meta: Meta<MusicGenerationPageComponent> = {
       providers: [
         { provide: Router, useValue: router },
         { provide: WebSocketService, useValue: websocket },
+        { provide: JobsService, useValue: jobsService },
         { provide: MatSnackBar, useValue: snackBar },
       ],
     }),
@@ -484,6 +497,7 @@ export const CompletedGenerationShowsAudioPlayer: Story = {
   decorators: [withStore(completedStore)],
   play: async ({ canvas, canvasElement, userEvent }) => {
     completedStore.dispatchSpy.mockClear();
+    jobsService.getArtifact.mockClear();
 
     await userEvent.type(
       canvas.getByPlaceholderText('Enter music title'),
@@ -501,10 +515,16 @@ export const CompletedGenerationShowsAudioPlayer: Story = {
     const audio = canvasElement.querySelector('audio');
 
     await expect(audio).not.toBeNull();
-    await expect(audio).toHaveAttribute(
-      'src',
-      '/downloads/jobs/storybook-musicgen-job/music.wav'
+
+    await expect(
+      jobsService.getArtifact
+    ).toHaveBeenCalledWith(
+      'storybook-musicgen-job'
     );
+
+    await expect(
+      audio?.getAttribute('src')
+    ).toMatch(/^blob:/);
 
     await expect(
       canvas.getByRole('button', { name: /download audio file/i })

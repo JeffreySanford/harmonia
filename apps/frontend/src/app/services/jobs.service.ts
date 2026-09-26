@@ -51,6 +51,16 @@ export class JobsService {
     return this.http.post<Job>(this.apiUrl, request);
   }
 
+  getArtifact(id: string): Observable<Blob> {
+    return this.http.get(
+      `${this.apiUrl}/${id}/artifact`,
+      {
+        responseType: 'blob',
+      }
+    );
+  }
+
+
   cancelJob(id: string): Observable<Job> {
     return this.http.post<Job>(`${this.apiUrl}/${id}/cancel`, {});
   }

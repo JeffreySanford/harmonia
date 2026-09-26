@@ -7,9 +7,10 @@ import {
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { filter, take, takeUntil } from 'rxjs/operators';
 import { WebSocketService } from '../../services/websocket.service';
+import { JobsService } from '../../services/jobs.service';
 import { AppState } from '../../store/app.state';
 import { selectAuthToken } from '../../store/auth/auth.selectors';
 import * as MusicRuntimeActions from '../../store/music-runtime/music-runtime.actions';
@@ -33,20 +34,10 @@ import {
   MusicModelCatalogEntry,
   MusicRuntimeStatus,
 } from '../../store/music-runtime/music-runtime.state';
-
-interface ImportedSong {
-  title: string;
-  lyrics: string;
-  genre: string;
-  mood: string;
-  duration: number;
-}
-
-interface InstrumentOption {
-  value: string;
-  label: string;
-  icon: string;
-}
+import {
+  ImportedSong,
+  InstrumentOption,
+} from './music-generation-page.types';
 
 /**
  * Music Generation Page Component
@@ -65,6 +56,7 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly store = inject(Store<AppState>);
   private readonly websocket = inject(WebSocketService);
+  private readonly jobsService = inject(JobsService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroy$ = new Subject<void>();
 
@@ -90,6 +82,9 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
   generatedAudioUrl: string | null = null;
   activeGenerationJobId: string | null = null;
   private handledTerminalJobId: string | null = null;
+  private generatedAudioObjectUrl: string | null = null;
+  private artifactLoadSubscription: Subscription | null = null;
+  private artifactLoadGeneration = 0;
 
   selectedProviderId: string | null = null;
   selectedModelId: string | null = null;
@@ -248,14 +243,12 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
         this.progress = job.progress?.percentage ?? this.progress;
 
         if (job.status === 'completed') {
-          const outputPath = job.result?.outputPath;
-          this.generatedAudioUrl =
-            typeof outputPath === 'string' ? outputPath : null;
           this.progress = 100;
           this.isGenerating = false;
 
           if (this.handledTerminalJobId !== job.id) {
             this.handledTerminalJobId = job.id;
+            this.loadGeneratedArtifact(job.id);
             this.snackBar.open('Music generation completed.', 'Close', {
               duration: 4000,
             });
@@ -292,6 +285,9 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
     if (this.activeGenerationJobId) {
       this.websocket.unsubscribeFromJob(this.activeGenerationJobId);
     }
+
+    this.cancelGeneratedArtifactLoad();
+    this.revokeGeneratedAudioUrl();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -320,7 +316,8 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.generatedAudioUrl = null;
+    this.cancelGeneratedArtifactLoad();
+    this.revokeGeneratedAudioUrl();
     this.store.dispatch(MusicRuntimeActions.selectModel({ modelId }));
   }
 
@@ -563,7 +560,8 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
       this.websocket.unsubscribeFromJob(this.activeGenerationJobId);
     }
 
-    this.generatedAudioUrl = null;
+    this.cancelGeneratedArtifactLoad();
+    this.revokeGeneratedAudioUrl();
     this.activeGenerationJobId = null;
     this.handledTerminalJobId = null;
     this.progress = 0;
@@ -607,6 +605,79 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
         : '';
 
     return `${this.genre} music, ${this.mood} mood, ${this.bpm} BPM${instrumentText}, clean production`;
+  }
+
+  private loadGeneratedArtifact(jobId: string): void {
+    this.cancelGeneratedArtifactLoad();
+
+    const generation =
+      this.artifactLoadGeneration;
+
+    const subscription =
+      this.jobsService
+        .getArtifact(jobId)
+        .pipe(
+          take(1),
+          takeUntil(this.destroy$)
+        )
+        .subscribe({
+          next: (blob) => {
+            if (
+              generation !==
+              this.artifactLoadGeneration
+            ) {
+              return;
+            }
+
+            this.revokeGeneratedAudioUrl();
+
+            this.generatedAudioObjectUrl =
+              URL.createObjectURL(blob);
+
+            this.generatedAudioUrl =
+              this.generatedAudioObjectUrl;
+          },
+          error: () => {
+            if (
+              generation !==
+              this.artifactLoadGeneration
+            ) {
+              return;
+            }
+
+            this.revokeGeneratedAudioUrl();
+
+            this.snackBar.open(
+              'Music was generated, but the protected audio file could not be loaded.',
+              'Close',
+              { duration: 5000 }
+            );
+          },
+        });
+
+    this.artifactLoadSubscription =
+      subscription.closed
+        ? null
+        : subscription;
+  }
+
+  private cancelGeneratedArtifactLoad(): void {
+    this.artifactLoadGeneration += 1;
+
+    this.artifactLoadSubscription?.unsubscribe();
+    this.artifactLoadSubscription = null;
+  }
+
+  private revokeGeneratedAudioUrl(): void {
+    if (this.generatedAudioObjectUrl) {
+      URL.revokeObjectURL(
+        this.generatedAudioObjectUrl
+      );
+
+      this.generatedAudioObjectUrl = null;
+    }
+
+    this.generatedAudioUrl = null;
   }
 
   downloadAudio(): void {

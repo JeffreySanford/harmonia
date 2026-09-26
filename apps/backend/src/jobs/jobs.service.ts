@@ -27,6 +27,13 @@ interface WavMetadata {
   size: number;
 }
 
+export interface ResolvedJobArtifact {
+  filePath: string;
+  filename: string;
+  contentType: string;
+  size: number;
+}
+
 @Injectable()
 export class JobsService {
   private readonly logger = new Logger(JobsService.name);
@@ -142,6 +149,74 @@ export class JobsService {
     }
 
     await this.jobModel.deleteOne({ _id: job._id }).exec();
+  }
+
+  async resolveOwnedArtifact(
+    id: string,
+    userId: string
+  ): Promise<ResolvedJobArtifact> {
+    const job = await this.findOwnedDocument(
+      id,
+      userId
+    );
+
+    if (job.status !== 'completed') {
+      throw new NotFoundException(
+        'Job artifact not found'
+      );
+    }
+
+    const rootPath = path.resolve(
+      process.cwd(),
+      'exports',
+      'jobs'
+    );
+
+    const jobRoot = path.resolve(
+      rootPath,
+      job._id.toString()
+    );
+
+    const filePath = path.resolve(
+      jobRoot,
+      'music.wav'
+    );
+
+    if (
+      !jobRoot.startsWith(
+        `${rootPath}${path.sep}`
+      ) ||
+      !filePath.startsWith(
+        `${jobRoot}${path.sep}`
+      )
+    ) {
+      throw new NotFoundException(
+        'Job artifact not found'
+      );
+    }
+
+    let stat;
+
+    try {
+      stat = await fs.stat(filePath);
+    } catch {
+      throw new NotFoundException(
+        'Job artifact not found'
+      );
+    }
+
+    if (!stat.isFile()) {
+      throw new NotFoundException(
+        'Job artifact not found'
+      );
+    }
+
+    return {
+      filePath,
+      filename: 'music.wav',
+      contentType: 'audio/wav',
+      size: stat.size,
+    };
   }
 
   async updateStatus(
@@ -416,7 +491,7 @@ export class JobsService {
         hostPath,
         requestedDurationSeconds
       );
-      const downloadUrl = `/downloads/jobs/${jobId}/music.wav`;
+      const downloadUrl = `/api/jobs/${jobId}/artifact`;
 
       await this.complete(jobId, userId, {
         outputPath: downloadUrl,

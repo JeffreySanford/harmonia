@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import * as path from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { JobsModule } from '../jobs/jobs.module';
@@ -36,14 +34,6 @@ import { MusicRuntimeModule } from '../music-runtime/music-runtime.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
-    }),
-    ServeStaticModule.forRoot({
-      rootPath: path.join(process.cwd(), 'uploads'),
-      serveRoot: '/uploads',
-    }),
-    ServeStaticModule.forRoot({
-      rootPath: path.join(process.cwd(), 'exports'),
-      serveRoot: '/downloads',
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],

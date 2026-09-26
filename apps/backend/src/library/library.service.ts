@@ -1,10 +1,11 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { Observable, from } from 'rxjs';
@@ -14,7 +15,7 @@ import {
   LibraryItemDocument,
 } from '../schemas/library-item.schema';
 
-interface UploadedFile {
+export interface LibraryUploadFile {
   fieldname: string;
   originalname: string;
   encoding: string;
@@ -23,6 +24,15 @@ interface UploadedFile {
   path?: string;
   size: number;
   filename?: string;
+}
+
+export const MAX_LIBRARY_UPLOAD_BYTES = 100 * 1024 * 1024;
+
+export interface ResolvedPrivateFile {
+  filePath: string;
+  filename: string;
+  contentType: string;
+  size: number;
 }
 
 @Injectable()
@@ -126,11 +136,91 @@ export class LibraryService {
     );
   }
 
+  async resolveOwnedFile(
+    id: string,
+    userId: string
+  ): Promise<ResolvedPrivateFile> {
+    if (
+      !Types.ObjectId.isValid(id) ||
+      !Types.ObjectId.isValid(userId)
+    ) {
+      throw new NotFoundException(
+        'Library item not found'
+      );
+    }
+
+    const item = await this.libraryItemModel
+      .findOne({
+        _id: new Types.ObjectId(id),
+        userId: new Types.ObjectId(userId),
+      })
+      .exec();
+
+    if (!item) {
+      throw new NotFoundException(
+        'Library item not found'
+      );
+    }
+
+    const resolvedStorage =
+      this.resolveOwnedStoragePath(
+        item.fileUrl,
+        userId,
+        true
+      );
+
+    if (!resolvedStorage) {
+      throw new NotFoundException(
+        'Library file not found'
+      );
+    }
+
+    const {
+      filePath,
+      storageName,
+    } = resolvedStorage;
+
+    let stat;
+
+    try {
+      stat = await fs.stat(filePath);
+    } catch {
+      throw new NotFoundException(
+        'Library file not found'
+      );
+    }
+
+    if (!stat.isFile()) {
+      throw new NotFoundException(
+        'Library file not found'
+      );
+    }
+
+    const extension =
+      path.extname(storageName).toLowerCase();
+
+    const contentTypes: Record<string, string> = {
+      '.wav': 'audio/wav',
+      '.mp3': 'audio/mpeg',
+      '.flac': 'audio/flac',
+      '.json': 'application/json',
+    };
+
+    return {
+      filePath,
+      filename: storageName,
+      contentType:
+        contentTypes[extension] ||
+        'application/octet-stream',
+      size: stat.size,
+    };
+  }
+
   delete(id: string, userId: string): Observable<void> {
     return this.findById(id, userId).pipe(
       switchMap((item) => {
         // Delete file from storage (S3 or local filesystem)
-        return from(this.deleteFile(item.fileUrl)).pipe(
+        return this.deleteOwnedFile(item.fileUrl, userId, true).pipe(
           switchMap(() => from(this.libraryItemModel.findByIdAndDelete(id))),
           map(() => undefined)
         );
@@ -141,28 +231,74 @@ export class LibraryService {
     );
   }
 
-  incrementPlayCount(id: string): Observable<void> {
+  incrementPlayCount(
+    id: string,
+    userId: string
+  ): Observable<void> {
+    if (
+      !Types.ObjectId.isValid(id) ||
+      !Types.ObjectId.isValid(userId)
+    ) {
+      throw new NotFoundException(
+        'Library item not found'
+      );
+    }
+
     return from(
-      this.libraryItemModel.findByIdAndUpdate(id, {
-        $inc: { playCount: 1 },
-      })
+      this.libraryItemModel.findOneAndUpdate(
+        {
+          _id: new Types.ObjectId(id),
+          userId: new Types.ObjectId(userId),
+        },
+        {
+          $inc: { playCount: 1 },
+        }
+      )
     ).pipe(
-      map(() => undefined),
-      catchError((error) => {
-        throw error;
+      map((item) => {
+        if (!item) {
+          throw new NotFoundException(
+            'Library item not found'
+          );
+        }
+
+        return undefined;
       })
     );
   }
 
-  incrementDownloadCount(id: string): Observable<void> {
+  incrementDownloadCount(
+    id: string,
+    userId: string
+  ): Observable<void> {
+    if (
+      !Types.ObjectId.isValid(id) ||
+      !Types.ObjectId.isValid(userId)
+    ) {
+      throw new NotFoundException(
+        'Library item not found'
+      );
+    }
+
     return from(
-      this.libraryItemModel.findByIdAndUpdate(id, {
-        $inc: { downloadCount: 1 },
-      })
+      this.libraryItemModel.findOneAndUpdate(
+        {
+          _id: new Types.ObjectId(id),
+          userId: new Types.ObjectId(userId),
+        },
+        {
+          $inc: { downloadCount: 1 },
+        }
+      )
     ).pipe(
-      map(() => undefined),
-      catchError((error) => {
-        throw error;
+      map((item) => {
+        if (!item) {
+          throw new NotFoundException(
+            'Library item not found'
+          );
+        }
+
+        return undefined;
       })
     );
   }
@@ -209,50 +345,179 @@ export class LibraryService {
     );
   }
 
-  uploadFile(file: UploadedFile, body: any, userId: string): Observable<any> {
-    // Ensure the file object is valid
+  private validateUploadFile(
+    file: LibraryUploadFile
+  ): {
+    fileType: 'wav' | 'mp3' | 'flac' | 'json';
+    extension: string;
+  } {
     if (!file) {
-      throw new Error('File is required');
+      throw new BadRequestException(
+        'File is required.'
+      );
     }
 
-    // Generate unique filename to prevent conflicts
-    const fileExtension = path.extname(file.originalname);
-    const uniqueFilename = `${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2)}${fileExtension}`;
-    const filePath = path.join(this.uploadDir, uniqueFilename);
-
-    // Write file to disk - handle both buffer and file path
-    let fileWriteObservable: Observable<void>;
-    if (file.buffer) {
-      // File is in memory
-      fileWriteObservable = from(fs.writeFile(filePath, file.buffer));
-    } else if (file.path) {
-      // File is already on disk, move it
-      fileWriteObservable = from(fs.rename(file.path, filePath));
-    } else {
-      throw new Error('File buffer or path is required');
+    if (
+      !Number.isFinite(file.size) ||
+      file.size <= 0
+    ) {
+      throw new BadRequestException(
+        'Uploaded file must not be empty.'
+      );
     }
 
-    return fileWriteObservable.pipe(
+    if (file.size > MAX_LIBRARY_UPLOAD_BYTES) {
+      throw new BadRequestException(
+        'Uploaded file exceeds the maximum allowed size.'
+      );
+    }
+
+    const extension =
+      path.extname(file.originalname).toLowerCase();
+
+    const mimeType =
+      file.mimetype.toLowerCase();
+
+    const policies: Record<
+      string,
+      {
+        fileType: 'wav' | 'mp3' | 'flac' | 'json';
+        mimeTypes: readonly string[];
+      }
+    > = {
+      '.wav': {
+        fileType: 'wav',
+        mimeTypes: [
+          'audio/wav',
+          'audio/wave',
+          'audio/x-wav',
+        ],
+      },
+      '.mp3': {
+        fileType: 'mp3',
+        mimeTypes: [
+          'audio/mpeg',
+          'audio/mp3',
+        ],
+      },
+      '.flac': {
+        fileType: 'flac',
+        mimeTypes: [
+          'audio/flac',
+          'audio/x-flac',
+        ],
+      },
+      '.json': {
+        fileType: 'json',
+        mimeTypes: [
+          'application/json',
+          'text/json',
+        ],
+      },
+    };
+
+    const policy = policies[extension];
+
+    if (
+      !policy ||
+      !policy.mimeTypes.includes(mimeType)
+    ) {
+      throw new BadRequestException(
+        'Unsupported file type or MIME/extension mismatch.'
+      );
+    }
+
+    return {
+      fileType: policy.fileType,
+      extension,
+    };
+  }
+
+  uploadFile(
+    file: LibraryUploadFile,
+    body: any,
+    userId: string
+  ): Observable<any> {
+    const {
+      fileType,
+      extension: fileExtension,
+    } = this.validateUploadFile(file);
+
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException(
+        'Invalid authenticated user identity.'
+      );
+    }
+
+    // Generate a server-controlled storage filename.
+    const uniqueFilename =
+      `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2)}${fileExtension}`;
+
+    const uploadRoot =
+      path.resolve(this.uploadDir);
+
+    const userRoot =
+      path.resolve(this.uploadDir, userId);
+
+    if (
+      !userRoot.startsWith(
+        `${uploadRoot}${path.sep}`
+      )
+    ) {
+      throw new BadRequestException(
+        'Invalid upload storage path.'
+      );
+    }
+
+    const filePath =
+      path.resolve(userRoot, uniqueFilename);
+
+    if (
+      !filePath.startsWith(
+        `${userRoot}${path.sep}`
+      )
+    ) {
+      throw new BadRequestException(
+        'Invalid upload file path.'
+      );
+    }
+
+    const writeFile = (): Observable<void> => {
+      if (file.buffer) {
+        return from(
+          fs.writeFile(
+            filePath,
+            file.buffer
+          )
+        );
+      }
+
+      if (file.path) {
+        return from(
+          fs.rename(
+            file.path,
+            filePath
+          )
+        );
+      }
+
+      throw new BadRequestException(
+        'File buffer or path is required.'
+      );
+    };
+
+    return from(
+      fs.mkdir(
+        userRoot,
+        { recursive: true }
+      )
+    ).pipe(
+      switchMap(() => writeFile()),
       switchMap(() => {
-        // Generate file URL (relative to server root)
-        const fileUrl = `/uploads/library/${uniqueFilename}`;
-
-        // Determine file type based on MIME type
-        const mimeToFileType: { [key: string]: string } = {
-          'audio/wav': 'wav',
-          'audio/wave': 'wav',
-          'audio/mpeg': 'mp3',
-          'audio/mp3': 'mp3',
-          'audio/flac': 'flac',
-          'audio/x-flac': 'flac',
-          'application/json': 'json',
-          'text/json': 'json',
-          'application/octet-stream': 'mp3', // For testing with text files
-        };
-
-        const fileType = mimeToFileType[file.mimetype] || 'mp3'; // Default to mp3 for unknown audio types
+        const fileUrl =
+          `/uploads/library/${userId}/${uniqueFilename}`;
 
         const createDto = {
           type: body.type,
@@ -263,11 +528,20 @@ export class LibraryService {
           fileSize: file.size,
         };
 
-        return this.create(createDto, userId);
+        return this.create(
+          createDto,
+          userId
+        );
       }),
-      catchError((error) => {
-        throw error;
-      })
+      catchError((error) =>
+        from(
+          fs.unlink(filePath).catch(() => undefined)
+        ).pipe(
+          switchMap(() => {
+            throw error;
+          })
+        )
+      )
     );
   }
 
@@ -293,18 +567,127 @@ export class LibraryService {
     };
   }
 
-  private deleteFile(fileUrl: string): Observable<void> {
-    // Extract filename from URL
-    const filename = path.basename(fileUrl);
-    const filePath = path.join(this.uploadDir, filename);
+  private resolveOwnedStoragePath(
+    fileUrl: string,
+    userId: string,
+    allowLegacy = false
+  ): {
+    filePath: string;
+    storageName: string;
+  } | null {
+    const uploadRoot =
+      path.resolve(this.uploadDir);
 
-    return from(fs.access(filePath)).pipe(
-      switchMap(() => from(fs.unlink(filePath))),
+    const ownedPrefix =
+      `/uploads/library/${userId}/`;
+
+    if (fileUrl.startsWith(ownedPrefix)) {
+      const storageName =
+        fileUrl.slice(ownedPrefix.length);
+
+      if (
+        !storageName ||
+        path.basename(storageName) !== storageName
+      ) {
+        return null;
+      }
+
+      const userRoot =
+        path.resolve(this.uploadDir, userId);
+
+      if (
+        !userRoot.startsWith(
+          `${uploadRoot}${path.sep}`
+        )
+      ) {
+        return null;
+      }
+
+      const filePath =
+        path.resolve(userRoot, storageName);
+
+      if (
+        !filePath.startsWith(
+          `${userRoot}${path.sep}`
+        )
+      ) {
+        return null;
+      }
+
+      return {
+        filePath,
+        storageName,
+      };
+    }
+
+    if (!allowLegacy) {
+      return null;
+    }
+
+    const legacyPrefix =
+      '/uploads/library/';
+
+    if (!fileUrl.startsWith(legacyPrefix)) {
+      return null;
+    }
+
+    const storageName =
+      fileUrl.slice(legacyPrefix.length);
+
+    if (
+      !storageName ||
+      path.basename(storageName) !== storageName
+    ) {
+      return null;
+    }
+
+    const filePath =
+      path.resolve(uploadRoot, storageName);
+
+    if (
+      !filePath.startsWith(
+        `${uploadRoot}${path.sep}`
+      )
+    ) {
+      return null;
+    }
+
+    return {
+      filePath,
+      storageName,
+    };
+  }
+
+  private deleteOwnedFile(
+    fileUrl: string,
+    userId: string,
+    allowLegacy = false
+  ): Observable<void> {
+    const resolvedStorage =
+      this.resolveOwnedStoragePath(
+        fileUrl,
+        userId,
+        allowLegacy
+      );
+
+    if (!resolvedStorage) {
+      return from(
+        Promise.resolve(undefined)
+      );
+    }
+
+    return from(
+      fs.unlink(resolvedStorage.filePath)
+    ).pipe(
       map(() => undefined),
-      catchError((error) => {
-        // Log error but don't throw - file might not exist or deletion might fail
-        console.error('Error deleting file:', fileUrl, error);
-        return from(Promise.resolve(undefined)); // Still complete successfully
+      catchError((error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT') {
+          return from(
+            Promise.resolve(undefined)
+          );
+        }
+
+        throw error;
       })
     );
   }

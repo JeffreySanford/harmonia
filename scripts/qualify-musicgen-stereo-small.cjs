@@ -132,7 +132,10 @@ async function main() {
 
   const select = await request(`${backendBase}/api/music/runtime/select`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      authorization: `Bearer ${token}`,
+      'content-type': 'application/json',
+    },
     body: JSON.stringify({ modelId: 'musicgen-stereo-small' }),
   });
 
@@ -208,7 +211,7 @@ async function main() {
   }
 
   const outputPath = job.result?.outputPath;
-  if (!outputPath || !outputPath.startsWith('/downloads/jobs/')) {
+  if (outputPath !== `/api/jobs/${jobId}/artifact`) {
     throw new Error(`Unexpected outputPath: ${outputPath}`);
   }
 
@@ -217,7 +220,7 @@ async function main() {
     'exports',
     'jobs',
     jobId,
-    path.basename(outputPath)
+    'music.wav'
   );
 
   if (!existsSync(filePath)) {
@@ -239,6 +242,7 @@ async function main() {
   }
 
   const backendDownload = await fetch(`${backendBase}${outputPath}`, {
+    headers: { authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(30000),
   });
 
@@ -249,6 +253,7 @@ async function main() {
   }
 
   const frontendDownload = await fetch(`${frontendBase}${outputPath}`, {
+    headers: { authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(30000),
   });
 

@@ -289,6 +289,18 @@ function expectedDuration(preset) {
   return Number(preset.parameters.duration);
 }
 
+async function fetchProtectedArtifact(
+  base,
+  artifactPath,
+  token
+) {
+  return fetch(`${base}${artifactPath}`, {
+    headers: {
+      authorization: `Bearer ${token}`,
+    },
+    signal: AbortSignal.timeout(30000),
+  });
+}
 async function waitForJob(backendBase, token, job) {
   const started = Date.now();
   let current = job;
@@ -357,12 +369,9 @@ async function generateOne({
   ) {
     const job = JSON.parse(readFileSync(jobFile, 'utf8'));
     const wav = readWav(showcaseWav);
-    const outputPath = job.result?.outputPath;
-
     if (
       job.status !== 'completed' ||
-      !outputPath ||
-      !outputPath.startsWith('/downloads/jobs/') ||
+      !job.id ||
       wav.durationSeconds < requestedDuration * 0.9
     ) {
       throw new Error(
@@ -370,12 +379,22 @@ async function generateOne({
       );
     }
 
-    const backendDownload = await fetch(`${backendBase}${outputPath}`, {
-      signal: AbortSignal.timeout(30000),
-    });
-    const frontendDownload = await fetch(`${frontendBase}${outputPath}`, {
-      signal: AbortSignal.timeout(30000),
-    });
+    const artifactPath =
+      `/api/jobs/${job.id}/artifact`;
+
+    const backendDownload =
+      await fetchProtectedArtifact(
+        backendBase,
+        artifactPath,
+        token
+      );
+
+    const frontendDownload =
+      await fetchProtectedArtifact(
+        frontendBase,
+        artifactPath,
+        token
+      );
 
     if (!backendDownload.ok || !frontendDownload.ok) {
       throw new Error(
@@ -397,7 +416,7 @@ async function generateOne({
       slug: preset.slug,
       jobId: job.id,
       runtimeModelId: job.result?.metadata?.runtimeModelId || null,
-      sourceDownloadPath: outputPath,
+      sourceDownloadPath: artifactPath,
       showcasePath: path.relative(root, showcaseWav).replace(/\\/g, '/'),
       requestedDurationSeconds: requestedDuration,
       generationElapsedSeconds,
@@ -420,7 +439,10 @@ async function generateOne({
     `${backendBase}/api/music/runtime/select`,
     {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
       body: JSON.stringify({ modelId: preset.modelId }),
     },
     selectTimeoutMs
@@ -473,7 +495,10 @@ async function generateOne({
   const generationElapsedSeconds = (Date.now() - started) / 1000;
 
   const outputPath = job.result?.outputPath;
-  if (!outputPath || !outputPath.startsWith('/downloads/jobs/')) {
+  const artifactPath =
+    `/api/jobs/${jobId}/artifact`;
+
+  if (outputPath !== artifactPath) {
     throw new Error(
       `Unexpected outputPath for ${preset.modelId}: ${outputPath}`
     );
@@ -484,7 +509,7 @@ async function generateOne({
     'exports',
     'jobs',
     jobId,
-    path.basename(outputPath)
+    'music.wav'
   );
 
   if (!existsSync(jobArtifactPath)) {
@@ -534,18 +559,24 @@ async function generateOne({
     throw new Error('ACE-Step showcase did not preserve supplied lyrics');
   }
 
-  const backendDownload = await fetch(`${backendBase}${outputPath}`, {
-    signal: AbortSignal.timeout(30000),
-  });
+  const backendDownload =
+    await fetchProtectedArtifact(
+      backendBase,
+      artifactPath,
+      token
+    );
   if (!backendDownload.ok) {
     throw new Error(
       `Backend download failed for ${preset.modelId}: HTTP ${backendDownload.status}`
     );
   }
 
-  const frontendDownload = await fetch(`${frontendBase}${outputPath}`, {
-    signal: AbortSignal.timeout(30000),
-  });
+  const frontendDownload =
+    await fetchProtectedArtifact(
+      frontendBase,
+      artifactPath,
+      token
+    );
   if (!frontendDownload.ok) {
     throw new Error(
       `Frontend download failed for ${preset.modelId}: HTTP ${frontendDownload.status}`
@@ -615,7 +646,7 @@ async function generateOne({
     slug: preset.slug,
     jobId,
     runtimeModelId: job.result?.metadata?.runtimeModelId || null,
-    sourceDownloadPath: outputPath,
+    sourceDownloadPath: artifactPath,
     showcasePath: path.relative(root, showcaseWav).replace(/\\/g, '/'),
     requestedDurationSeconds: requestedDuration,
     generationElapsedSeconds,

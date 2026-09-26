@@ -37,7 +37,9 @@ test('runtime uses one canonical Compose definition plus an optional GPU overrid
   assert.match(compose, /model-musicgen/);
   assert.match(compose, /127\.0\.0\.1:27017:27017/);
   assert.match(compose, /127\.0\.0\.1:8081:8081/);
+
   assert.doesNotMatch(compose, /8000:8000/);
+
 });
 
 test('application port contract is 4200 frontend and 3000 backend', () => {
@@ -51,15 +53,20 @@ test('application port contract is 4200 frontend and 3000 backend', () => {
 
   assert.match(env, /^PORT=3000$/m);
   assert.match(proxy, /localhost:3000/);
-  assert.match(proxy, /"\/downloads"/);
+  assert.match(proxy, /"\/api"/);
+  assert.doesNotMatch(proxy, /"\/downloads"/);
   assert.match(auth, /private readonly apiUrl\s*=\s*['\"]\/api\/auth['\"]/);
+
   assert.doesNotMatch(auth, /localhost:3000\/api\/auth/);
   assert.match(backend, /process\.env\.PORT \|\| 3000/);
   assert.match(playwright, /localhost:3000\/api\/__health/);
   assert.match(playwright, /localhost:4200/);
   assert.match(websocket, /localhost:3000/);
+
   assert.doesNotMatch(websocket, /localhost:3333/);
+
   assert.doesNotMatch(workflow, /localhost:3333/);
+
 });
 
 test('package exposes authoritative start, test, lint, and build commands', () => {
@@ -76,11 +83,14 @@ test('package exposes authoritative start, test, lint, and build commands', () =
     pkg.scripts['build:all'],
     'nx run-many --target=build --projects=frontend,backend'
   );
+
   assert.doesNotMatch(pkg.scripts.test, /--all/);
+
   assert.doesNotMatch(pkg.scripts['build:all'], /--all/);
   assert.equal(pkg.scripts['docker:build'], undefined);
   assert.equal(pkg.scripts['docker:run'], undefined);
   assert.equal(pkg.scripts.predev, undefined);
+
 });
 
 test('CI enforces the root strict TypeScript-zero contract', () => {
@@ -114,6 +124,7 @@ test('CI enforces the root strict TypeScript-zero contract', () => {
     buildIndex > typecheckIndex,
     'root typecheck must run before application builds'
   );
+
 });
 
 test('CI reads the pinned pnpm version from packageManager', () => {
@@ -125,8 +136,10 @@ test('CI reads the pinned pnpm version from packageManager', () => {
 
   for (const workflow of [ci, mongooseWorkflow]) {
     assert.match(workflow, /uses: pnpm\/action-setup@v4/);
+
     assert.doesNotMatch(workflow, /version:\s*10\.23\.0/);
   }
+
 });
 
 test('hosted smoke CI skips absent local artifacts without opening alert storms', () => {
@@ -137,6 +150,7 @@ test('hosted smoke CI skips absent local artifacts without opening alert storms'
 
   assert.match(smoke, /successful skip/);
   assert.match(smoke, /normalize_artifact_path/);
+
   assert.doesNotMatch(workflow, /actions\/cache@/);
   assert.match(workflow, /cancel-in-progress:\s*true/);
   assert.match(workflow, /github\.event_name == 'schedule'/);
@@ -146,6 +160,7 @@ test('hosted smoke CI skips absent local artifacts without opening alert storms'
   assert.match(wsl, /RUN_DOCKER_START_TESTS=1/);
   assert.match(wsl, /NX_NO_CLOUD=true/);
   assert.match(wsl, /HARMONIA_WSL_CI_PARITY_OK/);
+
 });
 
 test('all Nx packages are aligned on 22.7.12', () => {
@@ -170,6 +185,7 @@ test('all Nx packages are aligned on 22.7.12', () => {
   for (const name of nxPackages) {
     assert.equal(pkg.devDependencies[name], '22.7.12', `${name} must match Nx 22.7.12`);
   }
+
 });
 
 test('dependency build scripts use pnpm 12 allowBuilds policy', () => {
@@ -187,8 +203,11 @@ test('dependency build scripts use pnpm 12 allowBuilds policy', () => {
   assert.match(workspace, /'msgpackr-extract@3\.0\.3': true/);
   assert.match(workspace, /'nx@22\.7\.12': true/);
   assert.match(workspace, /^strictDepBuilds:\s*true$/m);
+
   assert.doesNotMatch(workspace, /onlyBuiltDependencies:/);
+
   assert.doesNotMatch(workspace, /dangerouslyAllowAllBuilds:\s*true/);
+
 });
 
 test('Windows startup disables Nx plugin isolation to avoid plugin worker hangs', () => {
@@ -196,6 +215,7 @@ test('Windows startup disables Nx plugin isolation to avoid plugin worker hangs'
 
   assert.match(startup, /process\.platform === 'win32' \? 'false' : undefined/);
   assert.match(startup, /NX_ISOLATE_PLUGINS/);
+
 });
 
 
@@ -247,6 +267,7 @@ test('backend Node runtime packages are production dependencies', () => {
     !dependencies['mongodb-memory-server'],
     'mongodb-memory-server must never become a runtime dependency',
   );
+
 });
 
 test('mongodb-memory-server is isolated to test tooling', () => {
@@ -276,6 +297,7 @@ test('mongodb-memory-server is isolated to test tooling', () => {
 
   for (const file of backendFiles) {
     const source = read(file);
+
 
     assert.doesNotMatch(
       source,
@@ -313,13 +335,16 @@ test('mongodb-memory-server is isolated to test tooling', () => {
     appModule,
     /127\.0\.0\.1:27017\/harmonia\?authSource=harmonia/
   );
+
 });
 
 
 test('Mongo initialization never falls back to a default application password', () => {
   const init = read('scripts/mongo-init/01-init-harmonia-db.js');
   assert.match(init, /MONGO_HARMONIA_PASSWORD is required/);
+
   assert.doesNotMatch(init, /changeme/);
+
 });
 
 test('Mongo jobs validator matches the persistent JobRecord contract', () => {
@@ -334,7 +359,9 @@ test('Mongo jobs validator matches the persistent JobRecord contract', () => {
       source,
       /'pending'.*'queued'.*'processing'.*'completed'.*'failed'.*'cancelled'/s
     );
+
     assert.doesNotMatch(source, /required: \['type', 'status'\]/);
+
     assert.doesNotMatch(source, /'running'.*'success'/s);
   }
 
@@ -346,6 +373,7 @@ test('Mongo jobs validator matches the persistent JobRecord contract', () => {
   assert.match(repair, /type_1_created_at_-1/);
   assert.match(init, /userId: 1, status: 1, createdAt: -1/);
   assert.match(init, /userId: 1, jobType: 1, createdAt: -1/);
+
 });
 
 
@@ -462,11 +490,13 @@ test('model installation Mongo contract is consistent across fresh, existing, an
   );
 
   for (const source of [init, sync, schema]) {
+
     assert.doesNotMatch(
       source,
       /accessToken|authorizationHeader|checkpointBytes|wavPayload/i
     );
   }
+
 });
 
 test('runtime model selection enforces filesystem readiness before provider switch and records usage after ready', () => {
@@ -570,6 +600,7 @@ test('runtime model selection enforces filesystem readiness before provider swit
     module,
     /ModelInstallationSchema/
   );
+
 });
 
 test('runtime ownership recovery recognizes resident Stable Audio model state', () => {
@@ -604,6 +635,7 @@ test('runtime ownership recovery recognizes resident Stable Audio model state', 
     provider,
     /HARMONIA_STABLE_AUDIO_3_PORT", "8766"/
   );
+
 });
 
 test('backend never falls back to unauthenticated MongoDB access', () => {
@@ -613,7 +645,9 @@ test('backend never falls back to unauthenticated MongoDB access', () => {
   assert.match(appModule, /harmonia_app/);
   assert.match(appModule, /authSource=harmonia/);
   assert.match(appModule, /encodeURIComponent\(appPassword\)/);
+
   assert.doesNotMatch(appModule, /mongodb:\/\/localhost:27017\/harmonia/);
+
 });
 
 
@@ -633,7 +667,9 @@ test('local auth repair synchronizes app credentials and seeds the test user', (
   assert.match(repair, /LOCAL_DB_AUTH_REPAIR_OK/);
   assert.match(repair, /synchronizeJobsCollectionSchema\(\)/);
   assert.match(repair, /JOBS_SCHEMA_SYNC_OK/);
+
   assert.doesNotMatch(repair, /MONGO_HARMONIA_PASSWORD=.*password/i);
+
 });
 
 
@@ -647,10 +683,11 @@ test('MusicGen Small qualification exercises persistent generation and downloads
   );
   assert.match(qualify, /modelId: 'musicgen-small'/);
   assert.match(qualify, /\/api\/jobs/);
-  assert.match(qualify, /\/downloads\/jobs\//);
+  assert.match(qualify, /\/api\/jobs\/\$\{jobId\}\/artifact/);
   assert.match(qualify, /RIFF/);
   assert.match(qualify, /WAVE/);
   assert.match(qualify, /MUSICGEN_SMALL_QUALIFICATION_OK/);
+
 });
 
 test('MusicGen Stereo Small qualification requires two-channel audio', () => {
@@ -664,6 +701,7 @@ test('MusicGen Stereo Small qualification requires two-channel audio', () => {
   assert.match(qualifier, /musicgen-stereo-small/);
   assert.match(qualifier, /wav\.channels !== 2/);
   assert.match(qualifier, /MUSICGEN_STEREO_SMALL_QUALIFICATION_OK/);
+
 });
 
 test('Storybook bootstrap covers actual login and music-generation UI', () => {
@@ -695,6 +733,7 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
   assert.match(setup, /node scripts\/run-storybook-tests\.cjs/);
   assert.match(setup, /storybookPort = 4401/);
   assert.match(setup, /--ci=true/);
+
   assert.doesNotMatch(setup, /--noOpen=true/);
   assert.match(setup, /--host=127\.0\.0\.1/);
   assert.match(setup, /normalizeGeneratedStorybookTargets/);
@@ -731,7 +770,9 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
   assert.match(musicStory, /applicationConfig/);
   assert.match(musicStory, /provideNoopAnimations/);
   assert.match(musicModule, /exports: \[MusicGenerationPageComponent\]/);
-  assert.match(musicStory, /\/downloads\/jobs\/storybook-musicgen-job\/music\.wav/);
+  assert.match(musicStory, /\/api\/jobs\/storybook-musicgen-job\/artifact/);
+  assert.match(musicStory, /getArtifact/);
+  assert.doesNotMatch(musicStory, /\/downloads\/jobs\//);
 
   const testRunnerJest = read(
     'apps/frontend/.storybook/test-runner-jest.config.js'
@@ -739,6 +780,7 @@ test('Storybook bootstrap covers actual login and music-generation UI', () => {
   assert.match(testRunnerJest, /getJestConfig/);
   assert.match(testRunnerJest, /<rootDir>\/dist\//);
   assert.match(testRunnerJest, /<rootDir>\/\.nx\/cache\//);
+
 });
 
 
@@ -766,13 +808,17 @@ test('music generation UI switches to score-native DiffSinger inputs', () => {
   assert.match(template, /DiffSinger note durations/);
   assert.match(template, /isDiffSingerSelected; else musicGenParameters/);
   assert.match(state, /runtimeModelId\?: string/);
+
 });
 
 test('backend MusicGen execution targets the isolated provider container', () => {
   const service = read('apps/backend/src/songs/stem-export.service.ts');
   assert.match(service, /harmonia-musicgen/);
+
   assert.doesNotMatch(service, /harmonia-worker/);
+
   assert.doesNotMatch(service, /harmonia-dev/);
+
 });
 
 
@@ -834,6 +880,7 @@ test('Stable Audio 3 Small-Music provider is isolated and qualification verifies
     qualifier,
     /STABLE_AUDIO_3_SMALL_MUSIC_QUALIFICATION_OK/
   );
+
 });
 
 test('DiffSinger real inference qualification rejects placeholder audio', () => {
@@ -856,16 +903,21 @@ test('DiffSinger real inference qualification rejects placeholder audio', () => 
   assert.match(helper, /0102_xiaoma_pe/);
   assert.match(helper, /0109_hifigan_bigpopcs_hop128/);
   assert.match(helper, /DiffSingerE2EInfer\.example_run/);
+
   assert.doesNotMatch(helper, /CategorizedModule|_loose_load_ckpt/);
+
   assert.doesNotMatch(wrapper, /write_placeholder_wav/);
+
   assert.doesNotMatch(wrapper, /placeholder written/);
   assert.match(wrapper, /is_valid_wav/);
   assert.match(vocalPhase, /isValidWav/);
   assert.match(vocalPhase, /throw new Error/);
+
   assert.doesNotMatch(
     vocalPhase,
     /DiffSinger failed; placeholder/
   );
+
 });
 
 test('Stable Audio 3 persistent jobs use the resident provider and preserve native float WAV output', () => {
@@ -894,6 +946,7 @@ test('Stable Audio 3 persistent jobs use the resident provider and preserve nati
   assert.match(qualifier, /backend download/);
   assert.match(qualifier, /frontend download/);
   assert.match(qualifier, /STABLE_AUDIO_3_JOB_QUALIFICATION_OK/);
+
 });
 
 test('DiffSinger persistent jobs execute score-native synthesis', () => {
@@ -932,6 +985,7 @@ test('DiffSinger persistent jobs execute score-native synthesis', () => {
   assert.match(qualifier, /0228_opencpop_ds100_rel/);
   assert.match(qualifier, /request\.json/);
   assert.match(qualifier, /DIFFSINGER_JOB_QUALIFICATION_OK/);
+
 });
 
 test('DiffSinger runtime qualification requires a healthy isolated container', () => {
@@ -947,6 +1001,7 @@ test('DiffSinger runtime qualification requires a healthy isolated container', (
   assert.match(qualifier, /state\.Health\?\.Status !== 'healthy'/);
   assert.match(qualifier, /harmonia-runtime-ready/);
   assert.match(qualifier, /DIFFSINGER_RUNTIME_QUALIFICATION_OK/);
+
 });
 
 test('DiffSinger is isolated from the generic worker image', () => {
@@ -954,11 +1009,13 @@ test('DiffSinger is isolated from the generic worker image', () => {
   const diffsinger = read('Dockerfile.diffsinger');
   const compose = read('docker-compose.yml');
 
+
   assert.doesNotMatch(worker, /\/opt\/DiffSinger|HiFi-GAN|openvpi\/DiffSinger/);
   assert.match(diffsinger, /openvpi\/DiffSinger/);
   assert.match(diffsinger, /017bd488a61ebdb8909a8d272ec6211076fa4a7e/);
   assert.match(diffsinger, /python3\.8/);
   assert.match(diffsinger, /torch==1\.8\.2/);
+
   assert.doesNotMatch(diffsinger, /git clone --depth=1/);
   assert.match(diffsinger, /git checkout --detach/);
   assert.match(diffsinger, /entrypoint\.diffsinger\.sh/);
@@ -967,6 +1024,7 @@ test('DiffSinger is isolated from the generic worker image', () => {
     compose,
     /\.\/models\/diffsinger:\/workspace\/models\/diffsinger/
   );
+
 });
 
 test('DiffSinger pretrained inference stack is cached outside the provider image', () => {
@@ -975,8 +1033,11 @@ test('DiffSinger pretrained inference stack is cached outside the provider image
   const downloader = read('scripts/download_diffsinger_pretrained.sh');
   const compose = read('docker-compose.yml');
 
+
   assert.doesNotMatch(dockerfile, /0228_opencpop_ds100_rel\.zip/);
+
   assert.doesNotMatch(dockerfile, /0102_xiaoma_pe\.zip/);
+
   assert.doesNotMatch(dockerfile, /0109_hifigan_bigpopcs_hop128\.zip/);
 
   for (const source of [entrypoint, downloader]) {
@@ -993,6 +1054,7 @@ test('DiffSinger pretrained inference stack is cached outside the provider image
   assert.match(entrypoint, /find -L "\/opt\/DiffSinger\/checkpoints/);
   assert.match(entrypoint, /harmonia-runtime-ready/);
   assert.match(compose, /torch\.__version__\.startswith\(\\?"1\.8\.2\\?"\)/);
+
 });
 
 test('Linux container entrypoints normalize Windows line endings', () => {
@@ -1006,6 +1068,7 @@ test('Linux container entrypoints normalize Windows line endings', () => {
     diffsinger,
     /sed -i 's\/\\r\$\/\/' \/workspace\/entrypoint\.diffsinger\.sh/
   );
+
 });
 
 
@@ -1020,8 +1083,11 @@ test('music generation UI submits real jobs and never fakes an audio artifact', 
   const controller = read('apps/backend/src/jobs/jobs.controller.ts');
   const compose = read('docker-compose.yml');
 
+
   assert.doesNotMatch(component, /sample-audio\.mp3/);
+
   assert.doesNotMatch(component, /Audio generation wiring is the next/);
+
   assert.doesNotMatch(component, /setInterval\(/);
   assert.match(component, /MusicRuntimeActions\.selectModel/);
   assert.match(component, /JobsActions\.createJob/);
@@ -1036,6 +1102,7 @@ test('music generation UI submits real jobs and never fakes an audio artifact', 
   assert.match(template, /generatedAudioUrl/);
   assert.match(template, /disabledReason/);
   assert.match(template, /runtimeStatus/);
+
 });
 test('ACE-Step 1.5 provider image is pinned isolated and boot-safe without model downloads', () => {
   const worker = read('Dockerfile.worker');
@@ -1045,6 +1112,7 @@ test('ACE-Step 1.5 provider image is pinned isolated and boot-safe without model
   const catalog = read(
     'apps/backend/src/music-runtime/music-model.catalog.ts'
   );
+
 
   assert.doesNotMatch(worker, /ACE-Step|acestep/i);
   assert.match(
@@ -1126,6 +1194,7 @@ test('ACE-Step 1.5 provider image is pinned isolated and boot-safe without model
     'ACE-Step Compose service block is missing'
   );
 
+
   assert.doesNotMatch(
     aceCompose,
     /^\s+ports:/m
@@ -1144,6 +1213,7 @@ test('ACE-Step 1.5 provider image is pinned isolated and boot-safe without model
     catalog,
     /id: 'acestep-v15-turbo-06b'[\s\S]*runtimeModelId: 'acestep-v15-turbo'[\s\S]*availability: 'installed'/
   );
+
 });
 
 test('ACE-Step runtime selection initializes Turbo and 0.6B LM before ready and recovers resident state', () => {
@@ -1187,6 +1257,7 @@ test('ACE-Step runtime selection initializes Turbo and 0.6B LM before ready and 
     backend,
     /Turbo and the 0\.6B LM are resident/
   );
+
 });
 
 test('ACE-Step durable generation submits supplied lyrics through async API and downloads WAV', () => {
@@ -1290,6 +1361,7 @@ test('ACE-Step durable generation submits supplied lyrics through async API and 
     client,
     /generated\.get\("lyrics", payload\["lyrics"\]\)/
   );
+
 });
 
 test('ACE-Step persistent job qualifier proves lyrics models and downloads', () => {
@@ -1344,6 +1416,7 @@ test('ACE-Step persistent job qualifier proves lyrics models and downloads', () 
     qualifier,
     /ACE_STEP_JOB_QUALIFICATION_OK/
   );
+
 });
 
 test('music model catalog includes local and higher-capacity disabled tiers', () => {
@@ -1357,6 +1430,7 @@ test('music model catalog includes local and higher-capacity disabled tiers', ()
   assert.match(catalog, /songgeneration-v2-large/);
   assert.match(catalog, /yue2-3b/);
   assert.match(catalog, /muse-long-form/);
+
 });
 
 test('provider runtime lifecycle is driven by backend events and NgRx', () => {
@@ -1386,6 +1460,7 @@ test('provider runtime lifecycle is driven by backend events and NgRx', () => {
   assert.match(gateway, /music-runtime:status/);
   assert.match(websocket, /music-runtime:status/);
   assert.match(effects, /MatSnackBar/);
+
 });
 
 
@@ -1401,6 +1476,7 @@ test('provider image builds stream progress instead of buffering Docker output',
   assert.match(backend, /elapsed/);
   assert.match(backend, /child\.stdout\?\.on\('data'/);
   assert.match(backend, /child\.stderr\?\.on\('data'/);
+
 });
 
 
@@ -1412,9 +1488,11 @@ test('MusicGen is isolated in its AudioCraft-compatible provider image', () => {
     'apps/backend/src/music-runtime/music-model.catalog.ts'
   );
 
+
   assert.doesNotMatch(worker, /audiocraft/i);
   assert.match(musicgen, /python3\.9/);
   assert.match(musicgen, /bootstrap\.pypa\.io\/pip\/3\.9\/get-pip\.py/);
+
   assert.doesNotMatch(musicgen, /bootstrap\.pypa\.io\/get-pip\.py/);
   assert.match(musicgen, /torch==2\.1\.0/);
   assert.match(musicgen, /audiocraft==1\.3\.0/);
@@ -1426,6 +1504,7 @@ test('MusicGen is isolated in its AudioCraft-compatible provider image', () => {
   assert.match(catalog, /musicgen-stereo-small/);
   assert.match(catalog, /musicgen-medium/);
   assert.match(catalog, /minVramGb: 16/);
+
 });
 
 test('provider image identity is catalog-driven rather than hard-coded', () => {
@@ -1439,6 +1518,7 @@ test('provider image identity is catalog-driven rather than hard-coded', () => {
   assert.match(backend, /const imageName = provider\.imageName/);
   assert.match(catalog, /imageName: 'harmonia\/diffsinger:dev'/);
   assert.match(catalog, /imageName: 'harmonia\/musicgen:dev'/);
+
 });
 
 
@@ -1452,6 +1532,7 @@ test('runtime ownership is recovered from Docker before model switching', () => 
   assert.match(backend, /Recovered running \${recovered\.provider\.name}/);
   assert.match(backend, /all were stopped to protect GPU ownership/);
   assert.match(backend, /await this\.reconcileRuntimeOwnership\(\)/);
+
 });
 
 
@@ -1469,12 +1550,14 @@ test('MusicGen startup validates dependencies once and healthcheck uses readines
   assert.match(server, /ThreadingHTTPServer/);
   assert.match(compose, /test -f \/tmp\/harmonia-runtime-ready/);
   assert.match(compose, /127\.0\.0\.1:8765\/health/);
+
   assert.doesNotMatch(
     compose,
     /python3\.9 -c 'import torch, audiocraft/
   );
   assert.match(backend, /failingStreak=/);
   assert.match(backend, /'logs',[\s\S]*'--tail',[\s\S]*'40'/);
+
 });
 
 
@@ -1489,6 +1572,7 @@ test('provider lifecycle is orchestrator-owned and unhealthy runtimes fail fast'
   assert.equal(providerRestartPolicies.length, 2);
   assert.match(backend, /state\.Health\?\.Status === 'unhealthy'/);
   assert.match(backend, /became unhealthy/);
+
 });
 
 
@@ -1498,6 +1582,7 @@ test('MusicGen pins Transformers to a PyTorch 2.1-compatible release', () => {
   assert.match(musicgen, /transformers==4\.35\.2/);
   assert.match(musicgen, /MusicGen Python stack import check passed/);
   assert.match(musicgen, /torch\.__version__\.startswith\("2\.1\.0"\)/);
+
 });
 
 
@@ -1510,16 +1595,21 @@ test('provider selection reconciles stale images once per backend process', () =
   assert.match(backend, /validatedProviderImages\.has\(provider\.id\)/);
   assert.match(backend, /Checking \${provider\.name} runtime image for source changes/);
   assert.match(backend, /validatedProviderImages\.add\(provider\.id\)/);
+
 });
 
 
 test('backend MusicGen failures propagate instead of synthesizing placeholder audio', () => {
   const service = read('apps/backend/src/songs/stem-export.service.ts');
 
+
   assert.doesNotMatch(service, /generateBasicInstrumentAudio/);
+
   assert.doesNotMatch(service, /generateWavPlaceholder/);
+
   assert.doesNotMatch(service, /using basic instrument audio/i);
   assert.match(service, /reject\(new Error\(/);
+
 });
 
 test('generic worker excludes heavyweight model frameworks', () => {
@@ -1535,12 +1625,16 @@ test('generic worker excludes heavyweight model frameworks', () => {
     'scipy',
     'audiocraft',
   ]) {
+
     assert.doesNotMatch(requirements, new RegExp(packageName, 'i'));
   }
 
+
   assert.doesNotMatch(gpu, /^\s*worker:\s*$/m);
+
   assert.doesNotMatch(startup, /--gpu cannot be combined with --no-worker/);
   assert.match(startup, /--gpu enables NVIDIA runtime for selected model providers/);
+
 });
 
 
@@ -1560,6 +1654,7 @@ test('MusicGen generation reuses a resident provider model', () => {
   assert.match(dockerfile, /musicgen_provider_server\.py/);
   assert.match(dockerfile, /musicgen_provider_client\.py/);
   assert.match(compose, /musicgen_provider_server\.py/);
+
   assert.doesNotMatch(compose, /musicgen:[\s\S]{0,600}sleep[\s\S]{0,20}infinity/);
   assert.match(server, /Reusing resident MusicGen model/);
   assert.match(server, /torch\.cuda\.empty_cache\(\)/);
@@ -1575,6 +1670,7 @@ test('MusicGen generation reuses a resident provider model', () => {
     catalog,
     /runtimeModelId: 'facebook\/musicgen-stereo-small'/
   );
+
 });
 
 
@@ -1598,6 +1694,7 @@ test('backend restart recovers resident MusicGen model and busy state', () => {
   assert.match(backend, /shouldRecoverSnapshot/);
   assert.match(backend, /!this\.status\.modelId/);
   assert.match(backend, /this\.status\.state === 'busy'/);
+
 });
 
 test('provider unhealthy state escapes the health wait loop immediately', () => {
@@ -1606,6 +1703,7 @@ test('provider unhealthy state escapes the health wait loop immediately', () => 
   );
 
   assert.match(backend, /error\.message\.includes\('became unhealthy'\)/);
+
 });
 
 
@@ -1640,6 +1738,7 @@ test('qualified generator showcase exposes one preset per qualified model', () =
   assert.match(runner, /QUALIFIED_GENERATOR_SHOWCASE_OK/);
   assert.match(runner, /SHOWCASE_DATE/);
   assert.match(runner, /SHOWCASE_ONLY/);
+
 });
 
 
@@ -1653,6 +1752,7 @@ test('qualified showcase fresh runner owns an isolated backend', () => {
   assert.match(runner, /SHOWCASE FAILURE DIAGNOSTICS/);
   assert.match(runner, /QUALIFIED GENERATOR SHOWCASE: GREEN/);
   assert.match(runner, /QUALIFIED_GENERATOR_SHOWCASE_MANIFEST_5_OF_5_OK/);
+
 });
 
 
@@ -1684,6 +1784,7 @@ test('showcase resumes dated samples and excludes runtime data from Docker conte
       `Expected .dockerignore to exclude ${ignored}`
     );
   }
+
 });
 
 /*
@@ -1746,6 +1847,7 @@ test('async runtime selection acknowledges immediately and completes through run
     controller,
     /requestModelSelection\(body\.modelId\)/
   );
+
   assert.doesNotMatch(
     controller,
     /return this\.runtime\.selectModel\(body\.modelId\)/
@@ -1848,6 +1950,7 @@ test('async runtime selection acknowledges immediately and completes through run
     frontendEffects,
     /selectModelAccepted/
   );
+
   assert.doesNotMatch(
     frontendEffects,
     /selectModelSuccess\(\{\s*status\s*\}\)/
@@ -1867,6 +1970,7 @@ test('async runtime selection acknowledges immediately and completes through run
     frontendReducer,
     /\['ready', 'stopped', 'error'\]/
   );
+
 });
 
 /*
@@ -2005,6 +2109,7 @@ test('runtime selection operation id correlates lifecycle events end to end', ()
     /['"]error['"]/
   );
 
+
   assert.doesNotMatch(
     frontendReducer,
     /\[['"]ready['"],\s*['"]stopped['"],\s*['"]error['"]\]\.includes\(status\.state\)/
@@ -2017,6 +2122,7 @@ test('runtime selection operation id correlates lifecycle events end to end', ()
     frontendSelectors,
     /selectActiveRuntimeSelectionOperationId/
   );
+
 });
 
 
@@ -2045,10 +2151,12 @@ test('security S1 authenticates job sockets and protects runtime mutation bounda
   );
 
   // No placeholder identity may survive.
+
   assert.doesNotMatch(
     jobsGateway,
     /mock-user-id/
   );
+
 
   assert.doesNotMatch(
     jobsGateway,
@@ -2089,6 +2197,7 @@ test('security S1 authenticates job sockets and protects runtime mutation bounda
     /emitJobCompleted\(dto\)/
   );
 
+
   assert.doesNotMatch(
     jobsService,
     /emitJobCompleted\(dto\s+as/
@@ -2126,10 +2235,12 @@ test('security S1 authenticates job sockets and protects runtime mutation bounda
     runtimeGateway,
     authModule,
   ]) {
+
     assert.doesNotMatch(
       source,
       /(^|[^A-Za-z0-9_])any([^A-Za-z0-9_]|$)/
     );
+
 
     assert.doesNotMatch(
       source,
@@ -2156,6 +2267,7 @@ test('security S1 authenticates job sockets and protects runtime mutation bounda
       /process\.env\.CORS_ORIGIN/
     );
 
+
     assert.doesNotMatch(
       gateway,
       /origin:\s*['"]\*['"]/
@@ -2181,6 +2293,7 @@ test('security S1 authenticates job sockets and protects runtime mutation bounda
 
   // An HTTP caller must not choose an arbitrary filesystem path for catalog
   // validation.
+
   assert.doesNotMatch(
     songs,
     /catalogPath/
@@ -2190,6 +2303,7 @@ test('security S1 authenticates job sockets and protects runtime mutation bounda
     songs,
     /validateInstrumentCatalog\(\)[\s\S]{0,160}loadCatalog\(\)/
   );
+
 });
 
 
@@ -2234,10 +2348,12 @@ test('security S2A separates access and refresh token trust boundaries', () => {
     '.env.example'
   );
 
+
   assert.doesNotMatch(
     authModule,
     /default-secret-change-in-production/
   );
+
 
   assert.doesNotMatch(
     accessStrategy,
@@ -2299,6 +2415,7 @@ test('security S2A separates access and refresh token trust boundaries', () => {
     /refreshToken\(\)/
   );
 
+
   assert.doesNotMatch(
     frontend,
     /Bearer \$\{[^}]*access/
@@ -2321,16 +2438,19 @@ test('security S2A separates access and refresh token trust boundaries', () => {
       'apps/frontend/src/app/services/auth.service.spec.ts'
     ),
   ]) {
+
     assert.doesNotMatch(
       source,
       /(^|[^A-Za-z0-9_])any([^A-Za-z0-9_]|$)/
     );
+
 
     assert.doesNotMatch(
       source,
       /(^|[^A-Za-z0-9_])unknown([^A-Za-z0-9_]|$)/
     );
   }
+
 });
 
 
@@ -2389,6 +2509,7 @@ test('security S2B-A uses hashed single-use HttpOnly refresh sessions', () => {
     sessionSchema,
     /tokenHash/
   );
+
 
   assert.doesNotMatch(
     sessionSchema,
@@ -2450,6 +2571,7 @@ test('security S2B-A uses hashed single-use HttpOnly refresh sessions', () => {
     /extractRefreshCookieFromHeader/
   );
 
+
   assert.doesNotMatch(
     refreshStrategy,
     /fromAuthHeaderAsBearerToken/
@@ -2507,16 +2629,19 @@ test('security S2B-A uses hashed single-use HttpOnly refresh sessions', () => {
     controllerSpec,
     refreshStrategy,
   ]) {
+
     assert.doesNotMatch(
       source,
       /(^|[^A-Za-z0-9_])any([^A-Za-z0-9_]|$)/
     );
+
 
     assert.doesNotMatch(
       source,
       /(^|[^A-Za-z0-9_])unknown([^A-Za-z0-9_]|$)/
     );
   }
+
 });
 
 test('security S2B-B keeps refresh credentials out of browser-readable state', () => {
@@ -2553,20 +2678,24 @@ test('security S2B-B keeps refresh credentials out of browser-readable state', (
   );
 
   // Refresh credentials are not modeled in browser-readable responses/state.
+
   assert.doesNotMatch(
     service,
     /refreshToken:\s*string/
   );
+
 
   assert.doesNotMatch(
     state,
     /refreshToken:\s*/
   );
 
+
   assert.doesNotMatch(
     actions,
     /refreshToken:\s*string/
   );
+
 
   assert.doesNotMatch(
     reducer,
@@ -2579,10 +2708,12 @@ test('security S2B-B keeps refresh credentials out of browser-readable state', (
     state,
     effects,
   ]) {
+
     assert.doesNotMatch(
       source,
       /getItem\(\s*['"]refresh_token['"]/
     );
+
 
     assert.doesNotMatch(
       source,
@@ -2612,10 +2743,12 @@ test('security S2B-B keeps refresh credentials out of browser-readable state', (
   );
 
   // Refresh no longer uses a browser-managed bearer credential.
+
   assert.doesNotMatch(
     service,
     /HttpHeaders/
   );
+
 
   assert.doesNotMatch(
     service,
@@ -2623,10 +2756,12 @@ test('security S2B-B keeps refresh credentials out of browser-readable state', (
   );
 
   // E2E must prove the new browser contract instead of recreating the old one.
+
   assert.doesNotMatch(
     e2e,
     /refresh_token/
   );
+
 
   assert.doesNotMatch(
     e2e,
@@ -2653,14 +2788,432 @@ test('security S2B-B keeps refresh credentials out of browser-readable state', (
     serviceSpec,
     reducerSpec,
   ]) {
+
     assert.doesNotMatch(
       source,
       /(^|[^A-Za-z0-9_])any([^A-Za-z0-9_]|$)/
     );
 
+
     assert.doesNotMatch(
       source,
       /(^|[^A-Za-z0-9_])unknown([^A-Za-z0-9_]|$)/
+    );
+  }
+
+});
+
+test('security S3-A makes generated and uploaded files private', () => {
+  const appModule = read(
+    'apps/backend/src/app/app.module.ts'
+  );
+
+  const libraryController = read(
+    'apps/backend/src/library/library.controller.ts'
+  );
+
+  const libraryService = read(
+    'apps/backend/src/library/library.service.ts'
+  );
+
+  const jobsController = read(
+    'apps/backend/src/jobs/jobs.controller.ts'
+  );
+
+  const jobsService = read(
+    'apps/backend/src/jobs/jobs.service.ts'
+  );
+
+  // Private artifacts must never be exposed as anonymous static trees.
+
+  assert.doesNotMatch(
+    appModule,
+    /ServeStaticModule/
+  );
+
+
+  assert.doesNotMatch(
+    appModule,
+    /serveRoot:\s*['"]\/uploads['"]/
+  );
+
+
+  assert.doesNotMatch(
+    appModule,
+    /serveRoot:\s*['"]\/downloads['"]/
+  );
+
+  // Library files are retrieved only through an authenticated,
+  // ownership-aware API route.
+  assert.match(
+    libraryController,
+    /@Get\(['"]:id\/file['"]\)/
+  );
+
+  assert.match(
+    libraryController,
+    /JwtAuthGuard/
+  );
+
+  assert.match(
+    libraryService,
+    /resolveOwnedFile/
+  );
+
+  // Generated job artifacts follow the same ownership boundary.
+  assert.match(
+    jobsController,
+    /@Get\(['"]:id\/artifact['"]\)/
+  );
+
+  assert.match(
+    jobsController,
+    /JwtAuthGuard/
+  );
+
+  assert.match(
+    jobsService,
+    /resolveOwnedArtifact/
+  );
+
+  // Storage paths are resolved by the server rather than accepted
+  // from request path parameters.
+
+  assert.doesNotMatch(
+    libraryController,
+    /filename.*@Param/
+  );
+
+
+  assert.doesNotMatch(
+    jobsController,
+    /filename.*@Param/
+  );
+
+});
+
+test('security S3-A2 fetches private artifacts through authenticated HTTP', () => {
+  const jobsService = read(
+    'apps/frontend/src/app/services/jobs.service.ts'
+  );
+
+  const generationPage = read(
+    'apps/frontend/src/app/features/music-generation/music-generation-page.component.ts'
+  );
+
+  const backendJobs = read(
+    'apps/backend/src/jobs/jobs.service.ts'
+  );
+
+  // Generated artifacts are advertised only through the guarded API.
+
+  assert.doesNotMatch(
+    backendJobs,
+    /\/downloads\/jobs\//
+  );
+
+  assert.match(
+    backendJobs,
+    /\/api\/jobs\/\$\{jobId\}\/artifact/
+  );
+
+  // Angular retrieves the protected file through HttpClient so the
+  // existing auth interceptor can attach the access bearer token.
+  assert.match(
+    jobsService,
+    /getArtifact\(\s*id:\s*string\s*\)/
+  );
+
+  assert.match(
+    jobsService,
+    /responseType:\s*['"]blob['"]/
+  );
+
+  assert.match(
+    jobsService,
+    /\/artifact/
+  );
+
+  // The audio element receives only a local object URL, never the
+  // protected API URL directly.
+  assert.match(
+    generationPage,
+    /JobsService/
+  );
+
+  assert.match(
+    generationPage,
+    /createObjectURL/
+  );
+
+  assert.match(
+    generationPage,
+    /revokeObjectURL/
+  );
+
+
+  assert.doesNotMatch(
+    generationPage,
+    /generatedAudioUrl\s*=\s*typeof\s+outputPath/
+  );
+
+  // Failed generation must never attempt artifact retrieval.
+  const failedJobBranchStart = generationPage.indexOf(
+    "} else if (job.status === 'failed') {"
+  );
+
+  const cancelledJobBranchStart = generationPage.indexOf(
+    "} else if (job.status === 'cancelled') {",
+    failedJobBranchStart
+  );
+
+  assert.ok(
+    failedJobBranchStart >= 0,
+    'Failed-job branch must exist.'
+  );
+
+  assert.ok(
+    cancelledJobBranchStart > failedJobBranchStart,
+    'Cancelled-job branch must follow failed-job branch.'
+  );
+
+  assert.doesNotMatch(
+    generationPage.slice(
+      failedJobBranchStart,
+      cancelledJobBranchStart
+    ),
+    /loadGeneratedArtifact/
+  );
+
+});
+
+test('security S3-B hardens library uploads and owned storage', () => {
+  const controller = read(
+    'apps/backend/src/library/library.controller.ts'
+  );
+
+  const service = read(
+    'apps/backend/src/library/library.service.ts'
+  );
+
+  const dto = read(
+    'apps/backend/src/library/dto/library.dto.ts'
+  );
+
+  // Multer must reject oversized requests before an unbounded upload
+  // reaches application storage.
+  assert.match(
+    controller,
+    /FileInterceptor\(\s*['"]file['"]\s*,\s*\{[\s\S]*limits:\s*\{[\s\S]*fileSize:/
+  );
+
+  assert.match(
+    service,
+    /MAX_LIBRARY_UPLOAD_BYTES/
+  );
+
+  // Upload policy must explicitly validate type, MIME, extension and size.
+  assert.match(
+    service,
+    /validateUploadFile/
+  );
+
+  assert.match(
+    service,
+    /BadRequestException/
+  );
+
+  assert.match(
+    service,
+    /path\.extname\(file\.originalname\)\.toLowerCase\(\)/
+  );
+
+  assert.match(
+    service,
+    /file\.size\s*>\s*MAX_LIBRARY_UPLOAD_BYTES/
+  );
+
+  // Unsupported or ambiguous content must fail closed.
+  assert.doesNotMatch(
+    service,
+    /['"]application\/octet-stream['"]\s*:\s*['"]mp3['"]/
+  );
+
+  assert.doesNotMatch(
+    service,
+    /mimeToFileType\[file\.mimetype\]\s*\|\|\s*['"]mp3['"]/
+  );
+
+  // Inspect the upload write path itself. Retrieval already contains
+  // user-scoped path logic from S3-A and must not satisfy this gate.
+  const uploadMethodStart = service.indexOf(
+    '  uploadFile('
+  );
+
+  const uploadMethodEnd = service.indexOf(
+    '  private mapToDto(',
+    uploadMethodStart
+  );
+
+  assert.ok(
+    uploadMethodStart >= 0,
+    'Library upload method must exist.'
+  );
+
+  assert.ok(
+    uploadMethodEnd > uploadMethodStart,
+    'Library upload method boundary must be discoverable.'
+  );
+
+  const uploadMethod = service.slice(
+    uploadMethodStart,
+    uploadMethodEnd
+  );
+
+  // Uploads must be physically segregated by authenticated user.
+  assert.match(
+    uploadMethod,
+    /const userRoot\s*=\s*path\.(?:resolve|join)\(\s*this\.uploadDir,\s*userId\s*\)/
+  );
+
+  assert.match(
+    uploadMethod,
+    /fs\.mkdir\(\s*userRoot,\s*\{\s*recursive:\s*true\s*\}\s*\)/
+  );
+
+  assert.match(
+    uploadMethod,
+    /const filePath\s*=\s*path\.(?:resolve|join)\(\s*userRoot,\s*uniqueFilename\s*\)/
+  );
+
+  assert.match(
+    uploadMethod,
+    /\/uploads\/library\/\$\{userId\}\//
+  );
+
+  // Filesystem locators are server-owned implementation details.
+  assert.doesNotMatch(
+    dto,
+    /fileUrl!:\s*string/
+  );
+
+  // Deletion must preserve the same user-specific filesystem boundary
+  // as retrieval rather than collapsing a locator to basename alone.
+  assert.match(
+    service,
+    /deleteOwnedFile/
+  );
+
+  assert.doesNotMatch(
+    service,
+    /path\.join\(\s*this\.uploadDir,\s*filename\s*\)/
+  );
+
+
+  // Library counters must also preserve ownership.
+  assert.match(
+    controller,
+    /incrementPlayCount\(id, req\.user\.userId\)/
+  );
+
+  assert.match(
+    controller,
+    /incrementDownloadCount\(id, req\.user\.userId\)/
+  );
+
+  assert.match(
+    service,
+    /incrementPlayCount\([\s\S]*userId:\s*string[\s\S]*findOneAndUpdate/
+  );
+
+  assert.match(
+    service,
+    /incrementDownloadCount\([\s\S]*userId:\s*string[\s\S]*findOneAndUpdate/
+  );
+});
+
+test('security S3-C keeps qualification artifacts on authenticated routes', () => {
+  const qualifierPaths = [
+    'scripts/qualify-musicgen-small.cjs',
+    'scripts/qualify-musicgen-stereo-small.cjs',
+    'scripts/qualify-diffsinger-job.cjs',
+    'scripts/qualify-stable-audio-3-job.cjs',
+    'scripts/qualify-ace-step-job.cjs',
+  ];
+
+  for (const qualifierPath of qualifierPaths) {
+    const qualifier = read(
+      qualifierPath
+    );
+
+    assert.doesNotMatch(
+      qualifier,
+      /\/downloads\/jobs\//
+    );
+
+    assert.match(
+      qualifier,
+      /\/api\/jobs\/\$\{jobId\}\/artifact/
+    );
+
+    // Local qualification still inspects the generated WAV directly,
+    // but the API locator no longer contains the storage filename.
+    assert.match(
+      qualifier,
+      /['"]music\.wav['"]/
+    );
+  }
+
+  const showcase = read(
+    'scripts/generate-qualified-showcase.cjs'
+  );
+
+  const proxy = read(
+    'apps/frontend/proxy.conf.json'
+  );
+
+  assert.doesNotMatch(
+    showcase,
+    /\/downloads\/jobs\//
+  );
+
+  assert.match(
+    showcase,
+    /fetchProtectedArtifact/
+  );
+
+  assert.match(
+    showcase,
+    /async function fetchProtectedArtifact[\s\S]*authorization:\s*`Bearer \$\{token\}`/
+  );
+
+  assert.match(
+    showcase,
+    /\/api\/jobs\/\$\{jobId\}\/artifact/
+  );
+
+  assert.doesNotMatch(
+    proxy,
+    /["']\/downloads["']/
+  );
+});
+
+test('security S3-C2 authenticates runtime selection in qualification scripts', () => {
+  const scriptPaths = [
+    'scripts/qualify-musicgen-small.cjs',
+    'scripts/qualify-musicgen-stereo-small.cjs',
+    'scripts/qualify-diffsinger-job.cjs',
+    'scripts/qualify-stable-audio-3-job.cjs',
+    'scripts/qualify-ace-step-job.cjs',
+    'scripts/generate-qualified-showcase.cjs',
+  ];
+
+  for (const scriptPath of scriptPaths) {
+    const script = read(scriptPath);
+
+    assert.match(
+      script,
+      /\/api\/music\/runtime\/select[\s\S]{0,400}authorization:\s*`Bearer \$\{token\}`/
     );
   }
 });
