@@ -4,6 +4,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { execFile, spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { promisify } from 'node:util';
 import {
   MUSIC_MODELS,
@@ -19,6 +20,7 @@ import {
   MusicModelDefinition,
   MusicProviderDefinition,
   MusicRuntimeCatalogResponse,
+  MusicRuntimeSelectionAccepted,
   MusicRuntimeState,
   MusicRuntimeStatus,
 } from './music-runtime.types';
@@ -31,6 +33,7 @@ export class MusicRuntimeService {
   private hardwareCache: HardwareProfile | null = null;
   private hardwareCacheAt = 0;
   private readonly validatedProviderImages = new Set<string>();
+  private selectionOperationId: string | null = null;
 
   private status: MusicRuntimeStatus = {
     providerId: null,
@@ -165,6 +168,92 @@ export class MusicRuntimeService {
     );
   }
 
+  requestModelSelection(
+    modelId: string
+  ): MusicRuntimeSelectionAccepted {
+    const model = MUSIC_MODELS.find(
+      (candidate) => candidate.id === modelId
+    );
+
+    if (!model) {
+      throw new BadRequestException(
+        `Unknown music model: ${modelId}`
+      );
+    }
+
+    if (this.status.state === 'busy') {
+      throw new BadRequestException(
+        'Cannot switch music models while generation is in progress.'
+      );
+    }
+
+    if (this.selectionOperationId) {
+      throw new BadRequestException(
+        'A music runtime selection is already in progress.'
+      );
+    }
+
+    const operationId = randomUUID();
+
+    const acceptance: MusicRuntimeSelectionAccepted = {
+      operationId,
+      modelId,
+      acceptedAt: new Date().toISOString(),
+      state: 'accepted',
+    };
+
+    this.selectionOperationId = operationId;
+
+    setImmediate(() => {
+      void this.selectModel(modelId)
+        .catch(async (error) => {
+          const message =
+            error instanceof Error
+              ? error.message
+              : 'Unknown runtime selection error';
+
+          this.logger.error(
+            `Async music runtime selection ${operationId} for ${modelId} failed: ${message}`
+          );
+
+          if (this.status.state === 'error') {
+            return;
+          }
+
+          try {
+            const provider = this.getProvider(model.providerId);
+            const hardware = await this.detectHardware();
+
+            await this.transition(
+              provider,
+              model,
+              hardware,
+              'error',
+              `${provider.name} failed: ${message}`,
+              null,
+              false,
+              message
+            );
+          } catch (transitionError) {
+            this.logger.error(
+              `Could not publish async runtime failure for ${operationId}: ${
+                transitionError instanceof Error
+                  ? transitionError.message
+                  : String(transitionError)
+              }`
+            );
+          }
+        })
+        .finally(() => {
+          if (this.selectionOperationId === operationId) {
+            this.selectionOperationId = null;
+          }
+        });
+    });
+
+    return acceptance;
+  }
+
   async selectModel(modelId: string): Promise<MusicRuntimeStatus> {
     await this.reconcileRuntimeOwnership();
     const hardware = await this.detectHardware();
@@ -194,6 +283,7 @@ export class MusicRuntimeService {
       this.status.state === 'ready'
     ) {
       await this.modelInstallations.markModelUsed(model.id);
+      this.gateway.emitRuntimeStatus(this.status);
       return this.status;
     }
 

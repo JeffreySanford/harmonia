@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   MusicRuntimeCatalogResponse,
+  MusicRuntimeSelectionAccepted,
   MusicRuntimeStatus,
 } from '../store/music-runtime/music-runtime.state';
 
@@ -25,8 +26,10 @@ export class MusicRuntimeService {
     );
   }
 
-  selectModel(modelId: string): Observable<MusicRuntimeStatus> {
-    return this.http.post<MusicRuntimeStatus>(
+  selectModel(
+    modelId: string
+  ): Observable<MusicRuntimeSelectionAccepted> {
+    return this.http.post<MusicRuntimeSelectionAccepted>(
       `${this.baseUrl}/select`,
       { modelId }
     );

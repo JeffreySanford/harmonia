@@ -44,12 +44,14 @@ export const musicRuntimeReducer = createReducer<MusicRuntimeFeatureState>(
       error: null,
     };
   }),
-  on(MusicRuntimeActions.selectModelSuccess, (state, { status }) => ({
-    ...state,
-    status,
-    switching: false,
-    error: null,
-  })),
+  on(
+    MusicRuntimeActions.selectModelAccepted,
+    (state, { acceptance }) => ({
+      ...state,
+      selectedModelId: acceptance.modelId,
+      error: null,
+    })
+  ),
   on(MusicRuntimeActions.selectModelFailure, (state, { error }) => ({
     ...state,
     switching: false,

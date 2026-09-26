@@ -83,6 +83,13 @@ export interface MusicRuntimeStatus {
   error: string | null;
 }
 
+export interface MusicRuntimeSelectionAccepted {
+  operationId: string;
+  modelId: string;
+  acceptedAt: string;
+  state: 'accepted';
+}
+
 export interface MusicRuntimeCatalogResponse {
   hardware: HardwareProfile;
   providers: MusicProviderDefinition[];

@@ -1653,3 +1653,186 @@ test('showcase resumes dated samples and excludes runtime data from Docker conte
     );
   }
 });
+
+/*
+ * PHASE 13A ASYNC RUNTIME SELECTION CONTRACT
+ *
+ * Runtime selection may perform Docker image reconciliation, container startup,
+ * health checks, and provider-native model initialization. Those operations must
+ * not hold the POST /music/runtime/select HTTP request open.
+ *
+ * The HTTP request acknowledges acceptance. Existing music-runtime:status
+ * Socket.IO events remain authoritative for the actual provider lifecycle.
+ */
+test('async runtime selection acknowledges immediately and completes through runtime events', () => {
+  const controller = read(
+    'apps/backend/src/music-runtime/music-runtime.controller.ts'
+  );
+  const backend = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+  const backendTypes = read(
+    'apps/backend/src/music-runtime/music-runtime.types.ts'
+  );
+
+  const frontendService = read(
+    'apps/frontend/src/app/services/music-runtime.service.ts'
+  );
+  const frontendState = read(
+    'apps/frontend/src/app/store/music-runtime/music-runtime.state.ts'
+  );
+  const frontendActions = read(
+    'apps/frontend/src/app/store/music-runtime/music-runtime.actions.ts'
+  );
+  const frontendEffects = read(
+    'apps/frontend/src/app/store/music-runtime/music-runtime.effects.ts'
+  );
+  const frontendReducer = read(
+    'apps/frontend/src/app/store/music-runtime/music-runtime.reducer.ts'
+  );
+  const websocket = read(
+    'apps/frontend/src/app/services/websocket.service.ts'
+  );
+  const gateway = read(
+    'apps/backend/src/music-runtime/music-runtime.gateway.ts'
+  );
+
+  // HTTP acceptance is explicit: provider startup is not the HTTP response.
+  assert.match(
+    controller,
+    /HttpCode/
+  );
+  assert.match(
+    controller,
+    /HttpStatus/
+  );
+  assert.match(
+    controller,
+    /@Post\('select'\)[\s\S]*@HttpCode\(HttpStatus\.ACCEPTED\)/
+  );
+  assert.match(
+    controller,
+    /requestModelSelection\(body\.modelId\)/
+  );
+  assert.doesNotMatch(
+    controller,
+    /return this\.runtime\.selectModel\(body\.modelId\)/
+  );
+
+  // Accepted response is a small operation acknowledgement, not final status.
+  assert.match(
+    backendTypes,
+    /interface MusicRuntimeSelectionAccepted/
+  );
+  assert.match(
+    backendTypes,
+    /operationId:\s*string/
+  );
+  assert.match(
+    backendTypes,
+    /modelId:\s*string/
+  );
+  assert.match(
+    backendTypes,
+    /acceptedAt:\s*string/
+  );
+  assert.match(
+    backendTypes,
+    /state:\s*'accepted'/
+  );
+
+  // Backend creates a unique operation and schedules the existing long-running
+  // selection lifecycle after returning the acknowledgement.
+  assert.match(
+    backend,
+    /randomUUID/
+  );
+  assert.match(
+    backend,
+    /requestModelSelection\s*\(/
+  );
+  assert.match(
+    backend,
+    /MusicRuntimeSelectionAccepted/
+  );
+  assert.match(
+    backend,
+    /setImmediate\s*\(/
+  );
+  assert.match(
+    backend,
+    /void this\.selectModel\(modelId\)/
+  );
+  assert.match(
+    backend,
+    /\.catch\s*\(/
+  );
+
+  // Existing provider lifecycle remains event-driven.
+  for (const state of [
+    'building',
+    'starting',
+    'health-checking',
+    'healthy',
+    'loading-model',
+    'ready',
+    'error',
+  ]) {
+    assert.match(
+      backend,
+      new RegExp(`'${state}'`)
+    );
+  }
+
+  assert.match(
+    gateway,
+    /music-runtime:status/
+  );
+  assert.match(
+    websocket,
+    /music-runtime:status/
+  );
+  assert.match(
+    websocket,
+    /runtimeStatusReceived/
+  );
+
+  // Frontend POST consumes an acceptance object rather than pretending the
+  // selected runtime is already ready.
+  assert.match(
+    frontendState,
+    /interface MusicRuntimeSelectionAccepted/
+  );
+  assert.match(
+    frontendService,
+    /Observable<MusicRuntimeSelectionAccepted>/
+  );
+  assert.match(
+    frontendActions,
+    /selectModelAccepted/
+  );
+
+  assert.match(
+    frontendEffects,
+    /selectModelAccepted/
+  );
+  assert.doesNotMatch(
+    frontendEffects,
+    /selectModelSuccess\(\{\s*status\s*\}\)/
+  );
+
+  // Selection remains "switching" after HTTP acceptance. Runtime socket events
+  // clear it only at a terminal runtime state.
+  assert.match(
+    frontendReducer,
+    /selectModelAccepted/
+  );
+  assert.match(
+    frontendReducer,
+    /runtimeStatusReceived/
+  );
+  assert.match(
+    frontendReducer,
+    /\['ready', 'stopped', 'error'\]/
+  );
+});

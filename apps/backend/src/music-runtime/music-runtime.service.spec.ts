@@ -412,3 +412,176 @@ describe('MusicRuntimeService model readiness ordering', () => {
     ).not.toHaveBeenCalled();
   });
 });
+
+
+describe('Phase 13C asynchronous selection behavior', () => {
+  function createAsyncSelectionService() {
+    const gateway = {
+      emitRuntimeStatus: jest.fn(),
+    };
+
+    const installations = {
+      assertModelReady: jest.fn(),
+      markModelUsed: jest.fn(),
+      getCatalogInstallationInfo: jest.fn(),
+    };
+
+    return new MusicRuntimeService(
+      gateway as never,
+      installations as never
+    );
+  }
+
+  function readyStatus(modelId: string) {
+    return {
+      providerId: 'musicgen',
+      providerName: 'MusicGen',
+      modelId,
+      modelName: 'Test model',
+      state: 'ready' as const,
+      message: 'ready',
+      healthy: true,
+      progress: 100,
+      hardware: {
+        gpuAvailable: true,
+        gpuName: 'Test GPU',
+        vramTotalGb: 10,
+      },
+      updatedAt: new Date().toISOString(),
+      error: null,
+    };
+  }
+
+  it(
+    'returns acceptance before delayed model selection finishes and releases the operation lock afterward',
+    async () => {
+      const service =
+        createAsyncSelectionService();
+
+      let releaseSelection:
+        (value: ReturnType<typeof readyStatus>) => void =
+        () => {
+          throw new Error(
+            'Delayed selection release callback was not initialized.'
+          );
+        };
+
+      const delayedSelection =
+        new Promise<ReturnType<typeof readyStatus>>(
+          (resolve) => {
+            releaseSelection = resolve;
+          }
+        );
+
+      const selectSpy = jest
+        .spyOn(service, 'selectModel')
+        .mockReturnValue(delayedSelection);
+
+      const acceptance =
+        service.requestModelSelection(
+          'musicgen-small'
+        );
+
+      expect(acceptance).toEqual(
+        expect.objectContaining({
+          modelId: 'musicgen-small',
+          state: 'accepted',
+          operationId: expect.any(String),
+          acceptedAt: expect.any(String),
+        })
+      );
+
+      expect(
+        acceptance.operationId.length
+      ).toBeGreaterThan(0);
+
+      /*
+       * setImmediate has not executed yet. The HTTP-facing method has
+       * already returned while the expensive worker has not even started.
+       */
+      expect(selectSpy).not.toHaveBeenCalled();
+
+      /*
+       * The operation reservation is made synchronously, preventing a
+       * second provider switch from racing the first.
+       */
+      expect(() =>
+        service.requestModelSelection(
+          'musicgen-stereo-small'
+        )
+      ).toThrow(
+        'A music runtime selection is already in progress.'
+      );
+
+      await new Promise<void>((resolve) =>
+        setImmediate(resolve)
+      );
+
+      /*
+       * Background orchestration has now started, but its deliberately
+       * unresolved promise proves acceptance did not wait for completion.
+       */
+      expect(selectSpy).toHaveBeenCalledTimes(1);
+      expect(selectSpy).toHaveBeenCalledWith(
+        'musicgen-small'
+      );
+
+      let completed = false;
+
+      void delayedSelection.then(() => {
+        completed = true;
+      });
+
+      await Promise.resolve();
+
+      expect(completed).toBe(false);
+
+
+      releaseSelection(
+        readyStatus('musicgen-small')
+      );
+
+      await delayedSelection;
+      await new Promise<void>((resolve) =>
+        setImmediate(resolve)
+      );
+
+      expect(completed).toBe(true);
+
+      /*
+       * Once .finally() releases selectionOperationId, another request can
+       * be accepted. Make subsequent worker execution immediately resolve
+       * so this test leaves no pending async work.
+       */
+      selectSpy.mockResolvedValue(
+        readyStatus('musicgen-stereo-small')
+      );
+
+      const secondAcceptance =
+        service.requestModelSelection(
+          'musicgen-stereo-small'
+        );
+
+      expect(secondAcceptance).toEqual(
+        expect.objectContaining({
+          modelId: 'musicgen-stereo-small',
+          state: 'accepted',
+        })
+      );
+
+      expect(
+        secondAcceptance.operationId
+      ).not.toEqual(
+        acceptance.operationId
+      );
+
+      await new Promise<void>((resolve) =>
+        setImmediate(resolve)
+      );
+
+      await new Promise<void>((resolve) =>
+        setImmediate(resolve)
+      );
+    }
+  );
+});
