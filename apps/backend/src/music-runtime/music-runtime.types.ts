@@ -84,6 +84,7 @@ export interface MusicModelCatalogEntry
 }
 
 export interface MusicRuntimeStatus {
+  operationId: string | null;
   providerId: string | null;
   providerName: string | null;
   modelId: string | null;

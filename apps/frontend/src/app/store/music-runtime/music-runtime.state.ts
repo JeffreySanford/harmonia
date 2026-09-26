@@ -70,6 +70,7 @@ export interface MusicModelCatalogEntry {
 }
 
 export interface MusicRuntimeStatus {
+  operationId: string | null;
   providerId: string | null;
   providerName: string | null;
   modelId: string | null;
@@ -104,6 +105,7 @@ export interface MusicRuntimeFeatureState {
   status: MusicRuntimeStatus | null;
   selectedProviderId: string | null;
   selectedModelId: string | null;
+  activeSelectionOperationId: string | null;
   loading: boolean;
   switching: boolean;
   error: string | null;
@@ -116,6 +118,7 @@ export const initialMusicRuntimeState: MusicRuntimeFeatureState = {
   status: null,
   selectedProviderId: null,
   selectedModelId: null,
+  activeSelectionOperationId: null,
   loading: false,
   switching: false,
   error: null,

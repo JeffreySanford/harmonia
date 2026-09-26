@@ -161,6 +161,7 @@ const musicGenMedium: MusicModelCatalogEntry = {
 };
 
 const readyStatus: MusicRuntimeStatus = {
+  operationId: null,
   providerId: 'musicgen',
   providerName: 'MusicGen',
   modelId: 'musicgen-small',
@@ -175,6 +176,7 @@ const readyStatus: MusicRuntimeStatus = {
 };
 
 const diffSingerReadyStatus: MusicRuntimeStatus = {
+  operationId: null,
   providerId: 'diffsinger',
   providerName: 'DiffSinger',
   modelId: 'diffsinger-acoustic-hifigan',
@@ -213,6 +215,7 @@ function storyState(
       status,
       selectedProviderId: 'musicgen',
       selectedModelId: 'musicgen-small',
+      activeSelectionOperationId: null,
       loading: false,
       switching: status.state === 'building',
       error: null,
@@ -235,6 +238,7 @@ function diffSingerStoryState(): MusicStoryState {
       status: diffSingerReadyStatus,
       selectedProviderId: 'diffsinger',
       selectedModelId: 'diffsinger-acoustic-hifigan',
+      activeSelectionOperationId: null,
       loading: false,
       switching: false,
       error: null,

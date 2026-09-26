@@ -39,6 +39,12 @@ export const selectRuntimeSwitching = createSelector(
   (state) => state.switching
 );
 
+export const selectActiveRuntimeSelectionOperationId =
+  createSelector(
+    selectMusicRuntimeState,
+    (state) => state.activeSelectionOperationId
+  );
+
 export const selectRuntimeLoading = createSelector(
   selectMusicRuntimeState,
   (state) => state.loading

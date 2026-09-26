@@ -36,6 +36,7 @@ export class MusicRuntimeService {
   private selectionOperationId: string | null = null;
 
   private status: MusicRuntimeStatus = {
+    operationId: null,
     providerId: null,
     providerName: null,
     modelId: null,
@@ -205,7 +206,7 @@ export class MusicRuntimeService {
     this.selectionOperationId = operationId;
 
     setImmediate(() => {
-      void this.selectModel(modelId)
+      void this.selectModel(modelId, operationId)
         .catch(async (error) => {
           const message =
             error instanceof Error
@@ -232,7 +233,8 @@ export class MusicRuntimeService {
               `${provider.name} failed: ${message}`,
               null,
               false,
-              message
+              message,
+              operationId
             );
           } catch (transitionError) {
             this.logger.error(
@@ -254,8 +256,11 @@ export class MusicRuntimeService {
     return acceptance;
   }
 
-  async selectModel(modelId: string): Promise<MusicRuntimeStatus> {
-    await this.reconcileRuntimeOwnership();
+  async selectModel(
+    modelId: string,
+    operationId: string | null = null
+  ): Promise<MusicRuntimeStatus> {
+    await this.reconcileRuntimeOwnership(operationId);
     const hardware = await this.detectHardware();
     const model = MUSIC_MODELS.find((candidate) => candidate.id === modelId);
     if (!model) {
@@ -283,6 +288,18 @@ export class MusicRuntimeService {
       this.status.state === 'ready'
     ) {
       await this.modelInstallations.markModelUsed(model.id);
+
+      if (this.status.operationId !== operationId) {
+        this.status = {
+          ...this.status,
+          operationId,
+          updatedAt:
+            operationId !== null
+              ? new Date().toISOString()
+              : this.status.updatedAt,
+        };
+      }
+
       this.gateway.emitRuntimeStatus(this.status);
       return this.status;
     }
@@ -294,18 +311,26 @@ export class MusicRuntimeService {
       this.status.providerId !== provider.id &&
       this.status.state !== 'stopped'
     ) {
-      await this.stopCurrentRuntime();
+      await this.stopCurrentRuntime(operationId);
     }
 
     try {
-      await this.ensureProviderImage(provider, model, hardware);
+      await this.ensureProviderImage(
+        provider,
+        model,
+        hardware,
+        operationId
+      );
       await this.transition(
         provider,
         model,
         hardware,
         'starting',
         `Starting ${provider.name} runtime…`,
-        35
+        35,
+        false,
+        null,
+        operationId
       );
 
       await this.compose(provider, ['up', '--detach', '--no-build', provider.dockerService!]);
@@ -316,7 +341,10 @@ export class MusicRuntimeService {
         hardware,
         'health-checking',
         `Checking ${provider.name} runtime health…`,
-        65
+        65,
+        false,
+        null,
+        operationId
       );
 
       await this.waitForHealthy(provider, 240_000);
@@ -328,7 +356,9 @@ export class MusicRuntimeService {
         'healthy',
         `${provider.name} container is healthy.`,
         90,
-        true
+        true,
+        null,
+        operationId
       );
 
       if (provider.id === 'ace-step-1.5') {
@@ -339,7 +369,9 @@ export class MusicRuntimeService {
           'loading-model',
           `Loading ${model.name} and the 0.6B LM…`,
           95,
-          true
+          true,
+          null,
+          operationId
         );
 
         await this.prepareProviderModel(
@@ -361,7 +393,9 @@ export class MusicRuntimeService {
           ? `${model.name} runtime is ready. Turbo and the 0.6B LM are resident.`
           : `${model.name} runtime is ready. Model weights load on first inference.`,
         100,
-        true
+        true,
+        null,
+        operationId
       );
 
       await this.modelInstallations.markModelUsed(model.id);
@@ -378,13 +412,16 @@ export class MusicRuntimeService {
         `${provider.name} failed: ${message}`,
         null,
         false,
-        message
+        message,
+        operationId
       );
       throw error;
     }
   }
 
-  async stopCurrentRuntime(): Promise<MusicRuntimeStatus> {
+  async stopCurrentRuntime(
+    operationId: string | null = null
+  ): Promise<MusicRuntimeStatus> {
     const hardware = await this.detectHardware();
     if (!this.status.providerId) {
       return this.status;
@@ -403,7 +440,10 @@ export class MusicRuntimeService {
         hardware,
         'stopped',
         `${provider.name} runtime stopped.`,
-        0
+        0,
+        false,
+        null,
+        operationId
       );
     }
 
@@ -413,7 +453,10 @@ export class MusicRuntimeService {
       hardware,
       'stopping',
       `Stopping ${provider.name} and releasing GPU resources…`,
-      25
+      25,
+      false,
+      null,
+      operationId
     );
 
     await this.compose(provider, ['stop', provider.dockerService]);
@@ -424,14 +467,18 @@ export class MusicRuntimeService {
       hardware,
       'stopped',
       `${provider.name} stopped. GPU resources released.`,
-      0
+      0,
+      false,
+      null,
+      operationId
     );
   }
 
   private async ensureProviderImage(
     provider: MusicProviderDefinition,
     model: MusicModelDefinition,
-    hardware: HardwareProfile
+    hardware: HardwareProfile,
+    operationId: string | null = null
   ): Promise<void> {
     if (!provider.dockerService || !provider.composeProfile) {
       throw new Error(`${provider.name} has no Docker runtime configured.`);
@@ -463,20 +510,29 @@ export class MusicRuntimeService {
       imageExists
         ? `Checking ${provider.name} runtime image for source changes…`
         : `Building ${provider.name} runtime image…`,
-      10
+      10,
+      false,
+      null,
+      operationId
     );
 
     // Compose/BuildKit performs the source/config freshness check. If the
     // image is current this is a cache-only reconciliation; if Dockerfile or
     // provider inputs changed, only invalidated layers rebuild.
-    await this.buildProviderImage(provider, model, hardware);
+    await this.buildProviderImage(
+      provider,
+      model,
+      hardware,
+      operationId
+    );
     this.validatedProviderImages.add(provider.id);
   }
 
   private async buildProviderImage(
     provider: MusicProviderDefinition,
     model: MusicModelDefinition,
-    hardware: HardwareProfile
+    hardware: HardwareProfile,
+    operationId: string | null = null
   ): Promise<void> {
     const args = this.composeArgs(provider, [
       'build',
@@ -548,7 +604,10 @@ export class MusicRuntimeService {
             hardware,
             'building',
             `Building ${provider.name} runtime — ${lastStep}: ${detail}`,
-            lastProgress
+            lastProgress,
+            false,
+            null,
+            operationId
           );
           return;
         }
@@ -562,7 +621,10 @@ export class MusicRuntimeService {
             hardware,
             'building',
             `Building ${provider.name} runtime — exporting image…`,
-            lastProgress
+            lastProgress,
+            false,
+            null,
+            operationId
           );
           return;
         }
@@ -576,7 +638,10 @@ export class MusicRuntimeService {
             hardware,
             'building',
             `Building ${provider.name} runtime — finalizing image…`,
-            lastProgress
+            lastProgress,
+            false,
+            null,
+            operationId
           );
         }
       };
@@ -604,7 +669,10 @@ export class MusicRuntimeService {
           hardware,
           'building',
           `Building ${provider.name} runtime… ${elapsed} elapsed${suffix}`,
-          lastProgress
+          lastProgress,
+          false,
+          null,
+          operationId
         );
       }, 10_000);
 
@@ -814,7 +882,9 @@ export class MusicRuntimeService {
     }
   }
 
-  private async reconcileRuntimeOwnership(): Promise<void> {
+  private async reconcileRuntimeOwnership(
+    operationId: string | null = null
+  ): Promise<void> {
     if (
       ['building', 'starting', 'health-checking', 'stopping'].includes(
         this.status.state
@@ -878,6 +948,7 @@ export class MusicRuntimeService {
       );
 
       this.status = {
+        operationId,
         providerId: null,
         providerName: null,
         modelId: null,
@@ -937,6 +1008,7 @@ export class MusicRuntimeService {
           : '';
 
         this.status = {
+          operationId,
           providerId: recovered.provider.id,
           providerName: recovered.provider.name,
           modelId: recoveredModel?.id || null,
@@ -963,6 +1035,7 @@ export class MusicRuntimeService {
       ['ready', 'healthy', 'error'].includes(this.status.state)
     ) {
       this.status = {
+        operationId,
         providerId: null,
         providerName: null,
         modelId: null,
@@ -1319,9 +1392,11 @@ export class MusicRuntimeService {
     message: string,
     progress: number | null,
     healthy = false,
-    error: string | null = null
+    error: string | null = null,
+    operationId: string | null = null
   ): Promise<MusicRuntimeStatus> {
     this.status = {
+      operationId,
       providerId: state === 'stopped' ? null : provider.id,
       providerName: state === 'stopped' ? null : provider.name,
       modelId: state === 'stopped' ? null : model?.id || null,
