@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+const {
+  selectRuntimeModel,
+} = require('./runtime-selection-client.cjs');
 const { existsSync, readFileSync } = require('node:fs');
 const path = require('node:path');
 const { parseEnv } = require('node:util');
@@ -130,25 +133,18 @@ async function main() {
 
   console.log(`Authenticated as ${login.body.user?.username || username}.`);
 
-  const select = await request(`${backendBase}/api/music/runtime/select`, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${token}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({ modelId: 'musicgen-stereo-small' }),
+  const { acceptance, status } = await selectRuntimeModel({
+    backendBase,
+    token,
+    modelId: 'musicgen-stereo-small',
+    expectedProviderId: 'musicgen',
+    timeoutMs: 10 * 60 * 1000,
+    pollMs,
   });
 
   console.log(
-    `Runtime selected: ${select.body?.modelName || select.body?.modelId || 'musicgen-stereo-small'} (${select.body?.state || 'unknown'})`
+    `Runtime ready: ${status.modelName || 'musicgen-stereo-small'} operation=${acceptance.operationId}`
   );
-
-  const status = await request(`${backendBase}/api/music/runtime/status`);
-  if (status.body?.modelId !== 'musicgen-stereo-small' || status.body?.state !== 'ready') {
-    throw new Error(
-      `MusicGen Stereo Small is not ready after selection: ${JSON.stringify(status.body)}`
-    );
-  }
 
   const requestedDuration = 8;
   const created = await request(`${backendBase}/api/jobs`, {

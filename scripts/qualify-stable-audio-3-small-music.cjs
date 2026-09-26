@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+const {
+  authenticateQualificationUser,
+  selectRuntimeModel,
+} = require('./runtime-selection-client.cjs');
 const { execFileSync } = require('node:child_process');
 const {
   existsSync,
@@ -202,29 +206,25 @@ async function main() {
     `Live backend catalog ready: ${liveCatalogEntry.name || modelId} selectable=${liveCatalogEntry.selectable}`
   );
 
-  const selected = await request(
-    `${backendBase}/api/music/runtime/select`,
-    {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ modelId }),
-    },
-    10 * 60 * 1000
-  );
-
-  if (
-    selected.body?.providerId !== 'stable-audio-3' ||
-    selected.body?.modelId !== modelId ||
-    selected.body?.state !== 'ready' ||
-    selected.body?.healthy !== true
-  ) {
-    throw new Error(
-      `Stable Audio 3 selection did not reach healthy/ready: ${JSON.stringify(selected.body)}`
-    );
-  }
+  const auth = await authenticateQualificationUser({
+    backendBase,
+  });
 
   console.log(
-    `Runtime selected: ${selected.body.modelName || modelId} (ready)`
+    `Authenticated as ${auth.username}.`
+  );
+
+  const { acceptance, status } = await selectRuntimeModel({
+    backendBase,
+    token: auth.token,
+    modelId,
+    expectedProviderId: 'stable-audio-3',
+    timeoutMs: 15 * 60 * 1000,
+    pollMs: 2000,
+  });
+
+  console.log(
+    `Runtime ready: ${status.modelName || modelId} operation=${acceptance.operationId}`
   );
 
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
