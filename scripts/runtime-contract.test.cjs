@@ -53,7 +53,8 @@ test('application port contract is 4200 frontend and 3000 backend', () => {
 
   assert.match(env, /^PORT=3000$/m);
   assert.match(proxy, /localhost:3000/);
-  assert.match(proxy, /"\/downloads"/);
+  assert.match(proxy, /"\/api"/);
+  assert.doesNotMatch(proxy, /"\/downloads"/);
   assert.match(auth, /private readonly apiUrl\s*=\s*['\"]\/api\/auth['\"]/);
 
   assert.doesNotMatch(auth, /localhost:3000\/api\/auth/);
@@ -682,7 +683,7 @@ test('MusicGen Small qualification exercises persistent generation and downloads
   );
   assert.match(qualify, /modelId: 'musicgen-small'/);
   assert.match(qualify, /\/api\/jobs/);
-  assert.match(qualify, /\/downloads\/jobs\//);
+  assert.match(qualify, /\/api\/jobs\/\$\{jobId\}\/artifact/);
   assert.match(qualify, /RIFF/);
   assert.match(qualify, /WAVE/);
   assert.match(qualify, /MUSICGEN_SMALL_QUALIFICATION_OK/);
@@ -3127,4 +3128,90 @@ test('security S3-B hardens library uploads and owned storage', () => {
     service,
     /incrementDownloadCount\([\s\S]*userId:\s*string[\s\S]*findOneAndUpdate/
   );
+});
+
+test('security S3-C keeps qualification artifacts on authenticated routes', () => {
+  const qualifierPaths = [
+    'scripts/qualify-musicgen-small.cjs',
+    'scripts/qualify-musicgen-stereo-small.cjs',
+    'scripts/qualify-diffsinger-job.cjs',
+    'scripts/qualify-stable-audio-3-job.cjs',
+    'scripts/qualify-ace-step-job.cjs',
+  ];
+
+  for (const qualifierPath of qualifierPaths) {
+    const qualifier = read(
+      qualifierPath
+    );
+
+    assert.doesNotMatch(
+      qualifier,
+      /\/downloads\/jobs\//
+    );
+
+    assert.match(
+      qualifier,
+      /\/api\/jobs\/\$\{jobId\}\/artifact/
+    );
+
+    // Local qualification still inspects the generated WAV directly,
+    // but the API locator no longer contains the storage filename.
+    assert.match(
+      qualifier,
+      /['"]music\.wav['"]/
+    );
+  }
+
+  const showcase = read(
+    'scripts/generate-qualified-showcase.cjs'
+  );
+
+  const proxy = read(
+    'apps/frontend/proxy.conf.json'
+  );
+
+  assert.doesNotMatch(
+    showcase,
+    /\/downloads\/jobs\//
+  );
+
+  assert.match(
+    showcase,
+    /fetchProtectedArtifact/
+  );
+
+  assert.match(
+    showcase,
+    /async function fetchProtectedArtifact[\s\S]*authorization:\s*`Bearer \$\{token\}`/
+  );
+
+  assert.match(
+    showcase,
+    /\/api\/jobs\/\$\{jobId\}\/artifact/
+  );
+
+  assert.doesNotMatch(
+    proxy,
+    /["']\/downloads["']/
+  );
+});
+
+test('security S3-C2 authenticates runtime selection in qualification scripts', () => {
+  const scriptPaths = [
+    'scripts/qualify-musicgen-small.cjs',
+    'scripts/qualify-musicgen-stereo-small.cjs',
+    'scripts/qualify-diffsinger-job.cjs',
+    'scripts/qualify-stable-audio-3-job.cjs',
+    'scripts/qualify-ace-step-job.cjs',
+    'scripts/generate-qualified-showcase.cjs',
+  ];
+
+  for (const scriptPath of scriptPaths) {
+    const script = read(scriptPath);
+
+    assert.match(
+      script,
+      /\/api\/music\/runtime\/select[\s\S]{0,400}authorization:\s*`Bearer \$\{token\}`/
+    );
+  }
 });
