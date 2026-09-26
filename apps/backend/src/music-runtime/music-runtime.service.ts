@@ -499,9 +499,27 @@ export class MusicRuntimeService {
       let lastProgress = 10;
       let errorTail = '';
 
+      const stripAnsiSgr = (value: string): string => {
+        const escape = String.fromCharCode(27);
+
+        return value
+          .split(escape)
+          .map((segment, index) => {
+            if (index === 0) {
+              return segment;
+            }
+
+            const sgr = segment.match(/^\[[0-9;]*m/);
+
+            return sgr
+              ? segment.slice(sgr[0].length)
+              : escape + segment;
+          })
+          .join('');
+      };
+
       const emitBuildLine = (raw: string): void => {
-        const line = raw
-          .replace(/\u001b\[[0-9;]*m/g, '')
+        const line = stripAnsiSgr(raw)
           .replace(/\s+/g, ' ')
           .trim();
 

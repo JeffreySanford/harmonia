@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { spawn } from 'node:child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Observable, defer, from } from 'rxjs';
@@ -176,7 +177,6 @@ export class StemExportService {
       `Generating audio for ${instrument} using MusicGen Docker container...`
     );
 
-    const { spawn } = require('child_process');
     const safeInstrument = instrument.replace(/[^a-zA-Z0-9]/g, '_');
     const outputPath = `/tmp/harmonia-${Date.now()}-${safeInstrument}.wav`;
     const debugLogPath = path.join(
@@ -247,8 +247,7 @@ export class StemExportService {
         if (code === 0) {
           console.log(`MusicGen generation successful for ${instrument}`);
           // Read the generated file from the container
-          const { spawn: spawn2 } = require('child_process');
-          const catCmd = spawn2(
+          const catCmd = spawn(
             'docker',
             ['exec', 'harmonia-musicgen', 'cat', outputPath],
             { stdio: 'pipe' }
