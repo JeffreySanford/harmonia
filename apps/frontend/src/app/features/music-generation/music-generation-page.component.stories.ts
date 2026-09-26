@@ -498,6 +498,14 @@ export const CompletedGenerationShowsAudioPlayer: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     completedStore.dispatchSpy.mockClear();
     jobsService.getArtifact.mockClear();
+    jobsService.getArtifact.mockReturnValue(
+      of(
+        new Blob(
+          ['storybook-protected-audio'],
+          { type: 'audio/wav' }
+        )
+      )
+    );
 
     await userEvent.type(
       canvas.getByPlaceholderText('Enter music title'),
