@@ -40,8 +40,47 @@ function resolvePackageBin(packageName, binName = packageName) {
 }
 
 function applicationEnvironment(env) {
-  for (const key of ['MONGO_ROOT_PASSWORD', 'MONGO_HARMONIA_PASSWORD', 'JWT_SECRET']) {
-    if (!env[key]?.trim()) throw new Error(`Set ${key} in .env before starting. See .env.example.`);
+  for (const key of [
+    'MONGO_ROOT_PASSWORD',
+    'MONGO_HARMONIA_PASSWORD',
+  ]) {
+    if (!env[key]?.trim()) {
+      throw new Error(
+        `Set ${key} in .env before starting. See .env.example.`
+      );
+    }
+  }
+
+  const accessSecret =
+    env.JWT_SECRET?.trim();
+
+  const refreshSecret =
+    env.JWT_REFRESH_SECRET?.trim();
+
+  if (
+    !accessSecret ||
+    accessSecret.length < 32
+  ) {
+    throw new Error(
+      'JWT_SECRET must contain at least 32 characters.'
+    );
+  }
+
+  if (
+    !refreshSecret ||
+    refreshSecret.length < 32
+  ) {
+    throw new Error(
+      'JWT_REFRESH_SECRET must contain at least 32 characters.'
+    );
+  }
+
+  if (
+    accessSecret === refreshSecret
+  ) {
+    throw new Error(
+      'JWT_SECRET and JWT_REFRESH_SECRET must be different.'
+    );
   }
   if (env.PORT && env.PORT !== '3000') {
     throw new Error('start:all requires PORT=3000 to match the frontend API configuration.');

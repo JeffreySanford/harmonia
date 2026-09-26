@@ -84,13 +84,66 @@ test('database credentials are required and encoded for the application URI', ()
   const env = applicationEnvironment({
     MONGO_ROOT_PASSWORD: 'root-test',
     MONGO_HARMONIA_PASSWORD: 'p@ss:/ word',
-    JWT_SECRET: 'test-secret',
+    JWT_SECRET:
+      'access-test-secret-012345678901234567890',
+    JWT_REFRESH_SECRET:
+      'refresh-test-secret-01234567890123456789',
   });
   assert.equal(
     env.MONGODB_URI,
     'mongodb://harmonia_app:p%40ss%3A%2F%20word@127.0.0.1:27017/harmonia?authSource=harmonia'
   );
   assert.equal(env.PORT, '3000');
+});
+
+test('requires strong independent JWT secrets', () => {
+  const {
+    applicationEnvironment,
+  } = require(script);
+
+  const base = {
+    MONGO_ROOT_PASSWORD:
+      'root-test',
+    MONGO_HARMONIA_PASSWORD:
+      'app-test',
+  };
+
+  assert.throws(
+    () =>
+      applicationEnvironment({
+        ...base,
+        JWT_SECRET:
+          'access-test-secret-012345678901234567890',
+      }),
+    /JWT_REFRESH_SECRET/
+  );
+
+  assert.throws(
+    () =>
+      applicationEnvironment({
+        ...base,
+        JWT_SECRET:
+          'short',
+        JWT_REFRESH_SECRET:
+          'refresh-test-secret-01234567890123456789',
+      }),
+    /JWT_SECRET.*32/
+  );
+
+  const shared =
+    'shared-test-secret-012345678901234567890';
+
+  assert.throws(
+    () =>
+      applicationEnvironment({
+        ...base,
+        JWT_SECRET:
+          shared,
+        JWT_REFRESH_SECRET:
+          shared,
+      }),
+    /must be different/
+  );
 });
 
 test('rejects a backend port that the frontend cannot reach', () => {
@@ -100,7 +153,10 @@ test('rejects a backend port that the frontend cannot reach', () => {
       applicationEnvironment({
         MONGO_ROOT_PASSWORD: 'root-test',
         MONGO_HARMONIA_PASSWORD: 'app-test',
-        JWT_SECRET: 'test-secret',
+        JWT_SECRET:
+      'access-test-secret-012345678901234567890',
+    JWT_REFRESH_SECRET:
+      'refresh-test-secret-01234567890123456789',
         PORT: '3100',
       }),
     /PORT=3000/
@@ -112,7 +168,10 @@ test('explicit application database settings are preserved', () => {
   const env = {
     MONGO_ROOT_PASSWORD: 'root-test',
     MONGO_HARMONIA_PASSWORD: 'app-test',
-    JWT_SECRET: 'test-secret',
+    JWT_SECRET:
+      'access-test-secret-012345678901234567890',
+    JWT_REFRESH_SECRET:
+      'refresh-test-secret-01234567890123456789',
     MONGODB_URI: 'mongodb://other/db',
     PORT: '3000',
   };

@@ -30,10 +30,10 @@ import {
 } from '../auth-token.config';
 
 @Injectable()
-export class JwtStrategy
+export class RefreshJwtStrategy
   extends PassportStrategy(
     Strategy,
-    'jwt'
+    'jwt-refresh'
   )
 {
   constructor(
@@ -53,7 +53,7 @@ export class JwtStrategy
       secretOrKey:
         requireAuthSecret(
           configService,
-          'JWT_SECRET'
+          'JWT_REFRESH_SECRET'
         ),
     });
   }
@@ -64,10 +64,10 @@ export class JwtStrategy
   ): Promise<AuthenticatedRequestUser> {
     if (
       payload.typ !==
-      'access'
+      'refresh'
     ) {
       throw new UnauthorizedException(
-        'Access token required'
+        'Refresh token required'
       );
     }
 

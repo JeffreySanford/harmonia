@@ -1,276 +1,446 @@
 import {
+  ConflictException,
   Injectable,
   UnauthorizedException,
-  ConflictException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { User, UserDocument } from '../schemas/user.schema';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-import { Observable, from } from 'rxjs';
-import { map, catchError, switchMap } from 'rxjs/operators';
+import {
+  ConfigService,
+} from '@nestjs/config';
+import {
+  JwtService,
+} from '@nestjs/jwt';
+import {
+  InjectModel,
+} from '@nestjs/mongoose';
+import {
+  Model,
+} from 'mongoose';
+import {
+  from,
+  Observable,
+} from 'rxjs';
+import {
+  map,
+  switchMap,
+} from 'rxjs/operators';
+import {
+  User,
+  UserDocument,
+} from '../schemas/user.schema';
+import {
+  ACCESS_TOKEN_SECONDS,
+  AuthTokenPayload,
+  AuthUserRole,
+  normalizeAuthRole,
+  REFRESH_TOKEN_SECONDS,
+  requireIndependentAuthSecrets,
+} from './auth-token.config';
+import {
+  LoginDto,
+} from './dto/login.dto';
+import {
+  RegisterDto,
+} from './dto/register.dto';
 
-/**
- * Auth Service
- *
- * Handles all authentication logic including:
- * - User registration with password hashing
- * - User login with credential validation
- * - JWT token generation (access + refresh)
- * - Token refresh
- * - Session validation
- *
- * **Token Strategy**:
- * - Access Token: 15 minutes expiration
- * - Refresh Token: 7 days expiration
- * - Tokens contain: userId (sub), username, role
- *
- * **Security**:
- * - Passwords hashed with bcrypt (10 rounds) via User schema pre-save hook
- * - Email/username uniqueness enforced at database level
- * - Login attempts limited by rate limiting (TODO: implement)
- *
- * @see {@link file://./../../docs/AUTHENTICATION_SYSTEM.md} for complete architecture
- */
+export interface AuthUser {
+  id: string;
+  email: string;
+  username: string;
+  role: AuthUserRole;
+  createdAt: string;
+}
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+}
+
+export interface AuthResponse
+  extends AuthTokens
+{
+  user: AuthUser;
+}
+
+export interface SessionUser {
+  id: string;
+  email: string;
+  username: string;
+  role: AuthUserRole;
+}
+
+export interface CleanupTestUserResult {
+  message: string;
+  deletedCount: number;
+  success: boolean;
+}
+
 @Injectable()
 export class AuthService {
+  private readonly accessSecret:
+    string;
+
+  private readonly refreshSecret:
+    string;
+
   constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private jwtService: JwtService
-  ) {}
+    @InjectModel(User.name)
+    private readonly userModel:
+      Model<UserDocument>,
 
-  /**
-   * Register new user
-   *
-   * @param registerDto - User registration data (email, username, password)
-   * @returns User object and JWT tokens
-   * @throws ConflictException if email or username already exists
-   */
-  register(registerDto: RegisterDto): Observable<any> {
-    return from(
-      this.userModel.findOne({
-        $or: [
-          { email: registerDto.email.toLowerCase() },
-          { username: registerDto.username },
-        ],
-      })
-    ).pipe(
-      map((existingUser) => {
-        if (existingUser) {
-          if (existingUser.email === registerDto.email.toLowerCase()) {
-            throw new ConflictException('Email already registered');
-          }
-          if (existingUser.username === registerDto.username) {
-            throw new ConflictException('Username already taken');
-          }
-        }
+    private readonly jwtService:
+      JwtService,
 
-        // Create new user (password will be hashed by pre-save hook)
-        const user = new this.userModel({
-          email: registerDto.email.toLowerCase(),
-          username: registerDto.username,
-          password: registerDto.password,
-          role: 'user', // Default role
-        });
+    configService:
+      ConfigService
+  ) {
+    const secrets =
+      requireIndependentAuthSecrets(
+        configService
+      );
 
-        return user;
-      }),
-      switchMap((user) => from(user.save())),
-      switchMap((user) => {
-        return from(this.generateTokens(user)).pipe(
-          map((tokens) => ({ user, tokens }))
-        );
-      }),
-      map(({ user, tokens }) => ({
-        user: {
-          id: user._id.toString(),
-          email: user.email,
-          username: user.username,
-          role: user.role,
-          createdAt: user.createdAt,
-        },
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-      })),
-      catchError((error) => {
-        throw error; // Re-throw to maintain error propagation
-      })
-    );
+    this.accessSecret =
+      secrets.access;
+
+    this.refreshSecret =
+      secrets.refresh;
   }
 
-  /**
-   * Login existing user
-   *
-   * @param loginDto - Login credentials (email/username and password)
-   * @returns User object and JWT tokens
-   * @throws UnauthorizedException if credentials invalid
-   */
-  login(loginDto: LoginDto): Observable<any> {
-    // Find user by email or username
-    const identifier = loginDto.emailOrUsername.toLowerCase();
+  register(
+    registerDto:
+      RegisterDto
+  ): Observable<AuthResponse> {
     return from(
       this.userModel.findOne({
         $or: [
-          { email: identifier },
-          { username: loginDto.emailOrUsername }, // Username is case-sensitive
+          {
+            email:
+              registerDto.email
+                .toLowerCase(),
+          },
+          {
+            username:
+              registerDto.username,
+          },
         ],
       })
     ).pipe(
-      map((user) => {
-        if (!user) {
-          throw new UnauthorizedException('Invalid credentials');
-        }
-        return user;
-      }),
-      switchMap((user) =>
-        from(user.comparePassword(loginDto.password)).pipe(
-          map((isPasswordValid) => {
-            if (!isPasswordValid) {
-              throw new UnauthorizedException('Invalid credentials');
+      map(
+        (existingUser) => {
+          if (existingUser) {
+            if (
+              existingUser.email ===
+              registerDto.email
+                .toLowerCase()
+            ) {
+              throw new ConflictException(
+                'Email already registered'
+              );
             }
-            return user;
-          })
-        )
-      ),
-      switchMap((user) =>
-        from(this.generateTokens(user)).pipe(
-          map((tokens) => ({ user, tokens }))
-        )
-      ),
-      map(({ user, tokens }) => ({
-        user: {
-          id: user._id.toString(),
-          email: user.email,
-          username: user.username,
-          role: user.role,
-        },
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-      })),
-      catchError((error) => {
-        throw error; // Re-throw to maintain error propagation
-      })
-    );
-  }
 
-  /**
-   * Refresh access token
-   *
-   * @param userId - User ID from refresh token payload
-   * @returns New access and refresh tokens
-   * @throws UnauthorizedException if user not found
-   */
-  refresh(userId: string): Observable<{
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: number;
-  }> {
-    return from(this.userModel.findById(userId)).pipe(
-      map((user) => {
-        if (!user) {
-          throw new UnauthorizedException('User not found');
+            throw new ConflictException(
+              'Username already taken'
+            );
+          }
+
+          return new this.userModel({
+            email:
+              registerDto.email
+                .toLowerCase(),
+            username:
+              registerDto.username,
+            password:
+              registerDto.password,
+            role:
+              'user',
+          });
         }
-        return user;
-      }),
-      switchMap((user) => from(this.generateTokens(user))),
-      catchError((error) => {
-        throw error; // Re-throw to maintain error propagation
-      })
+      ),
+
+      switchMap(
+        (user) =>
+          from(
+            user.save()
+          )
+      ),
+
+      switchMap(
+        (user) =>
+          from(
+            this.createAuthResponse(
+              user
+            )
+          )
+      )
     );
   }
 
-  /**
-   * Validate user session
-   *
-   * @param userId - User ID from JWT token
-   * @returns User object if valid, null otherwise
-   */
-  validateSession(userId: string): Observable<any> {
-    return from(this.userModel.findById(userId)).pipe(
-      map((user) => {
-        if (!user) {
-          return null;
-        }
-
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          username: user.username,
-          role: user.role,
-        };
-      }),
-      catchError((error) => {
-        throw error; // Re-throw to maintain error propagation
-      })
-    );
-  }
-
-  /**
-   * Generate JWT access and refresh tokens
-   *
-   * @param user - User document
-   * @returns Object with accessToken and refreshToken
-   * @private
-   */
-  private generateTokens(user: UserDocument): Observable<{
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: number;
-  }> {
-    const payload = {
-      sub: user._id.toString(),
-      username: user.username,
-      role: user.role,
-    };
+  login(
+    loginDto:
+      LoginDto
+  ): Observable<AuthResponse> {
+    const identifier =
+      loginDto
+        .emailOrUsername
+        .toLowerCase();
 
     return from(
-      Promise.all([
-        this.jwtService.signAsync(payload, { expiresIn: '15m' }),
-        this.jwtService.signAsync(payload, { expiresIn: '7d' }),
-      ])
-    ).pipe(
-      map(([accessToken, refreshToken]) => ({
-        accessToken,
-        refreshToken,
-        expiresIn: 900, // 15 minutes in seconds
-      })),
-      catchError((error) => {
-        throw error; // Re-throw to maintain error propagation
+      this.userModel.findOne({
+        $or: [
+          {
+            email:
+              identifier,
+          },
+          {
+            username:
+              loginDto
+                .emailOrUsername,
+          },
+        ],
       })
+    ).pipe(
+      map(
+        (user) => {
+          if (!user) {
+            throw new UnauthorizedException(
+              'Invalid credentials'
+            );
+          }
+
+          return user;
+        }
+      ),
+
+      switchMap(
+        (user) =>
+          from(
+            user.comparePassword(
+              loginDto.password
+            )
+          ).pipe(
+            map(
+              (valid) => {
+                if (!valid) {
+                  throw new UnauthorizedException(
+                    'Invalid credentials'
+                  );
+                }
+
+                return user;
+              }
+            )
+          )
+      ),
+
+      switchMap(
+        (user) =>
+          from(
+            this.createAuthResponse(
+              user
+            )
+          )
+      )
     );
   }
 
-  /**
-   * Cleanup test user (E2E testing only)
-   *
-   * Removes test user from database. Only works in test environment.
-   *
-   * @param email - Email of test user to remove
-   * @returns Success message
-   */
+  refresh(
+    userId: string
+  ): Observable<AuthTokens> {
+    return from(
+      this.userModel
+        .findById(
+          userId
+        )
+    ).pipe(
+      map(
+        (user) => {
+          if (!user) {
+            throw new UnauthorizedException(
+              'User not found'
+            );
+          }
+
+          return user;
+        }
+      ),
+
+      switchMap(
+        (user) =>
+          from(
+            this.createTokens(
+              user
+            )
+          )
+      )
+    );
+  }
+
+  validateSession(
+    userId: string
+  ): Observable<SessionUser | null> {
+    return from(
+      this.userModel
+        .findById(
+          userId
+        )
+    ).pipe(
+      map(
+        (user) => {
+          if (!user) {
+            return null;
+          }
+
+          return {
+            id:
+              user._id.toString(),
+            email:
+              user.email,
+            username:
+              user.username,
+            role:
+              normalizeAuthRole(
+                user.role
+              ),
+          };
+        }
+      )
+    );
+  }
+
   cleanupTestUser(
     email: string
-  ): Observable<{ message: string; deletedCount: number; success: boolean }> {
-    // Only allow in test environment
-    if (process.env.NODE_ENV !== 'test') {
-      throw new Error('Test user cleanup only allowed in test environment');
+  ): Observable<CleanupTestUserResult> {
+    if (
+      process.env.NODE_ENV !==
+      'test'
+    ) {
+      throw new Error(
+        'Test user cleanup only allowed in test environment'
+      );
     }
 
     return from(
       this.userModel.deleteOne({
-        email: email.toLowerCase(),
-      })
+        email:
+          email.toLowerCase(),
+      }).exec()
     ).pipe(
-      map((result: any) => ({
-        message: `Test user ${email} cleanup completed`,
-        deletedCount: result.deletedCount || 0,
-        success: true,
-      })),
-      catchError((error) => {
-        throw error; // Re-throw to maintain error propagation
-      })
+      map(
+        (result) => ({
+          message:
+            `Test user ${email} cleanup completed`,
+          deletedCount:
+            result.deletedCount || 0,
+          success:
+            true,
+        })
+      )
     );
+  }
+
+  private async createAuthResponse(
+    user:
+      UserDocument
+  ): Promise<AuthResponse> {
+    const tokens =
+      await this.createTokens(
+        user
+      );
+
+    return {
+      user:
+        this.toAuthUser(
+          user
+        ),
+      ...tokens,
+    };
+  }
+
+  private async createTokens(
+    user:
+      UserDocument
+  ): Promise<AuthTokens> {
+    const role =
+      normalizeAuthRole(
+        user.role
+      );
+
+    const accessPayload:
+      AuthTokenPayload = {
+        sub:
+          user._id.toString(),
+        username:
+          user.username,
+        role,
+        typ:
+          'access',
+      };
+
+    const refreshPayload:
+      AuthTokenPayload = {
+        sub:
+          user._id.toString(),
+        username:
+          user.username,
+        role,
+        typ:
+          'refresh',
+      };
+
+    const [
+      accessToken,
+      refreshToken,
+    ] =
+      await Promise.all([
+        this.jwtService
+          .signAsync(
+            accessPayload,
+            {
+              secret:
+                this.accessSecret,
+              expiresIn:
+                ACCESS_TOKEN_SECONDS,
+            }
+          ),
+
+        this.jwtService
+          .signAsync(
+            refreshPayload,
+            {
+              secret:
+                this.refreshSecret,
+              expiresIn:
+                REFRESH_TOKEN_SECONDS,
+            }
+          ),
+      ]);
+
+    return {
+      accessToken,
+      refreshToken,
+      expiresIn:
+        ACCESS_TOKEN_SECONDS,
+    };
+  }
+
+  private toAuthUser(
+    user:
+      UserDocument
+  ): AuthUser {
+    return {
+      id:
+        user._id.toString(),
+      email:
+        user.email,
+      username:
+        user.username,
+      role:
+        normalizeAuthRole(
+          user.role
+        ),
+      createdAt:
+        user.createdAt
+          .toISOString(),
+    };
   }
 }
