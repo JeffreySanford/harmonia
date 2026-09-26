@@ -16,10 +16,15 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import {
+  Throttle,
+  ThrottlerGuard,
+} from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RefreshJwtAuthGuard } from './guards/refresh-jwt-auth.guard';
 
 /**
  * Auth Controller
@@ -70,6 +75,13 @@ export class AuthController {
    * @throws 400 Bad Request if validation fails
    */
   @Post('register')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60_000,
+    },
+  })
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register new user account' })
   @ApiResponse({
@@ -117,6 +129,13 @@ export class AuthController {
    * @throws 401 Unauthorized if credentials invalid
    */
   @Post('login')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60_000,
+    },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Authenticate user with credentials' })
   @ApiResponse({
@@ -163,7 +182,16 @@ export class AuthController {
    * @throws 401 Unauthorized if token invalid
    */
   @Post('refresh')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(
+    ThrottlerGuard,
+    RefreshJwtAuthGuard
+  )
+  @Throttle({
+    default: {
+      limit: 20,
+      ttl: 60_000,
+    },
+  })
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Refresh access token using refresh token' })

@@ -108,6 +108,7 @@
     "@nestjs/platform-socket.io": "11.1.9",
     "@nestjs/serve-static": "^5.0.4",
     "@nestjs/swagger": "^11.2.3",
+    "@nestjs/throttler": "6.7.1",
     "@nestjs/websockets": "11.1.9",
     "@types/ajv": "^1.0.4",
     "@types/commander": "^2.12.5",

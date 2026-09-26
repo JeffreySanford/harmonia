@@ -52,7 +52,7 @@ test('application port contract is 4200 frontend and 3000 backend', () => {
   assert.match(env, /^PORT=3000$/m);
   assert.match(proxy, /localhost:3000/);
   assert.match(proxy, /"\/downloads"/);
-  assert.match(auth, /private readonly apiUrl = '\/api\/auth'/);
+  assert.match(auth, /private readonly apiUrl\s*=\s*['\"]\/api\/auth['\"]/);
   assert.doesNotMatch(auth, /localhost:3000\/api\/auth/);
   assert.match(backend, /process\.env\.PORT \|\| 3000/);
   assert.match(playwright, /localhost:3000\/api\/__health/);
@@ -2140,7 +2140,7 @@ test('security S1 authenticates job sockets and protects runtime mutation bounda
   // JWT configuration is shared with the jobs feature instead of recreated.
   assert.match(
     authModule,
-    /exports:\s*\[AuthService,\s*JwtModule\]/
+    /exports:\s*\[\s*AuthService,\s*JwtModule,?\s*\]/
   );
 
   assert.match(
@@ -2190,4 +2190,140 @@ test('security S1 authenticates job sockets and protects runtime mutation bounda
     songs,
     /validateInstrumentCatalog\(\)[\s\S]{0,160}loadCatalog\(\)/
   );
+});
+
+
+test('security S2A separates access and refresh token trust boundaries', () => {
+  const tokenConfig = read(
+    'apps/backend/src/auth/auth-token.config.ts'
+  );
+
+  const authModule = read(
+    'apps/backend/src/auth/auth.module.ts'
+  );
+
+  const authService = read(
+    'apps/backend/src/auth/auth.service.ts'
+  );
+
+  const accessStrategy = read(
+    'apps/backend/src/auth/strategies/jwt.strategy.ts'
+  );
+
+  const refreshStrategy = read(
+    'apps/backend/src/auth/strategies/refresh-jwt.strategy.ts'
+  );
+
+  const refreshGuard = read(
+    'apps/backend/src/auth/guards/refresh-jwt-auth.guard.ts'
+  );
+
+  const controller = read(
+    'apps/backend/src/auth/auth.controller.ts'
+  );
+
+  const frontend = read(
+    'apps/frontend/src/app/services/auth.service.ts'
+  );
+
+  const env = read(
+    '.env.example'
+  );
+
+  assert.doesNotMatch(
+    authModule,
+    /default-secret-change-in-production/
+  );
+
+  assert.doesNotMatch(
+    accessStrategy,
+    /default-secret-change-in-production/
+  );
+
+  assert.match(
+    tokenConfig,
+    /must be different/
+  );
+
+  assert.match(
+    env,
+    /^JWT_REFRESH_SECRET=/m
+  );
+
+  assert.match(
+    authService,
+    /typ:\s*'access'/
+  );
+
+  assert.match(
+    authService,
+    /typ:\s*'refresh'/
+  );
+
+  assert.match(
+    accessStrategy,
+    /payload\.typ\s*!==\s*'access'/
+  );
+
+  assert.match(
+    refreshStrategy,
+    /payload\.typ\s*!==\s*'refresh'/
+  );
+
+  assert.match(
+    refreshStrategy,
+    /JWT_REFRESH_SECRET/
+  );
+
+  assert.match(
+    refreshGuard,
+    /jwt-refresh/
+  );
+
+  assert.match(
+    controller,
+    /RefreshJwtAuthGuard/
+  );
+
+  assert.match(
+    controller,
+    /Throttle/
+  );
+
+  assert.match(
+    frontend,
+    /Bearer \$\{refreshToken\}/
+  );
+
+  assert.doesNotMatch(
+    frontend,
+    /Bearer \$\{[^}]*access/
+  );
+
+  for (const source of [
+    tokenConfig,
+    authModule,
+    authService,
+    accessStrategy,
+    refreshStrategy,
+    refreshGuard,
+    controller,
+    frontend,
+    read(
+      'apps/backend/src/auth/auth.service.spec.ts'
+    ),
+    read(
+      'apps/frontend/src/app/services/auth.service.spec.ts'
+    ),
+  ]) {
+    assert.doesNotMatch(
+      source,
+      /(^|[^A-Za-z0-9_])any([^A-Za-z0-9_]|$)/
+    );
+
+    assert.doesNotMatch(
+      source,
+      /(^|[^A-Za-z0-9_])unknown([^A-Za-z0-9_]|$)/
+    );
+  }
 });
