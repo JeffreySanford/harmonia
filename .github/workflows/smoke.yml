@@ -32,7 +32,7 @@ concurrency:
 jobs:
   smoke:
     name: "Run environment smoke checks"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
       CI: "true"
