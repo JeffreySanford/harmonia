@@ -2018,3 +2018,176 @@ test('runtime selection operation id correlates lifecycle events end to end', ()
     /selectActiveRuntimeSelectionOperationId/
   );
 });
+
+
+test('security S1 authenticates job sockets and protects runtime mutation boundaries', () => {
+  const jobsGateway = read(
+    'apps/backend/src/app/gateways/jobs.gateway.ts'
+  );
+  const jobsModule = read(
+    'apps/backend/src/jobs/jobs.module.ts'
+  );
+
+  const jobsService = read(
+    'apps/backend/src/jobs/jobs.service.ts'
+  );
+  const authModule = read(
+    'apps/backend/src/auth/auth.module.ts'
+  );
+  const songs = read(
+    'apps/backend/src/songs/songs.controller.ts'
+  );
+  const runtime = read(
+    'apps/backend/src/music-runtime/music-runtime.controller.ts'
+  );
+  const runtimeGateway = read(
+    'apps/backend/src/music-runtime/music-runtime.gateway.ts'
+  );
+
+  // No placeholder identity may survive.
+  assert.doesNotMatch(
+    jobsGateway,
+    /mock-user-id/
+  );
+
+  assert.doesNotMatch(
+    jobsGateway,
+    /TODO:\s*Validate JWT token/
+  );
+
+  // Socket authentication uses the configured Nest JWT provider and checks
+  // that the token subject still resolves to an active user session.
+  assert.match(
+    jobsGateway,
+    /JwtService/
+  );
+
+  assert.match(
+    jobsGateway,
+    /verifyAsync/
+  );
+
+  assert.match(
+    jobsGateway,
+    /UserDocument/
+  );
+
+  assert.match(
+    jobsGateway,
+    /userModel\.exists/
+  );
+
+  assert.match(
+    jobsGateway,
+    /client\.data\.userId/
+  );
+
+  // JobsService passes its typed DTO directly to the gateway rather than
+  // escaping structural typing through a cast.
+  assert.match(
+    jobsService,
+    /emitJobCompleted\(dto\)/
+  );
+
+  assert.doesNotMatch(
+    jobsService,
+    /emitJobCompleted\(dto\s+as/
+  );
+
+  // Per-job rooms require both job id and authenticated owner id.
+  assert.match(
+    jobsGateway,
+    /jobModel\.exists/
+  );
+
+  assert.match(
+    jobsGateway,
+    /userId:\s*new Types\.ObjectId\(\s*userId\s*\)/
+  );
+
+  // S1 TypeScript may not use explicit escape-hatch types.
+  for (const source of [
+    jobsGateway,
+    read(
+      'apps/backend/src/app/gateways/jobs.gateway.spec.ts'
+    ),
+    read(
+      'apps/backend/src/jobs/jobs.module.ts'
+    ),
+    read(
+      'apps/backend/src/songs/songs.controller.ts'
+    ),
+    read(
+      'apps/backend/src/music-runtime/music-runtime.controller.ts'
+    ),
+    read(
+      'apps/backend/src/music-runtime/music-runtime.controller.spec.ts'
+    ),
+    runtimeGateway,
+    authModule,
+  ]) {
+    assert.doesNotMatch(
+      source,
+      /(^|[^A-Za-z0-9_])any([^A-Za-z0-9_]|$)/
+    );
+
+    assert.doesNotMatch(
+      source,
+      /(^|[^A-Za-z0-9_])unknown([^A-Za-z0-9_]|$)/
+    );
+  }
+
+  // JWT configuration is shared with the jobs feature instead of recreated.
+  assert.match(
+    authModule,
+    /exports:\s*\[AuthService,\s*JwtModule\]/
+  );
+
+  assert.match(
+    jobsModule,
+    /AuthModule/
+  );
+
+  // Socket origins match the HTTP CORS boundary; wildcard credentialed
+  // WebSockets are forbidden.
+  for (const gateway of [jobsGateway, runtimeGateway]) {
+    assert.match(
+      gateway,
+      /process\.env\.CORS_ORIGIN/
+    );
+
+    assert.doesNotMatch(
+      gateway,
+      /origin:\s*['"]\*['"]/
+    );
+  }
+
+  // Song generation/analysis APIs are authenticated at the controller level.
+  assert.match(
+    songs,
+    /@Controller\('songs'\)[\s\S]{0,180}@UseGuards\(JwtAuthGuard\)/
+  );
+
+  // Runtime reads remain observable, but mutations require JWT auth.
+  assert.match(
+    runtime,
+    /@Post\('select'\)[\s\S]{0,180}@UseGuards\(JwtAuthGuard\)/
+  );
+
+  assert.match(
+    runtime,
+    /@Post\('stop'\)[\s\S]{0,180}@UseGuards\(JwtAuthGuard\)/
+  );
+
+  // An HTTP caller must not choose an arbitrary filesystem path for catalog
+  // validation.
+  assert.doesNotMatch(
+    songs,
+    /catalogPath/
+  );
+
+  assert.match(
+    songs,
+    /validateInstrumentCatalog\(\)[\s\S]{0,160}loadCatalog\(\)/
+  );
+});

@@ -8,7 +8,9 @@ import { MusicRuntimeStatus } from './music-runtime.types';
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin:
+      process.env.CORS_ORIGIN ||
+      'http://localhost:4200',
     credentials: true,
   },
   namespace: '/',
@@ -17,10 +19,17 @@ export class MusicRuntimeGateway {
   @WebSocketServer()
   server!: Server;
 
-  private readonly logger = new Logger(MusicRuntimeGateway.name);
+  private readonly logger =
+    new Logger(MusicRuntimeGateway.name);
 
-  emitRuntimeStatus(status: MusicRuntimeStatus): void {
-    this.server.emit('music-runtime:status', status);
+  emitRuntimeStatus(
+    status: MusicRuntimeStatus
+  ): void {
+    this.server.emit(
+      'music-runtime:status',
+      status
+    );
+
     this.logger.debug(
       `Runtime status: ${status.providerId ?? 'none'}/${status.modelId ?? 'none'} -> ${status.state}`
     );

@@ -6,6 +6,7 @@ import { AddressInfo } from 'node:net';
 import {
   request as httpRequest,
 } from 'node:http';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { MusicRuntimeController } from './music-runtime.controller';
 import { MusicRuntimeService } from './music-runtime.service';
 
@@ -14,10 +15,14 @@ interface HttpResult {
   body: string;
 }
 
+interface SelectMusicModelRequest {
+  modelId: string;
+}
+
 function postJson(
   port: number,
   path: string,
-  payload: unknown
+  payload: SelectMusicModelRequest
 ): Promise<HttpResult> {
   const body = JSON.stringify(payload);
 
@@ -99,7 +104,12 @@ describe(
               useValue: runtime,
             },
           ],
-        }).compile();
+        })
+          .overrideGuard(JwtAuthGuard)
+          .useValue({
+            canActivate: () => true,
+          })
+          .compile();
 
       app =
         module.createNestApplication();
