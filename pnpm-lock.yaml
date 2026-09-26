@@ -10,6 +10,7 @@ overrides:
   file-type@>=20.0.0 <=21.3.1: 21.3.2
   fflate@>=0.8.0 <0.8.3: 0.8.3
   body-parser@>=2.0.0 <2.3.0: 2.3.0
+  bull@4.16.5>uuid: 11.1.1
   multer@>=2.0.0 <2.3.0: 2.3.0
   path-to-regexp@>=8.0.0 <8.4.0: 8.4.0
   engine.io@>=6.0.0 <6.6.7: 6.6.7
@@ -10538,6 +10539,10 @@ packages:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
 
+  uuid@11.1.1:
+    resolution: {integrity: sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==}
+    hasBin: true
+
   uuid@8.3.2:
     resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
     deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
@@ -17799,7 +17804,7 @@ snapshots:
       lodash: 4.18.1
       msgpackr: 1.11.5
       semver: 7.7.3
-      uuid: 8.3.2
+      uuid: 11.1.1
     transitivePeerDependencies:
       - supports-color
 
@@ -24103,6 +24108,8 @@ snapshots:
   utila@0.4.0: {}
 
   utils-merge@1.0.1: {}
+
+  uuid@11.1.1: {}
 
   uuid@8.3.2: {}
 

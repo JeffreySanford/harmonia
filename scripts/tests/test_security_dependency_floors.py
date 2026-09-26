@@ -114,3 +114,9 @@ def test_body_parser_override_security_floor():
     assert workspace_override_version(
         "\x27body-parser@>=2.0.0 <2.3.0\x27"
     ) >= (2, 3, 0)
+
+def test_bull_uuid_override_security_floor():
+    # Bull 4.16.5 declares uuid ^8.3.0; GHSA requires uuid >= 11.1.1.
+    assert workspace_override_version(
+        "\x27bull@4.16.5>uuid\x27"
+    ) >= (11, 1, 1)

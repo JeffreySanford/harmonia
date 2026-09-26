@@ -12,6 +12,10 @@ overrides:
   'fflate@>=0.8.0 <0.8.3': 0.8.3
   'body-parser@>=2.0.0 <2.3.0': 2.3.0
 
+  # Security S4-B3b — Bull-only UUID compatibility floor.
+  # Bull uses require('uuid') and uuid.v4(); avoid a global major override.
+  'bull@4.16.5>uuid': 11.1.1
+
   # Security Batch 2 — runtime-compatible major lines only.
   # Do not replace legacy major versions used by dev tooling.
   'multer@>=2.0.0 <2.3.0': 2.3.0
