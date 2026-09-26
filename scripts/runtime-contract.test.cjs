@@ -480,19 +480,51 @@ test('runtime model selection enforces filesystem readiness before provider swit
     'apps/backend/src/music-runtime/music-runtime.module.ts'
   );
 
-  const readinessIndex = service.indexOf(
-    'await this.modelInstallations.assertModelReady(model.id)'
-  );
-  const stopIndex = service.indexOf(
-    'await this.stopCurrentRuntime()'
-  );
-  const imageIndex = service.indexOf(
-    'await this.ensureProviderImage(provider, model, hardware)'
+  const readinessMatch = service.match(
+    /await this\.modelInstallations\.assertModelReady\(model\.id\)/
   );
 
-  assert.ok(readinessIndex >= 0);
-  assert.ok(stopIndex > readinessIndex);
-  assert.ok(imageIndex > readinessIndex);
+  const stopMatch = service.match(
+    /await this\.stopCurrentRuntime\(\s*operationId\s*\)/
+  );
+
+  const imageMatch = service.match(
+    /await this\.ensureProviderImage\(\s*provider,\s*model,\s*hardware,\s*operationId\s*\)/
+  );
+
+  const readinessIndex =
+    readinessMatch?.index ?? -1;
+
+  const stopIndex =
+    stopMatch?.index ?? -1;
+
+  const imageIndex =
+    imageMatch?.index ?? -1;
+
+  assert.ok(
+    readinessIndex >= 0,
+    'Expected filesystem readiness check in selectModel'
+  );
+
+  assert.ok(
+    stopIndex >= 0,
+    'Expected correlated provider stop after readiness'
+  );
+
+  assert.ok(
+    imageIndex >= 0,
+    'Expected correlated provider image reconciliation after readiness'
+  );
+
+  assert.ok(
+    stopIndex > readinessIndex,
+    'Filesystem readiness must precede provider shutdown'
+  );
+
+  assert.ok(
+    imageIndex > readinessIndex,
+    'Filesystem readiness must precede provider image reconciliation'
+  );
 
   assert.match(
     service,
@@ -1761,7 +1793,7 @@ test('async runtime selection acknowledges immediately and completes through run
   );
   assert.match(
     backend,
-    /void this\.selectModel\(modelId\)/
+    /void this\.selectModel\(\s*modelId,\s*operationId\s*\)/
   );
   assert.match(
     backend,
@@ -1834,5 +1866,155 @@ test('async runtime selection acknowledges immediately and completes through run
   assert.match(
     frontendReducer,
     /\['ready', 'stopped', 'error'\]/
+  );
+});
+
+/*
+ * PHASE 14A RUNTIME OPERATION CORRELATION CONTRACT
+ *
+ * Phase 13 decoupled HTTP acknowledgement from long-running provider startup.
+ * Phase 14 gives that accepted operation an identity for its entire lifecycle.
+ *
+ * A client-requested model selection receives one operationId. Every runtime
+ * lifecycle event caused by that selection carries that same id until the
+ * selection reaches ready or error.
+ *
+ * A correlated "stopped" state is not terminal: switching providers can stop
+ * the previous provider before building/starting the requested provider.
+ *
+ * State recovered independently from Docker/backend restart is intentionally
+ * uncorrelated and therefore carries operationId=null.
+ */
+test('runtime selection operation id correlates lifecycle events end to end', () => {
+  const backend = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+
+  const backendTypes = read(
+    'apps/backend/src/music-runtime/music-runtime.types.ts'
+  );
+
+  const frontendState = read(
+    'apps/frontend/src/app/store/music-runtime/music-runtime.state.ts'
+  );
+
+  const frontendReducer = read(
+    'apps/frontend/src/app/store/music-runtime/music-runtime.reducer.ts'
+  );
+
+  const frontendSelectors = read(
+    'apps/frontend/src/app/store/music-runtime/music-runtime.selectors.ts'
+  );
+
+  /*
+   * Runtime status itself carries correlation.
+   */
+  assert.match(
+    backendTypes,
+    /interface MusicRuntimeStatus[\s\S]*operationId:\s*string\s*\|\s*null/
+  );
+
+  assert.match(
+    frontendState,
+    /interface MusicRuntimeStatus[\s\S]*operationId:\s*string\s*\|\s*null/
+  );
+
+  /*
+   * Idle / recovered runtime snapshots are explicitly uncorrelated.
+   */
+  assert.match(
+    backend,
+    /private status:\s*MusicRuntimeStatus\s*=\s*\{[\s\S]*operationId:\s*null/
+  );
+
+  /*
+   * requestModelSelection owns the UUID and passes that exact operation
+   * identity into the asynchronous selection lifecycle.
+   */
+  assert.match(
+    backend,
+    /void this\.selectModel\(\s*modelId,\s*operationId\s*\)/
+  );
+
+  assert.match(
+    backend,
+    /async selectModel\([\s\S]*operationId:\s*string\s*\|\s*null\s*=\s*null/
+  );
+
+  /*
+   * Transition construction must place the correlation id on emitted status.
+   */
+  assert.match(
+    backend,
+    /private async transition\([\s\S]*operationId:\s*string\s*\|\s*null\s*=\s*null/
+  );
+
+  assert.match(
+    backend,
+    /this\.status\s*=\s*\{[\s\S]*operationId,[\s\S]*updatedAt/
+  );
+
+  /*
+   * Frontend state remembers the operation accepted by HTTP.
+   */
+  assert.match(
+    frontendState,
+    /activeSelectionOperationId:\s*string\s*\|\s*null/
+  );
+
+  /*
+   * HTTP acceptance stores its operation id unless a correlated terminal
+   * Socket.IO event already completed the selection before the HTTP response
+   * reached NgRx.
+   */
+  assert.match(
+    frontendReducer,
+    /selectModelAccepted[\s\S]*terminalAlreadyReceived[\s\S]*acceptance\.operationId/
+  );
+
+  assert.match(
+    frontendReducer,
+    /activeSelectionOperationId:[\s\S]*terminalAlreadyReceived[\s\S]*\?\s*null[\s\S]*:\s*acceptance\.operationId/
+  );
+
+  /*
+   * Socket events are correlation-aware.
+   */
+  assert.match(
+    frontendReducer,
+    /status\.operationId/
+  );
+
+  assert.match(
+    frontendReducer,
+    /activeSelectionOperationId/
+  );
+
+  /*
+   * Correlated ready/error are terminal for model selection.
+   * Correlated stopped is explicitly allowed as an intermediate state while
+   * replacing one provider with another.
+   */
+  assert.match(
+    frontendReducer,
+    /['"]ready['"]/
+  );
+
+  assert.match(
+    frontendReducer,
+    /['"]error['"]/
+  );
+
+  assert.doesNotMatch(
+    frontendReducer,
+    /\[['"]ready['"],\s*['"]stopped['"],\s*['"]error['"]\]\.includes\(status\.state\)/
+  );
+
+  /*
+   * Operation correlation is observable for diagnostics/UI.
+   */
+  assert.match(
+    frontendSelectors,
+    /selectActiveRuntimeSelectionOperationId/
   );
 });

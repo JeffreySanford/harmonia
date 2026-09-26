@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { MusicRuntimeService } from './music-runtime.service';
+import type { MusicRuntimeStatus } from './music-runtime.types';
 
 describe('MusicRuntimeService model readiness ordering', () => {
   function createService() {
@@ -29,23 +30,7 @@ describe('MusicRuntimeService model readiness ordering', () => {
           vramTotalGb: number | null;
         }>;
         ensureProviderImage(): Promise<void>;
-        status: {
-          providerId: string | null;
-          providerName: string | null;
-          modelId: string | null;
-          modelName: string | null;
-          state: string;
-          message: string;
-          healthy: boolean;
-          progress: number | null;
-          hardware: {
-            gpuAvailable: boolean;
-            gpuName: string | null;
-            vramTotalGb: number | null;
-          };
-          updatedAt: string;
-          error: string | null;
-        };
+        status: MusicRuntimeStatus;
       };
 
     const reconcileSpy = jest
@@ -72,6 +57,7 @@ describe('MusicRuntimeService model readiness ordering', () => {
       installations,
       reconcileSpy,
       hardwareSpy,
+      gateway,
     };
   }
 
@@ -295,6 +281,7 @@ describe('MusicRuntimeService model readiness ordering', () => {
     } = createService();
 
     internals.status = {
+      operationId: null,
       providerId: 'diffsinger',
       providerName: 'DiffSinger',
       modelId:
@@ -360,6 +347,7 @@ describe('MusicRuntimeService model readiness ordering', () => {
     } = createService();
 
     internals.status = {
+      operationId: null,
       providerId: 'musicgen',
       providerName: 'MusicGen',
       modelId: 'musicgen-small',
@@ -411,6 +399,120 @@ describe('MusicRuntimeService model readiness ordering', () => {
       ensureImage
     ).not.toHaveBeenCalled();
   });
+
+
+  it(
+    'correlates an already-ready selection and clears that correlation for a later direct selection',
+    async () => {
+      const {
+        service,
+        internals,
+        installations,
+        gateway,
+      } = createService();
+
+      const originalUpdatedAt =
+        '2026-09-25T20:30:00.000Z';
+
+      internals.status = {
+        operationId: null,
+        providerId: 'musicgen',
+        providerName: 'MusicGen',
+        modelId: 'musicgen-small',
+        modelName: 'MusicGen Small',
+        state: 'ready',
+        message: 'ready',
+        healthy: true,
+        progress: 100,
+        hardware: {
+          gpuAvailable: true,
+          gpuName: 'Test GPU',
+          vramTotalGb: 10,
+        },
+        updatedAt: originalUpdatedAt,
+        error: null,
+      };
+
+      installations.markModelUsed.mockResolvedValue(
+        undefined
+      );
+
+      const stop = jest.spyOn(
+        service,
+        'stopCurrentRuntime'
+      );
+
+      const ensureImage = jest.spyOn(
+        internals,
+        'ensureProviderImage'
+      );
+
+      const correlated =
+        await service.selectModel(
+          'musicgen-small',
+          'selection-operation-1'
+        );
+
+      expect(correlated).toEqual(
+        expect.objectContaining({
+          operationId:
+            'selection-operation-1',
+          state: 'ready',
+        })
+      );
+
+      expect(
+        correlated.updatedAt
+      ).not.toBe(originalUpdatedAt);
+
+      expect(
+        gateway.emitRuntimeStatus
+      ).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          operationId:
+            'selection-operation-1',
+          state: 'ready',
+        })
+      );
+
+      const correlatedUpdatedAt =
+        correlated.updatedAt;
+
+      const direct =
+        await service.selectModel(
+          'musicgen-small'
+        );
+
+      expect(
+        direct.operationId
+      ).toBeNull();
+
+      expect(
+        direct.updatedAt
+      ).toBe(correlatedUpdatedAt);
+
+      expect(
+        gateway.emitRuntimeStatus
+      ).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          operationId: null,
+          state: 'ready',
+          updatedAt:
+            correlatedUpdatedAt,
+        })
+      );
+
+      expect(
+        installations.markModelUsed
+      ).toHaveBeenCalledTimes(2);
+
+      expect(stop).not.toHaveBeenCalled();
+
+      expect(
+        ensureImage
+      ).not.toHaveBeenCalled();
+    }
+  );
 });
 
 
@@ -434,6 +536,7 @@ describe('Phase 13C asynchronous selection behavior', () => {
 
   function readyStatus(modelId: string) {
     return {
+      operationId: null,
       providerId: 'musicgen',
       providerName: 'MusicGen',
       modelId,
@@ -523,7 +626,8 @@ describe('Phase 13C asynchronous selection behavior', () => {
        */
       expect(selectSpy).toHaveBeenCalledTimes(1);
       expect(selectSpy).toHaveBeenCalledWith(
-        'musicgen-small'
+        'musicgen-small',
+        acceptance.operationId
       );
 
       let completed = false;
