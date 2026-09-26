@@ -219,6 +219,92 @@ test('GitHub Actions use Node 24-compatible action majors', () => {
   );
 });
 
+
+test('Linux CI pins Ubuntu 24 and qualifies Ubuntu 26 separately', () => {
+  const ci = read('.github/workflows/ci.yml');
+  const mongoose = read('.github/workflows/test_mongoose.yml');
+  const license = read('.github/workflows/license_check.yml');
+  const smoke = read('.github/workflows/smoke.yml');
+  const release = read('.github/workflows/release.yml');
+
+  const operational = [
+    ci,
+    mongoose,
+    license,
+    smoke,
+    release,
+  ];
+
+  for (const workflow of operational) {
+    assert.doesNotMatch(
+      workflow,
+      /ubuntu-latest/
+    );
+
+    assert.match(
+      workflow,
+      /ubuntu-24\.04/
+    );
+  }
+
+  assert.match(
+    ci,
+    /os:\s*\[ubuntu-24\.04,\s*windows-latest\]/
+  );
+
+  const qualificationPath =
+    '.github/workflows/ubuntu26_qualification.yml';
+
+  assert.equal(
+    existsSync(
+      path.join(
+        root,
+        qualificationPath
+      )
+    ),
+    true,
+    'Ubuntu 26.04 qualification workflow must exist'
+  );
+
+  const qualification =
+    read(qualificationPath);
+
+  assert.doesNotMatch(
+    qualification,
+    /ubuntu-latest/
+  );
+
+  assert.match(
+    qualification,
+    /runs-on:\s*ubuntu-26\.04/
+  );
+
+  assert.match(
+    qualification,
+    /node-version:\s*"20\.19\.0"/
+  );
+
+  assert.match(
+    qualification,
+    /run:\s*pnpm test:all/
+  );
+
+  assert.match(
+    qualification,
+    /run:\s*pnpm typecheck/
+  );
+
+  assert.match(
+    qualification,
+    /run:\s*pnpm build:all/
+  );
+
+  assert.match(
+    qualification,
+    /run:\s*pnpm test:mongo/
+  );
+});
+
 test('hosted smoke CI skips absent local artifacts without opening alert storms', () => {
   const smoke = read('tests/env_tests/smoke_check.py');
   const workflow = read('.github/workflows/smoke.yml');
