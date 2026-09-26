@@ -310,4 +310,270 @@ describe('LibraryService private upload security', () => {
 
     expect(files).toEqual([]);
   });
+
+  it('reads an owned legacy flat library file', async () => {
+    const itemId = '507f1f77bcf86cd799439012';
+
+    const filePath = path.join(
+      tempDir,
+      'legacy.wav'
+    );
+
+    await fs.writeFile(
+      filePath,
+      Buffer.from('legacy')
+    );
+
+    const item: any = {
+      _id: new Types.ObjectId(itemId),
+      userId: new Types.ObjectId(userId),
+      type: 'audio',
+      title: 'Legacy owned track',
+      fileUrl: '/uploads/library/legacy.wav',
+      fileType: 'wav',
+      metadata: {},
+      isPublic: false,
+      playCount: 0,
+      downloadCount: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const model: any = jest.fn();
+
+    model.findOne = jest.fn(
+      (query: any) => ({
+        exec: jest.fn().mockResolvedValue(
+          query._id.toString() === itemId &&
+          query.userId.toString() === userId
+            ? item
+            : null
+        ),
+      })
+    );
+
+    const legacyService: any =
+      new LibraryService(model);
+
+    legacyService.uploadDir = tempDir;
+
+    const resolved =
+      await legacyService.resolveOwnedFile(
+        itemId,
+        userId
+      );
+
+    expect(resolved.filePath).toBe(
+      filePath
+    );
+
+    expect(resolved.filename).toBe(
+      'legacy.wav'
+    );
+
+    expect(resolved.contentType).toBe(
+      'audio/wav'
+    );
+  });
+
+  it('denies another user access to a legacy flat library file', async () => {
+    const itemId = '507f1f77bcf86cd799439013';
+
+    const filePath = path.join(
+      tempDir,
+      'private-legacy.wav'
+    );
+
+    await fs.writeFile(
+      filePath,
+      Buffer.from('private')
+    );
+
+    const item: any = {
+      _id: new Types.ObjectId(itemId),
+      userId: new Types.ObjectId(userId),
+      fileUrl: '/uploads/library/private-legacy.wav',
+    };
+
+    const model: any = jest.fn();
+
+    model.findOne = jest.fn(
+      (query: any) => ({
+        exec: jest.fn().mockResolvedValue(
+          query._id.toString() === itemId &&
+          query.userId.toString() === userId
+            ? item
+            : null
+        ),
+      })
+    );
+
+    const legacyService: any =
+      new LibraryService(model);
+
+    legacyService.uploadDir = tempDir;
+
+    await expect(
+      legacyService.resolveOwnedFile(
+        itemId,
+        otherUserId
+      )
+    ).rejects.toThrow(
+      'Library item not found'
+    );
+
+    await expect(
+      fs.access(filePath)
+    ).resolves.toBeUndefined();
+  });
+
+  it('deletes an owned legacy flat library file', async () => {
+    const itemId = '507f1f77bcf86cd799439014';
+
+    const filePath = path.join(
+      tempDir,
+      'delete-legacy.wav'
+    );
+
+    await fs.writeFile(
+      filePath,
+      Buffer.from('legacy-delete')
+    );
+
+    const item: any = {
+      _id: new Types.ObjectId(itemId),
+      userId: new Types.ObjectId(userId),
+      type: 'audio',
+      title: 'Legacy delete',
+      fileUrl: '/uploads/library/delete-legacy.wav',
+      fileType: 'wav',
+      metadata: {},
+      isPublic: false,
+      playCount: 0,
+      downloadCount: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const model: any = jest.fn();
+
+    model.findById = jest.fn(
+      async (id: string) =>
+        id === itemId ? item : null
+    );
+
+    model.findOne = jest.fn(
+      (query: any) => ({
+        exec: jest.fn().mockResolvedValue(
+          query._id.toString() === itemId &&
+          query.userId.toString() === userId
+            ? item
+            : null
+        ),
+      })
+    );
+
+    model.findByIdAndDelete = jest.fn(
+      async () => item
+    );
+
+    model.findOneAndDelete = jest.fn(
+      () => ({
+        exec: jest.fn().mockResolvedValue(item),
+      })
+    );
+
+    const legacyService: any =
+      new LibraryService(model);
+
+    legacyService.uploadDir = tempDir;
+
+    await firstValueFrom(
+      legacyService.delete(
+        itemId,
+        userId
+      )
+    );
+
+    await expect(
+      fs.access(filePath)
+    ).rejects.toMatchObject({
+      code: 'ENOENT',
+    });
+  });
+
+  it('does not delete a legacy flat file for another user', async () => {
+    const itemId = '507f1f77bcf86cd799439015';
+
+    const filePath = path.join(
+      tempDir,
+      'cross-user-legacy.wav'
+    );
+
+    await fs.writeFile(
+      filePath,
+      Buffer.from('owned-by-first-user')
+    );
+
+    const item: any = {
+      _id: new Types.ObjectId(itemId),
+      userId: new Types.ObjectId(userId),
+      type: 'audio',
+      title: 'Cross-user legacy',
+      fileUrl: '/uploads/library/cross-user-legacy.wav',
+      fileType: 'wav',
+      metadata: {},
+      isPublic: false,
+      playCount: 0,
+      downloadCount: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const model: any = jest.fn();
+
+    model.findById = jest.fn(
+      async () => item
+    );
+
+    model.findOne = jest.fn(
+      (query: any) => ({
+        exec: jest.fn().mockResolvedValue(
+          query._id.toString() === itemId &&
+          query.userId.toString() === userId
+            ? item
+            : null
+        ),
+      })
+    );
+
+    model.findByIdAndDelete = jest.fn();
+    model.findOneAndDelete = jest.fn();
+
+    const legacyService: any =
+      new LibraryService(model);
+
+    legacyService.uploadDir = tempDir;
+
+    await expect(
+      firstValueFrom(
+        legacyService.delete(
+          itemId,
+          otherUserId
+        )
+      )
+    ).rejects.toBeDefined();
+
+    await expect(
+      fs.access(filePath)
+    ).resolves.toBeUndefined();
+
+    expect(
+      model.findByIdAndDelete
+    ).not.toHaveBeenCalled();
+
+    expect(
+      model.findOneAndDelete
+    ).not.toHaveBeenCalled();
+  });
 });

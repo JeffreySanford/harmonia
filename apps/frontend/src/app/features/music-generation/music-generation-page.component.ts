@@ -7,7 +7,7 @@ import {
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { filter, take, takeUntil } from 'rxjs/operators';
 import { WebSocketService } from '../../services/websocket.service';
 import { JobsService } from '../../services/jobs.service';
@@ -93,6 +93,8 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
   activeGenerationJobId: string | null = null;
   private handledTerminalJobId: string | null = null;
   private generatedAudioObjectUrl: string | null = null;
+  private artifactLoadSubscription: Subscription | null = null;
+  private artifactLoadGeneration = 0;
 
   selectedProviderId: string | null = null;
   selectedModelId: string | null = null;
@@ -293,6 +295,8 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
     if (this.activeGenerationJobId) {
       this.websocket.unsubscribeFromJob(this.activeGenerationJobId);
     }
+
+    this.cancelGeneratedArtifactLoad();
     this.revokeGeneratedAudioUrl();
     this.destroy$.next();
     this.destroy$.complete();
@@ -322,6 +326,7 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.cancelGeneratedArtifactLoad();
     this.revokeGeneratedAudioUrl();
     this.store.dispatch(MusicRuntimeActions.selectModel({ modelId }));
   }
@@ -565,6 +570,7 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
       this.websocket.unsubscribeFromJob(this.activeGenerationJobId);
     }
 
+    this.cancelGeneratedArtifactLoad();
     this.revokeGeneratedAudioUrl();
     this.activeGenerationJobId = null;
     this.handledTerminalJobId = null;
@@ -612,29 +618,64 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
   }
 
   private loadGeneratedArtifact(jobId: string): void {
-    this.jobsService
-      .getArtifact(jobId)
-      .pipe(take(1))
-      .subscribe({
-        next: (blob) => {
-          this.revokeGeneratedAudioUrl();
+    this.cancelGeneratedArtifactLoad();
 
-          this.generatedAudioObjectUrl =
-            URL.createObjectURL(blob);
+    const generation =
+      this.artifactLoadGeneration;
 
-          this.generatedAudioUrl =
-            this.generatedAudioObjectUrl;
-        },
-        error: () => {
-          this.revokeGeneratedAudioUrl();
+    const subscription =
+      this.jobsService
+        .getArtifact(jobId)
+        .pipe(
+          take(1),
+          takeUntil(this.destroy$)
+        )
+        .subscribe({
+          next: (blob) => {
+            if (
+              generation !==
+              this.artifactLoadGeneration
+            ) {
+              return;
+            }
 
-          this.snackBar.open(
-            'Music was generated, but the protected audio file could not be loaded.',
-            'Close',
-            { duration: 5000 }
-          );
-        },
-      });
+            this.revokeGeneratedAudioUrl();
+
+            this.generatedAudioObjectUrl =
+              URL.createObjectURL(blob);
+
+            this.generatedAudioUrl =
+              this.generatedAudioObjectUrl;
+          },
+          error: () => {
+            if (
+              generation !==
+              this.artifactLoadGeneration
+            ) {
+              return;
+            }
+
+            this.revokeGeneratedAudioUrl();
+
+            this.snackBar.open(
+              'Music was generated, but the protected audio file could not be loaded.',
+              'Close',
+              { duration: 5000 }
+            );
+          },
+        });
+
+    this.artifactLoadSubscription =
+      subscription.closed
+        ? null
+        : subscription;
+  }
+
+  private cancelGeneratedArtifactLoad(): void {
+    this.artifactLoadGeneration += 1;
+
+    this.artifactLoadSubscription?.unsubscribe();
+    this.artifactLoadSubscription = null;
   }
 
   private revokeGeneratedAudioUrl(): void {

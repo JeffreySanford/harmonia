@@ -162,46 +162,23 @@ export class LibraryService {
       );
     }
 
-    const expectedPrefix =
-      `/uploads/library/${userId}/`;
+    const resolvedStorage =
+      this.resolveOwnedStoragePath(
+        item.fileUrl,
+        userId,
+        true
+      );
 
-    if (!item.fileUrl.startsWith(expectedPrefix)) {
+    if (!resolvedStorage) {
       throw new NotFoundException(
         'Library file not found'
       );
     }
 
-    const storageName =
-      item.fileUrl.slice(expectedPrefix.length);
-
-    if (
-      !storageName ||
-      path.basename(storageName) !== storageName
-    ) {
-      throw new NotFoundException(
-        'Library file not found'
-      );
-    }
-
-    const userRoot = path.resolve(
-      this.uploadDir,
-      userId
-    );
-
-    const filePath = path.resolve(
-      userRoot,
-      storageName
-    );
-
-    if (
-      !filePath.startsWith(
-        `${userRoot}${path.sep}`
-      )
-    ) {
-      throw new NotFoundException(
-        'Library file not found'
-      );
-    }
+    const {
+      filePath,
+      storageName,
+    } = resolvedStorage;
 
     let stat;
 
@@ -243,7 +220,7 @@ export class LibraryService {
     return this.findById(id, userId).pipe(
       switchMap((item) => {
         // Delete file from storage (S3 or local filesystem)
-        return this.deleteOwnedFile(item.fileUrl, userId).pipe(
+        return this.deleteOwnedFile(item.fileUrl, userId, true).pipe(
           switchMap(() => from(this.libraryItemModel.findByIdAndDelete(id))),
           map(() => undefined)
         );
@@ -590,62 +567,117 @@ export class LibraryService {
     };
   }
 
-  private deleteOwnedFile(
+  private resolveOwnedStoragePath(
     fileUrl: string,
-    userId: string
-  ): Observable<void> {
-    const expectedPrefix =
+    userId: string,
+    allowLegacy = false
+  ): {
+    filePath: string;
+    storageName: string;
+  } | null {
+    const uploadRoot =
+      path.resolve(this.uploadDir);
+
+    const ownedPrefix =
       `/uploads/library/${userId}/`;
 
-    if (!fileUrl.startsWith(expectedPrefix)) {
-      return from(
-        Promise.resolve(undefined)
-      );
+    if (fileUrl.startsWith(ownedPrefix)) {
+      const storageName =
+        fileUrl.slice(ownedPrefix.length);
+
+      if (
+        !storageName ||
+        path.basename(storageName) !== storageName
+      ) {
+        return null;
+      }
+
+      const userRoot =
+        path.resolve(this.uploadDir, userId);
+
+      if (
+        !userRoot.startsWith(
+          `${uploadRoot}${path.sep}`
+        )
+      ) {
+        return null;
+      }
+
+      const filePath =
+        path.resolve(userRoot, storageName);
+
+      if (
+        !filePath.startsWith(
+          `${userRoot}${path.sep}`
+        )
+      ) {
+        return null;
+      }
+
+      return {
+        filePath,
+        storageName,
+      };
+    }
+
+    if (!allowLegacy) {
+      return null;
+    }
+
+    const legacyPrefix =
+      '/uploads/library/';
+
+    if (!fileUrl.startsWith(legacyPrefix)) {
+      return null;
     }
 
     const storageName =
-      fileUrl.slice(expectedPrefix.length);
+      fileUrl.slice(legacyPrefix.length);
 
     if (
       !storageName ||
       path.basename(storageName) !== storageName
     ) {
-      return from(
-        Promise.resolve(undefined)
-      );
-    }
-
-    const uploadRoot =
-      path.resolve(this.uploadDir);
-
-    const userRoot =
-      path.resolve(this.uploadDir, userId);
-
-    if (
-      !userRoot.startsWith(
-        `${uploadRoot}${path.sep}`
-      )
-    ) {
-      return from(
-        Promise.resolve(undefined)
-      );
+      return null;
     }
 
     const filePath =
-      path.resolve(userRoot, storageName);
+      path.resolve(uploadRoot, storageName);
 
     if (
       !filePath.startsWith(
-        `${userRoot}${path.sep}`
+        `${uploadRoot}${path.sep}`
       )
     ) {
+      return null;
+    }
+
+    return {
+      filePath,
+      storageName,
+    };
+  }
+
+  private deleteOwnedFile(
+    fileUrl: string,
+    userId: string,
+    allowLegacy = false
+  ): Observable<void> {
+    const resolvedStorage =
+      this.resolveOwnedStoragePath(
+        fileUrl,
+        userId,
+        allowLegacy
+      );
+
+    if (!resolvedStorage) {
       return from(
         Promise.resolve(undefined)
       );
     }
 
     return from(
-      fs.unlink(filePath)
+      fs.unlink(resolvedStorage.filePath)
     ).pipe(
       map(() => undefined),
       catchError((error: NodeJS.ErrnoException) => {
