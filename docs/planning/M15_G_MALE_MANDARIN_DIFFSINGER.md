@@ -1,19 +1,31 @@
 # M15-G — Male Mandarin DiffSinger / OpenUTAU
 
-## Goal
+## Status
 
-Add a second Harmonia DiffSinger path capable of:
+**DEFERRED — future voice-expansion work**
 
-- intelligible Mandarin singing
-- genuine male vocal identity
-- useful lower male register
-- stable sustained notes
-- expressive pitch and variance control
-- Chinese-opera-style experimentation
+M15-G is not required for completion of the current Harmonia
+five-generator qualification milestone.
 
-The existing OpenCpop runtime remains unchanged.
+The existing OpenUTAU work remains preserved as a future extension
+point.
 
-## Existing baseline
+## Why this work was started
+
+A manual Chinese-opera-inspired DiffSinger experiment attempted to use
+the installed OpenCpop checkpoint for a low male vocal concept.
+
+Technical synthesis completed successfully, but human listening review
+failed because:
+
+- the vocal identity remained female
+- Mandarin intelligibility was poor
+- breath/noise artifacts were prominent
+- lowering the score did not create a convincing male singer
+
+This established a useful limitation of the installed checkpoint.
+
+## Existing qualified DiffSinger baseline
 
 Installed model:
 
@@ -27,153 +39,94 @@ Runtime model:
 
 `0228_opencpop_ds100_rel`
 
-Technical smoke qualification:
+Status:
 
-PASS
+**QUALIFIED**
 
-Male Chinese-opera human qualification:
+The normal DiffSinger smoke qualification remains valid.
 
-FAIL
+The failed male-opera experiment does not invalidate the existing
+runtime.
 
-Observed problems:
+## Completed future-work foundation
 
-- female vocal identity
-- gibberish/unintelligible lyrics
-- excessive breathing
-- unsuitable timbre for the requested concept
+### G1 — complete
 
-## New provider
-
-Catalog provider:
+Added the planned provider boundary:
 
 `diffsinger-openutau`
 
-G1 state:
-
-`runtimeInstalled = false`
-
-This guarantees the provider is visible architecturally but cannot be
-selected yet.
-
-## New model slot
-
-Catalog model:
+Added the planned local model slot:
 
 `diffsinger-openutau-mandarin-male-local`
 
-Runtime identity:
+The provider remains:
 
-`mandarin-male-local`
+`runtimeInstalled = false`
 
-G1 state:
+The model remains:
 
 `availability = planned`
 
-The model deliberately remains generic until a specific voicebank has
-been obtained, inspected and approved.
+### G2 — complete
 
-## Isolation
+Added:
 
-The OpenUTAU provider must not replace or modify:
+- isolated OpenUTAU provider shell
+- `diffsinger-utau 0.3.8` package pin
+- separate Docker Compose service
+- GPU overlay
+- local voicebank structure validator
+- positive synthetic validation case
+- negative incomplete-bank validation case
+- regression contracts
 
-`diffsinger`
+The provider remains deliberately non-runnable.
 
-It receives its own:
+No real external voicebank has been downloaded.
 
-- Dockerfile
-- image
-- container
-- Compose service
-- Compose profile
-- model directory
-- validation tooling
-- inference adapter
-- qualification cases
+No OpenUTAU audio has been generated.
 
-## Local model storage
+## Deferred work
 
-Planned layout:
+The following work is intentionally deferred:
 
-    models/
-      diffsinger-openutau/
-        voicebanks/
-          <voicebank-id>/
-            <voicebank assets>
+### G3
 
-Voicebank files remain local.
+Acquire and inspect a real male Mandarin DiffSinger/OpenUTAU
+voicebank.
 
-## Licensing boundary
+### G4
 
-Inference-engine licensing and voicebank licensing are independent.
+Install the heavyweight inference dependencies and wire Harmonia
+durable jobs to the provider.
 
-Before a named voicebank is integrated:
+### G5
 
-1. obtain the actual package
-2. inspect its included license/terms
-3. determine redistribution permission
-4. determine commercial-use permission
-5. verify attribution requirements
-6. verify model compatibility
+Perform live male Mandarin qualification and optional A/B comparison
+against the retained failed OpenCpop opera experiment.
 
-Until then Harmonia must not:
+## Decision
 
-- commit voicebank weights
-- put weights in the Docker image
-- publish a voicebank download URL
-- claim redistribution rights
-- mark commercial use as allowed
+Harmonia does not currently need a dedicated male opera singer to prove
+its DiffSinger integration.
 
-## G2
+The current milestone will instead complete the originally planned
+qualification matrix for the five installed and runnable generators.
 
-Build the isolated OpenUTAU provider runtime.
+M15-G may resume later if broader singer selection becomes a product
+requirement.
 
-Add a local voicebank validator.
+## Current next step
 
-No synthesis requirement yet.
+Return to:
 
-## G3
+**M15-F4 — deep five-model qualification**
 
-Install a candidate male Mandarin voicebank locally.
+Deep cases:
 
-Validate:
-
-- package structure
-- model/config files
-- Mandarin phonemizer compatibility
-- available speaker identity
-- useful singing range
-- license/usage terms
-
-## G4
-
-Wire durable Harmonia jobs to the new provider.
-
-First live qualification:
-
-short neutral Mandarin singing phrase.
-
-Acceptance:
-
-- clearly male
-- recognizable Mandarin
-- no dominant breath/noise artifacts
-- stable notes
-
-## G5
-
-A/B qualification:
-
-`暮鼓关山 / Dusk Drums at the Pass`
-
-Compare against the retained failed OpenCpop sample.
-
-Human acceptance:
-
-- clearly male vocal identity
-- intelligible Mandarin
-- stable sustained notes
-- controlled breathing/noise
-- useful dramatic character
-
-The goal is a suitable synthetic vocal character, not imitation of any
-real singer.
+1. `musicgen-small-paper-constellations`
+2. `musicgen-stereo-small-neon-river`
+3. `diffsinger-starlight-score`
+4. `stable-audio-foundry-snow`
+5. `ace-step-rumbo-al-norte`

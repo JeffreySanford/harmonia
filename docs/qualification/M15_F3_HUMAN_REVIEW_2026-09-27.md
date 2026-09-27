@@ -55,5 +55,7 @@ result.
 - retain the result JSON
 - preserve the existing OpenCpop runtime
 - stop tuning that checkpoint for the male-opera requirement
-- add a separate external/local OpenUTAU-compatible DiffSinger runtime
-- require an actual male Mandarin voicebank for the new runtime
+- treat the male-opera result as a non-blocking specialty experiment
+- preserve the completed OpenUTAU G1/G2 scaffold for possible future expansion
+- defer real male Mandarin voicebank integration until broader singer selection becomes a product requirement
+- continue the original five-model smoke/deep qualification plan
