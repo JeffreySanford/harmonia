@@ -8,6 +8,7 @@ const {
   createInitialization,
   createPlan,
   createVerification,
+  defaultContainerProbeForArtifact,
   huggingFaceDownloadReposForArtifact,
   isSafeArchiveMemberPath,
   normalizePinnedHuggingFaceMainRef,
@@ -188,13 +189,13 @@ test('models:plan reports a complete default cache without mutation actions', ()
   });
 
   assert.equal(result.command, 'plan');
-  assert.equal(result.summary.selectedModels, 7);
-  assert.equal(result.summary.selectedArtifacts, 10);
+  assert.equal(result.summary.selectedModels, 8);
+  assert.equal(result.summary.selectedArtifacts, 15);
   assert.equal(result.summary.verified, 6);
-  assert.equal(result.summary.missing, 4);
+  assert.equal(result.summary.missing, 9);
   assert.equal(result.summary.downloadsRequired, 0);
   assert.equal(result.summary.authenticationRequired, 0);
-  assert.equal(result.summary.defaultSkipped, 4);
+  assert.equal(result.summary.defaultSkipped, 9);
 
   const stable = result.artifacts.find(
     (row) => row.artifactId === 'stable-audio-3-small-music'
@@ -221,10 +222,10 @@ test('models:plan identifies missing default artifacts and gated authentication'
     auth: { huggingFace: false },
   });
 
-  assert.equal(result.summary.missing, 10);
+  assert.equal(result.summary.missing, 15);
   assert.equal(result.summary.downloadsRequired, 5);
   assert.equal(result.summary.authenticationRequired, 1);
-  assert.equal(result.summary.defaultSkipped, 4);
+  assert.equal(result.summary.defaultSkipped, 9);
 
   const stable = result.artifacts.find(
     (row) => row.artifactId === 'stable-audio-3-small-music'
@@ -680,13 +681,13 @@ test('models:verify deeply verifies the complete default fixture cache', () => {
 
   assert.equal(result.command, 'verify');
   assert.equal(result.ok, true);
-  assert.equal(result.summary.selectedModels, 7);
-  assert.equal(result.summary.selectedArtifacts, 10);
+  assert.equal(result.summary.selectedModels, 8);
+  assert.equal(result.summary.selectedArtifacts, 15);
   assert.equal(result.summary.verified, 6);
-  assert.equal(result.summary.missing, 4);
+  assert.equal(result.summary.missing, 9);
   assert.equal(result.summary.corrupt, 0);
   assert.equal(result.summary.unavailable, 0);
-  assert.equal(result.summary.optionalSkipped, 4);
+  assert.equal(result.summary.optionalSkipped, 9);
 });
 
 test('models:verify rejects a zero-byte required Hugging Face file', () => {
@@ -762,7 +763,7 @@ test('models:verify allows unselected optional models to remain absent', () => {
 
   assert.equal(medium.state, 'missing');
   assert.equal(medium.requiredForSuccess, false);
-  assert.equal(result.summary.optionalSkipped, 4);
+  assert.equal(result.summary.optionalSkipped, 9);
   assert.equal(result.ok, true);
 });
 
@@ -2037,5 +2038,305 @@ test('package exposes the read-only model plan command', () => {
   assert.equal(
     pkg.scripts['test:model-manager'],
     'node --test scripts/model-manager.test.cjs'
+  );
+});
+
+
+test('explicit DiffRhythm model selection resolves the five-artifact composite', () => {
+  const root = tempRoot();
+
+  const plan =
+    createPlan({
+      root,
+      modelIds: [
+        'diffrhythm-v12-base',
+      ],
+      providerIds: [],
+      artifactIds: [],
+    });
+
+  assert.equal(
+    plan.summary.selectedModels,
+    1
+  );
+
+  assert.equal(
+    plan.summary.selectedArtifacts,
+    5
+  );
+
+  assert.equal(
+    plan.summary.missing,
+    5
+  );
+
+  assert.equal(
+    plan.summary.downloadsRequired,
+    5
+  );
+
+  assert.deepEqual(
+    plan.artifacts
+      .map(
+        row =>
+          row.artifactId
+      )
+      .sort(),
+    [
+      'diffrhythm-muq-audio',
+      'diffrhythm-muq-mulan',
+      'diffrhythm-v12-base-core',
+      'diffrhythm-vae',
+      'diffrhythm-xlm-roberta',
+    ]
+  );
+
+  for (
+    const row of
+    plan.artifacts
+  ) {
+    assert.equal(
+      row.providerId,
+      'diffrhythm'
+    );
+
+    assert.equal(
+      row.action,
+      'download'
+    );
+  }
+});
+
+
+test('DiffRhythm Hugging Face initialization uses its provider image and explicit online mutation boundary', () => {
+  const root = tempRoot();
+
+  const registry =
+    loadRegistry();
+
+  const artifact =
+    registry.artifacts.find(
+      candidate =>
+        candidate.artifactId ===
+        'diffrhythm-v12-base-core'
+    );
+
+  assert.ok(
+    artifact
+  );
+
+  const secret =
+    'hf_m16_fixture_secret_should_not_escape';
+
+  let invocation = null;
+
+  const result =
+    runHuggingFaceDownloadContainer(
+      artifact,
+      root,
+      {
+        credential:
+          secret,
+
+        spawnSyncApi:
+          (
+            command,
+            args,
+            options
+          ) => {
+            invocation = {
+              command,
+              args,
+              options,
+            };
+
+            return {
+              status: 0,
+
+              stdout:
+                JSON.stringify({
+                  repos: [
+                    {
+                      repoId:
+                        artifact.source.repoId,
+
+                      resolvedRevision:
+                        artifact.source.revision,
+                    },
+                  ],
+                }) +
+                '\n',
+            };
+          },
+      }
+    );
+
+  assert.ok(
+    invocation
+  );
+
+  assert.equal(
+    invocation.command,
+    'docker'
+  );
+
+  const serializedArgs =
+    JSON.stringify(
+      invocation.args
+    );
+
+  assert.equal(
+    serializedArgs.includes(
+      secret
+    ),
+    false
+  );
+
+  assert.equal(
+    invocation.options.input,
+    secret
+  );
+
+  assert.match(
+    serializedArgs,
+    /harmonia\/diffrhythm:dev/
+  );
+
+  assert.match(
+    serializedArgs,
+    /HF_HOME=\/workspace\/models\/diffrhythm\/huggingface/
+  );
+
+  assert.match(
+    serializedArgs,
+    /HF_HUB_OFFLINE=0/
+  );
+
+  assert.match(
+    serializedArgs,
+    /TRANSFORMERS_OFFLINE=0/
+  );
+
+  assert.ok(
+    serializedArgs.includes(
+      artifact.source.revision
+    )
+  );
+
+  assert.deepEqual(
+    result.repos,
+    [
+      {
+        repoId:
+          artifact.source.repoId,
+
+        resolvedRevision:
+          artifact.source.revision,
+      },
+    ]
+  );
+});
+
+
+test('DiffRhythm read-only deep verification uses its provider image with networking disabled', () => {
+  const root = tempRoot();
+
+  const registry =
+    loadRegistry();
+
+  const artifact =
+    registry.artifacts.find(
+      candidate =>
+        candidate.artifactId ===
+        'diffrhythm-v12-base-core'
+    );
+
+  assert.ok(
+    artifact
+  );
+
+  let invocation = null;
+
+  const probe =
+    defaultContainerProbeForArtifact(
+      artifact,
+      root,
+      (
+        command,
+        args,
+        options
+      ) => {
+        invocation = {
+          command,
+          args,
+          options,
+        };
+
+        return (
+          JSON.stringify({
+            verified: true,
+            missing: false,
+            size: 123,
+          }) +
+          '\n'
+        );
+      }
+    );
+
+  const result =
+    probe(
+      path.join(
+        root,
+        'diffrhythm',
+        'huggingface',
+        'probe.bin'
+      )
+    );
+
+  assert.equal(
+    result.verified,
+    true
+  );
+
+  assert.ok(
+    invocation
+  );
+
+  assert.equal(
+    invocation.command,
+    'docker'
+  );
+
+  const serialized =
+    JSON.stringify(
+      invocation.args
+    );
+
+  assert.match(
+    serialized,
+    /harmonia\/diffrhythm:dev/
+  );
+
+  assert.ok(
+    invocation.args.includes(
+      '--network'
+    )
+  );
+
+  assert.ok(
+    invocation.args.includes(
+      'none'
+    )
+  );
+
+  assert.ok(
+    serialized.includes(
+      'readonly'
+    )
+  );
+
+  assert.equal(
+    invocation.options.encoding,
+    'utf8'
   );
 });

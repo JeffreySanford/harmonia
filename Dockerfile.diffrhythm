@@ -29,6 +29,9 @@ RUN apt-get update \
       libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
+RUN python -m pip install --no-cache-dir "huggingface-hub==0.29.3" \
+    && python -c "import huggingface_hub; assert huggingface_hub.__version__ == '0.29.3', huggingface_hub.__version__"
+
 RUN git clone https://github.com/ASLP-lab/DiffRhythm.git /opt/DiffRhythm \
     && cd /opt/DiffRhythm \
     && git checkout --detach "${DIFFRHYTHM_REF}" \

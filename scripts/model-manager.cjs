@@ -903,6 +903,10 @@ function runHuggingFaceDownloadContainer(
       python:
         '/opt/ACE-Step-1.5/.venv/bin/python',
     },
+    diffrhythm: {
+      image: 'harmonia/diffrhythm:dev',
+      python: 'python',
+    },
   };
   const provider = providers[artifact.providerId];
 
@@ -1111,6 +1115,10 @@ function runHuggingFaceDownloadContainer(
       ',target=/workspace/models',
     '-e',
     'HF_HOME=' + hfHome,
+    '-e',
+    'HF_HUB_OFFLINE=0',
+    '-e',
+    'TRANSFORMERS_OFFLINE=0',
   ];
 
   args.push(
@@ -1399,6 +1407,10 @@ function defaultContainerProbeForArtifact(
     },
     'stable-audio-3': {
       image: 'harmonia/stable-audio-3:dev',
+      python: 'python',
+    },
+    diffrhythm: {
+      image: 'harmonia/diffrhythm:dev',
       python: 'python',
     },
   };
