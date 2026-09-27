@@ -4704,3 +4704,313 @@ test(
     );
   }
 );
+
+
+test(
+  'DiffRhythm D3 residency probe stages MuQ release before CFM and VAE hardware qualification',
+  () => {
+    const probePath =
+      path.join(
+        root,
+        'scripts/diffrhythm_residency_probe.py'
+      );
+
+    assert.equal(
+      existsSync(probePath),
+      true,
+      'DiffRhythm D3 must provide a staged real-weight residency probe'
+    );
+
+    const probe =
+      read(
+        'scripts/diffrhythm_residency_probe.py'
+      );
+
+    /*
+     * D3 operates only on the already-qualified
+     * local cache and must remain network-independent.
+     */
+    assert.match(
+      probe,
+      /HF_HUB_OFFLINE/
+    );
+
+    assert.match(
+      probe,
+      /TRANSFORMERS_OFFLINE/
+    );
+
+    assert.match(
+      probe,
+      /local_files_only\s*=\s*True/
+    );
+
+    /*
+     * Use the 95-second Base architecture only.
+     */
+    assert.match(
+      probe,
+      /max_frames\s*=\s*2048/
+    );
+
+    /*
+     * Stage 1:
+     * load the exact MuQ-MuLan component used by
+     * upstream DiffRhythm and exercise a real text
+     * style embedding before releasing it.
+     */
+    assert.match(
+      probe,
+      /MuQMuLan\.from_pretrained/
+    );
+
+    assert.match(
+      probe,
+      /OpenMuQ\/MuQ-MuLan-large/
+    );
+
+    assert.match(
+      probe,
+      /get_style_prompt/
+    );
+
+    /*
+     * The style embedding must survive on CPU so
+     * MuQ itself can leave CUDA before diffusion.
+     */
+    assert.match(
+      probe,
+      /style_prompt.*\.cpu\s*\(/
+    );
+
+    /*
+     * Stage transition must explicitly release MuQ.
+     */
+    assert.match(
+      probe,
+      /muq.*\.to\s*\(\s*["']cpu["']\s*\)/
+    );
+
+    assert.match(
+      probe,
+      /del\s+muq/
+    );
+
+    assert.match(
+      probe,
+      /gc\.collect\s*\(/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.empty_cache\s*\(/
+    );
+
+    /*
+     * Stage 2:
+     * reproduce the actual Base CFM construction.
+     */
+    assert.match(
+      probe,
+      /CFM\s*\(/
+    );
+
+    assert.match(
+      probe,
+      /DiT\s*\(/
+    );
+
+    assert.match(
+      probe,
+      /diffrhythm-1b\.json/
+    );
+
+    assert.match(
+      probe,
+      /cfm_model\.pt/
+    );
+
+    assert.match(
+      probe,
+      /load_checkpoint/
+    );
+
+    /*
+     * Stage 3:
+     * add the real TorchScript VAE while CFM is
+     * still resident to measure combined residency.
+     */
+    assert.match(
+      probe,
+      /vae_model\.pt/
+    );
+
+    assert.match(
+      probe,
+      /torch\.jit\.load/
+    );
+
+    /*
+     * Every stage must expose current and peak VRAM.
+     */
+    assert.match(
+      probe,
+      /torch\.cuda\.memory_allocated/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.memory_reserved/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.max_memory_allocated/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.max_memory_reserved/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.reset_peak_memory_stats/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.synchronize/
+    );
+
+    /*
+     * Required machine-readable stages.
+     */
+    for (
+      const stage of [
+        'baseline',
+        'muq-loaded',
+        'style-embedded',
+        'muq-released',
+        'cfm-loaded',
+        'cfm-plus-vae-loaded',
+        'released',
+      ]
+    ) {
+      assert.ok(
+        probe.includes(
+          '"' + stage + '"'
+        ),
+        'D3 residency probe must report stage ' +
+          stage
+      );
+    }
+
+    /*
+     * D3 is measurement only. It must not launch
+     * diffusion or VAE decode yet.
+     */
+    assert.doesNotMatch(
+      probe,
+      /\binference\s*\(/
+    );
+
+    assert.doesNotMatch(
+      probe,
+      /\bdecode_audio\s*\(/
+    );
+
+    /*
+     * Catalog stays unavailable until a later
+     * generation qualification succeeds.
+     */
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    const providerDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      providerDefinition
+    );
+
+    assert.match(
+      providerDefinition,
+      /runtimeInstalled:\s*false/
+    );
+
+    const modelDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      modelDefinition
+    );
+
+    assert.match(
+      modelDefinition,
+      /availability:\s*'planned'/
+    );
+  }
+);
+
+
+test(
+  'DiffRhythm D3 shadow cache aliases MuQ XLM-R consumer key to pinned registry artifact',
+  () => {
+    const probe =
+      read(
+        'scripts/diffrhythm_residency_probe.py'
+      );
+
+    assert.match(
+      probe,
+      /QUALIFIED_CACHE_DIR\s*=\s*Path\("\.\/pretrained"\)\.resolve\(\)/
+    );
+
+    assert.match(
+      probe,
+      /CACHE_DIR\s*=\s*"\/tmp\/harmonia-diffrhythm-hf-cache"/
+    );
+
+    assert.match(
+      probe,
+      /"xlm-roberta-base":\s*XLMR_REPO/
+    );
+
+    assert.match(
+      probe,
+      /XLMR_REPO\s*=\s*"FacebookAI\/xlm-roberta-base"/
+    );
+
+    assert.match(
+      probe,
+      /alias_path\.symlink_to/
+    );
+
+    assert.match(
+      probe,
+      /target_is_directory=True/
+    );
+
+    /*
+     * The qualified model cache remains the
+     * immutable physical source. The alias exists
+     * only in the ephemeral /tmp cache namespace.
+     */
+    assert.doesNotMatch(
+      probe,
+      /shutil\.copy/
+    );
+
+    assert.doesNotMatch(
+      probe,
+      /copytree/
+    );
+  }
+);
