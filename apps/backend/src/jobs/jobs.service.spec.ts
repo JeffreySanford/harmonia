@@ -2,6 +2,11 @@ import { BadRequestException } from '@nestjs/common';
 import { promises as fs } from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import type { Queue } from 'bull';
+import type { Model } from 'mongoose';
+import type { JobsGateway } from '../app/gateways/jobs.gateway';
+import type { MusicRuntimeService } from '../music-runtime/music-runtime.service';
+import type { JobRecordDocument } from '../schemas/job-record.schema';
 import { JobsService } from './jobs.service';
 
 describe('JobsService generation contract', () => {
@@ -253,6 +258,16 @@ describe('JobsService durable restart reconciliation', () => {
   const userId =
     '507f191e810c19729de860ea';
 
+  interface ReconciliationProbe {
+    reconcileGenerationQueue(): Promise<void>;
+  }
+
+  function reconciliationProbe(
+    service: JobsService
+  ): ReconciliationProbe {
+    return service as unknown as ReconciliationProbe;
+  }
+
   function makeJob(
     status: 'queued' | 'processing'
   ) {
@@ -295,10 +310,10 @@ describe('JobsService durable restart reconciliation', () => {
     };
 
     const service = new JobsService(
-      { find } as any,
-      {} as any,
-      {} as any,
-      generationQueue as any
+      { find } as unknown as Model<JobRecordDocument>,
+      {} as unknown as JobsGateway,
+      {} as unknown as MusicRuntimeService,
+      generationQueue as unknown as Queue
     );
 
     return {
@@ -311,12 +326,21 @@ describe('JobsService durable restart reconciliation', () => {
 
   it('waits for Bull before startup reconciliation', async () => {
     const harness = makeHarness([]);
+    const callOrder: string[] = [];
+
+    harness.generationQueue.isReady
+      .mockImplementation(async () => {
+        callOrder.push('bull-ready');
+      });
 
     const reconcile = jest
-      .spyOn(harness.service as any,
+      .spyOn(
+        reconciliationProbe(harness.service),
         'reconcileGenerationQueue'
       )
-      .mockResolvedValue(undefined);
+      .mockImplementation(async () => {
+        callOrder.push('reconcile');
+      });
 
     await harness.service.onModuleInit();
 
@@ -326,18 +350,18 @@ describe('JobsService durable restart reconciliation', () => {
 
     expect(reconcile).toHaveBeenCalledTimes(1);
 
-    expect(
-      harness.generationQueue.isReady.mock.invocationCallOrder[0]!
-    ).toBeLessThan(
-      reconcile.mock.invocationCallOrder[0]!
-    );
+    expect(callOrder).toEqual([
+      'bull-ready',
+      'reconcile',
+    ]);
   });
 
   it('scans only queued and processing generation records', async () => {
     const harness = makeHarness([]);
 
-    await (harness.service as any)
-      .reconcileGenerationQueue();
+    await reconciliationProbe(
+      harness.service
+    ).reconcileGenerationQueue();
 
     expect(harness.find).toHaveBeenCalledWith({
       jobType: 'generate',
@@ -357,8 +381,9 @@ describe('JobsService durable restart reconciliation', () => {
       { id: jobId }
     );
 
-    await (harness.service as any)
-      .reconcileGenerationQueue();
+    await reconciliationProbe(
+      harness.service
+    ).reconcileGenerationQueue();
 
     expect(
       harness.generationQueue.getJob
@@ -375,8 +400,9 @@ describe('JobsService durable restart reconciliation', () => {
     const job = makeJob('queued');
     const harness = makeHarness([job]);
 
-    await (harness.service as any)
-      .reconcileGenerationQueue();
+    await reconciliationProbe(
+      harness.service
+    ).reconcileGenerationQueue();
 
     expect(
       harness.generationQueue.add
@@ -400,27 +426,42 @@ describe('JobsService durable restart reconciliation', () => {
     const job = makeJob('processing');
     const harness = makeHarness([job]);
 
-    await (harness.service as any)
-      .reconcileGenerationQueue();
+    const callOrder: string[] = [];
+
+    job.save.mockImplementation(async () => {
+      callOrder.push('mongo-save');
+    });
+
+    harness.generationQueue.add
+      .mockImplementation(async () => {
+        callOrder.push('bull-add');
+        return {};
+      });
+
+    await reconciliationProbe(
+      harness.service
+    ).reconcileGenerationQueue();
 
     expect(job.status).toBe('queued');
     expect(job.startedAt).toBeNull();
+
     expect(job.progress).toEqual({
       current: 0,
       total: 100,
       percentage: 0,
-      message: 'Recovered after backend restart; queued for durable replay',
+      message:
+        'Recovered after backend restart; queued for durable replay',
     });
 
     expect(job.save).toHaveBeenCalledTimes(1);
+
     expect(
       harness.generationQueue.add
     ).toHaveBeenCalledTimes(1);
 
-    expect(
-      job.save.mock.invocationCallOrder[0]!
-    ).toBeLessThan(
-      harness.generationQueue.add.mock.invocationCallOrder[0]!
-    );
+    expect(callOrder).toEqual([
+      'mongo-save',
+      'bull-add',
+    ]);
   });
 });
