@@ -1,6 +1,6 @@
 # Phase 16 — DiffRhythm Local Provider
 
-**Status:** M16-A provider selection complete; implementation next
+**Status:** Complete — DiffRhythm v1.2 Base is installed, hardware-qualified, backend-qualified, and included in the six-generator showcase
 **Date:** September 27, 2026
 **Primary target:** `diffrhythm-v12-base`
 **Reference GPU:** NVIDIA GeForce RTX 3080, 10 GB VRAM
@@ -57,8 +57,8 @@ Community reports show that decode memory can still exceed 10 GB in some
 configurations. M16 therefore treats the upstream 8 GB statement as a testable
 claim rather than proof.
 
-The provider must measure real peak behavior before the model is promoted from
-`planned` to `installed`.
+That hardware gate is complete for v1.2 Base. The model is now promoted to
+`installed`; v1.2 Full remains deliberately `planned`.
 
 ## DiffRhythm 2 evaluation
 
@@ -348,6 +348,63 @@ Validate:
 - frontend proxy download HTTP 200
 - provider switching releases prior GPU ownership
 
+## M16 completion evidence
+
+Phase 16 completed on September 27, 2026.
+
+Qualified local installation:
+
+- logical model: `diffrhythm-v12-base`
+- provider: `diffrhythm`
+- source revision: `28ad63c0f096fe2ee258bcabbcf081d5d9366afd`
+- five registry-managed physical artifacts
+- canonical cache: 69 files / 15,146,219,378 logical bytes
+- runtime operation is offline with `HF_HUB_OFFLINE=1` and
+  `TRANSFORMERS_OFFLINE=1`
+
+Measured RTX 3080 qualification:
+
+- GPU: NVIDIA GeForce RTX 3080, 10 GB
+- staged MuQ -> CFM -> VAE execution
+- MuQ is released before diffusion
+- CFM latent is moved to CPU before VAE decode
+- VAE decode uses chunk size 128 under inference mode
+- idle resident CUDA allocation after generation is approximately 8.5 MB
+
+Durable product qualification:
+
+- authenticated asynchronous runtime selection
+- backend-owned provider startup and ownership recovery
+- resident preparation count remains one
+- real durable lyric-conditioned generation
+- 95.108934-second RIFF/WAVE output
+- stereo
+- 44.1 kHz
+- signed 16-bit PCM
+- 16,777,294-byte qualified WAV
+- prompt, timestamped lyrics and deterministic seed preserved
+- backend artifact download byte-identical to the durable WAV
+- frontend-proxied artifact download byte-identical to the durable WAV
+- canonical model cache unchanged by runtime selection and generation
+
+Qualified showcase:
+
+- DiffRhythm v1.2 Base is the sixth Harmonia qualified generator
+- committed preset: **Prairie Signal**
+- live showcase generation completed through the normal authenticated
+  runtime/job/download path
+- smoke and deep qualification cases are registered for the model
+
+### M16-E4 — qualified showcase integration
+
+Completed:
+
+- added the DiffRhythm Base showcase preset
+- added DiffRhythm to the qualified-generator runner
+- added native PCM16/stereo/44.1 kHz showcase validation
+- added prompt, lyrics and deterministic-seed preservation checks
+- advanced the full showcase contract from five generators to six
+
 ## Deferred work
 
 Not part of the first M16 gate:
@@ -361,9 +418,9 @@ Not part of the first M16 gate:
 - provider concurrency
 - commercial-use approval
 
-## Completion boundary
+## Completion boundary — satisfied
 
-Phase 16 is complete when `diffrhythm-v12-base` is:
+Phase 16 is complete. `diffrhythm-v12-base` is:
 
 - registry-managed
 - deeply verified
