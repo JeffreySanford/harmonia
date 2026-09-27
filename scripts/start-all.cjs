@@ -5,8 +5,289 @@ const { existsSync, readFileSync } = require('node:fs');
 const net = require('node:net');
 const path = require('node:path');
 const { parseEnv } = require('node:util');
+const {
+  appProjectsToStart,
+  probeHarmoniaApps,
+  readWorkerBuildFingerprint,
+  workerBuildFingerprint,
+  workerStartupDecision,
+  writeWorkerBuildFingerprint,
+} = require('./start-all-state.cjs');
 
 const root = path.resolve(__dirname, '..');
+
+function probeCommand(
+  runCommand,
+  command,
+  args
+) {
+  try {
+    const result = runCommand(
+      command,
+      args,
+      {
+        cwd: root,
+        encoding: 'utf8',
+        windowsHide: true,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }
+    );
+
+    if (
+      result?.error ||
+      result?.status !== 0
+    ) {
+      return null;
+    }
+
+    const output =
+      String(result.stdout || '').trim();
+
+    return output || null;
+  } catch {
+    return null;
+  }
+}
+
+function noGpuDetected() {
+  return {
+    available: false,
+    vendor: null,
+    name: null,
+    memoryMb: null,
+  };
+}
+
+function detectHostGpu(
+  runCommand = spawnSync,
+  platform = process.platform
+) {
+  /*
+   * NVIDIA compute-capable detection.
+   *
+   * Device name and memory are read from the host.
+   * No GPU model names are encoded in Harmonia.
+   */
+  const nvidiaOutput = probeCommand(
+    runCommand,
+    'nvidia-smi',
+    [
+      '--query-gpu=name,memory.total',
+      '--format=csv,noheader,nounits',
+    ]
+  );
+
+  if (nvidiaOutput) {
+    const line =
+      nvidiaOutput.split(/\r?\n/)[0] || '';
+
+    const lastComma =
+      line.lastIndexOf(',');
+
+    const name =
+      lastComma >= 0
+        ? line.slice(0, lastComma).trim()
+        : line.trim();
+
+    const memoryValue =
+      lastComma >= 0
+        ? Number(
+            line
+              .slice(lastComma + 1)
+              .trim()
+          )
+        : NaN;
+
+    if (name) {
+      return {
+        available: true,
+        vendor: 'nvidia',
+        name,
+        memoryMb:
+          Number.isFinite(memoryValue)
+            ? memoryValue
+            : null,
+      };
+    }
+  }
+
+  /*
+   * Windows vendor/device discovery.
+   *
+   * CIM supplies the real adapter name. This also detects
+   * AMD/Radeon hosts without relying on a particular card.
+   */
+  if (platform === 'win32') {
+    const powershellOutput =
+      probeCommand(
+        runCommand,
+        'powershell.exe',
+        [
+          '-NoProfile',
+          '-Command',
+          [
+            '$gpu = Get-CimInstance Win32_VideoController',
+            "| Where-Object { $_.Name -match 'NVIDIA|AMD|Radeon' }",
+            '| Select-Object -First 1',
+            'if ($gpu) {',
+            '  [pscustomobject]@{',
+            '    Name = $gpu.Name',
+            '    AdapterRAM = $gpu.AdapterRAM',
+            '  } | ConvertTo-Json -Compress',
+            '}',
+          ].join(' ')
+        ]
+      );
+
+    if (powershellOutput) {
+      try {
+        const parsed =
+          JSON.parse(powershellOutput);
+
+        const name =
+          String(parsed.Name || '').trim();
+
+        if (name) {
+          const vendor =
+            /nvidia/i.test(name)
+              ? 'nvidia'
+              : /amd|radeon/i.test(name)
+                ? 'amd'
+                : 'unknown';
+
+          const adapterBytes =
+            Number(parsed.AdapterRAM);
+
+          return {
+            available: true,
+            vendor,
+            name,
+            memoryMb:
+              Number.isFinite(adapterBytes) &&
+              adapterBytes > 0
+                ? Math.round(
+                    adapterBytes /
+                    (1024 * 1024)
+                  )
+                : null,
+          };
+        }
+      } catch {
+        // Ignore malformed host probe output.
+      }
+    }
+  }
+
+  /*
+   * Linux AMD discovery.
+   *
+   * Prefer ROCm tooling when installed, with PCI discovery
+   * as a fallback. The reported name comes from the host.
+   */
+  if (platform !== 'win32') {
+    const rocmOutput =
+      probeCommand(
+        runCommand,
+        'rocm-smi',
+        ['--showproductname']
+      );
+
+    if (rocmOutput) {
+      const line =
+        rocmOutput
+          .split(/\r?\n/)
+          .find(
+            (candidate) =>
+              /card series|card model|radeon|amd/i.test(
+                candidate
+              )
+          );
+
+      if (line) {
+        return {
+          available: true,
+          vendor: 'amd',
+          name: line.trim(),
+          memoryMb: null,
+        };
+      }
+    }
+
+    const pciOutput =
+      probeCommand(
+        runCommand,
+        'lspci',
+        []
+      );
+
+    if (pciOutput) {
+      const line =
+        pciOutput
+          .split(/\r?\n/)
+          .find(
+            (candidate) =>
+              /(?:vga|3d|display).*(?:amd|ati|radeon)/i.test(
+                candidate
+              )
+          );
+
+      if (line) {
+        const colon =
+          line.indexOf(': ');
+
+        return {
+          available: true,
+          vendor: 'amd',
+          name:
+            colon >= 0
+              ? line.slice(colon + 2).trim()
+              : line.trim(),
+          memoryMb: null,
+        };
+      }
+    }
+  }
+
+  return noGpuDetected();
+}
+
+function resolveGpuEnabled(
+  options,
+  hardware
+) {
+  if (options.gpuMode === 'disabled') {
+    return false;
+  }
+
+  /*
+   * The current Harmonia GPU Compose profile uses
+   * runtime: nvidia and CUDA provider images.
+   *
+   * AMD hardware is detected and reported, but it must not
+   * accidentally receive the NVIDIA Compose override.
+   */
+  const runtimeSupported =
+    hardware.available &&
+    hardware.vendor === 'nvidia';
+
+  if (options.gpuMode === 'required') {
+    if (!hardware.available) {
+      throw new Error(
+        '--gpu was requested, but no supported host GPU was detected.'
+      );
+    }
+
+    if (!runtimeSupported) {
+      throw new Error(
+        `GPU detected (${hardware.vendor || 'unknown'}: ${hardware.name || 'unnamed device'}), but the current Harmonia container GPU runtime does not support that vendor.`
+      );
+    }
+
+    return true;
+  }
+
+  return runtimeSupported;
+}
 
 function run(command, args, env, capture = false) {
   const result = spawnSync(command, args, {
@@ -100,17 +381,52 @@ function applicationEnvironment(env) {
 }
 
 function parseOptions(args) {
-  if (args.includes('--help')) return { help: true, worker: true, tools: true, gpu: false };
-  const known = new Set(['--no-worker', '--no-tools', '--gpu']);
-  const unknown = args.find((arg) => !known.has(arg));
-  if (unknown) throw new Error(`Unknown option: ${unknown}. Use --help for usage.`);
-  const options = {
+  if (args.includes('--help')) {
+    return {
+      help: true,
+      worker: true,
+      tools: true,
+      gpuMode: 'auto',
+    };
+  }
+
+  const known = new Set([
+    '--no-worker',
+    '--no-tools',
+    '--gpu',
+    '--nogpu',
+  ]);
+
+  const unknown = args.find(
+    (arg) => !known.has(arg)
+  );
+
+  if (unknown) {
+    throw new Error(
+      `Unknown option: ${unknown}. Use --help for usage.`
+    );
+  }
+
+  if (
+    args.includes('--gpu') &&
+    args.includes('--nogpu')
+  ) {
+    throw new Error(
+      '--gpu and --nogpu cannot be used together.'
+    );
+  }
+
+  return {
     help: false,
     worker: !args.includes('--no-worker'),
     tools: !args.includes('--no-tools'),
-    gpu: args.includes('--gpu'),
+    gpuMode:
+      args.includes('--nogpu')
+        ? 'disabled'
+        : args.includes('--gpu')
+          ? 'required'
+          : 'auto',
   };
-  return options;
 }
 
 function composeArguments(options) {
@@ -121,11 +437,11 @@ function composeArguments(options) {
   return compose;
 }
 
-function reconcileDocker(docker, compose, { build = true } = {}) {
+function reconcileDocker(docker, compose, { build = true, buildServices = [] } = {}) {
   if (build) {
     // BuildKit provenance contains timestamps, which can change an otherwise cached
     // image's digest. Local dev builds omit it so clean containers keep their IDs.
-    docker([...compose, 'build', '--provenance=false']);
+    docker([...compose, 'build', '--provenance=false', ...buildServices]);
   }
 
   // Let Compose reconcile image/config changes before attempting health recovery.
@@ -249,9 +565,11 @@ async function main(args = process.argv.slice(2)) {
   if (options.help) {
     console.log(
       [
-        'Usage: pnpm start:all [--gpu] [--no-worker] [--no-tools]',
+        'Usage: pnpm start:all [--gpu|--nogpu] [--no-worker] [--no-tools]',
         'Starts MongoDB, optional Mongo Express, optional utility worker, backend, and frontend.',
-        '--gpu enables NVIDIA runtime for selected model providers.',
+        'GPU mode defaults to automatic host GPU detection.',
+        '--gpu explicitly requires a supported GPU runtime and fails if none is available.',
+        '--nogpu forces CPU mode even when a supported GPU is present.',
         '--no-worker omits the utility worker.',
         '--no-tools omits Mongo Express.',
         'Docker must already be running.',
@@ -260,17 +578,65 @@ async function main(args = process.argv.slice(2)) {
     return;
   }
 
+  /*
+   * Detect GPU before Docker reconciliation and before application
+   * port checks. Default startup automatically uses a supported
+   * NVIDIA GPU when one is present.
+   */
+  const hardware = detectHostGpu();
+  const gpuEnabled =
+    resolveGpuEnabled(options, hardware);
+
+  if (hardware.available) {
+    console.log(
+      [
+        'Host GPU detected:',
+        `vendor=${hardware.vendor || 'unknown'}`,
+        `device=${hardware.name || 'unknown'}`,
+        hardware.memoryMb
+          ? `memory=${hardware.memoryMb} MiB`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' ')
+    );
+  } else {
+    console.log(
+      'Host GPU detected: none.'
+    );
+  }
+
+  if (options.gpuMode === 'disabled') {
+    console.log(
+      'GPU mode: disabled by --nogpu.'
+    );
+  } else if (options.gpuMode === 'required') {
+    console.log(
+      'GPU mode: enabled by --gpu.'
+    );
+  } else if (gpuEnabled) {
+    console.log(
+      'GPU mode: enabled automatically.'
+    );
+  } else if (hardware.available) {
+    console.log(
+      `GPU mode: ${hardware.vendor || 'unknown'} hardware detected but no compatible Harmonia container runtime is configured; using CPU mode.`
+    );
+  } else {
+    console.log(
+      'GPU mode: CPU fallback.'
+    );
+  }
+
   const envFile = path.join(root, '.env');
   const env = applicationEnvironment({
     ...(existsSync(envFile) ? parseEnv(readFileSync(envFile, 'utf8')) : {}),
     ...process.env,
-    HARMONIA_GPU_ENABLED: options.gpu ? 'true' : 'false',
+    HARMONIA_GPU_ENABLED:
+      gpuEnabled ? 'true' : 'false',
   });
   const nx = resolvePackageBin('nx', 'nx');
   if (!existsSync(nx)) throw new Error('Dependencies are missing. Run pnpm install first.');
-
-  await checkPort(env.PORT, 'Backend');
-  await checkPort(4200, 'Frontend');
 
   const docker = (dockerArgs, capture) => run('docker', dockerArgs, env, capture);
   docker(['info', '--format', '{{.ServerVersion}}'], true);
@@ -293,11 +659,77 @@ async function main(args = process.argv.slice(2)) {
     );
   }
 
-  const compose = composeArguments(options);
+  const compose = composeArguments({
+    ...options,
+    gpu: gpuEnabled,
+  });
   docker([...compose, 'config', '--quiet']);
 
-  console.log('Reconciling Docker services (first ML build may take a while)...');
-  reconcileDocker(docker, compose, { build: options.worker });
+  let workerDecision = {
+    clean: true,
+    build: false,
+    reason: 'worker-profile-disabled',
+  };
+
+  let workerFingerprint = null;
+
+  if (options.worker) {
+    workerFingerprint =
+      workerBuildFingerprint(root);
+
+    const recordedFingerprint =
+      readWorkerBuildFingerprint(root);
+
+    workerDecision =
+      workerStartupDecision({
+        docker,
+        currentFingerprint:
+          workerFingerprint,
+        recordedFingerprint,
+      });
+
+    console.log(
+      'Docker worker: ' +
+      (workerDecision.clean
+        ? 'clean'
+        : 'dirty') +
+      ' (' +
+      workerDecision.reason +
+      ')' +
+      (workerDecision.build
+        ? ' — rebuilding worker image'
+        : ' — build skipped')
+    );
+  }
+
+  console.log(
+    'Reconciling Docker services...'
+  );
+
+  reconcileDocker(
+    docker,
+    compose,
+    {
+      build:
+        options.worker &&
+        workerDecision.build,
+      buildServices:
+        options.worker
+          ? ['worker']
+          : [],
+    }
+  );
+
+  if (
+    options.worker &&
+    workerDecision.build &&
+    workerFingerprint
+  ) {
+    writeWorkerBuildFingerprint(
+      root,
+      workerFingerprint
+    );
+  }
 
   // Test the actual application credentials, not only the container's root healthcheck.
   const mongoose = require('mongoose');
@@ -317,12 +749,65 @@ async function main(args = process.argv.slice(2)) {
 
   await checkOllama(env);
 
+  const appState =
+    await probeHarmoniaApps();
+
+  if (appState.backend) {
+    console.log(
+      'Backend: existing Harmonia instance detected — REUSE'
+    );
+  } else {
+    await checkPort(
+      env.PORT,
+      'Backend'
+    );
+    console.log(
+      'Backend: not running — START'
+    );
+  }
+
+  if (appState.frontend) {
+    console.log(
+      'Frontend: existing Harmonia instance detected — REUSE'
+    );
+  } else {
+    await checkPort(
+      4200,
+      'Frontend'
+    );
+    console.log(
+      'Frontend: not running — START'
+    );
+  }
+
+  const projects =
+    appProjectsToStart(
+      appState
+    );
+
+  if (projects.length === 0) {
+    console.log(
+      'Harmonia already running. Docker services reconciled and application servers reused.'
+    );
+    return;
+  }
+
   console.log(
-    `Database ready. Starting backend on ${env.PORT} and frontend on 4200.\nCtrl+C stops the app servers; Docker services remain running.`
+    'Database ready. Starting missing application server(s): ' +
+    projects.join(', ') +
+    '. Ctrl+C stops only the server(s) started by this command.'
   );
+
   run(
     process.execPath,
-    [nx, 'run-many', '--target=serve', '--projects=frontend,backend', '--parallel=2'],
+    [
+      nx,
+      'run-many',
+      '--target=serve',
+      '--projects=' +
+        projects.join(','),
+      '--parallel=2',
+    ],
     env
   );
 }
@@ -340,9 +825,11 @@ module.exports = {
   checkOllama,
   checkPort,
   composeArguments,
+  detectHostGpu,
   main,
   parseOptions,
   reconcileDocker,
+  resolveGpuEnabled,
   resolvePackageBin,
   run,
 };

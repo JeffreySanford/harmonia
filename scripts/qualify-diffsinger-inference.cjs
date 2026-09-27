@@ -225,7 +225,12 @@ async function main() {
   console.log('Pinned DiffSinger revision and full pretrained inference stack are present.');
 
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const relativeDir = path.join('generated', 'diffsinger', 'inference', stamp);
+  const relativeDir = path.join(
+    'generated',
+    'songs',
+    modelId,
+    stamp
+  );
   const hostDir = path.join(process.cwd(), relativeDir);
   const containerDir = `/workspace/${relativeDir.replace(/\\/g, '/')}`;
   const title = 'harmonia-diffsinger-qualification';

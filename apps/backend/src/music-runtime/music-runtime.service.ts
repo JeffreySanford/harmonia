@@ -1194,9 +1194,15 @@ export class MusicRuntimeService {
       'docker-compose.yml',
     ];
 
+    const gpuPreference =
+      process.env['HARMONIA_GPU_ENABLED'];
+
     if (
-      process.env['HARMONIA_GPU_ENABLED'] === 'true' ||
-      this.status.hardware.gpuAvailable
+      gpuPreference === 'true' ||
+      (
+        gpuPreference !== 'false' &&
+        this.status.hardware.gpuAvailable
+      )
     ) {
       args.push('-f', 'docker-compose.gpu.yml');
     }
@@ -1347,6 +1353,25 @@ export class MusicRuntimeService {
   }
 
   private async detectHardware(): Promise<HardwareProfile> {
+    /*
+     * start:all --nogpu sets HARMONIA_GPU_ENABLED=false.
+     * That is an explicit CPU-mode contract, not merely a
+     * Compose preference. Do not rediscover and advertise the
+     * host GPU while CPU mode has been requested.
+     */
+    if (
+      process.env['HARMONIA_GPU_ENABLED'] === 'false'
+    ) {
+      this.hardwareCache = {
+        gpuAvailable: false,
+        gpuName: null,
+        vramTotalGb: null,
+      };
+      this.hardwareCacheAt = Date.now();
+
+      return this.hardwareCache;
+    }
+
     if (
       this.hardwareCache &&
       Date.now() - this.hardwareCacheAt < 10_000

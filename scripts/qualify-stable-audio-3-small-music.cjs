@@ -230,8 +230,8 @@ async function main() {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const relativeDir = path.join(
     'generated',
-    'stable-audio-3',
-    'small-music',
+    'songs',
+    modelId,
     stamp
   );
   const hostDir = path.join(root, relativeDir);

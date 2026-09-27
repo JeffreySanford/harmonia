@@ -11,15 +11,33 @@ export NX_ISOLATE_PLUGINS=false
 export NX_DAEMON=false
 export NX_NO_CLOUD=true
 
-OUT="generated/qualified-showcase"
+OUT="generated/evidence/qualified-showcase"
 PORT=3114
 BASE="http://localhost:${PORT}"
-FRONTEND="http://localhost:4200"
+
+FRONTEND_PORT=4214
+FRONTEND="http://localhost:${FRONTEND_PORT}"
+PROXY_CONFIG="$OUT/proxy-3114.json"
+
 BACKEND_PID=""
+FRONTEND_PID=""
+
+if command -v node.exe >/dev/null 2>&1; then
+  NODE_BIN="node.exe"
+else
+  NODE_BIN="node"
+fi
 
 mkdir -p "$OUT"
 
 cleanup() {
+  if [[ -n "$FRONTEND_PID" ]] && kill -0 "$FRONTEND_PID" 2>/dev/null; then
+    echo
+    echo "Stopping showcase-owned frontend pid=$FRONTEND_PID on port $FRONTEND_PORT..."
+    kill "$FRONTEND_PID" 2>/dev/null || true
+    wait "$FRONTEND_PID" 2>/dev/null || true
+  fi
+
   if [[ -n "$BACKEND_PID" ]] && kill -0 "$BACKEND_PID" 2>/dev/null; then
     echo
     echo "Stopping showcase-owned backend pid=$BACKEND_PID on port $PORT..."
@@ -34,6 +52,14 @@ diagnostics() {
   echo "============================================================"
   echo " SHOWCASE FAILURE DIAGNOSTICS"
   echo "============================================================"
+
+  echo
+  echo "=== QUALIFICATION FRONTEND ==="
+  curl --silent --show-error --output /dev/null --write-out 'HTTP=%{http_code}\n' "$FRONTEND" || true
+
+  echo
+  echo "=== QUALIFICATION FRONTEND LOG TAIL ==="
+  tail -200 "$OUT/frontend-4214.log" 2>/dev/null || true
 
   echo
   echo "=== BACKEND HEALTH ==="
@@ -91,9 +117,20 @@ node --test scripts/runtime-contract.test.cjs
 echo "SHOWCASE_STATIC_CONTRACT_GREEN"
 
 echo
-echo "3. FRONTEND PREFLIGHT"
-curl --fail --silent --show-error "$FRONTEND" >/dev/null
-echo "SHOWCASE_FRONTEND_READY"
+echo "3. DEDICATED QUALIFICATION FRONTEND PORT PREFLIGHT"
+
+if curl --silent --fail "$FRONTEND" >/dev/null 2>&1; then
+  echo "STOP: port $FRONTEND_PORT already has an HTTP service."
+  exit 1
+fi
+
+if netstat -ano 2>/dev/null | grep -Eq "[:.]$FRONTEND_PORT[[:space:]].*LISTENING"; then
+  echo "STOP: port $FRONTEND_PORT is already occupied:"
+  netstat -ano | grep -E "[:.]$FRONTEND_PORT[[:space:]].*LISTENING" || true
+  exit 1
+fi
+
+echo "SHOWCASE_FRONTEND_PORT_${FRONTEND_PORT}_FREE"
 
 echo
 echo "4. DEDICATED BACKEND PORT PREFLIGHT"
@@ -120,7 +157,7 @@ echo "6. START FRESH CURRENT BACKEND"
 PORT="$PORT" \
 API_PREFIX=api \
 HARMONIA_GPU_ENABLED=true \
-  node dist/apps/backend/main.js \
+  "$NODE_BIN" dist/apps/backend/main.js \
   > "$OUT/backend-3114.log" \
   2>&1 &
 
@@ -152,7 +189,60 @@ fi
 echo "SHOWCASE_FRESH_BACKEND_READY"
 
 echo
-echo "7. GENERATE ALL QUALIFIED MODEL SAMPLES"
+echo "7. START DEDICATED QUALIFICATION FRONTEND"
+
+cat > "$PROXY_CONFIG" <<JSON
+{
+  "/api": {
+    "target": "$BASE",
+    "secure": false,
+    "changeOrigin": true
+  }
+}
+JSON
+
+echo "qualification proxy:"
+cat "$PROXY_CONFIG"
+
+hpnpm exec nx serve frontend \
+  --host=127.0.0.1 \
+  --port="$FRONTEND_PORT" \
+  --proxy-config="$PROXY_CONFIG" \
+  > "$OUT/frontend-4214.log" \
+  2>&1 &
+
+FRONTEND_PID=$!
+echo "frontend pid=$FRONTEND_PID"
+
+FRONTEND_READY=0
+
+for _ in $(seq 1 180); do
+  if ! kill -0 "$FRONTEND_PID" 2>/dev/null; then
+    echo "STOP: qualification frontend exited before readiness."
+    diagnostics
+    exit 1
+  fi
+
+  if curl --silent --fail "$FRONTEND" >/dev/null 2>&1; then
+    FRONTEND_READY=1
+    break
+  fi
+
+  sleep 1
+done
+
+if [[ "$FRONTEND_READY" -ne 1 ]]; then
+  echo "STOP: qualification frontend did not become ready."
+  diagnostics
+  exit 1
+fi
+
+echo "SHOWCASE_QUALIFICATION_FRONTEND_READY"
+echo "qualification frontend = $FRONTEND"
+echo "qualification backend  = $BASE"
+
+echo
+echo "8. GENERATE ALL QUALIFIED MODEL SAMPLES"
 set +e
 HARMONIA_SHOWCASE_BACKEND_BASE="$BASE" \
 HARMONIA_SHOWCASE_FRONTEND_BASE="$FRONTEND" \
@@ -169,7 +259,7 @@ if [[ "$SHOWCASE_STATUS" -ne 0 ]]; then
 fi
 
 echo
-echo "8. OUTPUT INVENTORY"
+echo "9. OUTPUT INVENTORY"
 find exports/showcase \
   -maxdepth 2 \
   -type f \
@@ -178,7 +268,7 @@ find exports/showcase \
   | sort
 
 echo
-echo "9. LATEST MANIFEST SUMMARY"
+echo "10. LATEST MANIFEST SUMMARY"
 LATEST_MANIFEST="$(
   find exports/showcase \
     -maxdepth 1 \
@@ -195,7 +285,7 @@ if [[ -z "$LATEST_MANIFEST" ]]; then
   exit 1
 fi
 
-node - "$LATEST_MANIFEST" <<'NODE'
+"$NODE_BIN" - "$LATEST_MANIFEST" <<'NODE'
 const fs = require('node:fs');
 const manifest = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 

@@ -18,7 +18,7 @@ docker_no_pathconv() {
   MSYS_NO_PATHCONV=1 docker "$@"
 }
 
-OUT="generated/ace-step-phase12d"
+OUT="generated/evidence/ace-step-phase12d"
 MODEL_ID="acestep-v15-turbo-06b"
 PORT=3112
 BASE="http://localhost:${PORT}"

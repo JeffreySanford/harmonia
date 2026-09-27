@@ -178,43 +178,301 @@ test('explicit application database settings are preserved', () => {
   assert.equal(applicationEnvironment(env).MONGODB_URI, env.MONGODB_URI);
 });
 
-test('startup options select canonical profiles and optional GPU override', () => {
-  const { composeArguments, parseOptions } = require(script);
-  assert.deepEqual(composeArguments(parseOptions([])), [
-    'compose',
-    '-f',
-    'docker-compose.yml',
-    '--profile',
-    'worker',
-    '--profile',
-    'tools',
-  ]);
-  assert.deepEqual(composeArguments(parseOptions(['--gpu', '--no-tools'])), [
-    'compose',
-    '-f',
-    'docker-compose.yml',
-    '-f',
-    'docker-compose.gpu.yml',
-    '--profile',
-    'worker',
-  ]);
-  assert.deepEqual(composeArguments(parseOptions(['--no-worker'])), [
-    'compose',
-    '-f',
-    'docker-compose.yml',
-    '--profile',
-    'tools',
-  ]);
-  assert.deepEqual(composeArguments(parseOptions(['--gpu', '--no-worker'])), [
-    'compose',
-    '-f',
-    'docker-compose.yml',
-    '-f',
-    'docker-compose.gpu.yml',
-    '--profile',
-    'tools',
-  ]);
-  assert.throws(() => parseOptions(['--wat']), /Unknown option/);
+test('startup GPU mode defaults to auto detection and supports overrides', () => {
+  const {
+    parseOptions,
+  } = require(script);
+
+  assert.equal(
+    parseOptions([]).gpuMode,
+    'auto'
+  );
+
+  assert.equal(
+    parseOptions(['--gpu']).gpuMode,
+    'required'
+  );
+
+  assert.equal(
+    parseOptions(['--nogpu']).gpuMode,
+    'disabled'
+  );
+
+  assert.throws(
+    () =>
+      parseOptions([
+        '--gpu',
+        '--nogpu',
+      ]),
+    /cannot be used together/
+  );
+
+  assert.throws(
+    () => parseOptions(['--wat']),
+    /Unknown option/
+  );
+});
+
+test('host GPU detection discovers NVIDIA device data dynamically', () => {
+  const {
+    detectHostGpu,
+  } = require(script);
+
+  const detected =
+    detectHostGpu(
+      (command, args) => {
+        assert.equal(
+          command,
+          'nvidia-smi'
+        );
+
+        assert.deepEqual(
+          args,
+          [
+            '--query-gpu=name,memory.total',
+            '--format=csv,noheader,nounits',
+          ]
+        );
+
+        return {
+          status: 0,
+          stdout:
+            'Mock NVIDIA Adapter, 16384',
+        };
+      },
+      'linux'
+    );
+
+  assert.deepEqual(
+    detected,
+    {
+      available: true,
+      vendor: 'nvidia',
+      name: 'Mock NVIDIA Adapter',
+      memoryMb: 16384,
+    }
+  );
+});
+
+test('host GPU detection discovers AMD device data dynamically on Windows', () => {
+  const {
+    detectHostGpu,
+  } = require(script);
+
+  const detected =
+    detectHostGpu(
+      (command) => {
+        if (command === 'nvidia-smi') {
+          return {
+            status: 1,
+            stdout: '',
+          };
+        }
+
+        if (
+          command ===
+          'powershell.exe'
+        ) {
+          return {
+            status: 0,
+            stdout:
+              JSON.stringify({
+                Name:
+                  'Mock AMD Adapter',
+                AdapterRAM:
+                  8 * 1024 * 1024 * 1024,
+              }),
+          };
+        }
+
+        return {
+          status: 1,
+          stdout: '',
+        };
+      },
+      'win32'
+    );
+
+  assert.equal(
+    detected.available,
+    true
+  );
+
+  assert.equal(
+    detected.vendor,
+    'amd'
+  );
+
+  assert.equal(
+    detected.name,
+    'Mock AMD Adapter'
+  );
+});
+
+test('host GPU detection returns an empty profile when no supported vendor is found', () => {
+  const {
+    detectHostGpu,
+  } = require(script);
+
+  const detected =
+    detectHostGpu(
+      () => ({
+        status: 1,
+        stdout: '',
+      }),
+      'linux'
+    );
+
+  assert.deepEqual(
+    detected,
+    {
+      available: false,
+      vendor: null,
+      name: null,
+      memoryMb: null,
+    }
+  );
+});
+
+test('GPU mode auto-enables the compatible runtime and --nogpu always wins', () => {
+  const {
+    parseOptions,
+    resolveGpuEnabled,
+  } = require(script);
+
+  const compatibleGpu = {
+    available: true,
+    vendor: 'nvidia',
+    name: 'Mock Compatible GPU',
+    memoryMb: null,
+  };
+
+  const detectedButUnsupportedGpu = {
+    available: true,
+    vendor: 'amd',
+    name: 'Mock Alternate GPU',
+    memoryMb: null,
+  };
+
+  const noGpu = {
+    available: false,
+    vendor: null,
+    name: null,
+    memoryMb: null,
+  };
+
+  assert.equal(
+    resolveGpuEnabled(
+      parseOptions([]),
+      compatibleGpu
+    ),
+    true
+  );
+
+  assert.equal(
+    resolveGpuEnabled(
+      parseOptions([]),
+      detectedButUnsupportedGpu
+    ),
+    false
+  );
+
+  assert.equal(
+    resolveGpuEnabled(
+      parseOptions([]),
+      noGpu
+    ),
+    false
+  );
+
+  assert.equal(
+    resolveGpuEnabled(
+      parseOptions(['--nogpu']),
+      compatibleGpu
+    ),
+    false
+  );
+
+  assert.equal(
+    resolveGpuEnabled(
+      parseOptions(['--gpu']),
+      compatibleGpu
+    ),
+    true
+  );
+
+  assert.throws(
+    () =>
+      resolveGpuEnabled(
+        parseOptions(['--gpu']),
+        detectedButUnsupportedGpu
+      ),
+    /does not support that vendor/
+  );
+
+  assert.throws(
+    () =>
+      resolveGpuEnabled(
+        parseOptions(['--gpu']),
+        noGpu
+      ),
+    /no supported host GPU/
+  );
+});
+
+test('canonical Compose arguments use only the resolved GPU decision', () => {
+  const {
+    composeArguments,
+    parseOptions,
+  } = require(script);
+
+  assert.deepEqual(
+    composeArguments({
+      ...parseOptions([]),
+      gpu: false,
+    }),
+    [
+      'compose',
+      '-f',
+      'docker-compose.yml',
+      '--profile',
+      'worker',
+      '--profile',
+      'tools',
+    ]
+  );
+
+  assert.deepEqual(
+    composeArguments({
+      ...parseOptions([]),
+      gpu: true,
+      tools: false,
+    }),
+    [
+      'compose',
+      '-f',
+      'docker-compose.yml',
+      '-f',
+      'docker-compose.gpu.yml',
+      '--profile',
+      'worker',
+    ]
+  );
+
+  assert.deepEqual(
+    composeArguments({
+      ...parseOptions(['--nogpu']),
+      gpu: false,
+      worker: false,
+    }),
+    [
+      'compose',
+      '-f',
+      'docker-compose.yml',
+      '--profile',
+      'tools',
+    ]
+  );
 });
 
 test('Ollama is checked only when enabled', async () => {

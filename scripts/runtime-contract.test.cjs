@@ -42,6 +42,52 @@ test('runtime uses one canonical Compose definition plus an optional GPU overrid
 
 });
 
+
+test('start:all auto-detects GPU and --nogpu forces CPU mode end to end', () => {
+  const startup = read(
+    'scripts/start-all.cjs'
+  );
+
+  const runtime = read(
+    'apps/backend/src/music-runtime/music-runtime.service.ts'
+  );
+
+  assert.match(
+    startup,
+    /function detectHostGpu/
+  );
+
+  assert.match(
+    startup,
+    /--query-gpu=name,memory\.total/
+  );
+
+  assert.match(
+    startup,
+    /gpuMode:\s*'auto'/
+  );
+
+  assert.match(
+    startup,
+    /--nogpu/
+  );
+
+  assert.match(
+    startup,
+    /HARMONIA_GPU_ENABLED:[\s\S]*gpuEnabled\s*\?\s*'true'\s*:\s*'false'/
+  );
+
+  assert.match(
+    runtime,
+    /HARMONIA_GPU_ENABLED'\]\s*===\s*'false'[\s\S]*gpuAvailable:\s*false/
+  );
+
+  assert.match(
+    runtime,
+    /gpuPreference\s*!==\s*'false'[\s\S]*hardware\.gpuAvailable/
+  );
+});
+
 test('application port contract is 4200 frontend and 3000 backend', () => {
   const env = read('.env.example');
   const proxy = read('apps/frontend/proxy.conf.json');
@@ -1796,7 +1842,7 @@ test('generic worker excludes heavyweight model frameworks', () => {
   assert.doesNotMatch(gpu, /^\s*worker:\s*$/m);
 
   assert.doesNotMatch(startup, /--gpu cannot be combined with --no-worker/);
-  assert.match(startup, /--gpu enables NVIDIA runtime for selected model providers/);
+  assert.match(startup, /--gpu explicitly requires a supported GPU runtime/);
 
 });
 
@@ -3556,5 +3602,202 @@ test('qualification clients use authenticated async runtime selection helper', (
     pkg.scripts['lint:scripts'],
     /runtime-selection-client\.cjs/,
     'shared runtime selection helper must participate in script syntax checks'
+  );
+});
+
+
+test('qualified showcase owns an isolated frontend proxy to its fresh backend', () => {
+  const runner =
+    read('scripts/run-qualified-showcase.sh');
+
+  const normalProxy =
+    read('apps/frontend/proxy.conf.json');
+
+  assert.match(
+    normalProxy,
+    /localhost:3000/
+  );
+
+  assert.match(
+    runner,
+    /FRONTEND_PORT=4214/
+  );
+
+  assert.match(
+    runner,
+    /FRONTEND="http:\/\/localhost:\$\{FRONTEND_PORT\}"/
+  );
+
+  assert.match(
+    runner,
+    /PROXY_CONFIG="\$OUT\/proxy-3114\.json"/
+  );
+
+  assert.match(
+    runner,
+    /"target": "\$BASE"/
+  );
+
+  assert.match(
+    runner,
+    /hpnpm exec nx serve frontend/
+  );
+
+  assert.doesNotMatch(
+    runner,
+    /node_modules\/nx\/bin\/nx\.js/
+  );
+
+  assert.match(
+    runner,
+    /--proxy-config="\$PROXY_CONFIG"/
+  );
+
+  assert.match(
+    runner,
+    /HARMONIA_SHOWCASE_BACKEND_BASE="\$BASE"/
+  );
+
+  assert.match(
+    runner,
+    /HARMONIA_SHOWCASE_FRONTEND_BASE="\$FRONTEND"/
+  );
+
+  assert.doesNotMatch(
+    runner,
+    /FRONTEND="http:\/\/localhost:4200"/
+  );
+});
+
+test('qualified showcase runner syntax is part of script lint', () => {
+  const pkg =
+    JSON.parse(read('package.json'));
+
+  assert.match(
+    pkg.scripts['lint:scripts'],
+    /bash -n scripts\/run-qualified-showcase\.sh/
+  );
+});
+
+
+test('hardware-aware model qualification matrix covers every current qualified generator', () => {
+  const pkg =
+    JSON.parse(
+      read('package.json')
+    );
+
+  const qualifier =
+    read(
+      'scripts/qualify-model-hardware-matrix.cjs'
+    );
+
+  const caseContract =
+    read(
+      'scripts/model-qualification-case-contract.test.cjs'
+    );
+
+  const cases =
+    read(
+      'tests/model-qualification/model-generation-cases.cjs'
+    );
+
+  const e2e =
+    read(
+      'tests/e2e/music-runtime-hardware-catalog.spec.ts'
+    );
+
+  assert.equal(
+    pkg.scripts['qualify:model-matrix'],
+    'node scripts/qualify-model-hardware-matrix.cjs'
+  );
+
+  assert.equal(
+    pkg.scripts['qualify:model-matrix:plan'],
+    'node scripts/qualify-model-hardware-matrix.cjs --plan'
+  );
+
+  assert.equal(
+    pkg.scripts['test:model-qualification-cases'],
+    'node --test scripts/model-qualification-case-contract.test.cjs'
+  );
+
+  assert.match(
+    qualifier,
+    /hardwareFit/
+  );
+
+  assert.match(
+    qualifier,
+    /availability ===[\s\S]*'installed'/
+  );
+
+  assert.match(
+    qualifier,
+    /model\.selectable === true/
+  );
+
+  assert.match(
+    qualifier,
+    /recommended/
+  );
+
+  assert.match(
+    qualifier,
+    /supported/
+  );
+
+  assert.match(
+    qualifier,
+    /MODEL_HARDWARE_MATRIX_GREEN/
+  );
+
+  assert.match(
+    qualifier,
+    /model\.runtimeModelId/
+  );
+
+  assert.match(
+    qualifier,
+    /frontend artifact must be byte-identical/
+  );
+
+  for (
+    const modelId of [
+      'musicgen-small',
+      'musicgen-stereo-small',
+      'diffsinger-acoustic-hifigan',
+      'stable-audio-3-small-music',
+      'acestep-v15-turbo-06b',
+    ]
+  ) {
+    assert.match(
+      cases,
+      new RegExp(modelId)
+    );
+  }
+
+  assert.match(
+    caseContract,
+    /smoke/
+  );
+
+  assert.match(
+    caseContract,
+    /deep/
+  );
+
+  assert.match(
+    e2e,
+    /\/generate\/music/
+  );
+
+  assert.match(
+    e2e,
+    /disabledReason/
+  );
+
+  assert.match(
+    e2e,
+    /aria-disabled/
   );
 });
