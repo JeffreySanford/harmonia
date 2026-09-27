@@ -1776,14 +1776,64 @@ test('provider lifecycle is orchestrator-owned and unhealthy runtimes fail fast'
     'apps/backend/src/music-runtime/music-runtime.service.ts'
   );
 
-  const providerRestartPolicies =
-    compose.match(/container_name:\s*harmonia-(?:diffsinger|musicgen)[\s\S]{0,80}restart:\s*"no"/g) || [];
-  assert.equal(providerRestartPolicies.length, 2);
-  assert.match(backend, /state\.Health\?\.Status === 'unhealthy'/);
-  assert.match(backend, /became unhealthy/);
+  const providerContainers = [
+    'harmonia-diffsinger',
+    'harmonia-diffsinger-openutau',
+    'harmonia-musicgen',
+    'harmonia-stable-audio-3',
+    'harmonia-ace-step-1.5',
+  ];
 
+  for (const containerName of providerContainers) {
+    const marker =
+      'container_name: ' + containerName;
+
+    const containerIndex =
+      compose.indexOf(marker);
+
+    assert.ok(
+      containerIndex >= 0,
+      containerName + ' must exist in docker-compose.yml'
+    );
+
+    const restartIndex =
+      compose.indexOf(
+        'restart: "no"',
+        containerIndex
+      );
+
+    const nextContainerIndex =
+      compose.indexOf(
+        'container_name:',
+        containerIndex + marker.length
+      );
+
+    assert.ok(
+      restartIndex >= 0 &&
+        (
+          nextContainerIndex < 0 ||
+          restartIndex < nextContainerIndex
+        ),
+      containerName +
+        ' must remain orchestrator-owned with restart: "no"'
+    );
+  }
+
+  assert.equal(
+    providerContainers.length,
+    5
+  );
+
+  assert.match(
+    backend,
+    /state\.Health\?\.Status === 'unhealthy'/
+  );
+
+  assert.match(
+    backend,
+    /became unhealthy/
+  );
 });
-
 
 test('MusicGen pins Transformers to a PyTorch 2.1-compatible release', () => {
   const musicgen = read('Dockerfile.musicgen');
@@ -3936,6 +3986,147 @@ test(
     assert.match(
       model,
       /not bundled or downloaded/i
+    );
+  }
+);
+
+
+test(
+  'OpenUTAU DiffSinger provider shell validates external voicebanks without bundling model weights',
+  () => {
+    const dockerfile = read(
+      'Dockerfile.diffsinger-openutau'
+    );
+
+    const entrypoint = read(
+      'entrypoint.diffsinger-openutau.sh'
+    );
+
+    const validator = read(
+      'scripts/diffsinger_openutau_voicebank_validator.py'
+    );
+
+    const compose = read(
+      'docker-compose.yml'
+    );
+
+    const gpuCompose = read(
+      'docker-compose.gpu.yml'
+    );
+
+    const dockerignore = read(
+      '.dockerignore'
+    );
+
+    const catalog = read(
+      'apps/backend/src/music-runtime/music-model.catalog.ts'
+    );
+
+    assert.match(
+      dockerfile,
+      /FROM python:3\.12-slim/
+    );
+
+    assert.match(
+      dockerfile,
+      /DIFFSINGER_UTAU_VERSION=0\.3\.8/
+    );
+
+    assert.match(
+      dockerfile,
+      /--no-deps/
+    );
+
+    assert.match(
+      entrypoint,
+      /expected = ["']0\.3\.8["']/
+    );
+
+    assert.match(
+      validator,
+      /dsdur\/dsconfig\.yaml/
+    );
+
+    assert.match(
+      validator,
+      /dspitch\/dsconfig\.yaml/
+    );
+
+    assert.match(
+      validator,
+      /dsvariance\/dsconfig\.yaml/
+    );
+
+    assert.match(
+      validator,
+      /dsvocoder\/vocoder\.yaml/
+    );
+
+    assert.match(
+      validator,
+      /inside_root/
+    );
+
+    assert.doesNotMatch(
+      validator,
+      /urllib|requests|curl|wget/
+    );
+
+    assert.match(
+      compose,
+      /diffsinger-openutau:[\s\S]*Dockerfile\.diffsinger-openutau/
+    );
+
+    assert.match(
+      compose,
+      /container_name:\s*harmonia-diffsinger-openutau/
+    );
+
+    assert.match(
+      compose,
+      /model-diffsinger-openutau/
+    );
+
+    assert.match(
+      compose,
+      /pip show diffsinger-utau/
+    );
+
+    assert.match(
+      compose,
+      /\.\/models\/diffsinger-openutau:\/workspace\/models\/diffsinger-openutau:ro/
+    );
+
+    assert.match(
+      gpuCompose,
+      /diffsinger-openutau:[\s\S]*runtime:\s*nvidia/
+    );
+
+    assert.match(
+      dockerignore,
+      /^models$/m
+    );
+
+    const providerStart =
+      catalog.indexOf(
+        "id: 'diffsinger-openutau'"
+      );
+
+    const providerEnd =
+      catalog.indexOf(
+        '\n  },',
+        providerStart
+      );
+
+    const provider =
+      catalog.slice(
+        providerStart,
+        providerEnd + 5
+      );
+
+    assert.match(
+      provider,
+      /runtimeInstalled:\s*false/
     );
   }
 );

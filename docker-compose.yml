@@ -125,6 +125,39 @@ services:
     networks:
       - harmonia-net
 
+
+  diffsinger-openutau:
+    build:
+      context: .
+      dockerfile: Dockerfile.diffsinger-openutau
+    image: harmonia/diffsinger-openutau:dev
+    container_name: harmonia-diffsinger-openutau
+    restart: "no"
+    profiles:
+      - model-diffsinger-openutau
+    environment:
+      HARMONIA_DIFFSINGER_UTAU_TARGET_VERSION: "0.3.8"
+      HARMONIA_DIFFSINGER_OPENUTAU_VOICEBANKS_ROOT: /workspace/models/diffsinger-openutau/voicebanks
+    volumes:
+      - ./models/diffsinger-openutau:/workspace/models/diffsinger-openutau:ro
+      - ./scripts:/workspace/scripts:ro
+      - ./generated:/workspace/generated
+      - ./exports:/workspace/exports
+      - ./artifacts:/workspace/artifacts
+    command:
+      - sleep
+      - infinity
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "test -f /tmp/harmonia-runtime-ready && python -m pip show diffsinger-utau | grep -q '^Version: 0.3.8$'"
+      start_period: 10s
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - harmonia-net
+
   ace-step-1.5:
     build:
       context: .

@@ -1,0 +1,35 @@
+FROM python:3.12-slim
+
+LABEL org.opencontainers.image.title="harmonia-diffsinger-openutau"
+LABEL org.opencontainers.image.description="Harmonia OpenUTAU/DiffSinger voicebank validation shell."
+
+ARG DIFFSINGER_UTAU_VERSION=0.3.8
+
+ENV PYTHONUNBUFFERED=1
+ENV HARMONIA_DIFFSINGER_UTAU_TARGET_VERSION=${DIFFSINGER_UTAU_VERSION}
+ENV HARMONIA_DIFFSINGER_OPENUTAU_VOICEBANKS_ROOT=/workspace/models/diffsinger-openutau/voicebanks
+
+WORKDIR /workspace
+
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && python -m pip install --no-cache-dir 'PyYAML>=6,<7' \
+    && python -m pip install --no-cache-dir --no-deps \
+       "diffsinger-utau==${DIFFSINGER_UTAU_VERSION}"
+
+COPY entrypoint.diffsinger-openutau.sh \
+  /workspace/entrypoint.diffsinger-openutau.sh
+
+COPY scripts/diffsinger_openutau_voicebank_validator.py \
+  /workspace/scripts/diffsinger_openutau_voicebank_validator.py
+
+RUN sed -i 's/\r$//' \
+      /workspace/entrypoint.diffsinger-openutau.sh \
+    && chmod +x \
+      /workspace/entrypoint.diffsinger-openutau.sh \
+      /workspace/scripts/diffsinger_openutau_voicebank_validator.py \
+    && python -m py_compile \
+      /workspace/scripts/diffsinger_openutau_voicebank_validator.py
+
+ENTRYPOINT ["/workspace/entrypoint.diffsinger-openutau.sh"]
+
+CMD ["sleep", "infinity"]
