@@ -120,9 +120,37 @@ async function authenticateQualificationUser({
   };
 }
 
+async function resolveAccessToken(
+  token,
+  tokenProvider
+) {
+  if (
+    typeof tokenProvider === 'function'
+  ) {
+    const provided =
+      await tokenProvider();
+
+    if (!provided) {
+      throw new Error(
+        'Qualification token provider returned no access token'
+      );
+    }
+
+    return provided;
+  }
+
+  if (!token) {
+    throw new Error(
+      'Qualification access token is missing'
+    );
+  }
+
+  return token;
+}
 async function selectRuntimeModel({
   backendBase,
   token,
+  tokenProvider = null,
   modelId,
   expectedProviderId = null,
   timeoutMs = 20 * 60 * 1000,
@@ -135,9 +163,12 @@ async function selectRuntimeModel({
     );
   }
 
-  if (!token) {
+  if (
+    !token &&
+    typeof tokenProvider !== 'function'
+  ) {
     throw new Error(
-      'selectRuntimeModel requires an access token'
+      'selectRuntimeModel requires an access token or tokenProvider'
     );
   }
 
@@ -147,12 +178,18 @@ async function selectRuntimeModel({
     );
   }
 
+  const acceptedToken =
+    await resolveAccessToken(
+      token,
+      tokenProvider
+    );
+
   const accepted = await requestJson(
     `${backendBase}/api/music/runtime/select`,
     {
       method: 'POST',
       headers: {
-        authorization: `Bearer ${token}`,
+        authorization: `Bearer ${acceptedToken}`,
         'content-type': 'application/json',
       },
       body: JSON.stringify({
@@ -207,11 +244,17 @@ async function selectRuntimeModel({
   let lastFingerprint = null;
 
   while (Date.now() < deadline) {
+    const statusToken =
+      await resolveAccessToken(
+        token,
+        tokenProvider
+      );
+
     const current = await requestJson(
       `${backendBase}/api/music/runtime/status`,
       {
         headers: {
-          authorization: `Bearer ${token}`,
+          authorization: `Bearer ${statusToken}`,
         },
       },
       30000

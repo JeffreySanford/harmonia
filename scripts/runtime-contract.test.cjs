@@ -3434,7 +3434,22 @@ test('security S3-C2 authenticates runtime selection in qualification scripts', 
 
   assert.match(
     selector,
-    /authorization:\s*`Bearer \$\{token\}`/
+    /authorization:\s*`Bearer \$\{acceptedToken\}`/
+  );
+
+  assert.match(
+    selector,
+    /authorization:\s*`Bearer \$\{statusToken\}`/
+  );
+
+  assert.match(
+    selector,
+    /tokenProvider/
+  );
+
+  assert.match(
+    selector,
+    /resolveAccessToken/
   );
 
   assert.match(
@@ -3521,7 +3536,22 @@ test('qualification clients use authenticated async runtime selection helper', (
 
   assert.match(
     helper,
-    /authorization:\s*`Bearer \$\{token\}`/
+    /authorization:\s*`Bearer \$\{acceptedToken\}`/
+  );
+
+  assert.match(
+    helper,
+    /authorization:\s*`Bearer \$\{statusToken\}`/
+  );
+
+  assert.match(
+    helper,
+    /tokenProvider/
+  );
+
+  assert.match(
+    helper,
+    /resolveAccessToken/
   );
 
   assert.match(

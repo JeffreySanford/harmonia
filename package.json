@@ -97,7 +97,8 @@
     "qualify:model-matrix:plan": "node scripts/qualify-model-hardware-matrix.cjs --plan",
     "qualify:model-matrix": "node scripts/qualify-model-hardware-matrix.cjs",
     "test:e2e:model-catalog": "playwright test tests/e2e/music-runtime-hardware-catalog.spec.ts",
-    "qualify:model-matrix:deep": "node -e \"process.env.HARMONIA_MODEL_MATRIX_PROFILE=\\'deep\\'; require(\\'./scripts/qualify-model-hardware-matrix.cjs\\')\""
+    "qualify:model-matrix:deep": "node scripts/qualify-model-hardware-matrix.cjs --profile deep",
+    "qualify:model-matrix:list": "node scripts/qualify-model-hardware-matrix.cjs --list"
   },
   "keywords": [],
   "author": "",

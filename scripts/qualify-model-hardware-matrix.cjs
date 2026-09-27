@@ -25,14 +25,47 @@ const root =
 const envPath =
   path.join(root, '.env');
 
-const args =
-  new Set(process.argv.slice(2));
+const rawArgs =
+  process.argv.slice(2);
+
+function argumentValue(flag) {
+  const index =
+    rawArgs.indexOf(flag);
+
+  if (index < 0) {
+    return null;
+  }
+
+  const value =
+    rawArgs[index + 1];
+
+  if (
+    !value ||
+    value.startsWith('--')
+  ) {
+    throw new Error(
+      flag + ' requires a value'
+    );
+  }
+
+  return value;
+}
 
 const planOnly =
-  args.has('--plan');
+  rawArgs.includes('--plan');
+
+const listOnly =
+  rawArgs.includes('--list');
+
+const requestedCaseId =
+  argumentValue('--case');
+
+const requestedModelId =
+  argumentValue('--model');
 
 const requestedProfile =
   String(
+    argumentValue('--profile') ||
     process.env.HARMONIA_MODEL_MATRIX_PROFILE ||
     'smoke'
   ).trim();
@@ -43,10 +76,10 @@ if (
   )
 ) {
   throw new Error(
-    `Unsupported HARMONIA_MODEL_MATRIX_PROFILE=${requestedProfile}`
+    'Unsupported qualification profile: ' +
+      requestedProfile
   );
 }
-
 const backendBase =
   String(
     process.env.HARMONIA_QUAL_BACKEND_BASE ||
@@ -272,16 +305,33 @@ function fitIsRunnable(model) {
 
 function profileCasesFor(modelId) {
   return cases.filter(
-    (entry) =>
-      entry.modelId === modelId &&
-      (
+    (entry) => {
+      if (
+        entry.modelId !==
+        modelId
+      ) {
+        return false;
+      }
+
+      if (requestedCaseId) {
+        return (
+          entry.id ===
+          requestedCaseId
+        );
+      }
+
+      return (
         entry.profile === 'smoke' ||
-        requestedProfile === 'deep'
-      )
+        (
+          requestedProfile === 'deep' &&
+          entry.profile === 'deep'
+        )
+      );
+    }
   );
 }
 
-async function login() {
+async function createAuthSession() {
   if (!fs.existsSync(envPath)) {
     throw new Error('.env is missing');
   }
@@ -302,34 +352,127 @@ async function login() {
     env.E2E_TEST_USER_PASSWORD ||
     'password';
 
-  const loginResponse =
-    await request(
-      `${backendBase}/api/auth/login`,
-      {
-        method: 'POST',
-        headers: {
-          'content-type':
-            'application/json',
-        },
-        body: JSON.stringify({
-          emailOrUsername:
-            username,
-          password,
-        }),
-      }
+  let token = null;
+  let expiresAt = 0;
+
+  async function renew(reason) {
+    const loginResponse =
+      await request(
+        backendBase +
+          '/api/auth/login',
+        {
+          method: 'POST',
+          headers: {
+            'content-type':
+              'application/json',
+          },
+          body: JSON.stringify({
+            emailOrUsername:
+              username,
+            password,
+          }),
+        }
+      );
+
+    assert.ok(
+      loginResponse.body?.accessToken,
+      'Login must return accessToken'
     );
 
-  assert.ok(
-    loginResponse.body?.accessToken,
-    'Login must return accessToken'
-  );
+    token =
+      loginResponse.body.accessToken;
 
-  return loginResponse.body.accessToken;
+    const expiresIn =
+      Number(
+        loginResponse.body.expiresIn ||
+        900
+      );
+
+    expiresAt =
+      Date.now() +
+      expiresIn * 1000;
+
+    console.log(
+      'AUTH_SESSION_RENEWED reason=' +
+      reason +
+      ' expiresIn=' +
+      expiresIn +
+      's'
+    );
+
+    return token;
+  }
+
+  return {
+    async getToken() {
+      if (
+        !token ||
+        Date.now() >=
+          expiresAt - 60_000
+      ) {
+        return renew(
+          token
+            ? 'expiring'
+            : 'initial'
+        );
+      }
+
+      return token;
+    },
+
+    async forceRenew(
+      reason = '401'
+    ) {
+      return renew(reason);
+    },
+  };
 }
 
+async function authorizedRequest(
+  auth,
+  url,
+  options = {},
+  timeout = 30000
+) {
+  const execute =
+    async () => {
+      const token =
+        await auth.getToken();
+
+      return request(
+        url,
+        {
+          ...options,
+          headers: {
+            ...(options.headers || {}),
+            authorization:
+              'Bearer ' + token,
+          },
+        },
+        timeout
+      );
+    };
+
+  try {
+    return await execute();
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      /HTTP 401/.test(error.message)
+    ) {
+      await auth.forceRenew(
+        'protected-request-401'
+      );
+
+      return execute();
+    }
+
+    throw error;
+  }
+}
 async function waitForJob(
   jobId,
-  token
+  auth
 ) {
   const started =
     Date.now();
@@ -340,28 +483,27 @@ async function waitForJob(
   ) {
     const current =
       (
-        await request(
-          `${backendBase}/api/jobs/${jobId}`,
-          {
-            headers: {
-              authorization:
-                `Bearer ${token}`,
-            },
-          }
+        await authorizedRequest(
+          auth,
+          backendBase +
+            '/api/jobs/' +
+            jobId
         )
       ).body;
 
     console.log(
-      `  job=${jobId} ` +
-      `status=${current.status} ` +
-      `progress=${
+      '  job=' + jobId +
+      ' status=' + current.status +
+      ' progress=' +
+      (
         current.progress?.percentage ??
         '?'
-      }% ` +
-      `${
+      ) +
+      '% ' +
+      (
         current.progress?.message ||
         ''
-      }`
+      )
     );
 
     if (
@@ -378,51 +520,79 @@ async function waitForJob(
   }
 
   throw new Error(
-    `Job ${jobId} timed out`
+    'Job ' +
+    jobId +
+    ' timed out'
   );
 }
 
 async function getArtifact(
   base,
   pathName,
-  token
+  auth
 ) {
-  const response =
-    await fetch(
-      `${base}${pathName}`,
-      {
-        headers: {
-          authorization:
-            `Bearer ${token}`,
-        },
-        signal:
-          AbortSignal.timeout(
-            120000
-          ),
-      }
-    );
+  for (
+    let attempt = 0;
+    attempt < 2;
+    attempt += 1
+  ) {
+    const token =
+      await auth.getToken();
 
-  if (!response.ok) {
-    throw new Error(
-      `Artifact ${base}${pathName} -> HTTP ${response.status}`
-    );
+    const response =
+      await fetch(
+        base + pathName,
+        {
+          headers: {
+            authorization:
+              'Bearer ' + token,
+          },
+          signal:
+            AbortSignal.timeout(
+              120000
+            ),
+        }
+      );
+
+    if (
+      response.status === 401 &&
+      attempt === 0
+    ) {
+      await auth.forceRenew(
+        'artifact-401'
+      );
+      continue;
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        'Artifact ' +
+        base +
+        pathName +
+        ' -> HTTP ' +
+        response.status
+      );
+    }
+
+    const bytes =
+      Buffer.from(
+        await response.arrayBuffer()
+      );
+
+    return {
+      status: response.status,
+      contentType:
+        response.headers.get(
+          'content-type'
+        ),
+      bytes,
+    };
   }
 
-  const bytes =
-    Buffer.from(
-      await response.arrayBuffer()
-    );
-
-  return {
-    status: response.status,
-    contentType:
-      response.headers.get(
-        'content-type'
-      ),
-    bytes,
-  };
+  throw new Error(
+    'Artifact authentication retry exhausted'
+  );
 }
-
 function assertProviderSpecific(
   entry,
   job,
@@ -502,7 +672,7 @@ function assertProviderSpecific(
 async function runCase(
   entry,
   model,
-  token
+  auth
 ) {
   console.log('');
   console.log(
@@ -521,7 +691,9 @@ async function runCase(
   const selection =
     await selectRuntimeModel({
       backendBase,
-      token,
+      tokenProvider:
+        () =>
+          auth.getToken(),
       modelId:
         entry.modelId,
       timeoutMs:
@@ -545,13 +717,12 @@ async function runCase(
   );
 
   const created =
-    await request(
+    await authorizedRequest(
+      auth,
       `${backendBase}/api/jobs`,
       {
         method: 'POST',
         headers: {
-          authorization:
-            `Bearer ${token}`,
           'content-type':
             'application/json',
         },
@@ -581,7 +752,7 @@ async function runCase(
   const job =
     await waitForJob(
       jobId,
-      token
+      auth
     );
 
   assert.equal(
@@ -631,7 +802,7 @@ async function runCase(
     await getArtifact(
       backendBase,
       artifactPath,
-      token
+      auth
     );
 
   const throughFrontend =
@@ -765,6 +936,27 @@ async function runCase(
     direct.bytes
   );
 
+  const latestSamplesDir =
+    path.join(
+      outputRoot,
+      'latest-samples'
+    );
+
+  fs.mkdirSync(
+    latestSamplesDir,
+    {
+      recursive: true,
+    }
+  );
+
+  fs.writeFileSync(
+    path.join(
+      latestSamplesDir,
+      entry.id + '.wav'
+    ),
+    direct.bytes
+  );
+
   console.log(
     `CASE_GREEN ${entry.id} ` +
     `${wav.channels}ch ` +
@@ -809,6 +1001,50 @@ async function main() {
     `frontend = ${frontendBase}`
   );
 
+  if (listOnly) {
+    console.log('');
+    console.log(
+      '=== QUALIFICATION CASES ==='
+    );
+
+    const modelIds =
+      [...new Set(
+        cases.map(
+          (entry) =>
+            entry.modelId
+        )
+      )];
+
+    for (
+      const modelId of
+      modelIds
+    ) {
+      console.log('');
+      console.log(modelId);
+
+      for (
+        const entry of
+        cases.filter(
+          (candidate) =>
+            candidate.modelId ===
+            modelId
+        )
+      ) {
+        console.log(
+          '  ' +
+          entry.profile.padEnd(7) +
+          ' ' +
+          entry.id
+        );
+      }
+    }
+
+    console.log(
+      'MODEL_HARDWARE_MATRIX_LIST_GREEN'
+    );
+    return;
+  }
+
   const catalog =
     (
       await request(
@@ -831,7 +1067,7 @@ async function main() {
     )
   );
 
-  const runnable =
+  let runnable =
     catalog.models.filter(
       fitIsRunnable
     );
@@ -855,6 +1091,77 @@ async function main() {
         'unsupported'
     );
 
+  const exactCase =
+    requestedCaseId
+      ? cases.find(
+          (entry) =>
+            entry.id ===
+            requestedCaseId
+        ) || null
+      : null;
+
+  if (
+    requestedCaseId &&
+    !exactCase
+  ) {
+    throw new Error(
+      'Unknown qualification case: ' +
+      requestedCaseId
+    );
+  }
+
+  if (
+    requestedModelId &&
+    exactCase &&
+    exactCase.modelId !==
+      requestedModelId
+  ) {
+    throw new Error(
+      'Case ' +
+      requestedCaseId +
+      ' belongs to ' +
+      exactCase.modelId +
+      ', not ' +
+      requestedModelId
+    );
+  }
+
+  const targetModelId =
+    requestedModelId ||
+    exactCase?.modelId ||
+    null;
+
+  if (targetModelId) {
+    const targetModel =
+      catalog.models.find(
+        (model) =>
+          model.id ===
+          targetModelId
+      );
+
+    if (!targetModel) {
+      throw new Error(
+        'Unknown model: ' +
+        targetModelId
+      );
+    }
+
+    if (!fitIsRunnable(targetModel)) {
+      throw new Error(
+        'Model ' +
+        targetModelId +
+        ' is not runnable: ' +
+        (
+          targetModel.disabledReason ||
+          targetModel.hardwareFit
+        )
+      );
+    }
+
+    runnable = [
+      targetModel,
+    ];
+  }
   console.log('');
   console.log(
     '=== RUNNABLE NOW ==='
@@ -1022,8 +1329,10 @@ async function main() {
     return;
   }
 
-  const token =
-    await login();
+  const auth =
+    await createAuthSession();
+
+  await auth.getToken();
 
   const results = [];
 
@@ -1041,30 +1350,23 @@ async function main() {
           await runCase(
             entry,
             model,
-            token
+            auth
           )
         );
       }
     }
   } finally {
-    await fetch(
+    await authorizedRequest(
+      auth,
       `${backendBase}/api/music/runtime/stop`,
       {
         method: 'POST',
-        headers: {
-          authorization:
-            `Bearer ${token}`,
-        },
-        signal:
-          AbortSignal.timeout(
-            120000
-          ),
-      }
+      },
+      120000
     ).catch(
       () => undefined
     );
   }
-
   const summaryPath =
     path.join(
       outputRoot,

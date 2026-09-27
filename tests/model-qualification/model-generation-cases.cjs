@@ -188,6 +188,26 @@ const cases = [
     },
   },
 
+  {
+    id: 'diffsinger-dusk-drums-opera',
+    profile: 'manual',
+    modelId: 'diffsinger-acoustic-hifigan',
+    title: '暮鼓关山 / Dusk Drums at the Pass',
+    purpose:
+      'Manual 30-second Chinese-opera-inspired score experiment with long held phrases and dramatic contour. The pinned OpenCpop checkpoint has no speaker/age selector, so older-male timbre is intentionally not asserted.',
+    parameters: {
+      title: 'Dusk Drums at the Pass',
+      text: 'SP暮鼓穿云过古城SP长风卷雪照关山',
+      notes:
+        'rest|C3|G3|A3|G3|E3|D3|C3|rest|D3|G3|A3|G3|E3|D3|C3',
+      notesDuration:
+        '1|1.5|2|2.5|2|2|2|2.5|0.5|1.5|2|2.5|2|2|2|2',
+      inputType: 'word',
+    },
+    expect: {
+      minDurationRatio: 0.9,
+    },
+  },
   // ============================================================
   // STABLE AUDIO 3 SMALL MUSIC
   // ============================================================

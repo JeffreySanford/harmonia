@@ -304,3 +304,67 @@ test(
     );
   }
 );
+
+test(
+  'token provider is consulted for selection and polling',
+  async (t) => {
+    const originalFetch = global.fetch;
+
+    t.after(() => {
+      global.fetch = originalFetch;
+    });
+
+    const calls = [];
+
+    const replies = [
+      response(202, {
+        operationId: 'renewable-operation',
+        modelId: 'musicgen-small',
+        state: 'accepted',
+      }),
+
+      response(200, {
+        operationId: 'renewable-operation',
+        providerId: 'musicgen',
+        modelId: 'musicgen-small',
+        state: 'ready',
+        healthy: true,
+        progress: 100,
+      }),
+    ];
+
+    global.fetch = async (url, options = {}) => {
+      calls.push({
+        url: String(url),
+        options,
+      });
+
+      return replies.shift();
+    };
+
+    const supplied = [
+      'qualification-token-1',
+      'qualification-token-2',
+    ];
+
+    await selectRuntimeModel({
+      backendBase: 'http://harmonia.test',
+      tokenProvider: async () =>
+        supplied.shift(),
+      modelId: 'musicgen-small',
+      timeoutMs: 1000,
+      pollMs: 0,
+      log: () => {},
+    });
+
+    assert.equal(
+      calls[0].options.headers.authorization,
+      'Bearer qualification-token-1'
+    );
+
+    assert.equal(
+      calls[1].options.headers.authorization,
+      'Bearer qualification-token-2'
+    );
+  }
+);

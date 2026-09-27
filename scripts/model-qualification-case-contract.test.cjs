@@ -50,7 +50,7 @@ test('all generation cases have meaningful titles and purposes', () => {
     assert.ok(entry.title);
     assert.ok(entry.purpose);
     assert.ok(
-      ['smoke', 'deep'].includes(entry.profile)
+      ['smoke', 'deep', 'manual'].includes(entry.profile)
     );
     assert.ok(entry.parameters);
     assert.ok(entry.expect);
@@ -178,3 +178,82 @@ test('ACE-Step cases include original supplied lyrics and conditioning', () => {
     );
   }
 });
+
+test(
+  'manual Chinese opera case is opt-in and exactly 30 seconds',
+  () => {
+    const entry =
+      cases.find(
+        (candidate) =>
+          candidate.id ===
+          'diffsinger-dusk-drums-opera'
+      );
+
+    assert.ok(entry);
+    assert.equal(
+      entry.profile,
+      'manual'
+    );
+
+    const duration =
+      entry.parameters
+        .notesDuration
+        .split('|')
+        .map(Number)
+        .reduce(
+          (sum, value) =>
+            sum + value,
+          0
+        );
+
+    assert.equal(
+      duration,
+      30
+    );
+  }
+);
+
+test(
+  'qualification runner supports selective execution and renewable tokens',
+  () => {
+    const fs =
+      require('node:fs');
+
+    const runner =
+      fs.readFileSync(
+        'scripts/qualify-model-hardware-matrix.cjs',
+        'utf8'
+      );
+
+    const selector =
+      fs.readFileSync(
+        'scripts/runtime-selection-client.cjs',
+        'utf8'
+      );
+
+    assert.match(
+      runner,
+      /--case/
+    );
+
+    assert.match(
+      runner,
+      /--model/
+    );
+
+    assert.match(
+      runner,
+      /--list/
+    );
+
+    assert.match(
+      runner,
+      /latest-samples/
+    );
+
+    assert.match(
+      selector,
+      /tokenProvider/
+    );
+  }
+);
