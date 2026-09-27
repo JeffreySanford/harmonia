@@ -199,6 +199,40 @@ services:
     networks:
       - harmonia-net
 
+  diffrhythm:
+    build:
+      context: .
+      dockerfile: Dockerfile.diffrhythm
+    image: harmonia/diffrhythm:dev
+    container_name: harmonia-diffrhythm
+    restart: "no"
+    profiles:
+      - model-diffrhythm
+    environment:
+      HARMONIA_DIFFRHYTHM_PORT: "8767"
+      HARMONIA_DIFFRHYTHM_MODELS_ROOT: /workspace/models/diffrhythm
+      HF_HOME: /workspace/models/diffrhythm/huggingface
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+    volumes:
+      - ./models/diffrhythm:/workspace/models/diffrhythm:ro
+      - ./generated:/workspace/generated
+      - ./exports:/workspace/exports
+      - ./artifacts:/workspace/artifacts
+    command:
+      - python
+      - /workspace/scripts/diffrhythm_provider_server.py
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - "test -f /tmp/harmonia-runtime-ready && python -c \"import urllib.request; r=urllib.request.urlopen('http://127.0.0.1:8767/health', timeout=2); raise SystemExit(0 if r.status == 200 else 1)\""
+      start_period: 120s
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      - harmonia-net
+
   stable-audio-3:
     build:
       context: .

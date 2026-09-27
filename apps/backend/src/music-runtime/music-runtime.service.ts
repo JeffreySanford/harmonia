@@ -802,7 +802,9 @@ export class MusicRuntimeService {
           ? 8766
           : provider.id === 'ace-step-1.5'
             ? 8001
-            : null;
+            : provider.id === 'diffrhythm'
+              ? 8767
+              : null;
 
     if (healthPort === null) {
       return { model: null, busy: false };

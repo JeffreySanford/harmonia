@@ -57,6 +57,8 @@ operational documentation:
   completed read-only normalized observed inventory derived from deep verification evidence.
 - [Phase 12 ACE-Step 1.5 Provider](ACE_STEP_PHASE12.md) —
   staged integration of the 10 GB-class full-song vocal provider, beginning with a pinned offline boot-safe API shell.
+- [Phase 16 DiffRhythm Provider](DIFFRHYTHM_PHASE16.md) —
+  completed DiffRhythm v1.2 Base integration as the sixth qualified local generator, including registry-managed offline artifacts, staged RTX 3080 inference, authenticated durable 95-second generation, and showcase coverage.
 - [Model Installation MongoDB Schema](MODEL_INSTALLATION_MONGO_SCHEMA.md) —
   artifact-granular operational state, readiness derivation, indexes, error
   sanitization, and migration strategy.

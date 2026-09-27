@@ -1981,6 +1981,7 @@ test('qualified generator showcase exposes one preset per qualified model', () =
     'diffsinger-acoustic-hifigan',
     'stable-audio-3-small-music',
     'acestep-v15-turbo-06b',
+    'diffrhythm-v12-base',
   ]) {
     const preset = JSON.parse(
       read('showcase/qualified-generators/' + modelId + '/preset.json')
@@ -2010,7 +2011,7 @@ test('qualified showcase fresh runner owns an isolated backend', () => {
   assert.match(runner, /SHOWCASE_FRESH_BACKEND_READY/);
   assert.match(runner, /SHOWCASE FAILURE DIAGNOSTICS/);
   assert.match(runner, /QUALIFIED GENERATOR SHOWCASE: GREEN/);
-  assert.match(runner, /QUALIFIED_GENERATOR_SHOWCASE_MANIFEST_5_OF_5_OK/);
+  assert.match(runner, /QUALIFIED_GENERATOR_SHOWCASE_MANIFEST_6_OF_6_OK/);
 
 });
 
@@ -3848,6 +3849,7 @@ test('hardware-aware model qualification matrix covers every current qualified g
       'diffsinger-acoustic-hifigan',
       'stable-audio-3-small-music',
       'acestep-v15-turbo-06b',
+      'diffrhythm-v12-base',
     ]
   ) {
     assert.match(
@@ -4128,5 +4130,2592 @@ test(
       provider,
       /runtimeInstalled:\s*false/
     );
+  }
+);
+
+
+test(
+  'DiffRhythm provider runtime is isolated, offline, GPU-profiled, and catalog-integrated',
+  () => {
+    const dockerfilePath =
+      path.join(
+        root,
+        'Dockerfile.diffrhythm'
+      );
+
+    const providerPath =
+      path.join(
+        root,
+        'scripts/diffrhythm_provider_server.py'
+      );
+
+    assert.equal(
+      existsSync(dockerfilePath),
+      true,
+      'DiffRhythm must have an isolated provider Dockerfile'
+    );
+
+    assert.equal(
+      existsSync(providerPath),
+      true,
+      'DiffRhythm must have a provider health server'
+    );
+
+    const dockerfile =
+      read(
+        'Dockerfile.diffrhythm'
+      );
+
+    const compose =
+      read(
+        'docker-compose.yml'
+      );
+
+    const gpuCompose =
+      read(
+        'docker-compose.gpu.yml'
+      );
+
+    const provider =
+      read(
+        'scripts/diffrhythm_provider_server.py'
+      );
+
+    /*
+     * M16-E1 evolves B1's shell into a persistent provider.
+     * HTTP ownership remains in the provider module while
+     * readiness/model/busy state is delegated to the reusable
+     * DiffRhythmRuntime.
+     */
+    const runtimePath =
+      path.join(
+        root,
+        'scripts/diffrhythm_runtime.py'
+      );
+
+    const runtimeStateSource =
+      existsSync(runtimePath)
+        ? read(
+            'scripts/diffrhythm_runtime.py'
+          )
+        : provider;
+
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    /*
+     * Pinned source shell.
+     *
+     * M16-B must establish the isolated runtime image before
+     * model-registry acquisition is introduced.
+     */
+    assert.match(
+      dockerfile,
+      /ARG DIFFRHYTHM_REF=28ad63c0f096fe2ee258bcabbcf081d5d9366afd/
+    );
+
+    assert.match(
+      dockerfile,
+      /ASLP-lab\/DiffRhythm\.git/
+    );
+
+    assert.match(
+      dockerfile,
+      /git checkout --detach "\$\{DIFFRHYTHM_REF\}"/
+    );
+
+    /*
+     * Runtime must start offline.
+     *
+     * Model acquisition belongs to Harmonia's model manager,
+     * never provider startup.
+     */
+    assert.match(
+      dockerfile,
+      /HF_HUB_OFFLINE=1/
+    );
+
+    assert.match(
+      dockerfile,
+      /TRANSFORMERS_OFFLINE=1/
+    );
+
+    assert.match(
+      dockerfile,
+      /HARMONIA_DIFFRHYTHM_MODELS_ROOT=\/workspace\/models\/diffrhythm/
+    );
+
+    /*
+     * Lightweight shell health server.
+     *
+     * It must boot without loading DiffRhythm, MuQ or the VAE.
+     */
+    assert.match(
+      provider,
+      /8767/
+    );
+
+    assert.match(
+      provider,
+      /\/health/
+    );
+
+    assert.match(
+      provider,
+      /"ok"/
+    );
+
+    assert.match(
+      runtimeStateSource,
+      /"ready"/
+    );
+
+    assert.match(
+      runtimeStateSource,
+      /"model"/
+    );
+
+    assert.match(
+      runtimeStateSource,
+      /"busy"/
+    );
+
+    assert.doesNotMatch(
+      provider,
+      /hf_hub_download/
+    );
+
+    assert.doesNotMatch(
+      provider,
+      /from_pretrained/
+    );
+
+    /*
+     * Canonical Compose service.
+     */
+    assert.match(
+      compose,
+      /^\s{2}diffrhythm:\s*$/m
+    );
+
+    assert.match(
+      compose,
+      /dockerfile:\s*Dockerfile\.diffrhythm/
+    );
+
+    assert.match(
+      compose,
+      /image:\s*harmonia\/diffrhythm:dev/
+    );
+
+    assert.match(
+      compose,
+      /container_name:\s*harmonia-diffrhythm/
+    );
+
+    assert.match(
+      compose,
+      /model-diffrhythm/
+    );
+
+    assert.match(
+      compose,
+      /HARMONIA_DIFFRHYTHM_PORT:\s*"8767"/
+    );
+
+    assert.match(
+      compose,
+      /HF_HUB_OFFLINE:\s*"1"/
+    );
+
+    assert.match(
+      compose,
+      /TRANSFORMERS_OFFLINE:\s*"1"/
+    );
+
+    assert.match(
+      compose,
+      /\.\/models\/diffrhythm:\/workspace\/models\/diffrhythm:ro/
+    );
+
+    assert.match(
+      compose,
+      /diffrhythm_provider_server\.py/
+    );
+
+    /*
+     * Provider must remain internal-only.
+     */
+    const diffRhythmServiceMatch =
+      compose.match(
+        /^\s{2}diffrhythm:\s*$([\s\S]*?)(?=^\s{2}[A-Za-z0-9_.-]+:\s*$|^networks:)/m
+      );
+
+    assert.ok(
+      diffRhythmServiceMatch,
+      'DiffRhythm Compose service block must exist'
+    );
+
+    assert.doesNotMatch(
+      diffRhythmServiceMatch[1],
+      /^\s{4}ports:/m,
+      'DiffRhythm must not publish a host port'
+    );
+
+    /*
+     * GPU comes only from the optional GPU overlay.
+     */
+    assert.match(
+      gpuCompose,
+      /^\s{2}diffrhythm:\s*$/m
+    );
+
+    assert.match(
+      gpuCompose,
+      /diffrhythm:[\s\S]*runtime:\s*nvidia/
+    );
+
+    assert.match(
+      gpuCompose,
+      /diffrhythm:[\s\S]*NVIDIA_VISIBLE_DEVICES:\s*all/
+    );
+
+    /*
+     * Provider/runtime integration does not by itself make
+     * the Base model selectable.
+     */
+    const providerDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      providerDefinition,
+      'DiffRhythm provider definition must remain in the catalog'
+    );
+
+    const baseModelDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      baseModelDefinition,
+      'DiffRhythm v1.2 Base definition must remain in the catalog'
+    );
+
+    assert.match(
+      baseModelDefinition,
+      /availability:\s*'installed'/
+    );
+  }
+);
+
+
+test(
+  'DiffRhythm D1 runtime image pins CUDA stack and resolves the qualified cache offline',
+  () => {
+    const probePath =
+      path.join(
+        root,
+        'scripts/diffrhythm_runtime_probe.py'
+      );
+
+    const requirementsPath =
+      path.join(
+        root,
+        'requirements.diffrhythm-runtime.txt'
+      );
+
+    assert.equal(
+      existsSync(probePath),
+      true,
+      'DiffRhythm D1 must provide a CUDA/runtime probe before enabling model loading'
+    );
+
+    assert.equal(
+      existsSync(requirementsPath),
+      true,
+      'DiffRhythm D1 must provide a pinned runtime requirements file'
+    );
+
+    const dockerfile =
+      read(
+        'Dockerfile.diffrhythm'
+      );
+
+    const probe =
+      read(
+        'scripts/diffrhythm_runtime_probe.py'
+      );
+
+    const requirements =
+      read(
+        'requirements.diffrhythm-runtime.txt'
+      );
+
+    /*
+     * DiffRhythm v1.2 upstream pairs with
+     * PyTorch/Torchaudio 2.6.0.
+     *
+     * Harmonia must pin the CUDA wheel explicitly
+     * rather than letting pip choose a CPU build or
+     * a future incompatible Torch generation.
+     */
+    assert.match(
+      dockerfile,
+      /nvidia\/cuda:12\.4/
+    );
+
+    assert.match(
+      dockerfile,
+      /download\.pytorch\.org\/whl\/cu124/
+    );
+
+    assert.match(
+      dockerfile,
+      /torch==2\.6\.0/
+    );
+
+    assert.match(
+      dockerfile,
+      /torchaudio==2\.6\.0/
+    );
+
+    /*
+     * Core upstream runtime compatibility pins.
+     */
+    assert.match(
+      requirements,
+      /^transformers==4\.49\.0$/m
+    );
+
+    assert.match(
+      requirements,
+      /^muq==0\.1\.0$/m
+    );
+
+    assert.match(
+      requirements,
+      /^accelerate==1\.4\.0$/m
+    );
+
+    assert.match(
+      requirements,
+      /^torchdiffeq==0\.2\.5$/m
+    );
+
+    assert.match(
+      requirements,
+      /^x-transformers==2\.1\.2$/m
+    );
+
+    assert.match(
+      requirements,
+      /^librosa==0\.10\.2\.post1$/m
+    );
+
+    assert.match(
+      requirements,
+      /^ema-pytorch==0\.7\.7$/m
+    );
+
+    assert.match(
+      requirements,
+      /^mutagen==1\.47\.0$/m
+    );
+
+    /*
+     * Provider source calls Hugging Face with
+     * cache_dir="./pretrained".
+     *
+     * Redirect that exact upstream cache location
+     * to the registry-managed provider cache.
+     */
+    assert.match(
+      dockerfile,
+      /\/opt\/DiffRhythm\/pretrained/
+    );
+
+    assert.match(
+      dockerfile,
+      /\/workspace\/models\/diffrhythm\/huggingface/
+    );
+
+    /*
+     * Runtime image remains incapable of network
+     * model acquisition during qualification/use.
+     */
+    assert.match(
+      dockerfile,
+      /HF_HUB_OFFLINE=1/
+    );
+
+    assert.match(
+      dockerfile,
+      /TRANSFORMERS_OFFLINE=1/
+    );
+
+    /*
+     * D1 probe validates dependencies + CUDA +
+     * local cache metadata only.
+     *
+     * It must NOT instantiate the DiffRhythm model
+     * or VAE yet; weight residency belongs to D2.
+     */
+    assert.match(
+      probe,
+      /import torch/
+    );
+
+    assert.match(
+      probe,
+      /import torchaudio/
+    );
+
+    assert.match(
+      probe,
+      /import transformers/
+    );
+
+    assert.match(
+      probe,
+      /from muq import MuQMuLan/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.is_available/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.get_device_name/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.get_device_properties/
+    );
+
+    assert.match(
+      probe,
+      /memory_allocated/
+    );
+
+    assert.match(
+      probe,
+      /memory_reserved/
+    );
+
+    /*
+     * All five pinned repositories must be resolved
+     * from the qualified local cache only.
+     */
+    for (
+      const repoId of [
+        'ASLP-lab/DiffRhythm-1_2',
+        'ASLP-lab/DiffRhythm-vae',
+        'OpenMuQ/MuQ-MuLan-large',
+        'OpenMuQ/MuQ-large-msd-iter',
+        'FacebookAI/xlm-roberta-base',
+      ]
+    ) {
+      assert.ok(
+        probe.includes(repoId),
+        'runtime probe must resolve pinned local repo ' +
+          repoId
+      );
+    }
+
+    assert.match(
+      probe,
+      /local_files_only\s*=\s*True/
+    );
+
+    assert.doesNotMatch(
+      probe,
+      /prepare_model\s*\(/
+    );
+
+    assert.doesNotMatch(
+      probe,
+      /torch\.jit\.load\s*\(/
+    );
+
+    assert.doesNotMatch(
+      probe,
+      /MuQMuLan\.from_pretrained\s*\(/
+    );
+
+    /*
+     * Probe is baked into the image but model
+     * readiness remains false until D2 load proof.
+     */
+    assert.match(
+      dockerfile,
+      /diffrhythm_runtime_probe\.py/
+    );
+
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    const providerDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      providerDefinition
+    );
+
+    const modelDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      modelDefinition
+    );
+
+    assert.match(
+      modelDefinition,
+      /availability:\s*'installed'/
+    );
+  }
+);
+
+
+test(
+  'DiffRhythm runtime exposes pinned upstream source on Python import path',
+  () => {
+    const dockerfile =
+      read(
+        'Dockerfile.diffrhythm'
+      );
+
+    assert.match(
+      dockerfile,
+      /ENV PYTHONPATH=\/opt\/DiffRhythm/
+    );
+
+    assert.match(
+      dockerfile,
+      /ARG DIFFRHYTHM_REF=28ad63c0f096fe2ee258bcabbcf081d5d9366afd/
+    );
+
+    assert.match(
+      dockerfile,
+      /git checkout --detach "\$\{DIFFRHYTHM_REF\}"/
+    );
+  }
+);
+
+
+test(
+  'DiffRhythm D3 residency probe stages MuQ release before CFM and VAE hardware qualification',
+  () => {
+    const probePath =
+      path.join(
+        root,
+        'scripts/diffrhythm_residency_probe.py'
+      );
+
+    assert.equal(
+      existsSync(probePath),
+      true,
+      'DiffRhythm D3 must provide a staged real-weight residency probe'
+    );
+
+    const probe =
+      read(
+        'scripts/diffrhythm_residency_probe.py'
+      );
+
+    /*
+     * D3 operates only on the already-qualified
+     * local cache and must remain network-independent.
+     */
+    assert.match(
+      probe,
+      /HF_HUB_OFFLINE/
+    );
+
+    assert.match(
+      probe,
+      /TRANSFORMERS_OFFLINE/
+    );
+
+    assert.match(
+      probe,
+      /local_files_only\s*=\s*True/
+    );
+
+    /*
+     * Use the 95-second Base architecture only.
+     */
+    assert.match(
+      probe,
+      /max_frames\s*=\s*2048/
+    );
+
+    /*
+     * Stage 1:
+     * load the exact MuQ-MuLan component used by
+     * upstream DiffRhythm and exercise a real text
+     * style embedding before releasing it.
+     */
+    assert.match(
+      probe,
+      /MuQMuLan\.from_pretrained/
+    );
+
+    assert.match(
+      probe,
+      /OpenMuQ\/MuQ-MuLan-large/
+    );
+
+    assert.match(
+      probe,
+      /get_style_prompt/
+    );
+
+    /*
+     * The style embedding must survive on CPU so
+     * MuQ itself can leave CUDA before diffusion.
+     */
+    assert.match(
+      probe,
+      /style_prompt.*\.cpu\s*\(/
+    );
+
+    /*
+     * Stage transition must explicitly release MuQ.
+     */
+    assert.match(
+      probe,
+      /muq.*\.to\s*\(\s*["']cpu["']\s*\)/
+    );
+
+    assert.match(
+      probe,
+      /del\s+muq/
+    );
+
+    assert.match(
+      probe,
+      /gc\.collect\s*\(/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.empty_cache\s*\(/
+    );
+
+    /*
+     * Stage 2:
+     * reproduce the actual Base CFM construction.
+     */
+    assert.match(
+      probe,
+      /CFM\s*\(/
+    );
+
+    assert.match(
+      probe,
+      /DiT\s*\(/
+    );
+
+    assert.match(
+      probe,
+      /diffrhythm-1b\.json/
+    );
+
+    assert.match(
+      probe,
+      /cfm_model\.pt/
+    );
+
+    assert.match(
+      probe,
+      /load_checkpoint/
+    );
+
+    /*
+     * Stage 3:
+     * add the real TorchScript VAE while CFM is
+     * still resident to measure combined residency.
+     */
+    assert.match(
+      probe,
+      /vae_model\.pt/
+    );
+
+    assert.match(
+      probe,
+      /torch\.jit\.load/
+    );
+
+    /*
+     * Every stage must expose current and peak VRAM.
+     */
+    assert.match(
+      probe,
+      /torch\.cuda\.memory_allocated/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.memory_reserved/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.max_memory_allocated/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.max_memory_reserved/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.reset_peak_memory_stats/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.synchronize/
+    );
+
+    /*
+     * Required machine-readable stages.
+     */
+    for (
+      const stage of [
+        'baseline',
+        'muq-loaded',
+        'style-embedded',
+        'muq-released',
+        'cfm-loaded',
+        'cfm-plus-vae-loaded',
+        'released',
+      ]
+    ) {
+      assert.ok(
+        probe.includes(
+          '"' + stage + '"'
+        ),
+        'D3 residency probe must report stage ' +
+          stage
+      );
+    }
+
+    /*
+     * D3 is measurement only. It must not launch
+     * diffusion or VAE decode yet.
+     */
+    assert.doesNotMatch(
+      probe,
+      /\binference\s*\(/
+    );
+
+    assert.doesNotMatch(
+      probe,
+      /\bdecode_audio\s*\(/
+    );
+
+    /*
+     * Catalog stays unavailable until a later
+     * generation qualification succeeds.
+     */
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    const providerDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      providerDefinition
+    );
+
+    const modelDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      modelDefinition
+    );
+
+    assert.match(
+      modelDefinition,
+      /availability:\s*'installed'/
+    );
+  }
+);
+
+
+test(
+  'DiffRhythm D3 shadow cache aliases MuQ XLM-R consumer key to pinned registry artifact',
+  () => {
+    const probe =
+      read(
+        'scripts/diffrhythm_residency_probe.py'
+      );
+
+    assert.match(
+      probe,
+      /QUALIFIED_CACHE_DIR\s*=\s*Path\("\.\/pretrained"\)\.resolve\(\)/
+    );
+
+    assert.match(
+      probe,
+      /CACHE_DIR\s*=\s*"\/tmp\/harmonia-diffrhythm-hf-cache"/
+    );
+
+    assert.match(
+      probe,
+      /"xlm-roberta-base":\s*XLMR_REPO/
+    );
+
+    assert.match(
+      probe,
+      /XLMR_REPO\s*=\s*"FacebookAI\/xlm-roberta-base"/
+    );
+
+    assert.match(
+      probe,
+      /alias_path\.symlink_to/
+    );
+
+    assert.match(
+      probe,
+      /target_is_directory=True/
+    );
+
+    /*
+     * The qualified model cache remains the
+     * immutable physical source. The alias exists
+     * only in the ephemeral /tmp cache namespace.
+     */
+    assert.doesNotMatch(
+      probe,
+      /shutil\.copy/
+    );
+
+    assert.doesNotMatch(
+      probe,
+      /copytree/
+    );
+  }
+);
+
+
+test(
+  'DiffRhythm D4 generates a real 95-second stereo WAV with released MuQ and chunked VAE decode',
+  () => {
+    const generatorPath =
+      path.join(
+        root,
+        'scripts/diffrhythm_generate.py'
+      );
+
+    assert.equal(
+      existsSync(generatorPath),
+      true,
+      'DiffRhythm D4 must provide a real generation runner'
+    );
+
+    const generator =
+      read(
+        'scripts/diffrhythm_generate.py'
+      );
+
+    /*
+     * Qualification remains entirely offline and
+     * uses the five already-qualified registry
+     * snapshots.
+     */
+    assert.match(
+      generator,
+      /HF_HUB_OFFLINE/
+    );
+
+    assert.match(
+      generator,
+      /TRANSFORMERS_OFFLINE/
+    );
+
+    assert.match(
+      generator,
+      /local_files_only\s*=\s*True/
+    );
+
+    /*
+     * Preserve the MuQ consumer-key alias discovered
+     * during D3 without mutating or duplicating the
+     * canonical XLM-R registry artifact.
+     */
+    assert.match(
+      generator,
+      /FacebookAI\/xlm-roberta-base/
+    );
+
+    assert.match(
+      generator,
+      /"xlm-roberta-base"/
+    );
+
+    assert.match(
+      generator,
+      /symlink_to/
+    );
+
+    /*
+     * First qualified generation is specifically the
+     * DiffRhythm v1.2 Base 95-second architecture.
+     */
+    assert.match(
+      generator,
+      /max_frames\s*=\s*2048/
+    );
+
+    assert.match(
+      generator,
+      /audio_length\s*=\s*95/
+    );
+
+    /*
+     * Real style-conditioning path.
+     */
+    assert.match(
+      generator,
+      /MuQMuLan\.from_pretrained/
+    );
+
+    assert.match(
+      generator,
+      /get_style_prompt/
+    );
+
+    assert.match(
+      generator,
+      /style_prompt[\s\S]*?\.cpu\s*\(/
+    );
+
+    /*
+     * MuQ must leave CUDA before diffusion starts.
+     */
+    assert.match(
+      generator,
+      /muq.*\.to\s*\(\s*["']cpu["']\s*\)/
+    );
+
+    assert.match(
+      generator,
+      /del\s+muq/
+    );
+
+    assert.match(
+      generator,
+      /gc\.collect\s*\(/
+    );
+
+    assert.match(
+      generator,
+      /torch\.cuda\.empty_cache\s*\(/
+    );
+
+    /*
+     * Do not use upstream prepare_model(), because
+     * that keeps MuQ resident alongside CFM + VAE.
+     */
+    assert.doesNotMatch(
+      generator,
+      /\bprepare_model\s*\(/
+    );
+
+    /*
+     * Real Base diffusion model.
+     */
+    assert.match(
+      generator,
+      /CFM\s*\(/
+    );
+
+    assert.match(
+      generator,
+      /DiT\s*\(/
+    );
+
+    assert.match(
+      generator,
+      /diffrhythm-1b\.json/
+    );
+
+    assert.match(
+      generator,
+      /cfm_model\.pt/
+    );
+
+    assert.match(
+      generator,
+      /load_checkpoint/
+    );
+
+    /*
+     * Real lyrics/token conditioning path is wired
+     * even if the first qualification uses only a
+     * small deterministic LRC fixture.
+     */
+    assert.match(
+      generator,
+      /get_lrc_token/
+    );
+
+    assert.match(
+      generator,
+      /get_negative_style_prompt/
+    );
+
+    /*
+     * Real CFM sampling settings from pinned
+     * upstream inference.
+     */
+    assert.match(
+      generator,
+      /\.sample\s*\(/
+    );
+
+    assert.match(
+      generator,
+      /steps\s*=\s*32/
+    );
+
+    assert.match(
+      generator,
+      /cfg_strength\s*=\s*4\.0/
+    );
+
+    /*
+     * Real TorchScript VAE with the memory-friendly
+     * chunked decode path.
+     */
+    assert.match(
+      generator,
+      /vae_model\.pt/
+    );
+
+    assert.match(
+      generator,
+      /torch\.jit\.load/
+    );
+
+    assert.match(
+      generator,
+      /decode_audio\s*\([\s\S]*chunked\s*=\s*True/
+    );
+
+
+    /*
+     * Actual RTX 3080 generation proved decode
+     * activation memory is the limiting stage.
+     *
+     * Preserve the completed diffusion latent,
+     * release CFM completely, then decode with
+     * VAE-only residency. Upstream chunk size 128
+     * remains first choice; 64 is the OOM fallback.
+     */
+    assert.match(
+      generator,
+      /DECODE_CHUNK_SIZES\s*=\s*\(\s*128\s*,\s*64\s*\)/
+    );
+
+    assert.match(
+      generator,
+      /latent_checkpoint_path/
+    );
+
+    assert.match(
+      generator,
+      /torch\.save\s*\(/
+    );
+
+    assert.match(
+      generator,
+      /cfm\s*=\s*cfm\.to\s*\(\s*["']cpu["']\s*\)/
+    );
+
+    assert.match(
+      generator,
+      /del\s+cfm/
+    );
+
+    assert.match(
+      generator,
+      /after_cfm_release_vram/
+    );
+
+    assert.match(
+      generator,
+      /vae\s*=\s*load_vae\s*\(\s*\)/
+    );
+
+    assert.match(
+      generator,
+      /for\s+candidate_chunk_size\s+in\s+DECODE_CHUNK_SIZES/
+    );
+
+
+    /*
+     * D4E proved that the TorchScript VAE's
+     * activation explosion was caused by decoding
+     * outside inference mode. Preserve upstream's
+     * actual inference semantics.
+     */
+    assert.match(
+      generator,
+      /with\s+torch\.inference_mode\s*\(\s*\)\s*:/
+    );
+
+    assert.match(
+      generator,
+      /decodeInferenceMode/
+    );
+
+
+    /*
+     * Diffusion-side lifecycle objects must be released exactly once.
+     * They leave CUDA at the retained-latent boundary and must not
+     * be referenced again by final VAE cleanup.
+     */
+    for (
+      const name of [
+        'style_prompt',
+        'negative_style_prompt',
+        'latent_prompt',
+        'lrc_prompt',
+        'cfm',
+      ]
+    ) {
+      const releases =
+        generator.match(
+          new RegExp(
+            '\\bdel\\s+' +
+              name +
+              '\\b',
+            'g'
+          )
+        ) ?? [];
+
+      assert.equal(
+        releases.length,
+        1,
+        name +
+          ' must be deleted exactly once'
+      );
+    }
+
+    assert.match(
+      generator,
+      /chunk_size\s*=\s*[\s\S]*candidate_chunk_size/
+    );
+
+    /*
+     * Qualified output contract.
+     */
+    assert.match(
+      generator,
+      /44100/
+    );
+
+    assert.match(
+      generator,
+      /torchaudio\.save/
+    );
+
+    assert.match(
+      generator,
+      /output\.wav/
+    );
+
+    assert.match(
+      generator,
+      /sampleRate/
+    );
+
+    assert.match(
+      generator,
+      /channels/
+    );
+
+    assert.match(
+      generator,
+      /durationSeconds/
+    );
+
+    assert.match(
+      generator,
+      /fileSizeBytes/
+    );
+
+    /*
+     * D4 must measure actual inference-time VRAM,
+     * which is distinct from D3 residency.
+     */
+    assert.match(
+      generator,
+      /torch\.cuda\.max_memory_allocated/
+    );
+
+    assert.match(
+      generator,
+      /torch\.cuda\.max_memory_reserved/
+    );
+
+    assert.match(
+      generator,
+      /torch\.cuda\.reset_peak_memory_stats/
+    );
+
+    /*
+     * Absolutely no placeholder/synthetic fallback.
+     */
+    assert.doesNotMatch(
+      generator,
+      /placeholder/i
+    );
+
+    assert.doesNotMatch(
+      generator,
+      /write_placeholder/
+    );
+
+    /*
+     * Provider/catalog remain unavailable until this
+     * actual generation qualification succeeds.
+     */
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    const providerDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      providerDefinition
+    );
+
+    const modelDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      modelDefinition
+    );
+
+    assert.match(
+      modelDefinition,
+      /availability:\s*'installed'/
+    );
+  }
+);
+
+test(
+  'DiffRhythm E1 provider owns a reusable offline Base runtime with staged GPU generation',
+  () => {
+    const runtimePath =
+      path.join(
+        root,
+        'scripts/diffrhythm_runtime.py'
+      );
+
+    assert.equal(
+      existsSync(runtimePath),
+      true,
+      'DiffRhythm E1 must provide a reusable runtime module'
+    );
+
+    const runtime =
+      read(
+        'scripts/diffrhythm_runtime.py'
+      );
+
+    /*
+     * Persistent provider process owns one reusable
+     * runtime object rather than spawning Python for
+     * every song.
+     */
+    assert.match(
+      runtime,
+      /class\s+DiffRhythmRuntime\b/
+    );
+
+    assert.match(
+      runtime,
+      /threading\.Lock\s*\(/
+    );
+
+    assert.doesNotMatch(
+      runtime,
+      /subprocess\./
+    );
+
+    assert.doesNotMatch(
+      runtime,
+      /\bPopen\s*\(/
+    );
+
+    /*
+     * E1 qualifies v1.2 Base only.
+     */
+    assert.match(
+      runtime,
+      /diffrhythm-v12-base/
+    );
+
+    assert.match(
+      runtime,
+      /max_frames\s*=\s*2048/
+    );
+
+    assert.match(
+      runtime,
+      /audio_length\s*=\s*95/
+    );
+
+    /*
+     * Exact registry-qualified model revisions.
+     */
+    assert.match(
+      runtime,
+      /ASLP-lab\/DiffRhythm-1_2/
+    );
+
+    assert.match(
+      runtime,
+      /185bdeb80541b9260d266c5f041859017441f307/
+    );
+
+    assert.match(
+      runtime,
+      /ASLP-lab\/DiffRhythm-vae/
+    );
+
+    assert.match(
+      runtime,
+      /74e2afacfd91dd1b96662c96dcef763c1258768b/
+    );
+
+    assert.match(
+      runtime,
+      /OpenMuQ\/MuQ-MuLan-large/
+    );
+
+    assert.match(
+      runtime,
+      /2e01c796b71dca71b45251384c04cd7b237c9020/
+    );
+
+    assert.match(
+      runtime,
+      /OpenMuQ\/MuQ-large-msd-iter/
+    );
+
+    assert.match(
+      runtime,
+      /0562a57814f6f8bbd9fdea0a25921a2fce1a841a/
+    );
+
+    assert.match(
+      runtime,
+      /FacebookAI\/xlm-roberta-base/
+    );
+
+    assert.match(
+      runtime,
+      /e73636d4f797dec63c3081bb6ed5c7b0bb3f2089/
+    );
+
+    /*
+     * Runtime remains offline and resolves only
+     * already-qualified cache contents.
+     */
+    assert.match(
+      runtime,
+      /local_files_only\s*=\s*True/
+    );
+
+    assert.match(
+      runtime,
+      /HF_HUB_OFFLINE/
+    );
+
+    assert.match(
+      runtime,
+      /TRANSFORMERS_OFFLINE/
+    );
+
+    /*
+     * Preserve D3's MuQ XLM-R consumer-key alias.
+     */
+    assert.match(
+      runtime,
+      /"xlm-roberta-base"/
+    );
+
+    assert.match(
+      runtime,
+      /symlink_to/
+    );
+
+    /*
+     * Persistent process-owned model state.
+     */
+    assert.match(
+      runtime,
+      /self\._muq/
+    );
+
+    assert.match(
+      runtime,
+      /self\._cfm/
+    );
+
+    assert.match(
+      runtime,
+      /self\._vae/
+    );
+
+    assert.match(
+      runtime,
+      /def\s+prepare\s*\(/
+    );
+
+    assert.match(
+      runtime,
+      /def\s+generate\s*\(/
+    );
+
+    /*
+     * Harmonia provider recovery state.
+     *
+     * Keep these as literal assertions instead of
+     * constructing a dynamic regular expression.
+     */
+    assert.match(
+      runtime,
+      /"ready"/
+    );
+
+    assert.match(
+      runtime,
+      /"busy"/
+    );
+
+    assert.match(
+      runtime,
+      /"model"/
+    );
+
+    assert.match(
+      runtime,
+      /"provider"/
+    );
+
+    assert.match(
+      runtime,
+      /"sourceRevision"/
+    );
+
+    assert.match(
+      runtime,
+      /"cuda"/
+    );
+
+    assert.match(
+      runtime,
+      /"gpu"/
+    );
+
+    assert.match(
+      runtime,
+      /"lastError"/
+    );
+
+    assert.match(
+      runtime,
+      /"offline"/
+    );
+
+    /*
+     * Real E1 generation request surface.
+     */
+    assert.match(
+      runtime,
+      /prompt/
+    );
+
+    assert.match(
+      runtime,
+      /lyrics/
+    );
+
+    assert.match(
+      runtime,
+      /output/
+    );
+
+    assert.match(
+      runtime,
+      /seed/
+    );
+
+    assert.match(
+      runtime,
+      /\/workspace\/generated/
+    );
+
+    assert.match(
+      runtime,
+      /\/workspace\/exports/
+    );
+
+    /*
+     * Preserve the D4-qualified GPU lifecycle:
+     *
+     * MuQ -> CPU style embedding -> release CUDA
+     * CFM -> CPU latent -> release CUDA
+     * VAE -> inference-mode chunk-128 decode
+     */
+    assert.match(
+      runtime,
+      /get_style_prompt/
+    );
+
+    assert.match(
+      runtime,
+      /style_prompt[\s\S]*?\.cpu\s*\(/
+    );
+
+    assert.match(
+      runtime,
+      /muq[\s\S]*?\.to\s*\(\s*["']cpu["']\s*\)/
+    );
+
+    assert.match(
+      runtime,
+      /cfm[\s\S]*?\.sample\s*\(/
+    );
+
+    assert.match(
+      runtime,
+      /steps\s*=\s*32/
+    );
+
+    assert.match(
+      runtime,
+      /cfg_strength\s*=\s*4\.0/
+    );
+
+    assert.match(
+      runtime,
+      /latent[\s\S]*?\.cpu\s*\(/
+    );
+
+    assert.match(
+      runtime,
+      /cfm[\s\S]*?\.to\s*\(\s*["']cpu["']\s*\)/
+    );
+
+    assert.match(
+      runtime,
+      /with\s+torch\.inference_mode\s*\(\s*\)\s*:/
+    );
+
+    assert.match(
+      runtime,
+      /decode_audio\s*\(/
+    );
+
+    assert.match(
+      runtime,
+      /chunked\s*=\s*True/
+    );
+
+    assert.match(
+      runtime,
+      /chunk_size\s*=\s*128/
+    );
+
+    assert.match(
+      runtime,
+      /44100/
+    );
+
+    assert.match(
+      runtime,
+      /torchaudio\.save\s*\(/
+    );
+
+    /*
+     * Provider follows Harmonia's existing persistent
+     * MusicGen / Stable Audio HTTP-provider shape.
+     */
+    const provider =
+      read(
+        'scripts/diffrhythm_provider_server.py'
+      );
+
+    assert.match(
+      provider,
+      /from\s+diffrhythm_runtime\s+import\s*(?:DiffRhythmRuntime|\([\s\S]*?\bDiffRhythmRuntime\b[\s\S]*?\))/
+    );
+
+    assert.match(
+      provider,
+      /RUNTIME\s*=\s*DiffRhythmRuntime\s*\(/
+    );
+
+    assert.match(
+      provider,
+      /RUNTIME\.prepare\s*\(/
+    );
+
+    assert.match(
+      provider,
+      /if\s+self\.path\s*==\s*["']\/health["']/
+    );
+
+    assert.match(
+      provider,
+      /RUNTIME\.status\s*\(/
+    );
+
+    assert.match(
+      provider,
+      /if\s+self\.path\s*!=\s*["']\/generate["']/
+    );
+
+    assert.match(
+      provider,
+      /RUNTIME\.generate\s*\(/
+    );
+
+    assert.match(
+      provider,
+      /Content-Length/
+    );
+
+    assert.match(
+      provider,
+      /65536/
+    );
+
+    /*
+     * B1's shell-only behavior must be gone.
+     */
+    assert.doesNotMatch(
+      provider,
+      /model loading disabled/
+    );
+
+    assert.doesNotMatch(
+      provider,
+      /inference is not enabled/
+    );
+
+    /*
+     * Ready sentinel represents a genuinely prepared
+     * runtime, not merely an open HTTP port.
+     */
+    const prepareIndex =
+      provider.indexOf(
+        'RUNTIME.prepare('
+      );
+
+    const readyIndex =
+      provider.indexOf(
+        'READY_FILE.touch('
+      );
+
+    assert.ok(
+      prepareIndex >= 0,
+      'provider must prepare DiffRhythm runtime'
+    );
+
+    assert.ok(
+      readyIndex > prepareIndex,
+      'ready sentinel must follow runtime preparation'
+    );
+
+    /*
+     * E1 qualification does not itself make Base
+     * selectable. E2 may install provider ownership metadata
+     * while availability remains planned.
+     */
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    const providerDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      providerDefinition
+    );
+
+    const modelDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      modelDefinition
+    );
+
+    assert.match(
+      modelDefinition,
+      /availability:\s*'installed'/
+    );
+  }
+);
+
+test(
+  'DiffRhythm E1C exposes stable resident identity and generation reuse state',
+  () => {
+    const runtime =
+      read(
+        'scripts/diffrhythm_runtime.py'
+      );
+
+    assert.match(
+      runtime,
+      /import\s+uuid/
+    );
+
+    assert.match(
+      runtime,
+      /self\._instance_id/
+    );
+
+    assert.match(
+      runtime,
+      /uuid\.uuid4\s*\(/
+    );
+
+    assert.match(
+      runtime,
+      /self\._prepare_count/
+    );
+
+    assert.match(
+      runtime,
+      /self\._generation_count/
+    );
+
+    for (
+      const field of [
+        '"instanceId"',
+        '"processId"',
+        '"prepareCount"',
+        '"generationCount"',
+        '"modelObjectIds"',
+      ]
+    ) {
+      assert.ok(
+        runtime.includes(field),
+        'runtime health must expose ' + field
+      );
+    }
+
+    assert.match(
+      runtime,
+      /self\._prepare_count\s*\+=\s*1/
+    );
+
+    assert.match(
+      runtime,
+      /self\._generation_count\s*\+=\s*1/
+    );
+
+    /*
+     * Provider startup owns preparation.
+     * A generation request must never recursively call
+     * prepare() while holding the generation lock.
+     */
+    const generateStart =
+      runtime.indexOf(
+        '    def generate('
+      );
+
+    assert.ok(
+      generateStart >= 0,
+      'generate method missing'
+    );
+
+    const generateBlock =
+      runtime.slice(
+        generateStart
+      );
+
+    assert.doesNotMatch(
+      generateBlock,
+      /self\.prepare\s*\(/
+    );
+
+    assert.match(
+      generateBlock,
+      /runtime is not prepared/
+    );
+
+    /*
+     * Generation continues to use the persistent
+     * process-owned objects rather than constructing
+     * new models per request.
+     */
+    assert.match(
+      generateBlock,
+      /self\._muq[\s\S]*?\.to\s*\(\s*["']cuda["']\s*\)/
+    );
+
+    assert.match(
+      generateBlock,
+      /self\._cfm[\s\S]*?\.to\s*\(\s*["']cuda["']\s*\)/
+    );
+
+    assert.match(
+      generateBlock,
+      /self\._vae[\s\S]*?\.to\s*\(\s*["']cuda["']\s*\)/
+    );
+
+    assert.doesNotMatch(
+      generateBlock,
+      /MuQMuLan\.from_pretrained/
+    );
+
+    assert.doesNotMatch(
+      generateBlock,
+      /load_checkpoint\s*\(/
+    );
+
+    assert.doesNotMatch(
+      generateBlock,
+      /torch\.jit\.load\s*\(/
+    );
+  }
+);
+
+test(
+  'DiffRhythm E2 backend recognizes resident provider ownership and Base runtime identity',
+  () => {
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    const service =
+      read(
+        'apps/backend/src/music-runtime/music-runtime.service.ts'
+      );
+
+    /*
+     * E1 qualified the runtime itself. E2 makes the
+     * backend aware that this provider is now a real
+     * installed runtime with an owned container/image.
+     *
+     * This does NOT yet expose the Base model to user
+     * selection.
+     */
+    const providerDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      providerDefinition,
+      'DiffRhythm provider definition must exist'
+    );
+
+    assert.match(
+      providerDefinition,
+      /runtimeInstalled:\s*true/,
+      'DiffRhythm provider runtime must be installed for ownership recovery'
+    );
+
+    assert.match(
+      providerDefinition,
+      /imageName:\s*'harmonia\/diffrhythm:dev'/
+    );
+
+    assert.match(
+      providerDefinition,
+      /dockerService:\s*'diffrhythm'/
+    );
+
+    assert.match(
+      providerDefinition,
+      /containerName:\s*'harmonia-diffrhythm'/
+    );
+
+    assert.match(
+      providerDefinition,
+      /composeProfile:\s*'model-diffrhythm'/
+    );
+
+    /*
+     * Backend recovery maps provider health.model to
+     * MUSIC_MODELS.runtimeModelId. Therefore Base must
+     * declare the exact value returned by /health.
+     */
+    const modelDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      modelDefinition,
+      'DiffRhythm Base definition must exist'
+    );
+
+    assert.match(
+      modelDefinition,
+      /runtimeModelId:\s*'diffrhythm-v12-base'/,
+      'DiffRhythm Base must expose its provider runtime model id'
+    );
+
+    /*
+     * E2 is ownership/recovery only.
+     * User selection remains deliberately disabled
+     * until backend generation/job qualification.
+     */
+    assert.match(
+      modelDefinition,
+      /availability:\s*'installed'/,
+      'DiffRhythm Base must remain catalog-consistent after promotion'
+    );
+
+    /*
+     * Runtime ownership recovery must query the
+     * DiffRhythm provider's internal /health endpoint.
+     */
+    const recoveryStart =
+      service.indexOf(
+        'private async recoverProviderRuntimeSnapshot'
+      );
+
+    const reconcileStart =
+      service.indexOf(
+        'private async reconcileRuntimeOwnership',
+        recoveryStart
+      );
+
+    assert.ok(
+      recoveryStart >= 0,
+      'recoverProviderRuntimeSnapshot must exist'
+    );
+
+    assert.ok(
+      reconcileStart > recoveryStart,
+      'reconcileRuntimeOwnership must follow snapshot recovery'
+    );
+
+    const recovery =
+      service.slice(
+        recoveryStart,
+        reconcileStart
+      );
+
+    assert.match(
+      recovery,
+      /provider\.id\s*===\s*'diffrhythm'[\s\S]{0,160}\?\s*8767/,
+      'DiffRhythm ownership recovery must query health port 8767'
+    );
+
+    assert.match(
+      recovery,
+      /snapshot\.model/
+    );
+
+    assert.match(
+      recovery,
+      /candidate\.providerId\s*===\s*provider\.id/
+    );
+
+    assert.match(
+      recovery,
+      /candidate\.runtimeModelId\s*===\s*snapshot\.model/
+    );
+
+    assert.match(
+      recovery,
+      /busy:\s*Boolean\(snapshot\.busy\)/
+    );
+
+    /*
+     * The generic runtime ownership loop must include
+     * installed providers with container/service metadata.
+     */
+    const reconcile =
+      service.slice(
+        reconcileStart
+      );
+
+    assert.match(
+      reconcile,
+      /provider\.runtimeInstalled/
+    );
+
+    assert.match(
+      reconcile,
+      /provider\.containerName/
+    );
+
+    assert.match(
+      reconcile,
+      /provider\.dockerService/
+    );
+
+    /*
+     * Do not create a DiffRhythm-specific ownership
+     * bypass. It participates in the same single-GPU
+     * arbitration used by other persistent providers.
+     */
+    assert.doesNotMatch(
+      reconcile,
+      /diffrhythm[\s\S]{0,120}skip/i
+    );
+  }
+);
+
+test(
+  'DiffRhythm E3 backend jobs use the resident provider with lyric-conditioned 95-second generation',
+  () => {
+    const jobs =
+      read(
+        'apps/backend/src/jobs/jobs.service.ts'
+      );
+
+    const dockerfile =
+      read(
+        'Dockerfile.diffrhythm'
+      );
+
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    const clientPath =
+      path.join(
+        root,
+        'scripts/diffrhythm_provider_client.py'
+      );
+
+    /*
+     * Limit assertions to the actual persistent job
+     * execution method so E2 recovery references do
+     * not accidentally satisfy this contract.
+     */
+    const processStart =
+      jobs.indexOf(
+        'private async processGenerationJob'
+      );
+
+    const validationStart =
+      jobs.indexOf(
+        'private validateGenerationRequest',
+        processStart
+      );
+
+    assert.ok(
+      processStart >= 0,
+      'processGenerationJob must exist'
+    );
+
+    assert.ok(
+      validationStart > processStart,
+      'generation validation must follow job execution'
+    );
+
+    const processBlock =
+      jobs.slice(
+        processStart,
+        validationStart
+      );
+
+    /*
+     * DiffRhythm becomes an implemented backend job
+     * provider, but still participates in the existing
+     * queued/persistent generation lifecycle.
+     */
+    assert.match(
+      processBlock,
+      /'diffrhythm'/
+    );
+
+    assert.match(
+      processBlock,
+      /musicRuntime\.selectModel\s*\(\s*model\.id\s*\)/
+    );
+
+    assert.match(
+      processBlock,
+      /musicRuntime\.beginGeneration\s*\(\s*model\.providerId\s*\)/
+    );
+
+    assert.match(
+      processBlock,
+      /musicRuntime\.finishGeneration\s*\(\s*model\.providerId\s*\)/
+    );
+
+    /*
+     * DiffRhythm writes the same durable per-job WAV
+     * location used by the other providers.
+     */
+    assert.match(
+      processBlock,
+      /exports['"],\s*['"]jobs['"],\s*jobId/
+    );
+
+    assert.match(
+      processBlock,
+      /\/workspace\/exports\/jobs\/\$\{jobId\}\/music\.wav/
+    );
+
+    /*
+     * DiffRhythm generation must preserve the two
+     * conditioning inputs qualified in E1:
+     *
+     *   prompt/style
+     *   timestamped lyrics
+     */
+    assert.match(
+      processBlock,
+      /model\.providerId\s*===\s*'diffrhythm'/
+    );
+
+    assert.match(
+      processBlock,
+      /parameters\[['"]lyrics['"]\]/
+    );
+
+    assert.match(
+      processBlock,
+      /runDiffRhythmClient\s*\(/
+    );
+
+    assert.match(
+      processBlock,
+      /runtimeModelId:\s*runtime\.runtimeModelId/
+    );
+
+    assert.match(
+      processBlock,
+      /prompt/
+    );
+
+    assert.match(
+      processBlock,
+      /lyrics/
+    );
+
+    assert.match(
+      processBlock,
+      /duration/
+    );
+
+    assert.match(
+      processBlock,
+      /outputPath:\s*containerPath/
+    );
+
+    /*
+     * Durable job metadata must retain the actual
+     * provider request/result context.
+     */
+    assert.match(
+      processBlock,
+      /diffrhythm/i
+    );
+
+    assert.match(
+      processBlock,
+      /requestedDurationSeconds/
+    );
+
+    /*
+     * Request validation:
+     * Base is the fixed 95-second / 2048-frame model.
+     */
+    const validationEnd =
+      jobs.indexOf(
+        'private parseDiffSingerScore',
+        validationStart
+      );
+
+    assert.ok(
+      validationEnd > validationStart,
+      'validation block end not found'
+    );
+
+    const validation =
+      jobs.slice(
+        validationStart,
+        validationEnd
+      );
+
+    assert.match(
+      validation,
+      /'diffrhythm'/
+    );
+
+    assert.match(
+      validation,
+      /model\.providerId\s*===\s*'diffrhythm'/
+    );
+
+    assert.match(
+      validation,
+      /95/
+    );
+
+    assert.match(
+      validation,
+      /lyrics/
+    );
+
+    assert.match(
+      validation,
+      /DiffRhythm/
+    );
+
+    /*
+     * The job layer must reject arbitrary Base
+     * durations rather than silently coercing them.
+     */
+    assert.match(
+      validation,
+      /duration[\s\S]*?!==\s*95|duration[\s\S]*?!=\s*95/
+    );
+
+    /*
+     * A small container-side HTTP client keeps HTTP
+     * details out of JobsService and talks only to
+     * the resident provider's loopback endpoint.
+     */
+    assert.equal(
+      existsSync(clientPath),
+      true,
+      'E3 must provide a DiffRhythm provider client'
+    );
+
+    const client =
+      read(
+        'scripts/diffrhythm_provider_client.py'
+      );
+
+    assert.match(
+      client,
+      /127\.0\.0\.1:8767\/generate/
+    );
+
+    assert.match(
+      client,
+      /urllib\.request/
+    );
+
+    assert.match(
+      client,
+      /"model"/
+    );
+
+    assert.match(
+      client,
+      /"prompt"/
+    );
+
+    assert.match(
+      client,
+      /"lyrics"/
+    );
+
+    assert.match(
+      client,
+      /"duration"/
+    );
+
+    assert.match(
+      client,
+      /"output"/
+    );
+
+    assert.match(
+      client,
+      /"seed"/
+    );
+
+    assert.match(
+      client,
+      /json\.loads|json\.load/
+    );
+
+    /*
+     * JobsService invokes the client inside the
+     * already-running provider container.
+     */
+    assert.match(
+      jobs,
+      /harmonia-diffrhythm/
+    );
+
+    assert.match(
+      jobs,
+      /\/workspace\/scripts\/diffrhythm_provider_client\.py/
+    );
+
+    /*
+     * The image must contain that client.
+     */
+    assert.match(
+      dockerfile,
+      /COPY\s+scripts\/diffrhythm_provider_client\.py[\s\S]*?\/workspace\/scripts\/diffrhythm_provider_client\.py/
+    );
+
+    assert.match(
+      dockerfile,
+      /chmod\s+\+x[\s\S]*?diffrhythm_provider_client\.py/
+    );
+
+    /*
+     * E3 code integration still does not expose Base.
+     * Live end-to-end qualification precedes catalog
+     * availability promotion.
+     */
+    const baseModel =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      baseModel,
+      'DiffRhythm Base catalog entry must exist'
+    );
+
+    assert.match(
+      baseModel,
+      /runtimeModelId:\s*'diffrhythm-v12-base'/
+    );
+
+    assert.match(
+      baseModel,
+      /availability:\s*'installed'/
+    );
+  }
+);
+
+test(
+  'DiffRhythm E3C promotes verified Base and qualifies authenticated durable backend generation',
+  () => {
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    const pkg =
+      JSON.parse(
+        read(
+          'package.json'
+        )
+      );
+
+    const qualifierPath =
+      path.join(
+        root,
+        'scripts/qualify-diffrhythm-job.cjs'
+      );
+
+    const qualifier =
+      read(
+        'scripts/qualify-diffrhythm-job.cjs'
+      );
+
+    const cases =
+      read(
+        'tests/model-qualification/model-generation-cases.cjs'
+      );
+
+    const registry =
+      read(
+        'inventory/model_registry.json'
+      );
+
+    const base =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    const full =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-full',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      base
+    );
+
+    assert.ok(
+      full
+    );
+
+    assert.match(
+      base,
+      /availability:\s*'installed'/
+    );
+
+    assert.match(
+      base,
+      /runtimeModelId:\s*'diffrhythm-v12-base'/
+    );
+
+    assert.match(
+      full,
+      /availability:\s*'planned'/
+    );
+
+    assert.equal(
+      existsSync(
+        qualifierPath
+      ),
+      true
+    );
+
+    assert.equal(
+      pkg.scripts[
+        'qualify:diffrhythm-job'
+      ],
+      'node scripts/qualify-diffrhythm-job.cjs'
+    );
+
+    assert.match(
+      pkg.scripts[
+        'lint:scripts'
+      ],
+      /qualify-diffrhythm-job\.cjs/
+    );
+
+    assert.match(
+      qualifier,
+      /authenticateQualificationUser/
+    );
+
+    assert.match(
+      qualifier,
+      /selectRuntimeModel/
+    );
+
+    assert.match(
+      qualifier,
+      /expectedProviderId:[\s\S]*?'diffrhythm'/
+    );
+
+    assert.match(
+      qualifier,
+      /\/api\/jobs/
+    );
+
+    assert.match(
+      qualifier,
+      /\/api\/jobs\/\$\{jobId\}\/artifact/
+    );
+
+    assert.match(
+      qualifier,
+      /requestedDuration[\s\S]*95/
+    );
+
+    assert.match(
+      qualifier,
+      /channels[\s\S]*2/
+    );
+
+    assert.match(
+      qualifier,
+      /44100/
+    );
+
+    assert.match(
+      qualifier,
+      /bitsPerSample[\s\S]*16/
+    );
+
+    assert.match(
+      qualifier,
+      /audioFormat[\s\S]*1/
+    );
+
+    assert.match(
+      qualifier,
+      /backendHash/
+    );
+
+    assert.match(
+      qualifier,
+      /frontendHash/
+    );
+
+    assert.match(
+      qualifier,
+      /DIFFRHYTHM_BACKEND_JOB_QUALIFICATION_OK/
+    );
+
+    assert.match(
+      cases,
+      /id:\s*'diffrhythm-northern-transmission'/
+    );
+
+    assert.match(
+      cases,
+      /id:\s*'diffrhythm-midnight-current'/
+    );
+
+    assert.match(
+      cases,
+      /modelId:\s*'diffrhythm-v12-base'/
+    );
+
+    for (
+      const artifactId of [
+        'diffrhythm-v12-base-core',
+        'diffrhythm-vae',
+        'diffrhythm-muq-mulan',
+        'diffrhythm-muq-audio',
+        'diffrhythm-xlm-roberta',
+      ]
+    ) {
+      assert.match(
+        registry,
+        new RegExp(
+          artifactId
+        )
+      );
+    }
   }
 );

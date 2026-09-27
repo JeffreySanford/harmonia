@@ -25,7 +25,7 @@ PASS
 
 ## Human listening result
 
-**FAIL — voice/model mismatch**
+FAIL — voice/model mismatch
 
 Observed by listener:
 

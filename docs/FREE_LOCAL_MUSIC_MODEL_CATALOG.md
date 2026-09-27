@@ -156,7 +156,18 @@ DiffRhythm supports:
 - instrumental mode;
 - continuation/editing features in v1.2.
 
-Harmonia should expose the model family as experimental until we measure the full model on the target GPU.
+DiffRhythm v1.2 Base is now installed and qualified on the 10 GB target GPU.
+DiffRhythm v1.2 Full remains planned/experimental until it receives its own
+measured hardware qualification.
+
+**September 27, 2026 implementation decision:**
+
+- DiffRhythm v1.2 Base is installed and qualified on the RTX 3080 10 GB workstation.
+- Its explicit chunked VAE decode path and documented 8 GB minimum make it the safer first hardware gate.
+- DiffRhythm 2 was evaluated but is deferred until a measured 10 GB offload/sequential-loading strategy exists.
+- The complete v1.2 runtime includes non-Apache transitive model dependencies, so commercial use remains `review-required`.
+- Real Harmonia qualification completed with the native 95-second base-model generation contract rather than an artificial short-duration test.
+- The qualified backend artifact is stereo 44.1 kHz PCM16 at 95.108934 seconds; prompt, timestamped lyrics and deterministic seed survive the durable product boundary.
 
 Official project:
 

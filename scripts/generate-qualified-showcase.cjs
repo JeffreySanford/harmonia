@@ -23,6 +23,7 @@ const modelIds = [
   'diffsinger-acoustic-hifigan',
   'stable-audio-3-small-music',
   'acestep-v15-turbo-06b',
+  'diffrhythm-v12-base',
 ];
 
 const pollMs = 2000;
@@ -457,6 +458,66 @@ async function generateOne({
     job.result?.metadata?.aceStep?.lyrics !== preset.parameters.lyrics
   ) {
     throw new Error('ACE-Step showcase did not preserve supplied lyrics');
+  }
+
+  if (
+    preset.modelId === 'diffrhythm-v12-base'
+  ) {
+    const metadata =
+      job.result?.metadata || {};
+
+    const diffRhythm =
+      metadata.diffRhythm || {};
+
+    if (
+      wav.channels !== 2 ||
+      wav.sampleRate !== 44100 ||
+      wav.bitsPerSample !== 16 ||
+      wav.audioFormat !== 1 ||
+      wav.durationSeconds < 94.5 ||
+      wav.durationSeconds > 95.5
+    ) {
+      throw new Error(
+        `DiffRhythm showcase output contract changed: ${JSON.stringify(wav)}`
+      );
+    }
+
+    if (
+      metadata.providerId !== 'diffrhythm' ||
+      metadata.modelId !== 'diffrhythm-v12-base' ||
+      metadata.runtimeModelId !== 'diffrhythm-v12-base'
+    ) {
+      throw new Error(
+        `DiffRhythm showcase metadata changed: ${JSON.stringify(metadata)}`
+      );
+    }
+
+    if (
+      metadata.lyrics !== preset.parameters.lyrics ||
+      diffRhythm.lyrics !== preset.parameters.lyrics
+    ) {
+      throw new Error(
+        'DiffRhythm showcase did not preserve supplied lyrics'
+      );
+    }
+
+    if (
+      metadata.prompt !== preset.parameters.prompt ||
+      diffRhythm.prompt !== preset.parameters.prompt
+    ) {
+      throw new Error(
+        'DiffRhythm showcase did not preserve prompt conditioning'
+      );
+    }
+
+    if (
+      metadata.seed !== preset.parameters.seed ||
+      diffRhythm.seed !== preset.parameters.seed
+    ) {
+      throw new Error(
+        'DiffRhythm showcase did not preserve deterministic seed'
+      );
+    }
   }
 
   const backendDownload =

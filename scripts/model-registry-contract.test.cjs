@@ -426,3 +426,207 @@ test('package exposes the committed Phase 1 model registry qualifier', () => {
   assert.match(qualifier, /DiffSinger composite binding = passed/);
   assert.match(qualifier, /MODEL_REGISTRY_PHASE_1_QUALIFICATION_OK/);
 });
+
+
+test(
+  'DiffRhythm v1.2 Base registry binding enumerates all pinned transitive runtime artifacts',
+  () => {
+    const registry =
+      readJson(
+        'inventory/model_registry.json'
+      );
+
+    const bindings =
+      new Map(
+        registry.modelBindings.map(
+          (binding) => [
+            binding.modelId,
+            binding,
+          ]
+        )
+      );
+
+    const artifacts =
+      new Map(
+        registry.artifacts.map(
+          (artifact) => [
+            artifact.artifactId,
+            artifact,
+          ]
+        )
+      );
+
+    const binding =
+      bindings.get(
+        'diffrhythm-v12-base'
+      );
+
+    assert.ok(
+      binding,
+      'DiffRhythm v1.2 Base registry binding is missing'
+    );
+
+    const expectedArtifactIds = [
+      'diffrhythm-v12-base-core',
+      'diffrhythm-vae',
+      'diffrhythm-muq-mulan',
+      'diffrhythm-muq-audio',
+      'diffrhythm-xlm-roberta',
+    ];
+
+    assert.deepEqual(
+      binding.artifactIds,
+      expectedArtifactIds
+    );
+
+    const expected = {
+      'diffrhythm-v12-base-core': {
+        repoId:
+          'ASLP-lab/DiffRhythm-1_2',
+        requiredFiles: [
+          'cfm_model.pt',
+        ],
+        commercialUse:
+          'allowed',
+      },
+
+      'diffrhythm-vae': {
+        repoId:
+          'ASLP-lab/DiffRhythm-vae',
+        requiredFiles: [
+          'vae_model.pt',
+        ],
+        commercialUse:
+          'review-required',
+      },
+
+      'diffrhythm-muq-mulan': {
+        repoId:
+          'OpenMuQ/MuQ-MuLan-large',
+        requiredFiles: [
+          'config.json',
+          'pytorch_model.bin',
+        ],
+        commercialUse:
+          'restricted',
+      },
+
+      'diffrhythm-muq-audio': {
+        repoId:
+          'OpenMuQ/MuQ-large-msd-iter',
+        requiredFiles: [
+          'config.json',
+          'model.safetensors',
+        ],
+        commercialUse:
+          'restricted',
+      },
+
+      'diffrhythm-xlm-roberta': {
+        repoId:
+          'FacebookAI/xlm-roberta-base',
+        requiredFiles: [
+          'config.json',
+          'model.safetensors',
+          'sentencepiece.bpe.model',
+          'tokenizer.json',
+          'tokenizer_config.json',
+        ],
+        commercialUse:
+          'allowed',
+      },
+    };
+
+    for (
+      const artifactId of
+      expectedArtifactIds
+    ) {
+      const artifact =
+        artifacts.get(
+          artifactId
+        );
+
+      assert.ok(
+        artifact,
+        'DiffRhythm registry artifact is missing: ' +
+          artifactId
+      );
+
+      assert.equal(
+        artifact.providerId,
+        'diffrhythm'
+      );
+
+      assert.equal(
+        artifact.source.kind,
+        'huggingface'
+      );
+
+      assert.equal(
+        artifact.source.repoId,
+        expected[
+          artifactId
+        ].repoId
+      );
+
+      /*
+       * Release qualification must never depend
+       * on a floating Hugging Face branch.
+       */
+      assert.match(
+        artifact.source.revision || '',
+        /^[0-9a-f]{40}$/,
+        artifactId +
+          ' must pin a full immutable Hugging Face revision'
+      );
+
+      assert.equal(
+        artifact.source.gated,
+        false
+      );
+
+      /*
+       * All five repositories share one provider-owned
+       * Hugging Face cache root so upstream and Harmonia
+       * can resolve transitive dependencies offline.
+       */
+      assert.equal(
+        artifact.destination,
+        'diffrhythm/huggingface'
+      );
+
+      assert.equal(
+        artifact.sharedDestination,
+        true
+      );
+
+      assert.equal(
+        artifact.verification.strategy,
+        'huggingface-snapshot'
+      );
+
+      assert.deepEqual(
+        artifact.verification.requiredFiles,
+        expected[
+          artifactId
+        ].requiredFiles
+      );
+
+      assert.equal(
+        artifact.license.commercialUse,
+        expected[
+          artifactId
+        ].commercialUse
+      );
+
+      /*
+       * DiffRhythm remains planned until actual
+       * RTX 3080 runtime qualification completes.
+       */
+      assert.equal(
+        artifact.defaultInstall,
+        false
+      );
+    }
+  }
+);

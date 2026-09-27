@@ -82,6 +82,89 @@ describe('JobsService generation contract', () => {
     );
   });
 
+  it('accepts DiffRhythm Base generation with prompt, lyrics, and exact 95-second duration', () => {
+    expect(() =>
+      (service as any).validateGenerationRequest({
+        jobType: 'generate',
+        modelId: 'diffrhythm-v12-base',
+        parameters: {
+          title: 'DiffRhythm E3',
+          prompt:
+            'cinematic electronic rock with wide stereo production',
+          lyrics:
+            '[00:00.00] Northern lights above the plain\\n[00:48.00] Carry the rhythm home again',
+          duration: 95,
+          seed: 1604,
+        },
+      })
+    ).not.toThrow();
+  });
+
+  it('accepts DiffRhythm Base generation without an explicit seed', () => {
+    expect(() =>
+      (service as any).validateGenerationRequest({
+        jobType: 'generate',
+        modelId: 'diffrhythm-v12-base',
+        parameters: {
+          prompt: 'atmospheric synth rock',
+          lyrics:
+            '[00:00.00] Midnight current on the line',
+          duration: 95,
+        },
+      })
+    ).not.toThrow();
+  });
+
+  it('rejects DiffRhythm generation without supplied lyrics', () => {
+    expect(() =>
+      (service as any).validateGenerationRequest({
+        jobType: 'generate',
+        modelId: 'diffrhythm-v12-base',
+        parameters: {
+          prompt: 'cinematic electronic rock',
+          duration: 95,
+        },
+      })
+    ).toThrow(
+      'DiffRhythm generation requires supplied lyrics.'
+    );
+  });
+
+  it('rejects DiffRhythm Base generation unless duration is exactly 95 seconds', () => {
+    expect(() =>
+      (service as any).validateGenerationRequest({
+        jobType: 'generate',
+        modelId: 'diffrhythm-v12-base',
+        parameters: {
+          prompt: 'cinematic electronic rock',
+          lyrics:
+            '[00:00.00] Northern lights',
+          duration: 94,
+        },
+      })
+    ).toThrow(
+      'DiffRhythm v1.2 Base generation requires exactly 95 seconds.'
+    );
+  });
+
+  it('rejects an invalid DiffRhythm seed', () => {
+    expect(() =>
+      (service as any).validateGenerationRequest({
+        jobType: 'generate',
+        modelId: 'diffrhythm-v12-base',
+        parameters: {
+          prompt: 'cinematic electronic rock',
+          lyrics:
+            '[00:00.00] Northern lights',
+          duration: 95,
+          seed: -1,
+        },
+      })
+    ).toThrow(
+      'DiffRhythm seed must be a non-negative integer.'
+    );
+  });
+
   it('rejects generation without a model', () => {
     expect(() =>
       (service as any).validateGenerationRequest({

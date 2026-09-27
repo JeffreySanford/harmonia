@@ -320,6 +320,7 @@ export class JobsService {
         'diffsinger',
         'stable-audio-3',
         'ace-step-1.5',
+        'diffrhythm',
       ].includes(model.providerId)
     ) {
       await this.fail(
@@ -357,7 +358,9 @@ export class JobsService {
               ? 'Starting Stable Audio generation'
               : model.providerId === 'ace-step-1.5'
                 ? 'Starting ACE-Step full-song generation'
-                : 'Starting music generation',
+                : model.providerId === 'diffrhythm'
+                  ? 'Starting DiffRhythm lyric-conditioned generation'
+                  : 'Starting music generation',
       });
 
       const runtime = await this.musicRuntime.beginGeneration(model.providerId);
@@ -374,7 +377,8 @@ export class JobsService {
         if (
           model.providerId === 'musicgen' ||
           model.providerId === 'stable-audio-3' ||
-          model.providerId === 'ace-step-1.5'
+          model.providerId === 'ace-step-1.5' ||
+          model.providerId === 'diffrhythm'
         ) {
           const duration = Number(parameters['duration']);
           const prompt = this.buildGenerationPrompt(parameters);
@@ -402,6 +406,51 @@ export class JobsService {
             providerMetadata = {
               prompt,
               requestedDurationSeconds: duration,
+            };
+          } else if (model.providerId === 'diffrhythm') {
+            const lyrics = String(
+              parameters['lyrics'] || ''
+            ).trim();
+
+            const seedValue =
+              parameters['seed'];
+
+            const seed =
+              seedValue === undefined ||
+              seedValue === null ||
+              seedValue === ''
+                ? undefined
+                : Number(seedValue);
+
+            const diffRhythm =
+              await this.runDiffRhythmClient({
+                runtimeModelId:
+                  runtime.runtimeModelId,
+                prompt,
+                lyrics,
+                duration,
+                seed:
+                  Number.isFinite(seed) &&
+                  seed !== undefined &&
+                  seed >= 0
+                    ? Math.round(seed)
+                    : undefined,
+                outputPath:
+                  containerPath,
+              });
+
+            providerMetadata = {
+              prompt,
+              lyrics,
+              requestedDurationSeconds:
+                duration,
+              ...(seed !== undefined
+                ? {
+                    seed:
+                      Math.round(seed),
+                  }
+                : {}),
+              diffRhythm,
             };
           } else {
             const lyrics = String(
@@ -535,7 +584,8 @@ export class JobsService {
     if (
       model.providerId !== 'musicgen' &&
       model.providerId !== 'stable-audio-3' &&
-      model.providerId !== 'ace-step-1.5'
+      model.providerId !== 'ace-step-1.5' &&
+      model.providerId !== 'diffrhythm'
     ) {
       throw new BadRequestException(
         `${model.providerId} generation jobs are not implemented yet.`
@@ -547,6 +597,15 @@ export class JobsService {
       model.providerId === 'ace-step-1.5'
         ? 10
         : 1;
+
+    if (
+      model.providerId === 'diffrhythm' &&
+      duration !== 95
+    ) {
+      throw new BadRequestException(
+        'DiffRhythm v1.2 Base generation requires exactly 95 seconds.'
+      );
+    }
 
     if (
       !Number.isFinite(duration) ||
@@ -575,14 +634,40 @@ export class JobsService {
       );
     }
 
-    if (model.providerId === 'ace-step-1.5') {
+    if (
+      model.providerId === 'ace-step-1.5' ||
+      model.providerId === 'diffrhythm'
+    ) {
       const lyrics = String(
         dto.parameters?.['lyrics'] || ''
       ).trim();
 
       if (!lyrics) {
         throw new BadRequestException(
-          'ACE-Step generation requires supplied lyrics.'
+          model.providerId === 'diffrhythm'
+            ? 'DiffRhythm generation requires supplied lyrics.'
+            : 'ACE-Step generation requires supplied lyrics.'
+        );
+      }
+    }
+
+    if (
+      model.providerId === 'diffrhythm' &&
+      dto.parameters?.['seed'] !== undefined &&
+      dto.parameters?.['seed'] !== null &&
+      dto.parameters?.['seed'] !== ''
+    ) {
+      const seed = Number(
+        dto.parameters?.['seed']
+      );
+
+      if (
+        !Number.isFinite(seed) ||
+        seed < 0 ||
+        !Number.isInteger(seed)
+      ) {
+        throw new BadRequestException(
+          'DiffRhythm seed must be a non-negative integer.'
         );
       }
     }
@@ -954,6 +1039,141 @@ export class JobsService {
           );
         }
       });
+    });
+  }
+
+  private runDiffRhythmClient(options: {
+    runtimeModelId: string;
+    prompt: string;
+    lyrics: string;
+    duration: number;
+    seed?: number;
+    outputPath: string;
+  }): Promise<Record<string, unknown>> {
+    return new Promise((resolve, reject) => {
+      const args = [
+        'exec',
+        'harmonia-diffrhythm',
+        'python',
+        '/workspace/scripts/diffrhythm_provider_client.py',
+        '--output',
+        options.outputPath,
+        '--duration',
+        String(options.duration),
+        '--model',
+        options.runtimeModelId,
+        '--prompt',
+        options.prompt,
+        '--lyrics',
+        options.lyrics,
+      ];
+
+      if (options.seed !== undefined) {
+        args.push(
+          '--seed',
+          String(options.seed)
+        );
+      }
+
+      const child = spawn(
+        'docker',
+        args,
+        {
+          cwd: process.cwd(),
+          windowsHide: true,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }
+      );
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout.on(
+        'data',
+        (chunk: Buffer) => {
+          stdout += chunk.toString();
+        }
+      );
+
+      child.stderr.on(
+        'data',
+        (chunk: Buffer) => {
+          stderr += chunk.toString();
+        }
+      );
+
+      child.once(
+        'error',
+        reject
+      );
+
+      child.once(
+        'close',
+        (code) => {
+          if (code !== 0) {
+            reject(
+              new Error(
+                `DiffRhythm provider exited with code ${
+                  code ?? 'unknown'
+                }: ${
+                  (
+                    stderr ||
+                    stdout ||
+                    'no provider output'
+                  )
+                    .trim()
+                    .slice(-5000)
+                }`
+              )
+            );
+
+            return;
+          }
+
+          const lines =
+            stdout
+              .split(/\r?\n/)
+              .map(
+                (line) =>
+                  line.trim()
+              )
+              .filter(Boolean);
+
+          const resultLine =
+            lines[
+              lines.length - 1
+            ];
+
+          if (!resultLine) {
+            reject(
+              new Error(
+                'DiffRhythm provider returned no machine-readable result.'
+              )
+            );
+
+            return;
+          }
+
+          try {
+            resolve(
+              JSON.parse(
+                resultLine
+              ) as Record<string, unknown>
+            );
+
+          } catch {
+            reject(
+              new Error(
+                `DiffRhythm provider returned invalid JSON: ${
+                  stdout
+                    .trim()
+                    .slice(-3000)
+                }`
+              )
+            );
+          }
+        }
+      );
     });
   }
 

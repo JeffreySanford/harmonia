@@ -368,6 +368,172 @@
       "defaultInstall": false,
       "estimatedBytes": null,
       "notes": "Separate lightweight LM artifact for ACE-Step Turbo on 6-12 GB class GPUs."
+    },
+    {
+      "artifactId": "diffrhythm-v12-base-core",
+      "providerId": "diffrhythm",
+      "displayName": "DiffRhythm v1.2 Base DiT weights",
+      "runtimeModelIds": [
+        "diffrhythm-v12-base"
+      ],
+      "source": {
+        "kind": "huggingface",
+        "repoId": "ASLP-lab/DiffRhythm-1_2",
+        "revision": "185bdeb80541b9260d266c5f041859017441f307",
+        "gated": false
+      },
+      "destination": "diffrhythm/huggingface",
+      "sharedDestination": true,
+      "verification": {
+        "strategy": "huggingface-snapshot",
+        "requiredFiles": [
+          "cfm_model.pt"
+        ]
+      },
+      "license": {
+        "acceptanceRequired": false,
+        "redistributionAllowed": true,
+        "commercialUse": "allowed",
+        "sourceUrl": "https://huggingface.co/ASLP-lab/DiffRhythm-1_2",
+        "notes": "DiffRhythm v1.2 DiT model repository is Apache-2.0. Complete Harmonia provider commercial use remains constrained by transitive dependencies."
+      },
+      "defaultInstall": false,
+      "estimatedBytes": null,
+      "notes": "Pinned 95-second DiffRhythm v1.2 Base diffusion checkpoint for Phase 16."
+    },
+    {
+      "artifactId": "diffrhythm-vae",
+      "providerId": "diffrhythm",
+      "displayName": "DiffRhythm VAE",
+      "runtimeModelIds": [
+        "diffrhythm-vae"
+      ],
+      "source": {
+        "kind": "huggingface",
+        "repoId": "ASLP-lab/DiffRhythm-vae",
+        "revision": "74e2afacfd91dd1b96662c96dcef763c1258768b",
+        "gated": false
+      },
+      "destination": "diffrhythm/huggingface",
+      "sharedDestination": true,
+      "verification": {
+        "strategy": "huggingface-snapshot",
+        "requiredFiles": [
+          "vae_model.pt"
+        ]
+      },
+      "license": {
+        "acceptanceRequired": false,
+        "redistributionAllowed": false,
+        "commercialUse": "review-required",
+        "sourceUrl": "https://huggingface.co/ASLP-lab/DiffRhythm-vae",
+        "notes": "DiffRhythm VAE uses Stability AI Community License terms; commercial and redistribution use require review."
+      },
+      "defaultInstall": false,
+      "estimatedBytes": null,
+      "notes": "TorchScript stereo 44.1 kHz VAE required by DiffRhythm inference."
+    },
+    {
+      "artifactId": "diffrhythm-muq-mulan",
+      "providerId": "diffrhythm",
+      "displayName": "MuQ-MuLan Large style encoder",
+      "runtimeModelIds": [
+        "OpenMuQ/MuQ-MuLan-large"
+      ],
+      "source": {
+        "kind": "huggingface",
+        "repoId": "OpenMuQ/MuQ-MuLan-large",
+        "revision": "2e01c796b71dca71b45251384c04cd7b237c9020",
+        "gated": false
+      },
+      "destination": "diffrhythm/huggingface",
+      "sharedDestination": true,
+      "verification": {
+        "strategy": "huggingface-snapshot",
+        "requiredFiles": [
+          "config.json",
+          "pytorch_model.bin"
+        ]
+      },
+      "license": {
+        "acceptanceRequired": false,
+        "redistributionAllowed": false,
+        "commercialUse": "restricted",
+        "sourceUrl": "https://huggingface.co/OpenMuQ/MuQ-MuLan-large",
+        "notes": "MuQ-MuLan model weights are CC-BY-NC 4.0; commercial use is restricted."
+      },
+      "defaultInstall": false,
+      "estimatedBytes": null,
+      "notes": "DiffRhythm style text/audio embedding dependency."
+    },
+    {
+      "artifactId": "diffrhythm-muq-audio",
+      "providerId": "diffrhythm",
+      "displayName": "MuQ Large MSD audio encoder",
+      "runtimeModelIds": [
+        "OpenMuQ/MuQ-large-msd-iter"
+      ],
+      "source": {
+        "kind": "huggingface",
+        "repoId": "OpenMuQ/MuQ-large-msd-iter",
+        "revision": "0562a57814f6f8bbd9fdea0a25921a2fce1a841a",
+        "gated": false
+      },
+      "destination": "diffrhythm/huggingface",
+      "sharedDestination": true,
+      "verification": {
+        "strategy": "huggingface-snapshot",
+        "requiredFiles": [
+          "config.json",
+          "model.safetensors"
+        ]
+      },
+      "license": {
+        "acceptanceRequired": false,
+        "redistributionAllowed": false,
+        "commercialUse": "restricted",
+        "sourceUrl": "https://huggingface.co/OpenMuQ/MuQ-large-msd-iter",
+        "notes": "MuQ model weights are CC-BY-NC 4.0; commercial use is restricted."
+      },
+      "defaultInstall": false,
+      "estimatedBytes": null,
+      "notes": "Transitive MuQ-MuLan audio-tower dependency."
+    },
+    {
+      "artifactId": "diffrhythm-xlm-roberta",
+      "providerId": "diffrhythm",
+      "displayName": "XLM-RoBERTa Base text encoder",
+      "runtimeModelIds": [
+        "FacebookAI/xlm-roberta-base"
+      ],
+      "source": {
+        "kind": "huggingface",
+        "repoId": "FacebookAI/xlm-roberta-base",
+        "revision": "e73636d4f797dec63c3081bb6ed5c7b0bb3f2089",
+        "gated": false
+      },
+      "destination": "diffrhythm/huggingface",
+      "sharedDestination": true,
+      "verification": {
+        "strategy": "huggingface-snapshot",
+        "requiredFiles": [
+          "config.json",
+          "model.safetensors",
+          "sentencepiece.bpe.model",
+          "tokenizer.json",
+          "tokenizer_config.json"
+        ]
+      },
+      "license": {
+        "acceptanceRequired": false,
+        "redistributionAllowed": true,
+        "commercialUse": "allowed",
+        "sourceUrl": "https://huggingface.co/FacebookAI/xlm-roberta-base",
+        "notes": "XLM-RoBERTa Base repository declares MIT licensing."
+      },
+      "defaultInstall": false,
+      "estimatedBytes": null,
+      "notes": "Transitive MuQ-MuLan text-tower and tokenizer dependency."
     }
   ],
   "modelBindings": [
@@ -419,6 +585,17 @@
         "acestep-5hz-lm-06b"
       ],
       "notes": "Phase 12 composite binding: selectively acquired Turbo/VAE/Qwen core plus separate 0.6B 5Hz LM."
+    },
+    {
+      "modelId": "diffrhythm-v12-base",
+      "artifactIds": [
+        "diffrhythm-v12-base-core",
+        "diffrhythm-vae",
+        "diffrhythm-muq-mulan",
+        "diffrhythm-muq-audio",
+        "diffrhythm-xlm-roberta"
+      ],
+      "notes": "Phase 16 composite runtime: DiffRhythm Base DiT, stereo VAE, MuQ-MuLan, MuQ audio tower, and XLM-R text tower must all verify."
     }
   ]
 }

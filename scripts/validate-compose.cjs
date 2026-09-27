@@ -59,6 +59,8 @@ compose([
   'model-stable-audio-3',
   '--profile',
   'model-ace-step-1.5',
+  '--profile',
+  'model-diffrhythm',
   'config',
   '--quiet',
 ]);
@@ -85,6 +87,8 @@ const providerConfig = JSON.parse(
     'model-stable-audio-3',
     '--profile',
     'model-ace-step-1.5',
+    '--profile',
+    'model-diffrhythm',
     'config',
     '--format',
     'json',
@@ -111,6 +115,10 @@ assert.equal(
   'harmonia-ace-step-1.5'
 );
 
+assert.equal(
+  providerConfig.services.diffrhythm.container_name,
+  'harmonia-diffrhythm'
+);
 const publishedPorts = Object.values(config.services)
   .flatMap((service) => service.ports || [])
   .map((port) => Number(port.published))
@@ -119,5 +127,5 @@ const publishedPorts = Object.values(config.services)
 
 assert.deepEqual(publishedPorts, [8081, 27017]);
 console.log(
-  'Compose contract valid: MongoDB 27017, Mongo Express 8081, generic worker plus isolated DiffSinger/OpenUTAU DiffSinger/MusicGen/Stable Audio 3/ACE-Step 1.5 providers have no published ports.'
+  'Compose contract valid: MongoDB 27017, Mongo Express 8081, generic worker plus isolated DiffSinger/OpenUTAU DiffSinger/MusicGen/Stable Audio 3/ACE-Step 1.5/DiffRhythm providers have no published ports.'
 );
