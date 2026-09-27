@@ -4130,3 +4130,270 @@ test(
     );
   }
 );
+
+
+test(
+  'DiffRhythm provider shell is isolated, offline, GPU-profiled, and non-selectable',
+  () => {
+    const dockerfilePath =
+      path.join(
+        root,
+        'Dockerfile.diffrhythm'
+      );
+
+    const providerPath =
+      path.join(
+        root,
+        'scripts/diffrhythm_provider_server.py'
+      );
+
+    assert.equal(
+      existsSync(dockerfilePath),
+      true,
+      'DiffRhythm must have an isolated provider Dockerfile'
+    );
+
+    assert.equal(
+      existsSync(providerPath),
+      true,
+      'DiffRhythm must have a provider health server'
+    );
+
+    const dockerfile =
+      read(
+        'Dockerfile.diffrhythm'
+      );
+
+    const compose =
+      read(
+        'docker-compose.yml'
+      );
+
+    const gpuCompose =
+      read(
+        'docker-compose.gpu.yml'
+      );
+
+    const provider =
+      read(
+        'scripts/diffrhythm_provider_server.py'
+      );
+
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    /*
+     * Pinned source shell.
+     *
+     * M16-B must establish the isolated runtime image before
+     * model-registry acquisition is introduced.
+     */
+    assert.match(
+      dockerfile,
+      /ARG DIFFRHYTHM_REF=28ad63c0f096fe2ee258bcabbcf081d5d9366afd/
+    );
+
+    assert.match(
+      dockerfile,
+      /ASLP-lab\/DiffRhythm\.git/
+    );
+
+    assert.match(
+      dockerfile,
+      /git checkout --detach "\$\{DIFFRHYTHM_REF\}"/
+    );
+
+    /*
+     * Runtime must start offline.
+     *
+     * Model acquisition belongs to Harmonia's model manager,
+     * never provider startup.
+     */
+    assert.match(
+      dockerfile,
+      /HF_HUB_OFFLINE=1/
+    );
+
+    assert.match(
+      dockerfile,
+      /TRANSFORMERS_OFFLINE=1/
+    );
+
+    assert.match(
+      dockerfile,
+      /HARMONIA_DIFFRHYTHM_MODELS_ROOT=\/workspace\/models\/diffrhythm/
+    );
+
+    /*
+     * Lightweight shell health server.
+     *
+     * It must boot without loading DiffRhythm, MuQ or the VAE.
+     */
+    assert.match(
+      provider,
+      /8767/
+    );
+
+    assert.match(
+      provider,
+      /\/health/
+    );
+
+    assert.match(
+      provider,
+      /"ok"/
+    );
+
+    assert.match(
+      provider,
+      /"ready"/
+    );
+
+    assert.match(
+      provider,
+      /"model"/
+    );
+
+    assert.match(
+      provider,
+      /"busy"/
+    );
+
+    assert.doesNotMatch(
+      provider,
+      /hf_hub_download/
+    );
+
+    assert.doesNotMatch(
+      provider,
+      /from_pretrained/
+    );
+
+    /*
+     * Canonical Compose service.
+     */
+    assert.match(
+      compose,
+      /^\s{2}diffrhythm:\s*$/m
+    );
+
+    assert.match(
+      compose,
+      /dockerfile:\s*Dockerfile\.diffrhythm/
+    );
+
+    assert.match(
+      compose,
+      /image:\s*harmonia\/diffrhythm:dev/
+    );
+
+    assert.match(
+      compose,
+      /container_name:\s*harmonia-diffrhythm/
+    );
+
+    assert.match(
+      compose,
+      /model-diffrhythm/
+    );
+
+    assert.match(
+      compose,
+      /HARMONIA_DIFFRHYTHM_PORT:\s*"8767"/
+    );
+
+    assert.match(
+      compose,
+      /HF_HUB_OFFLINE:\s*"1"/
+    );
+
+    assert.match(
+      compose,
+      /TRANSFORMERS_OFFLINE:\s*"1"/
+    );
+
+    assert.match(
+      compose,
+      /\.\/models\/diffrhythm:\/workspace\/models\/diffrhythm:ro/
+    );
+
+    assert.match(
+      compose,
+      /diffrhythm_provider_server\.py/
+    );
+
+    /*
+     * Provider must remain internal-only.
+     */
+    const diffRhythmServiceMatch =
+      compose.match(
+        /^\s{2}diffrhythm:\s*$([\s\S]*?)(?=^\s{2}[A-Za-z0-9_.-]+:\s*$|^networks:)/m
+      );
+
+    assert.ok(
+      diffRhythmServiceMatch,
+      'DiffRhythm Compose service block must exist'
+    );
+
+    assert.doesNotMatch(
+      diffRhythmServiceMatch[1],
+      /^\s{4}ports:/m,
+      'DiffRhythm must not publish a host port'
+    );
+
+    /*
+     * GPU comes only from the optional GPU overlay.
+     */
+    assert.match(
+      gpuCompose,
+      /^\s{2}diffrhythm:\s*$/m
+    );
+
+    assert.match(
+      gpuCompose,
+      /diffrhythm:[\s\S]*runtime:\s*nvidia/
+    );
+
+    assert.match(
+      gpuCompose,
+      /diffrhythm:[\s\S]*NVIDIA_VISIBLE_DEVICES:\s*all/
+    );
+
+    /*
+     * Provider shell existence does not make the model selectable.
+     *
+     * Registry + real runtime qualification comes later.
+     */
+    const providerDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      providerDefinition,
+      'DiffRhythm provider definition must remain in the catalog'
+    );
+
+    assert.match(
+      providerDefinition,
+      /runtimeInstalled:\s*false/
+    );
+
+    const baseModelDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      baseModelDefinition,
+      'DiffRhythm v1.2 Base definition must remain in the catalog'
+    );
+
+    assert.match(
+      baseModelDefinition,
+      /availability:\s*'planned'/
+    );
+  }
+);

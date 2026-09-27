@@ -1,0 +1,60 @@
+FROM python:3.10-slim-bookworm
+
+LABEL org.opencontainers.image.title="harmonia-diffrhythm"
+LABEL org.opencontainers.image.description="Pinned isolated DiffRhythm v1.2 provider shell for Harmonia."
+
+ARG DIFFRHYTHM_REF=28ad63c0f096fe2ee258bcabbcf081d5d9366afd
+
+ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+ENV HARMONIA_DIFFRHYTHM_PORT=8767
+ENV HARMONIA_DIFFRHYTHM_MODELS_ROOT=/workspace/models/diffrhythm
+ENV HF_HOME=/workspace/models/diffrhythm/huggingface
+ENV HF_HUB_OFFLINE=1
+ENV TRANSFORMERS_OFFLINE=1
+ENV HARMONIA_DIFFRHYTHM_REF=${DIFFRHYTHM_REF}
+
+WORKDIR /workspace
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+      ca-certificates \
+      curl \
+      espeak-ng \
+      ffmpeg \
+      git \
+      libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone https://github.com/ASLP-lab/DiffRhythm.git /opt/DiffRhythm \
+    && cd /opt/DiffRhythm \
+    && git checkout --detach "${DIFFRHYTHM_REF}" \
+    && test "$(git rev-parse HEAD)" = "${DIFFRHYTHM_REF}"
+
+# M16-B intentionally establishes only the pinned provider shell.
+# Full PyTorch / MuQ / DiffRhythm runtime dependencies arrive with
+# the registry-backed runtime qualification slices.
+RUN test -f /opt/DiffRhythm/infer/infer.py \
+    && test -f /opt/DiffRhythm/infer/infer_utils.py \
+    && test -f /opt/DiffRhythm/config/diffrhythm-1b.json \
+    && test -f /opt/DiffRhythm/infer/example/vocal.npy \
+    && espeak-ng --version >/dev/null
+
+COPY scripts/diffrhythm_provider_server.py \
+     /workspace/scripts/diffrhythm_provider_server.py
+
+RUN chmod +x \
+    /workspace/scripts/diffrhythm_provider_server.py \
+    && mkdir -p \
+      /workspace/models/diffrhythm \
+      /workspace/generated \
+      /workspace/exports \
+      /workspace/artifacts
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=6 \
+  CMD python -c "import urllib.request; r=urllib.request.urlopen('http://127.0.0.1:8767/health', timeout=2); raise SystemExit(0 if r.status == 200 else 1)"
+
+CMD ["python", "/workspace/scripts/diffrhythm_provider_server.py"]
