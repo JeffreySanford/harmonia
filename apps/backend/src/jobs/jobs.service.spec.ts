@@ -262,10 +262,29 @@ describe('JobsService durable restart reconciliation', () => {
     reconcileGenerationQueue(): Promise<void>;
   }
 
+  interface ArtifactRecoveryProbe {
+    validateWav(
+      filePath: string,
+      requestedDurationSeconds: number
+    ): Promise<{
+      channels: number;
+      sampleRate: number;
+      bitsPerSample: number;
+      durationSeconds: number;
+      size: number;
+    }>;
+  }
+
   function reconciliationProbe(
     service: JobsService
   ): ReconciliationProbe {
     return service as unknown as ReconciliationProbe;
+  }
+
+  function artifactRecoveryProbe(
+    service: JobsService
+  ): ArtifactRecoveryProbe {
+    return service as unknown as ArtifactRecoveryProbe;
   }
 
   function makeJob(
@@ -284,6 +303,17 @@ describe('JobsService durable restart reconciliation', () => {
           ? new Date()
           : null,
       progress: null,
+      modelId:
+        'stable-audio-3-small-music',
+      parameters: {
+        title:
+          'Signal Bloom',
+        duration: 15,
+        prompt:
+          'cinematic electronic post-rock instrumental',
+      },
+      result: null,
+      completedAt: null,
       save: jest.fn().mockResolvedValue(undefined),
     };
   }
@@ -309,9 +339,15 @@ describe('JobsService durable restart reconciliation', () => {
         jest.fn().mockResolvedValue({}),
     };
 
+    const gateway = {
+      server: {},
+      emitJobCompleted:
+        jest.fn(),
+    };
+
     const service = new JobsService(
       { find } as unknown as Model<JobRecordDocument>,
-      {} as unknown as JobsGateway,
+      gateway as unknown as JobsGateway,
       {} as unknown as MusicRuntimeService,
       generationQueue as unknown as Queue
     );
@@ -321,6 +357,7 @@ describe('JobsService durable restart reconciliation', () => {
       find,
       exec,
       generationQueue,
+      gateway,
     };
   }
 
@@ -422,9 +459,135 @@ describe('JobsService durable restart reconciliation', () => {
     expect(job.save).not.toHaveBeenCalled();
   });
 
+  it('finalizes a valid orphaned artifact without Bull replay', async () => {
+    const job =
+      makeJob(
+        'processing'
+      );
+
+    const harness =
+      makeHarness(
+        [job]
+      );
+
+    const validateWav =
+      jest
+        .spyOn(
+          artifactRecoveryProbe(
+            harness.service
+          ),
+          'validateWav'
+        )
+        .mockResolvedValue({
+          channels: 2,
+          sampleRate: 44100,
+          bitsPerSample: 32,
+          durationSeconds: 15,
+          size: 5292088,
+        });
+
+    await reconciliationProbe(
+      harness.service
+    ).reconcileGenerationQueue();
+
+    const downloadUrl =
+      `/api/jobs/${jobId}/artifact`;
+
+    expect(
+      validateWav
+    ).toHaveBeenCalledWith(
+      path.join(
+        process.cwd(),
+        'exports',
+        'jobs',
+        jobId,
+        'music.wav'
+      ),
+      15
+    );
+
+    expect(
+      job.status
+    ).toBe(
+      'completed'
+    );
+
+    expect(
+      job.completedAt
+    ).toBeInstanceOf(
+      Date
+    );
+
+    expect(
+      job.progress
+    ).toEqual({
+      current: 100,
+      total: 100,
+      percentage: 100,
+      message: 'Completed',
+    });
+
+    expect(
+      job.result
+    ).toEqual({
+      outputPath:
+        downloadUrl,
+      metadata: {
+        title:
+          'Signal Bloom',
+        providerId:
+          'stable-audio-3',
+        modelId:
+          'stable-audio-3-small-music',
+        recoveredAfterRestart:
+          true,
+        requestedDurationSeconds:
+          15,
+        actualDurationSeconds:
+          15,
+        channels: 2,
+        sampleRate: 44100,
+        bitsPerSample: 32,
+        size: 5292088,
+        downloadUrl,
+      },
+    });
+
+    expect(
+      job.save
+    ).toHaveBeenCalledTimes(
+      1
+    );
+
+    expect(
+      harness.gateway
+        .emitJobCompleted
+    ).toHaveBeenCalledTimes(
+      1
+    );
+
+    expect(
+      harness.generationQueue
+        .add
+    ).not.toHaveBeenCalled();
+  });
+
   it('resets orphaned processing state before durable replay', async () => {
     const job = makeJob('processing');
     const harness = makeHarness([job]);
+
+    jest
+      .spyOn(
+        artifactRecoveryProbe(
+          harness.service
+        ),
+        'validateWav'
+      )
+      .mockRejectedValue(
+        new Error(
+          'No complete recovered artifact'
+        )
+      );
 
     const callOrder: string[] = [];
 

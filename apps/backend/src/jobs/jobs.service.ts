@@ -76,6 +76,12 @@ export class JobsService implements OnModuleInit {
         continue;
       }
 
+      if (
+        await this.recoverCompletedGenerationArtifact(job)
+      ) {
+        continue;
+      }
+
       if (job.status === 'processing') {
         job.status = 'queued';
         job.startedAt = null;
@@ -106,6 +112,145 @@ export class JobsService implements OnModuleInit {
         `Recovered generation job ${jobId} after backend restart`
       );
     }
+  }
+
+  private async recoverCompletedGenerationArtifact(
+    job: JobRecordDocument
+  ): Promise<boolean> {
+    const jobId =
+      job._id.toString();
+
+    const model =
+      job.modelId
+        ? MUSIC_MODELS.find(
+            (candidate) =>
+              candidate.id === job.modelId
+          )
+        : null;
+
+    if (!model) {
+      return false;
+    }
+
+    const parameters =
+      job.parameters || {};
+
+    let requestedDurationSeconds: number;
+
+    try {
+      if (
+        model.providerId === 'diffsinger'
+      ) {
+        requestedDurationSeconds =
+          this.parseDiffSingerScore(
+            parameters
+          ).expectedDurationSeconds;
+      } else {
+        requestedDurationSeconds =
+          Number(
+            parameters['duration']
+          );
+      }
+    } catch {
+      return false;
+    }
+
+    if (
+      !Number.isFinite(
+        requestedDurationSeconds
+      ) ||
+      requestedDurationSeconds <= 0
+    ) {
+      return false;
+    }
+
+    const hostPath =
+      path.join(
+        process.cwd(),
+        'exports',
+        'jobs',
+        jobId,
+        'music.wav'
+      );
+
+    let wav: WavMetadata;
+
+    try {
+      wav =
+        await this.validateWav(
+          hostPath,
+          requestedDurationSeconds
+        );
+    } catch {
+      return false;
+    }
+
+    const title =
+      String(
+        parameters['title'] ||
+          'generated-music'
+      );
+
+    const downloadUrl =
+      `/api/jobs/${jobId}/artifact`;
+
+    job.status =
+      'completed';
+
+    job.completedAt =
+      new Date();
+
+    job.progress = {
+      current: 100,
+      total: 100,
+      percentage: 100,
+      message: 'Completed',
+    };
+
+    job.result = {
+      outputPath: downloadUrl,
+      metadata: {
+        title,
+        providerId:
+          model.providerId,
+        modelId:
+          model.id,
+        recoveredAfterRestart:
+          true,
+        requestedDurationSeconds,
+        actualDurationSeconds:
+          wav.durationSeconds,
+        channels:
+          wav.channels,
+        sampleRate:
+          wav.sampleRate,
+        bitsPerSample:
+          wav.bitsPerSample,
+        size:
+          wav.size,
+        downloadUrl,
+      },
+    };
+
+    await job.save();
+
+    const dto =
+      this.toDto(job);
+
+    // onModuleInit can run before the WebSocket server has
+    // been attached to the gateway. Persisted recovery must
+    // never depend on socket readiness.
+    if (this.gateway.server) {
+      this.gateway.emitJobCompleted(
+        dto
+      );
+    }
+
+    this.logger.log(
+      `Recovered completed generation artifact ${jobId} after backend restart`
+    );
+
+    return true;
   }
 
   async findAll(userId: string, filters: JobFiltersDto) {
