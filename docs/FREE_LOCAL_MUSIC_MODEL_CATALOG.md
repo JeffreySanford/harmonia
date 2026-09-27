@@ -158,6 +158,14 @@ DiffRhythm supports:
 
 Harmonia should expose the model family as experimental until we measure the full model on the target GPU.
 
+**September 27, 2026 implementation decision:**
+
+- DiffRhythm v1.2 Base remains the first Harmonia target for the RTX 3080 10 GB workstation.
+- Its explicit chunked VAE decode path and documented 8 GB minimum make it the safer first hardware gate.
+- DiffRhythm 2 was evaluated but is deferred until a measured 10 GB offload/sequential-loading strategy exists.
+- The complete v1.2 runtime includes non-Apache transitive model dependencies, so commercial use remains `review-required`.
+- First real Harmonia qualification will use the native 95-second base-model generation contract rather than an artificial short-duration test.
+
 Official project:
 
 - <https://github.com/ASLP-lab/DiffRhythm>
