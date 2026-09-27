@@ -226,7 +226,7 @@ services:
       test:
         - CMD-SHELL
         - "test -f /tmp/harmonia-runtime-ready && python -c \"import urllib.request; r=urllib.request.urlopen('http://127.0.0.1:8767/health', timeout=2); raise SystemExit(0 if r.status == 200 else 1)\""
-      start_period: 10s
+      start_period: 120s
       interval: 10s
       timeout: 5s
       retries: 6

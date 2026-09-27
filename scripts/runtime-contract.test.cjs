@@ -4179,6 +4179,25 @@ test(
         'scripts/diffrhythm_provider_server.py'
       );
 
+    /*
+     * M16-E1 evolves B1's shell into a persistent provider.
+     * HTTP ownership remains in the provider module while
+     * readiness/model/busy state is delegated to the reusable
+     * DiffRhythmRuntime.
+     */
+    const runtimePath =
+      path.join(
+        root,
+        'scripts/diffrhythm_runtime.py'
+      );
+
+    const runtimeStateSource =
+      existsSync(runtimePath)
+        ? read(
+            'scripts/diffrhythm_runtime.py'
+          )
+        : provider;
+
     const catalog =
       read(
         'apps/backend/src/music-runtime/music-model.catalog.ts'
@@ -4247,17 +4266,17 @@ test(
     );
 
     assert.match(
-      provider,
+      runtimeStateSource,
       /"ready"/
     );
 
     assert.match(
-      provider,
+      runtimeStateSource,
       /"model"/
     );
 
     assert.match(
-      provider,
+      runtimeStateSource,
       /"busy"/
     );
 
@@ -5399,6 +5418,473 @@ test(
     /*
      * Provider/catalog remain unavailable until this
      * actual generation qualification succeeds.
+     */
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    const providerDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      providerDefinition
+    );
+
+    assert.match(
+      providerDefinition,
+      /runtimeInstalled:\s*false/
+    );
+
+    const modelDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      modelDefinition
+    );
+
+    assert.match(
+      modelDefinition,
+      /availability:\s*'planned'/
+    );
+  }
+);
+
+test(
+  'DiffRhythm E1 provider owns a reusable offline Base runtime with staged GPU generation',
+  () => {
+    const runtimePath =
+      path.join(
+        root,
+        'scripts/diffrhythm_runtime.py'
+      );
+
+    assert.equal(
+      existsSync(runtimePath),
+      true,
+      'DiffRhythm E1 must provide a reusable runtime module'
+    );
+
+    const runtime =
+      read(
+        'scripts/diffrhythm_runtime.py'
+      );
+
+    /*
+     * Persistent provider process owns one reusable
+     * runtime object rather than spawning Python for
+     * every song.
+     */
+    assert.match(
+      runtime,
+      /class\s+DiffRhythmRuntime\b/
+    );
+
+    assert.match(
+      runtime,
+      /threading\.Lock\s*\(/
+    );
+
+    assert.doesNotMatch(
+      runtime,
+      /subprocess\./
+    );
+
+    assert.doesNotMatch(
+      runtime,
+      /\bPopen\s*\(/
+    );
+
+    /*
+     * E1 qualifies v1.2 Base only.
+     */
+    assert.match(
+      runtime,
+      /diffrhythm-v12-base/
+    );
+
+    assert.match(
+      runtime,
+      /max_frames\s*=\s*2048/
+    );
+
+    assert.match(
+      runtime,
+      /audio_length\s*=\s*95/
+    );
+
+    /*
+     * Exact registry-qualified model revisions.
+     */
+    assert.match(
+      runtime,
+      /ASLP-lab\/DiffRhythm-1_2/
+    );
+
+    assert.match(
+      runtime,
+      /185bdeb80541b9260d266c5f041859017441f307/
+    );
+
+    assert.match(
+      runtime,
+      /ASLP-lab\/DiffRhythm-vae/
+    );
+
+    assert.match(
+      runtime,
+      /74e2afacfd91dd1b96662c96dcef763c1258768b/
+    );
+
+    assert.match(
+      runtime,
+      /OpenMuQ\/MuQ-MuLan-large/
+    );
+
+    assert.match(
+      runtime,
+      /2e01c796b71dca71b45251384c04cd7b237c9020/
+    );
+
+    assert.match(
+      runtime,
+      /OpenMuQ\/MuQ-large-msd-iter/
+    );
+
+    assert.match(
+      runtime,
+      /0562a57814f6f8bbd9fdea0a25921a2fce1a841a/
+    );
+
+    assert.match(
+      runtime,
+      /FacebookAI\/xlm-roberta-base/
+    );
+
+    assert.match(
+      runtime,
+      /e73636d4f797dec63c3081bb6ed5c7b0bb3f2089/
+    );
+
+    /*
+     * Runtime remains offline and resolves only
+     * already-qualified cache contents.
+     */
+    assert.match(
+      runtime,
+      /local_files_only\s*=\s*True/
+    );
+
+    assert.match(
+      runtime,
+      /HF_HUB_OFFLINE/
+    );
+
+    assert.match(
+      runtime,
+      /TRANSFORMERS_OFFLINE/
+    );
+
+    /*
+     * Preserve D3's MuQ XLM-R consumer-key alias.
+     */
+    assert.match(
+      runtime,
+      /"xlm-roberta-base"/
+    );
+
+    assert.match(
+      runtime,
+      /symlink_to/
+    );
+
+    /*
+     * Persistent process-owned model state.
+     */
+    assert.match(
+      runtime,
+      /self\._muq/
+    );
+
+    assert.match(
+      runtime,
+      /self\._cfm/
+    );
+
+    assert.match(
+      runtime,
+      /self\._vae/
+    );
+
+    assert.match(
+      runtime,
+      /def\s+prepare\s*\(/
+    );
+
+    assert.match(
+      runtime,
+      /def\s+generate\s*\(/
+    );
+
+    /*
+     * Harmonia provider recovery state.
+     *
+     * Keep these as literal assertions instead of
+     * constructing a dynamic regular expression.
+     */
+    assert.match(
+      runtime,
+      /"ready"/
+    );
+
+    assert.match(
+      runtime,
+      /"busy"/
+    );
+
+    assert.match(
+      runtime,
+      /"model"/
+    );
+
+    assert.match(
+      runtime,
+      /"provider"/
+    );
+
+    assert.match(
+      runtime,
+      /"sourceRevision"/
+    );
+
+    assert.match(
+      runtime,
+      /"cuda"/
+    );
+
+    assert.match(
+      runtime,
+      /"gpu"/
+    );
+
+    assert.match(
+      runtime,
+      /"lastError"/
+    );
+
+    assert.match(
+      runtime,
+      /"offline"/
+    );
+
+    /*
+     * Real E1 generation request surface.
+     */
+    assert.match(
+      runtime,
+      /prompt/
+    );
+
+    assert.match(
+      runtime,
+      /lyrics/
+    );
+
+    assert.match(
+      runtime,
+      /output/
+    );
+
+    assert.match(
+      runtime,
+      /seed/
+    );
+
+    assert.match(
+      runtime,
+      /\/workspace\/generated/
+    );
+
+    assert.match(
+      runtime,
+      /\/workspace\/exports/
+    );
+
+    /*
+     * Preserve the D4-qualified GPU lifecycle:
+     *
+     * MuQ -> CPU style embedding -> release CUDA
+     * CFM -> CPU latent -> release CUDA
+     * VAE -> inference-mode chunk-128 decode
+     */
+    assert.match(
+      runtime,
+      /get_style_prompt/
+    );
+
+    assert.match(
+      runtime,
+      /style_prompt[\s\S]*?\.cpu\s*\(/
+    );
+
+    assert.match(
+      runtime,
+      /muq[\s\S]*?\.to\s*\(\s*["']cpu["']\s*\)/
+    );
+
+    assert.match(
+      runtime,
+      /cfm[\s\S]*?\.sample\s*\(/
+    );
+
+    assert.match(
+      runtime,
+      /steps\s*=\s*32/
+    );
+
+    assert.match(
+      runtime,
+      /cfg_strength\s*=\s*4\.0/
+    );
+
+    assert.match(
+      runtime,
+      /latent[\s\S]*?\.cpu\s*\(/
+    );
+
+    assert.match(
+      runtime,
+      /cfm[\s\S]*?\.to\s*\(\s*["']cpu["']\s*\)/
+    );
+
+    assert.match(
+      runtime,
+      /with\s+torch\.inference_mode\s*\(\s*\)\s*:/
+    );
+
+    assert.match(
+      runtime,
+      /decode_audio\s*\(/
+    );
+
+    assert.match(
+      runtime,
+      /chunked\s*=\s*True/
+    );
+
+    assert.match(
+      runtime,
+      /chunk_size\s*=\s*128/
+    );
+
+    assert.match(
+      runtime,
+      /44100/
+    );
+
+    assert.match(
+      runtime,
+      /torchaudio\.save\s*\(/
+    );
+
+    /*
+     * Provider follows Harmonia's existing persistent
+     * MusicGen / Stable Audio HTTP-provider shape.
+     */
+    const provider =
+      read(
+        'scripts/diffrhythm_provider_server.py'
+      );
+
+    assert.match(
+      provider,
+      /from\s+diffrhythm_runtime\s+import\s*(?:DiffRhythmRuntime|\([\s\S]*?\bDiffRhythmRuntime\b[\s\S]*?\))/
+    );
+
+    assert.match(
+      provider,
+      /RUNTIME\s*=\s*DiffRhythmRuntime\s*\(/
+    );
+
+    assert.match(
+      provider,
+      /RUNTIME\.prepare\s*\(/
+    );
+
+    assert.match(
+      provider,
+      /if\s+self\.path\s*==\s*["']\/health["']/
+    );
+
+    assert.match(
+      provider,
+      /RUNTIME\.status\s*\(/
+    );
+
+    assert.match(
+      provider,
+      /if\s+self\.path\s*!=\s*["']\/generate["']/
+    );
+
+    assert.match(
+      provider,
+      /RUNTIME\.generate\s*\(/
+    );
+
+    assert.match(
+      provider,
+      /Content-Length/
+    );
+
+    assert.match(
+      provider,
+      /65536/
+    );
+
+    /*
+     * B1's shell-only behavior must be gone.
+     */
+    assert.doesNotMatch(
+      provider,
+      /model loading disabled/
+    );
+
+    assert.doesNotMatch(
+      provider,
+      /inference is not enabled/
+    );
+
+    /*
+     * Ready sentinel represents a genuinely prepared
+     * runtime, not merely an open HTTP port.
+     */
+    const prepareIndex =
+      provider.indexOf(
+        'RUNTIME.prepare('
+      );
+
+    const readyIndex =
+      provider.indexOf(
+        'READY_FILE.touch('
+      );
+
+    assert.ok(
+      prepareIndex >= 0,
+      'provider must prepare DiffRhythm runtime'
+    );
+
+    assert.ok(
+      readyIndex > prepareIndex,
+      'ready sentinel must follow runtime preparation'
+    );
+
+    /*
+     * E1 deliberately does not expose DiffRhythm to
+     * backend selection yet.
      */
     const catalog =
       read(

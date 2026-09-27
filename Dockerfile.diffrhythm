@@ -127,6 +127,9 @@ print("transformers=" + transformers.__version__)
 print("onnxruntime=" + onnxruntime.__version__)
 PY
 
+COPY scripts/diffrhythm_runtime.py \
+     /workspace/scripts/diffrhythm_runtime.py
+
 COPY scripts/diffrhythm_provider_server.py \
      /workspace/scripts/diffrhythm_provider_server.py
 
@@ -140,6 +143,7 @@ COPY scripts/diffrhythm_generate.py \
      /workspace/scripts/diffrhythm_generate.py
 
 RUN chmod +x \
+      /workspace/scripts/diffrhythm_runtime.py \
       /workspace/scripts/diffrhythm_provider_server.py \
       /workspace/scripts/diffrhythm_runtime_probe.py \
       /workspace/scripts/diffrhythm_residency_probe.py \
@@ -147,7 +151,7 @@ RUN chmod +x \
 
 WORKDIR /opt/DiffRhythm
 
-HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=6 \
+HEALTHCHECK --interval=10s --timeout=5s --start-period=120s --retries=6 \
   CMD python -c "import urllib.request; r=urllib.request.urlopen('http://127.0.0.1:8767/health', timeout=2); raise SystemExit(0 if r.status == 200 else 1)"
 
 CMD ["python", "/workspace/scripts/diffrhythm_provider_server.py"]

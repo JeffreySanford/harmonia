@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
-"""DiffRhythm v1.2 provider shell for Harmonia M16."""
+"""Persistent DiffRhythm v1.2 Base provider for Harmonia."""
 
 import json
 import os
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import traceback
+from http.server import (
+    BaseHTTPRequestHandler,
+    ThreadingHTTPServer,
+)
 from pathlib import Path
+
+from diffrhythm_runtime import (
+    DiffRhythmRuntime,
+)
 
 
 HOST = "127.0.0.1"
@@ -16,52 +24,25 @@ PORT = int(
     )
 )
 
-MODELS_ROOT = Path(
-    os.environ.get(
-        "HARMONIA_DIFFRHYTHM_MODELS_ROOT",
-        "/workspace/models/diffrhythm",
-    )
-)
-
-SOURCE_REVISION = os.environ.get(
-    "HARMONIA_DIFFRHYTHM_REF",
-    "",
-)
-
 READY_FILE = Path(
     "/tmp/harmonia-runtime-ready"
 )
 
-
-def runtime_status():
-    """
-    M16-B proves provider-process readiness only.
-
-    Model readiness deliberately remains false until registry-managed
-    DiffRhythm/MuQ/VAE artifacts and the actual inference runtime are
-    qualified in later M16 slices.
-    """
-
-    return {
-        "ok": True,
-        "ready": False,
-        "busy": False,
-        "model": None,
-        "provider": "diffrhythm",
-        "sourceRevision": SOURCE_REVISION,
-        "modelsRoot": str(MODELS_ROOT),
-        "modelsRootExists": MODELS_ROOT.exists(),
-        "offline": (
-            os.environ.get("HF_HUB_OFFLINE") == "1"
-            and os.environ.get("TRANSFORMERS_OFFLINE") == "1"
-        ),
-    }
+RUNTIME = DiffRhythmRuntime()
 
 
-class Handler(BaseHTTPRequestHandler):
-    server_version = "HarmoniaDiffRhythm/0.1"
+class Handler(
+    BaseHTTPRequestHandler
+):
+    server_version = (
+        "HarmoniaDiffRhythm/1.0"
+    )
 
-    def _json(self, status, payload):
+    def _json(
+        self,
+        status,
+        payload,
+    ):
         body = json.dumps(
             payload
         ).encode(
@@ -74,12 +55,14 @@ class Handler(BaseHTTPRequestHandler):
 
         self.send_header(
             "Content-Type",
-            "application/json"
+            "application/json",
         )
 
         self.send_header(
             "Content-Length",
-            str(len(body))
+            str(
+                len(body)
+            ),
         )
 
         self.end_headers()
@@ -88,33 +71,91 @@ class Handler(BaseHTTPRequestHandler):
             body
         )
 
-    def do_GET(self):
+    def do_GET(
+        self,
+    ):
         if self.path == "/health":
             self._json(
                 200,
-                runtime_status(),
+                RUNTIME.status(),
             )
+
             return
 
         self._json(
             404,
             {
-                "ok": False,
-                "error": "not found",
+                "ok":
+                    False,
+                "error":
+                    "not found",
             },
         )
 
-    def do_POST(self):
-        self._json(
-            503,
-            {
-                "ok": False,
-                "error": (
-                    "DiffRhythm inference is not enabled "
-                    "until M16 runtime qualification completes"
-                ),
-            },
-        )
+    def do_POST(
+        self,
+    ):
+        if self.path != "/generate":
+            self._json(
+                404,
+                {
+                    "ok":
+                        False,
+                    "error":
+                        "not found",
+                },
+            )
+
+            return
+
+        try:
+            length = int(
+                self.headers.get(
+                    "Content-Length",
+                    "0",
+                )
+            )
+
+            if (
+                length <= 0
+                or
+                length > 65536
+            ):
+                raise ValueError(
+                    "invalid request size"
+                )
+
+            payload = json.loads(
+                self.rfile.read(
+                    length
+                ).decode(
+                    "utf-8"
+                )
+            )
+
+            result = (
+                RUNTIME.generate(
+                    payload
+                )
+            )
+
+            self._json(
+                200,
+                result,
+            )
+
+        except Exception as error:
+            traceback.print_exc()
+
+            self._json(
+                500,
+                {
+                    "ok":
+                        False,
+                    "error":
+                        str(error),
+                },
+            )
 
     def log_message(
         self,
@@ -122,7 +163,10 @@ class Handler(BaseHTTPRequestHandler):
         *args,
     ):
         print(
-            f"DiffRhythm provider HTTP: {fmt % args}",
+            (
+                "DiffRhythm provider HTTP: "
+                f"{fmt % args}"
+            ),
             flush=True,
         )
 
@@ -132,27 +176,41 @@ def main():
         missing_ok=True
     )
 
-    server = ThreadingHTTPServer(
+    print(
         (
-            HOST,
-            PORT,
+            "Preparing Harmonia "
+            "DiffRhythm resident runtime"
         ),
-        Handler,
+        flush=True,
+    )
+
+    RUNTIME.prepare()
+
+    server = (
+        ThreadingHTTPServer(
+            (
+                HOST,
+                PORT,
+            ),
+            Handler,
+        )
     )
 
     READY_FILE.touch()
 
     print(
         (
-            "Harmonia DiffRhythm provider shell listening "
-            f"on {HOST}:{PORT}; model loading disabled; "
-            "offline runtime enforced"
+            "Harmonia DiffRhythm provider "
+            f"ready on {HOST}:{PORT}; "
+            "v1.2 Base prepared on CPU; "
+            "staged CUDA generation enabled"
         ),
         flush=True,
     )
 
     try:
         server.serve_forever()
+
     finally:
         READY_FILE.unlink(
             missing_ok=True
