@@ -82,6 +82,7 @@ diagnostics() {
     --filter name=harmonia-diffsinger \
     --filter name=harmonia-stable-audio-3 \
     --filter name=harmonia-ace-step-1.5 \
+    --filter name=harmonia-diffrhythm \
     --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}' \
     || true
 
@@ -89,7 +90,8 @@ diagnostics() {
     harmonia-musicgen \
     harmonia-diffsinger \
     harmonia-stable-audio-3 \
-    harmonia-ace-step-1.5
+    harmonia-ace-step-1.5 \
+    harmonia-diffrhythm
   do
     if docker inspect "$container" >/dev/null 2>&1; then
       echo
@@ -302,13 +304,13 @@ for (const result of manifest.results || []) {
   );
 }
 
-if ((manifest.results || []).length !== 5) {
+if ((manifest.results || []).length !== 6) {
   throw new Error(
-    `Expected five showcase results, received ${(manifest.results || []).length}`
+    `Expected six showcase results, received ${(manifest.results || []).length}`
   );
 }
 
-console.log('QUALIFIED_GENERATOR_SHOWCASE_MANIFEST_5_OF_5_OK');
+console.log('QUALIFIED_GENERATOR_SHOWCASE_MANIFEST_6_OF_6_OK');
 NODE
 
 echo
@@ -316,6 +318,6 @@ echo "============================================================"
 echo " QUALIFIED GENERATOR SHOWCASE: GREEN"
 echo "============================================================"
 echo " backend = fresh current branch on $PORT"
-echo " songs   = 5/5"
+echo " songs   = 6/6"
 echo " manifest = $LATEST_MANIFEST"
 echo "============================================================"

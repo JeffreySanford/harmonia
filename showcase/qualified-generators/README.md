@@ -40,6 +40,11 @@ metadata used to create the WAV.
   - uplifting alternative rock with an Americana undertone;
   - exercises the resident Turbo DiT and 0.6B LM.
 
+- `diffrhythm-v12-base` — **Prairie Signal**
+  - supplied original timestamped English lyrics;
+  - fixed 95-second DiffRhythm v1.2 Base generation;
+  - exercises resident staged GPU inference and native 44.1 kHz stereo PCM16 output.
+
 ## Run
 
 Use the committed package command after the current Harmonia backend/frontend

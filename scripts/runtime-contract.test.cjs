@@ -1981,6 +1981,7 @@ test('qualified generator showcase exposes one preset per qualified model', () =
     'diffsinger-acoustic-hifigan',
     'stable-audio-3-small-music',
     'acestep-v15-turbo-06b',
+    'diffrhythm-v12-base',
   ]) {
     const preset = JSON.parse(
       read('showcase/qualified-generators/' + modelId + '/preset.json')
@@ -2010,7 +2011,7 @@ test('qualified showcase fresh runner owns an isolated backend', () => {
   assert.match(runner, /SHOWCASE_FRESH_BACKEND_READY/);
   assert.match(runner, /SHOWCASE FAILURE DIAGNOSTICS/);
   assert.match(runner, /QUALIFIED GENERATOR SHOWCASE: GREEN/);
-  assert.match(runner, /QUALIFIED_GENERATOR_SHOWCASE_MANIFEST_5_OF_5_OK/);
+  assert.match(runner, /QUALIFIED_GENERATOR_SHOWCASE_MANIFEST_6_OF_6_OK/);
 
 });
 
