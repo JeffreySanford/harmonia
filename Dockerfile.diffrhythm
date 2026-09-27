@@ -136,10 +136,14 @@ COPY scripts/diffrhythm_runtime_probe.py \
 COPY scripts/diffrhythm_residency_probe.py \
      /workspace/scripts/diffrhythm_residency_probe.py
 
+COPY scripts/diffrhythm_generate.py \
+     /workspace/scripts/diffrhythm_generate.py
+
 RUN chmod +x \
       /workspace/scripts/diffrhythm_provider_server.py \
       /workspace/scripts/diffrhythm_runtime_probe.py \
-      /workspace/scripts/diffrhythm_residency_probe.py
+      /workspace/scripts/diffrhythm_residency_probe.py \
+      /workspace/scripts/diffrhythm_generate.py
 
 WORKDIR /opt/DiffRhythm
 

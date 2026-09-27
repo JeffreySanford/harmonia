@@ -5014,3 +5014,423 @@ test(
     );
   }
 );
+
+
+test(
+  'DiffRhythm D4 generates a real 95-second stereo WAV with released MuQ and chunked VAE decode',
+  () => {
+    const generatorPath =
+      path.join(
+        root,
+        'scripts/diffrhythm_generate.py'
+      );
+
+    assert.equal(
+      existsSync(generatorPath),
+      true,
+      'DiffRhythm D4 must provide a real generation runner'
+    );
+
+    const generator =
+      read(
+        'scripts/diffrhythm_generate.py'
+      );
+
+    /*
+     * Qualification remains entirely offline and
+     * uses the five already-qualified registry
+     * snapshots.
+     */
+    assert.match(
+      generator,
+      /HF_HUB_OFFLINE/
+    );
+
+    assert.match(
+      generator,
+      /TRANSFORMERS_OFFLINE/
+    );
+
+    assert.match(
+      generator,
+      /local_files_only\s*=\s*True/
+    );
+
+    /*
+     * Preserve the MuQ consumer-key alias discovered
+     * during D3 without mutating or duplicating the
+     * canonical XLM-R registry artifact.
+     */
+    assert.match(
+      generator,
+      /FacebookAI\/xlm-roberta-base/
+    );
+
+    assert.match(
+      generator,
+      /"xlm-roberta-base"/
+    );
+
+    assert.match(
+      generator,
+      /symlink_to/
+    );
+
+    /*
+     * First qualified generation is specifically the
+     * DiffRhythm v1.2 Base 95-second architecture.
+     */
+    assert.match(
+      generator,
+      /max_frames\s*=\s*2048/
+    );
+
+    assert.match(
+      generator,
+      /audio_length\s*=\s*95/
+    );
+
+    /*
+     * Real style-conditioning path.
+     */
+    assert.match(
+      generator,
+      /MuQMuLan\.from_pretrained/
+    );
+
+    assert.match(
+      generator,
+      /get_style_prompt/
+    );
+
+    assert.match(
+      generator,
+      /style_prompt[\s\S]*?\.cpu\s*\(/
+    );
+
+    /*
+     * MuQ must leave CUDA before diffusion starts.
+     */
+    assert.match(
+      generator,
+      /muq.*\.to\s*\(\s*["']cpu["']\s*\)/
+    );
+
+    assert.match(
+      generator,
+      /del\s+muq/
+    );
+
+    assert.match(
+      generator,
+      /gc\.collect\s*\(/
+    );
+
+    assert.match(
+      generator,
+      /torch\.cuda\.empty_cache\s*\(/
+    );
+
+    /*
+     * Do not use upstream prepare_model(), because
+     * that keeps MuQ resident alongside CFM + VAE.
+     */
+    assert.doesNotMatch(
+      generator,
+      /\bprepare_model\s*\(/
+    );
+
+    /*
+     * Real Base diffusion model.
+     */
+    assert.match(
+      generator,
+      /CFM\s*\(/
+    );
+
+    assert.match(
+      generator,
+      /DiT\s*\(/
+    );
+
+    assert.match(
+      generator,
+      /diffrhythm-1b\.json/
+    );
+
+    assert.match(
+      generator,
+      /cfm_model\.pt/
+    );
+
+    assert.match(
+      generator,
+      /load_checkpoint/
+    );
+
+    /*
+     * Real lyrics/token conditioning path is wired
+     * even if the first qualification uses only a
+     * small deterministic LRC fixture.
+     */
+    assert.match(
+      generator,
+      /get_lrc_token/
+    );
+
+    assert.match(
+      generator,
+      /get_negative_style_prompt/
+    );
+
+    /*
+     * Real CFM sampling settings from pinned
+     * upstream inference.
+     */
+    assert.match(
+      generator,
+      /\.sample\s*\(/
+    );
+
+    assert.match(
+      generator,
+      /steps\s*=\s*32/
+    );
+
+    assert.match(
+      generator,
+      /cfg_strength\s*=\s*4\.0/
+    );
+
+    /*
+     * Real TorchScript VAE with the memory-friendly
+     * chunked decode path.
+     */
+    assert.match(
+      generator,
+      /vae_model\.pt/
+    );
+
+    assert.match(
+      generator,
+      /torch\.jit\.load/
+    );
+
+    assert.match(
+      generator,
+      /decode_audio\s*\([\s\S]*chunked\s*=\s*True/
+    );
+
+
+    /*
+     * Actual RTX 3080 generation proved decode
+     * activation memory is the limiting stage.
+     *
+     * Preserve the completed diffusion latent,
+     * release CFM completely, then decode with
+     * VAE-only residency. Upstream chunk size 128
+     * remains first choice; 64 is the OOM fallback.
+     */
+    assert.match(
+      generator,
+      /DECODE_CHUNK_SIZES\s*=\s*\(\s*128\s*,\s*64\s*\)/
+    );
+
+    assert.match(
+      generator,
+      /latent_checkpoint_path/
+    );
+
+    assert.match(
+      generator,
+      /torch\.save\s*\(/
+    );
+
+    assert.match(
+      generator,
+      /cfm\s*=\s*cfm\.to\s*\(\s*["']cpu["']\s*\)/
+    );
+
+    assert.match(
+      generator,
+      /del\s+cfm/
+    );
+
+    assert.match(
+      generator,
+      /after_cfm_release_vram/
+    );
+
+    assert.match(
+      generator,
+      /vae\s*=\s*load_vae\s*\(\s*\)/
+    );
+
+    assert.match(
+      generator,
+      /for\s+candidate_chunk_size\s+in\s+DECODE_CHUNK_SIZES/
+    );
+
+
+    /*
+     * D4E proved that the TorchScript VAE's
+     * activation explosion was caused by decoding
+     * outside inference mode. Preserve upstream's
+     * actual inference semantics.
+     */
+    assert.match(
+      generator,
+      /with\s+torch\.inference_mode\s*\(\s*\)\s*:/
+    );
+
+    assert.match(
+      generator,
+      /decodeInferenceMode/
+    );
+
+
+    /*
+     * Diffusion-side lifecycle objects must be released exactly once.
+     * They leave CUDA at the retained-latent boundary and must not
+     * be referenced again by final VAE cleanup.
+     */
+    for (
+      const name of [
+        'style_prompt',
+        'negative_style_prompt',
+        'latent_prompt',
+        'lrc_prompt',
+        'cfm',
+      ]
+    ) {
+      const releases =
+        generator.match(
+          new RegExp(
+            '\\bdel\\s+' +
+              name +
+              '\\b',
+            'g'
+          )
+        ) ?? [];
+
+      assert.equal(
+        releases.length,
+        1,
+        name +
+          ' must be deleted exactly once'
+      );
+    }
+
+    assert.match(
+      generator,
+      /chunk_size\s*=\s*[\s\S]*candidate_chunk_size/
+    );
+
+    /*
+     * Qualified output contract.
+     */
+    assert.match(
+      generator,
+      /44100/
+    );
+
+    assert.match(
+      generator,
+      /torchaudio\.save/
+    );
+
+    assert.match(
+      generator,
+      /output\.wav/
+    );
+
+    assert.match(
+      generator,
+      /sampleRate/
+    );
+
+    assert.match(
+      generator,
+      /channels/
+    );
+
+    assert.match(
+      generator,
+      /durationSeconds/
+    );
+
+    assert.match(
+      generator,
+      /fileSizeBytes/
+    );
+
+    /*
+     * D4 must measure actual inference-time VRAM,
+     * which is distinct from D3 residency.
+     */
+    assert.match(
+      generator,
+      /torch\.cuda\.max_memory_allocated/
+    );
+
+    assert.match(
+      generator,
+      /torch\.cuda\.max_memory_reserved/
+    );
+
+    assert.match(
+      generator,
+      /torch\.cuda\.reset_peak_memory_stats/
+    );
+
+    /*
+     * Absolutely no placeholder/synthetic fallback.
+     */
+    assert.doesNotMatch(
+      generator,
+      /placeholder/i
+    );
+
+    assert.doesNotMatch(
+      generator,
+      /write_placeholder/
+    );
+
+    /*
+     * Provider/catalog remain unavailable until this
+     * actual generation qualification succeeds.
+     */
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    const providerDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      providerDefinition
+    );
+
+    assert.match(
+      providerDefinition,
+      /runtimeInstalled:\s*false/
+    );
+
+    const modelDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      modelDefinition
+    );
+
+    assert.match(
+      modelDefinition,
+      /availability:\s*'planned'/
+    );
+  }
+);
