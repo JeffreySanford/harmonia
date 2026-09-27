@@ -4381,9 +4381,8 @@ test(
     );
 
     /*
-     * Provider shell existence does not make the model selectable.
-     *
-     * Registry + real runtime qualification comes later.
+     * Provider/runtime integration does not by itself make
+     * the Base model selectable.
      */
     const providerDefinition =
       catalog.match(
@@ -4393,11 +4392,6 @@ test(
     assert.ok(
       providerDefinition,
       'DiffRhythm provider definition must remain in the catalog'
-    );
-
-    assert.match(
-      providerDefinition,
-      /runtimeInstalled:\s*false/
     );
 
     const baseModelDefinition =
@@ -4677,11 +4671,6 @@ test(
       providerDefinition
     );
 
-    assert.match(
-      providerDefinition,
-      /runtimeInstalled:\s*false/
-    );
-
     const modelDefinition =
       catalog.match(
         /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
@@ -4955,11 +4944,6 @@ test(
 
     assert.ok(
       providerDefinition
-    );
-
-    assert.match(
-      providerDefinition,
-      /runtimeInstalled:\s*false/
     );
 
     const modelDefinition =
@@ -5433,11 +5417,6 @@ test(
       providerDefinition
     );
 
-    assert.match(
-      providerDefinition,
-      /runtimeInstalled:\s*false/
-    );
-
     const modelDefinition =
       catalog.match(
         /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
@@ -5883,8 +5862,9 @@ test(
     );
 
     /*
-     * E1 deliberately does not expose DiffRhythm to
-     * backend selection yet.
+     * E1 qualification does not itself make Base
+     * selectable. E2 may install provider ownership metadata
+     * while availability remains planned.
      */
     const catalog =
       read(
@@ -5898,11 +5878,6 @@ test(
 
     assert.ok(
       providerDefinition
-    );
-
-    assert.match(
-      providerDefinition,
-      /runtimeInstalled:\s*false/
     );
 
     const modelDefinition =
@@ -6042,6 +6017,188 @@ test(
     assert.doesNotMatch(
       generateBlock,
       /torch\.jit\.load\s*\(/
+    );
+  }
+);
+
+test(
+  'DiffRhythm E2 backend recognizes resident provider ownership while Base remains non-selectable',
+  () => {
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    const service =
+      read(
+        'apps/backend/src/music-runtime/music-runtime.service.ts'
+      );
+
+    /*
+     * E1 qualified the runtime itself. E2 makes the
+     * backend aware that this provider is now a real
+     * installed runtime with an owned container/image.
+     *
+     * This does NOT yet expose the Base model to user
+     * selection.
+     */
+    const providerDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      providerDefinition,
+      'DiffRhythm provider definition must exist'
+    );
+
+    assert.match(
+      providerDefinition,
+      /runtimeInstalled:\s*true/,
+      'DiffRhythm provider runtime must be installed for ownership recovery'
+    );
+
+    assert.match(
+      providerDefinition,
+      /imageName:\s*'harmonia\/diffrhythm:dev'/
+    );
+
+    assert.match(
+      providerDefinition,
+      /dockerService:\s*'diffrhythm'/
+    );
+
+    assert.match(
+      providerDefinition,
+      /containerName:\s*'harmonia-diffrhythm'/
+    );
+
+    assert.match(
+      providerDefinition,
+      /composeProfile:\s*'model-diffrhythm'/
+    );
+
+    /*
+     * Backend recovery maps provider health.model to
+     * MUSIC_MODELS.runtimeModelId. Therefore Base must
+     * declare the exact value returned by /health.
+     */
+    const modelDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      modelDefinition,
+      'DiffRhythm Base definition must exist'
+    );
+
+    assert.match(
+      modelDefinition,
+      /runtimeModelId:\s*'diffrhythm-v12-base'/,
+      'DiffRhythm Base must expose its provider runtime model id'
+    );
+
+    /*
+     * E2 is ownership/recovery only.
+     * User selection remains deliberately disabled
+     * until backend generation/job qualification.
+     */
+    assert.match(
+      modelDefinition,
+      /availability:\s*'planned'/,
+      'DiffRhythm Base must remain non-selectable during E2'
+    );
+
+    /*
+     * Runtime ownership recovery must query the
+     * DiffRhythm provider's internal /health endpoint.
+     */
+    const recoveryStart =
+      service.indexOf(
+        'private async recoverProviderRuntimeSnapshot'
+      );
+
+    const reconcileStart =
+      service.indexOf(
+        'private async reconcileRuntimeOwnership',
+        recoveryStart
+      );
+
+    assert.ok(
+      recoveryStart >= 0,
+      'recoverProviderRuntimeSnapshot must exist'
+    );
+
+    assert.ok(
+      reconcileStart > recoveryStart,
+      'reconcileRuntimeOwnership must follow snapshot recovery'
+    );
+
+    const recovery =
+      service.slice(
+        recoveryStart,
+        reconcileStart
+      );
+
+    assert.match(
+      recovery,
+      /provider\.id\s*===\s*'diffrhythm'[\s\S]{0,160}\?\s*8767/,
+      'DiffRhythm ownership recovery must query health port 8767'
+    );
+
+    assert.match(
+      recovery,
+      /snapshot\.model/
+    );
+
+    assert.match(
+      recovery,
+      /candidate\.providerId\s*===\s*provider\.id/
+    );
+
+    assert.match(
+      recovery,
+      /candidate\.runtimeModelId\s*===\s*snapshot\.model/
+    );
+
+    assert.match(
+      recovery,
+      /busy:\s*Boolean\(snapshot\.busy\)/
+    );
+
+    /*
+     * The generic runtime ownership loop must include
+     * installed providers with container/service metadata.
+     */
+    const reconcile =
+      service.slice(
+        reconcileStart
+      );
+
+    assert.match(
+      reconcile,
+      /provider\.runtimeInstalled/
+    );
+
+    assert.match(
+      reconcile,
+      /provider\.containerName/
+    );
+
+    assert.match(
+      reconcile,
+      /provider\.dockerService/
+    );
+
+    /*
+     * Do not create a DiffRhythm-specific ownership
+     * bypass. It participates in the same single-GPU
+     * arbitration used by other persistent providers.
+     */
+    assert.doesNotMatch(
+      reconcile,
+      /diffrhythm[\s\S]{0,120}skip/i
     );
   }
 );
