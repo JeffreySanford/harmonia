@@ -809,7 +809,7 @@ async function runCase(
     await getArtifact(
       frontendBase,
       artifactPath,
-      token
+      auth
     );
 
   assert.match(

@@ -257,3 +257,32 @@ test(
     );
   }
 );
+
+test(
+  'qualification runner uses renewable auth for both protected artifact downloads',
+  () => {
+    const fs =
+      require('node:fs');
+
+    const runner =
+      fs.readFileSync(
+        'scripts/qualify-model-hardware-matrix.cjs',
+        'utf8'
+      );
+
+    assert.match(
+      runner,
+      /getArtifact\(\s*backendBase,\s*artifactPath,\s*auth\s*\)/
+    );
+
+    assert.match(
+      runner,
+      /getArtifact\(\s*frontendBase,\s*artifactPath,\s*auth\s*\)/
+    );
+
+    assert.doesNotMatch(
+      runner,
+      /getArtifact\(\s*frontendBase,\s*artifactPath,\s*token\s*\)/
+    );
+  }
+);
