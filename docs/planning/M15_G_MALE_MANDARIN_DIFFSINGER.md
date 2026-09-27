@@ -2,7 +2,7 @@
 
 ## Status
 
-**DEFERRED — future voice-expansion work**
+DEFERRED — future voice-expansion work
 
 M15-G is not required for completion of the current Harmonia
 five-generator qualification milestone.
@@ -41,7 +41,7 @@ Runtime model:
 
 Status:
 
-**QUALIFIED**
+QUALIFIED
 
 The normal DiffSinger smoke qualification remains valid.
 
@@ -121,7 +121,7 @@ requirement.
 
 Return to:
 
-**M15-F4 — deep five-model qualification**
+M15-F4 — deep five-model qualification
 
 Deep cases:
 
