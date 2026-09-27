@@ -183,15 +183,47 @@ test.describe(
             const model of
             providerModels
           ) {
+            const options =
+              page.getByRole(
+                'option'
+              );
+
+            const matchingIndexes =
+              await options.evaluateAll(
+                (elements, expectedName) =>
+                  elements
+                    .map((element, index) => ({
+                      index,
+                      label:
+                        element
+                          .querySelector('span')
+                          ?.textContent
+                          ?.trim() || '',
+                    }))
+                    .filter(
+                      (entry) =>
+                        entry.label ===
+                          expectedName ||
+                        entry.label.startsWith(
+                          `${expectedName} ·`
+                        )
+                    )
+                    .map(
+                      (entry) =>
+                        entry.index
+                    ),
+                model.name
+              );
+
+            expect(
+              matchingIndexes,
+              `expected exactly one option for ${model.name}`
+            ).toHaveLength(1);
+
             const option =
-              page
-                .getByRole(
-                  'option'
-                )
-                .filter({
-                  hasText:
-                    model.name,
-                });
+              options.nth(
+                matchingIndexes[0]
+              );
 
             await expect(
               option
