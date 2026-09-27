@@ -3848,6 +3848,7 @@ test('hardware-aware model qualification matrix covers every current qualified g
       'diffsinger-acoustic-hifigan',
       'stable-audio-3-small-music',
       'acestep-v15-turbo-06b',
+      'diffrhythm-v12-base',
     ]
   ) {
     assert.match(
@@ -4133,7 +4134,7 @@ test(
 
 
 test(
-  'DiffRhythm provider shell is isolated, offline, GPU-profiled, and non-selectable',
+  'DiffRhythm provider runtime is isolated, offline, GPU-profiled, and catalog-integrated',
   () => {
     const dockerfilePath =
       path.join(
@@ -4406,7 +4407,7 @@ test(
 
     assert.match(
       baseModelDefinition,
-      /availability:\s*'planned'/
+      /availability:\s*'installed'/
     );
   }
 );
@@ -4682,7 +4683,7 @@ test(
 
     assert.match(
       modelDefinition,
-      /availability:\s*'planned'/
+      /availability:\s*'installed'/
     );
   }
 );
@@ -4957,7 +4958,7 @@ test(
 
     assert.match(
       modelDefinition,
-      /availability:\s*'planned'/
+      /availability:\s*'installed'/
     );
   }
 );
@@ -5428,7 +5429,7 @@ test(
 
     assert.match(
       modelDefinition,
-      /availability:\s*'planned'/
+      /availability:\s*'installed'/
     );
   }
 );
@@ -5891,7 +5892,7 @@ test(
 
     assert.match(
       modelDefinition,
-      /availability:\s*'planned'/
+      /availability:\s*'installed'/
     );
   }
 );
@@ -6022,7 +6023,7 @@ test(
 );
 
 test(
-  'DiffRhythm E2 backend recognizes resident provider ownership while Base remains non-selectable',
+  'DiffRhythm E2 backend recognizes resident provider ownership and Base runtime identity',
   () => {
     const catalog =
       read(
@@ -6106,8 +6107,8 @@ test(
      */
     assert.match(
       modelDefinition,
-      /availability:\s*'planned'/,
-      'DiffRhythm Base must remain non-selectable during E2'
+      /availability:\s*'installed'/,
+      'DiffRhythm Base must remain catalog-consistent after promotion'
     );
 
     /*
@@ -6524,7 +6525,196 @@ test(
 
     assert.match(
       baseModel,
+      /availability:\s*'installed'/
+    );
+  }
+);
+
+test(
+  'DiffRhythm E3C promotes verified Base and qualifies authenticated durable backend generation',
+  () => {
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    const pkg =
+      JSON.parse(
+        read(
+          'package.json'
+        )
+      );
+
+    const qualifierPath =
+      path.join(
+        root,
+        'scripts/qualify-diffrhythm-job.cjs'
+      );
+
+    const qualifier =
+      read(
+        'scripts/qualify-diffrhythm-job.cjs'
+      );
+
+    const cases =
+      read(
+        'tests/model-qualification/model-generation-cases.cjs'
+      );
+
+    const registry =
+      read(
+        'inventory/model_registry.json'
+      );
+
+    const base =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    const full =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-full',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      base
+    );
+
+    assert.ok(
+      full
+    );
+
+    assert.match(
+      base,
+      /availability:\s*'installed'/
+    );
+
+    assert.match(
+      base,
+      /runtimeModelId:\s*'diffrhythm-v12-base'/
+    );
+
+    assert.match(
+      full,
       /availability:\s*'planned'/
     );
+
+    assert.equal(
+      existsSync(
+        qualifierPath
+      ),
+      true
+    );
+
+    assert.equal(
+      pkg.scripts[
+        'qualify:diffrhythm-job'
+      ],
+      'node scripts/qualify-diffrhythm-job.cjs'
+    );
+
+    assert.match(
+      pkg.scripts[
+        'lint:scripts'
+      ],
+      /qualify-diffrhythm-job\.cjs/
+    );
+
+    assert.match(
+      qualifier,
+      /authenticateQualificationUser/
+    );
+
+    assert.match(
+      qualifier,
+      /selectRuntimeModel/
+    );
+
+    assert.match(
+      qualifier,
+      /expectedProviderId:[\s\S]*?'diffrhythm'/
+    );
+
+    assert.match(
+      qualifier,
+      /\/api\/jobs/
+    );
+
+    assert.match(
+      qualifier,
+      /\/api\/jobs\/\$\{jobId\}\/artifact/
+    );
+
+    assert.match(
+      qualifier,
+      /requestedDuration[\s\S]*95/
+    );
+
+    assert.match(
+      qualifier,
+      /channels[\s\S]*2/
+    );
+
+    assert.match(
+      qualifier,
+      /44100/
+    );
+
+    assert.match(
+      qualifier,
+      /bitsPerSample[\s\S]*16/
+    );
+
+    assert.match(
+      qualifier,
+      /audioFormat[\s\S]*1/
+    );
+
+    assert.match(
+      qualifier,
+      /backendHash/
+    );
+
+    assert.match(
+      qualifier,
+      /frontendHash/
+    );
+
+    assert.match(
+      qualifier,
+      /DIFFRHYTHM_BACKEND_JOB_QUALIFICATION_OK/
+    );
+
+    assert.match(
+      cases,
+      /id:\s*'diffrhythm-northern-transmission'/
+    );
+
+    assert.match(
+      cases,
+      /id:\s*'diffrhythm-midnight-current'/
+    );
+
+    assert.match(
+      cases,
+      /modelId:\s*'diffrhythm-v12-base'/
+    );
+
+    for (
+      const artifactId of [
+        'diffrhythm-v12-base-core',
+        'diffrhythm-vae',
+        'diffrhythm-muq-mulan',
+        'diffrhythm-muq-audio',
+        'diffrhythm-xlm-roberta',
+      ]
+    ) {
+      assert.match(
+        registry,
+        new RegExp(
+          artifactId
+        )
+      );
+    }
   }
 );

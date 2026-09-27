@@ -326,6 +326,81 @@ const cases = [
       lyricsPreserved: true,
     },
   },
+
+  // ============================================================
+  // DIFFRHYTHM v1.2 BASE
+  // ============================================================
+
+  {
+    id: 'diffrhythm-northern-transmission',
+    profile: 'smoke',
+    modelId: 'diffrhythm-v12-base',
+    title: 'Northern Transmission',
+    purpose:
+      '95-second lyric-conditioned DiffRhythm Base qualification with deterministic seed and staged GPU residency.',
+    parameters: {
+      title: 'Northern Transmission',
+      prompt:
+        'cinematic electronic rock, driving live drums, warm bass, bright synthesizers, spacious electric guitar, expressive clean vocal, expansive modern stereo production',
+      lyrics:
+        '[00:00.00] Northern signal crossing the open sky\n[00:48.00] Prairie lights carry the rhythm home',
+      duration: 95,
+      genre: 'Cinematic Electronic Rock',
+      mood: 'Expansive, determined, luminous',
+      bpm: 112,
+      instruments: [
+        'electric guitar',
+        'bass',
+        'drums',
+        'synthesizer',
+      ],
+      vocalsStyle: 'clean',
+      seed: 1607,
+    },
+    expect: {
+      minDurationRatio: 0.99,
+      channels: 2,
+      sampleRate: 44100,
+      audioFormat: 1,
+      lyricsPreserved: true,
+    },
+  },
+
+  {
+    id: 'diffrhythm-midnight-current',
+    profile: 'deep',
+    modelId: 'diffrhythm-v12-base',
+    title: 'Midnight Current',
+    purpose:
+      'Contrasting 95-second DiffRhythm Base case for resident-model reuse and different lyric/style conditioning.',
+    parameters: {
+      title: 'Midnight Current',
+      prompt:
+        'atmospheric synth rock, steady live drums, luminous pads, melodic bass, distant electric guitar, intimate clean vocal, nocturnal cinematic stereo production',
+      lyrics:
+        '[00:00.00] Midnight current moving through the plains\n[00:48.00] Distant towers answer in the rain',
+      duration: 95,
+      genre: 'Atmospheric Synth Rock',
+      mood: 'Nocturnal, reflective, moving',
+      bpm: 104,
+      instruments: [
+        'synth pads',
+        'electric guitar',
+        'bass',
+        'drums',
+      ],
+      vocalsStyle: 'clean',
+      seed: 1608,
+    },
+    expect: {
+      minDurationRatio: 0.99,
+      channels: 2,
+      sampleRate: 44100,
+      audioFormat: 1,
+      lyricsPreserved: true,
+    },
+  },
+
 ];
 
 module.exports = {

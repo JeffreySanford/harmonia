@@ -306,7 +306,7 @@ export const MUSIC_MODELS: MusicModelDefinition[] = [
     providerId: 'diffrhythm',
     name: 'v1.2 Base',
     runtimeModelId: 'diffrhythm-v12-base',
-    availability: 'planned',
+    availability: 'installed',
     minVramGb: 8,
     recommendedVramGb: 10,
     maxDurationSeconds: 95,
