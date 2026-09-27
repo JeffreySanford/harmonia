@@ -8,6 +8,7 @@ import random
 import threading
 import time
 import traceback
+import uuid
 import wave
 from pathlib import Path
 
@@ -220,6 +221,13 @@ class DiffRhythmRuntime:
             threading.Lock()
         )
 
+        self._instance_id = str(
+            uuid.uuid4()
+        )
+
+        self._prepare_count = 0
+        self._generation_count = 0
+
         self._prepared = False
         self._busy = False
         self._last_error = None
@@ -275,6 +283,36 @@ class DiffRhythmRuntime:
                 self._model,
             "provider":
                 "diffrhythm",
+            "instanceId":
+                self._instance_id,
+            "processId":
+                int(
+                    os.getpid()
+                ),
+            "prepareCount":
+                self._prepare_count,
+            "generationCount":
+                self._generation_count,
+            "modelObjectIds": {
+                "muq":
+                    (
+                        id(self._muq)
+                        if self._muq is not None
+                        else None
+                    ),
+                "cfm":
+                    (
+                        id(self._cfm)
+                        if self._cfm is not None
+                        else None
+                    ),
+                "vae":
+                    (
+                        id(self._vae)
+                        if self._vae is not None
+                        else None
+                    ),
+            },
             "sourceRevision":
                 os.environ.get(
                     "HARMONIA_DIFFRHYTHM_REF",
@@ -290,9 +328,13 @@ class DiffRhythmRuntime:
                 self._offline(),
             "residentDevice":
                 (
-                    "cpu"
-                    if self._prepared
-                    else None
+                    "staged-cuda"
+                    if self._busy
+                    else (
+                        "cpu"
+                        if self._prepared
+                        else None
+                    )
                 ),
             "preparedArtifacts":
                 len(
@@ -606,6 +648,7 @@ class DiffRhythmRuntime:
                     MODEL_ID
                 )
 
+                self._prepare_count += 1
                 self._prepared = True
 
                 print(
@@ -778,14 +821,16 @@ class DiffRhythmRuntime:
             )
         )
 
+        if not self._prepared:
+            raise RuntimeError(
+                "DiffRhythm runtime is not prepared"
+            )
+
         with self._lock:
             self._busy = True
             self._last_error = None
 
             try:
-                if not self._prepared:
-                    self.prepare()
-
                 output_path.parent.mkdir(
                     parents=True,
                     exist_ok=True,
@@ -1180,6 +1225,8 @@ class DiffRhythmRuntime:
                     time.monotonic() -
                     generation_started
                 )
+
+                self._generation_count += 1
 
                 result = {
                     "ok":

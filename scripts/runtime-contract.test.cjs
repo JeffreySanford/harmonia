@@ -5920,3 +5920,128 @@ test(
     );
   }
 );
+
+test(
+  'DiffRhythm E1C exposes stable resident identity and generation reuse state',
+  () => {
+    const runtime =
+      read(
+        'scripts/diffrhythm_runtime.py'
+      );
+
+    assert.match(
+      runtime,
+      /import\s+uuid/
+    );
+
+    assert.match(
+      runtime,
+      /self\._instance_id/
+    );
+
+    assert.match(
+      runtime,
+      /uuid\.uuid4\s*\(/
+    );
+
+    assert.match(
+      runtime,
+      /self\._prepare_count/
+    );
+
+    assert.match(
+      runtime,
+      /self\._generation_count/
+    );
+
+    for (
+      const field of [
+        '"instanceId"',
+        '"processId"',
+        '"prepareCount"',
+        '"generationCount"',
+        '"modelObjectIds"',
+      ]
+    ) {
+      assert.ok(
+        runtime.includes(field),
+        'runtime health must expose ' + field
+      );
+    }
+
+    assert.match(
+      runtime,
+      /self\._prepare_count\s*\+=\s*1/
+    );
+
+    assert.match(
+      runtime,
+      /self\._generation_count\s*\+=\s*1/
+    );
+
+    /*
+     * Provider startup owns preparation.
+     * A generation request must never recursively call
+     * prepare() while holding the generation lock.
+     */
+    const generateStart =
+      runtime.indexOf(
+        '    def generate('
+      );
+
+    assert.ok(
+      generateStart >= 0,
+      'generate method missing'
+    );
+
+    const generateBlock =
+      runtime.slice(
+        generateStart
+      );
+
+    assert.doesNotMatch(
+      generateBlock,
+      /self\.prepare\s*\(/
+    );
+
+    assert.match(
+      generateBlock,
+      /runtime is not prepared/
+    );
+
+    /*
+     * Generation continues to use the persistent
+     * process-owned objects rather than constructing
+     * new models per request.
+     */
+    assert.match(
+      generateBlock,
+      /self\._muq[\s\S]*?\.to\s*\(\s*["']cuda["']\s*\)/
+    );
+
+    assert.match(
+      generateBlock,
+      /self\._cfm[\s\S]*?\.to\s*\(\s*["']cuda["']\s*\)/
+    );
+
+    assert.match(
+      generateBlock,
+      /self\._vae[\s\S]*?\.to\s*\(\s*["']cuda["']\s*\)/
+    );
+
+    assert.doesNotMatch(
+      generateBlock,
+      /MuQMuLan\.from_pretrained/
+    );
+
+    assert.doesNotMatch(
+      generateBlock,
+      /load_checkpoint\s*\(/
+    );
+
+    assert.doesNotMatch(
+      generateBlock,
+      /torch\.jit\.load\s*\(/
+    );
+  }
+);
