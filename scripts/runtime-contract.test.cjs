@@ -3831,3 +3831,111 @@ test('hardware-aware model qualification matrix covers every current qualified g
     /aria-disabled/
   );
 });
+
+
+test(
+  'male Mandarin OpenUTAU DiffSinger remains non-runnable until local runtime installation',
+  () => {
+    const catalog = read(
+      'apps/backend/src/music-runtime/music-model.catalog.ts'
+    );
+
+    const providerId =
+      "id: 'diffsinger-openutau'";
+
+    const modelId =
+      "id: 'diffsinger-openutau-mandarin-male-local'";
+
+    const providerStart =
+      catalog.indexOf(
+        providerId
+      );
+
+    assert.ok(
+      providerStart >= 0,
+      'OpenUTAU provider must exist'
+    );
+
+    const providerEnd =
+      catalog.indexOf(
+        '\n  },',
+        providerStart
+      );
+
+    assert.ok(
+      providerEnd > providerStart
+    );
+
+    const provider =
+      catalog.slice(
+        providerStart,
+        providerEnd + 5
+      );
+
+    assert.match(
+      provider,
+      /runtimeInstalled:\s*false/
+    );
+
+    const modelStart =
+      catalog.indexOf(
+        modelId
+      );
+
+    assert.ok(
+      modelStart >= 0,
+      'male Mandarin local model must exist'
+    );
+
+    const modelEnd =
+      catalog.indexOf(
+        '\n  },',
+        modelStart
+      );
+
+    assert.ok(
+      modelEnd > modelStart
+    );
+
+    const model =
+      catalog.slice(
+        modelStart,
+        modelEnd + 5
+      );
+
+    assert.match(
+      model,
+      /providerId:\s*'diffsinger-openutau'/
+    );
+
+    assert.match(
+      model,
+      /runtimeModelId:\s*'mandarin-male-local'/
+    );
+
+    assert.match(
+      model,
+      /availability:\s*'planned'/
+    );
+
+    assert.match(
+      model,
+      /commercialUse:\s*'review-required'/
+    );
+
+    assert.match(
+      model,
+      /'mandarin'/
+    );
+
+    assert.match(
+      model,
+      /'male-voice'/
+    );
+
+    assert.match(
+      model,
+      /not bundled or downloaded/i
+    );
+  }
+);

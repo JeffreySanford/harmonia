@@ -15,6 +15,13 @@ export const MUSIC_PROVIDERS: MusicProviderDefinition[] = [
     composeProfile: 'model-diffsinger',
   },
   {
+    id: 'diffsinger-openutau',
+    name: 'DiffSinger OpenUTAU',
+    description:
+      'External/local OpenUTAU-compatible DiffSinger voicebanks with Mandarin speaker and voice controls.',
+    runtimeInstalled: false,
+  },
+  {
     id: 'musicgen',
     name: 'MusicGen',
     description: 'Meta AudioCraft music generation baseline.',
@@ -91,6 +98,29 @@ export const MUSIC_MODELS: MusicModelDefinition[] = [
     notes: 'Requires compatible local DiffSinger acoustic checkpoints.',
   },
 
+  {
+    id: 'diffsinger-openutau-mandarin-male-local',
+    providerId: 'diffsinger-openutau',
+    name: 'Mandarin Male Voicebank (Local)',
+    runtimeModelId: 'mandarin-male-local',
+    availability: 'planned',
+    minVramGb: 6,
+    recommendedVramGb: 8,
+    capabilities: [
+      'vocals',
+      'lyrics',
+      'singing-synthesis',
+      'mandarin',
+      'male-voice',
+      'speaker-selection',
+      'gender-control',
+      'key-shift',
+    ],
+    runtimeCost: 'local-free',
+    commercialUse: 'review-required',
+    notes:
+      'Planned external/local OpenUTAU-compatible male Mandarin voicebank. Voicebank weights are not bundled or downloaded by Harmonia until compatibility and licensing are reviewed.',
+  },
   {
     id: 'musicgen-small',
     providerId: 'musicgen',
