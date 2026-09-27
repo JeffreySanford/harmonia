@@ -66,10 +66,11 @@ compose([
 ]);
 
 const config = JSON.parse(compose([...args, 'config', '--format', 'json']));
-for (const name of ['mongo', 'mongo-express', 'worker']) {
+for (const name of ['mongo', 'redis', 'mongo-express', 'worker']) {
   assert.ok(config.services[name], `Missing Compose service: ${name}`);
 }
 assert.equal(config.services.worker.container_name, 'harmonia-worker');
+assert.equal(config.services.redis.container_name, 'harmonia-redis');
 
 const providerConfig = JSON.parse(
   compose([
@@ -125,7 +126,7 @@ const publishedPorts = Object.values(config.services)
   .filter(Number.isFinite)
   .sort((a, b) => a - b);
 
-assert.deepEqual(publishedPorts, [8081, 27017]);
+assert.deepEqual(publishedPorts, [6379, 8081, 27017]);
 console.log(
-  'Compose contract valid: MongoDB 27017, Mongo Express 8081, generic worker plus isolated DiffSinger/OpenUTAU DiffSinger/MusicGen/Stable Audio 3/ACE-Step 1.5/DiffRhythm providers have no published ports.'
+  'Compose contract valid: MongoDB 27017, Redis 6379, Mongo Express 8081, generic worker plus isolated DiffSinger/OpenUTAU DiffSinger/MusicGen/Stable Audio 3/ACE-Step 1.5/DiffRhythm providers have no published ports.'
 );

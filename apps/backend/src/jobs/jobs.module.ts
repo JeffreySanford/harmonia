@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bull';
 import { AuthModule } from '../auth/auth.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JobsGateway } from '../app/gateways/jobs.gateway';
@@ -18,6 +19,9 @@ import { MusicRuntimeModule } from '../music-runtime/music-runtime.module';
   imports: [
     AuthModule,
     MusicRuntimeModule,
+    BullModule.registerQueue({
+      name: 'generation',
+    }),
     MongooseModule.forFeature([
       {
         name: JobRecord.name,

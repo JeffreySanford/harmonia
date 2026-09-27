@@ -37,6 +37,32 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: harmonia-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      start_period: 5s
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - harmonia-net
+
   mongo-express:
     image: mongo-express:1.0-20
     container_name: harmonia-mongo-ui
@@ -311,3 +337,4 @@ networks:
 volumes:
   mongo-data:
   mongo-config:
+  redis-data:

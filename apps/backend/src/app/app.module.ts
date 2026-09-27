@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { BullModule } from '@nestjs/bull';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -34,6 +35,21 @@ import { MusicRuntimeModule } from '../music-runtime/music-runtime.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        redis: {
+          host:
+            configService.get<string>('REDIS_HOST')?.trim() ||
+            '127.0.0.1',
+          port: Number(
+            configService.get<string>('REDIS_PORT')?.trim() ||
+              '6379'
+          ),
+        },
+      }),
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
