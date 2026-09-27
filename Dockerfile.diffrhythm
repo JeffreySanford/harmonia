@@ -1,63 +1,145 @@
-FROM python:3.10-slim-bookworm
+FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
 
 LABEL org.opencontainers.image.title="harmonia-diffrhythm"
-LABEL org.opencontainers.image.description="Pinned isolated DiffRhythm v1.2 provider shell for Harmonia."
+LABEL org.opencontainers.image.description="Pinned isolated DiffRhythm v1.2 CUDA provider runtime for Harmonia."
 
 ARG DIFFRHYTHM_REF=28ad63c0f096fe2ee258bcabbcf081d5d9366afd
 
-ENV PYTHONUNBUFFERED=1
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
+ENV PYTHONUNBUFFERED=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV TOKENIZERS_PARALLELISM=false
 
 ENV HARMONIA_DIFFRHYTHM_PORT=8767
 ENV HARMONIA_DIFFRHYTHM_MODELS_ROOT=/workspace/models/diffrhythm
+
 ENV HF_HOME=/workspace/models/diffrhythm/huggingface
 ENV HF_HUB_OFFLINE=1
 ENV TRANSFORMERS_OFFLINE=1
+ENV HF_HUB_DISABLE_TELEMETRY=1
+
 ENV HARMONIA_DIFFRHYTHM_REF=${DIFFRHYTHM_REF}
+
+ENV PHONEMIZER_ESPEAK_LIBRARY=/usr/lib/x86_64-linux-gnu/libespeak-ng.so.1
+ENV PHONEMIZER_ESPEAK_PATH=/usr/bin
 
 WORKDIR /workspace
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
+      build-essential \
       ca-certificates \
       curl \
       espeak-ng \
       ffmpeg \
       git \
       libsndfile1 \
+      libsndfile1-dev \
+      pkg-config \
+      python3 \
+      python3-dev \
+      python3-pip \
+      python-is-python3 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python -m pip install --no-cache-dir "huggingface-hub==0.29.3" \
-    && python -c "import huggingface_hub; assert huggingface_hub.__version__ == '0.29.3', huggingface_hub.__version__"
+RUN python -m pip install --no-cache-dir \
+      --upgrade \
+      pip \
+      setuptools \
+      wheel
+
+# Official PyTorch 2.6.0 CUDA 12.4 runtime pair.
+# Install this before MuQ because MuQ's packaging leaves Torch unconstrained.
+RUN python -m pip install --no-cache-dir \
+      --index-url https://download.pytorch.org/whl/cu124 \
+      torch==2.6.0 \
+      torchaudio==2.6.0 \
+      torchvision==0.21.0
+
+COPY requirements.diffrhythm-runtime.txt \
+     /tmp/requirements.diffrhythm-runtime.txt
+
+RUN python -m pip install --no-cache-dir \
+      -r /tmp/requirements.diffrhythm-runtime.txt
 
 RUN git clone https://github.com/ASLP-lab/DiffRhythm.git /opt/DiffRhythm \
     && cd /opt/DiffRhythm \
     && git checkout --detach "${DIFFRHYTHM_REF}" \
     && test "$(git rev-parse HEAD)" = "${DIFFRHYTHM_REF}"
 
-# M16-B intentionally establishes only the pinned provider shell.
-# Full PyTorch / MuQ / DiffRhythm runtime dependencies arrive with
-# the registry-backed runtime qualification slices.
+# Harmonia provider/probe scripts execute outside /opt/DiffRhythm.
+# Expose the pinned upstream tree explicitly for model/infer imports.
+ENV PYTHONPATH=/opt/DiffRhythm
+
+# Upstream DiffRhythm explicitly passes cache_dir="./pretrained".
+# Harmonia's registry cache lives under HF_HOME/hub, so point both
+# likely working-directory locations at that exact physical cache.
+RUN mkdir -p \
+      /workspace/models/diffrhythm/huggingface/hub \
+      /workspace/generated \
+      /workspace/exports \
+      /workspace/artifacts \
+    && ln -sfn \
+      /workspace/models/diffrhythm/huggingface/hub \
+      /opt/DiffRhythm/pretrained \
+    && ln -sfn \
+      /workspace/models/diffrhythm/huggingface/hub \
+      /workspace/pretrained
+
 RUN test -f /opt/DiffRhythm/infer/infer.py \
     && test -f /opt/DiffRhythm/infer/infer_utils.py \
     && test -f /opt/DiffRhythm/config/diffrhythm-1b.json \
     && test -f /opt/DiffRhythm/infer/example/vocal.npy \
     && espeak-ng --version >/dev/null
 
+# Build-time import qualification only.
+# This does not load any DiffRhythm/MuQ/VAE weights.
+RUN cd /opt/DiffRhythm \
+    && python - <<'PY'
+import importlib.metadata
+import torch
+import torchaudio
+import transformers
+import huggingface_hub
+import onnxruntime
+from muq import MuQMuLan
+from model import CFM, DiT
+from infer.infer_utils import decode_audio, get_style_prompt, prepare_model
+
+assert torch.__version__.startswith("2.6.0"), torch.__version__
+assert torchaudio.__version__.startswith("2.6.0"), torchaudio.__version__
+assert transformers.__version__ == "4.49.0", transformers.__version__
+assert huggingface_hub.__version__ == "0.29.3", huggingface_hub.__version__
+assert importlib.metadata.version("muq") == "0.1.0"
+assert callable(prepare_model)
+assert callable(decode_audio)
+assert callable(get_style_prompt)
+assert CFM is not None
+assert DiT is not None
+assert MuQMuLan is not None
+
+print("DiffRhythm Python inference stack import check passed")
+print("torch=" + torch.__version__)
+print("torchaudio=" + torchaudio.__version__)
+print("transformers=" + transformers.__version__)
+print("onnxruntime=" + onnxruntime.__version__)
+PY
+
 COPY scripts/diffrhythm_provider_server.py \
      /workspace/scripts/diffrhythm_provider_server.py
 
-RUN chmod +x \
-    /workspace/scripts/diffrhythm_provider_server.py \
-    && mkdir -p \
-      /workspace/models/diffrhythm \
-      /workspace/generated \
-      /workspace/exports \
-      /workspace/artifacts
+COPY scripts/diffrhythm_runtime_probe.py \
+     /workspace/scripts/diffrhythm_runtime_probe.py
 
-HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=6 \
+RUN chmod +x \
+      /workspace/scripts/diffrhythm_provider_server.py \
+      /workspace/scripts/diffrhythm_runtime_probe.py
+
+WORKDIR /opt/DiffRhythm
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=6 \
   CMD python -c "import urllib.request; r=urllib.request.urlopen('http://127.0.0.1:8767/health', timeout=2); raise SystemExit(0 if r.status == 200 else 1)"
 
 CMD ["python", "/workspace/scripts/diffrhythm_provider_server.py"]

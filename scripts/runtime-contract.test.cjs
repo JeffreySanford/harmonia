@@ -4397,3 +4397,310 @@ test(
     );
   }
 );
+
+
+test(
+  'DiffRhythm D1 runtime image pins CUDA stack and resolves the qualified cache offline',
+  () => {
+    const probePath =
+      path.join(
+        root,
+        'scripts/diffrhythm_runtime_probe.py'
+      );
+
+    const requirementsPath =
+      path.join(
+        root,
+        'requirements.diffrhythm-runtime.txt'
+      );
+
+    assert.equal(
+      existsSync(probePath),
+      true,
+      'DiffRhythm D1 must provide a CUDA/runtime probe before enabling model loading'
+    );
+
+    assert.equal(
+      existsSync(requirementsPath),
+      true,
+      'DiffRhythm D1 must provide a pinned runtime requirements file'
+    );
+
+    const dockerfile =
+      read(
+        'Dockerfile.diffrhythm'
+      );
+
+    const probe =
+      read(
+        'scripts/diffrhythm_runtime_probe.py'
+      );
+
+    const requirements =
+      read(
+        'requirements.diffrhythm-runtime.txt'
+      );
+
+    /*
+     * DiffRhythm v1.2 upstream pairs with
+     * PyTorch/Torchaudio 2.6.0.
+     *
+     * Harmonia must pin the CUDA wheel explicitly
+     * rather than letting pip choose a CPU build or
+     * a future incompatible Torch generation.
+     */
+    assert.match(
+      dockerfile,
+      /nvidia\/cuda:12\.4/
+    );
+
+    assert.match(
+      dockerfile,
+      /download\.pytorch\.org\/whl\/cu124/
+    );
+
+    assert.match(
+      dockerfile,
+      /torch==2\.6\.0/
+    );
+
+    assert.match(
+      dockerfile,
+      /torchaudio==2\.6\.0/
+    );
+
+    /*
+     * Core upstream runtime compatibility pins.
+     */
+    assert.match(
+      requirements,
+      /^transformers==4\.49\.0$/m
+    );
+
+    assert.match(
+      requirements,
+      /^muq==0\.1\.0$/m
+    );
+
+    assert.match(
+      requirements,
+      /^accelerate==1\.4\.0$/m
+    );
+
+    assert.match(
+      requirements,
+      /^torchdiffeq==0\.2\.5$/m
+    );
+
+    assert.match(
+      requirements,
+      /^x-transformers==2\.1\.2$/m
+    );
+
+    assert.match(
+      requirements,
+      /^librosa==0\.10\.2\.post1$/m
+    );
+
+    assert.match(
+      requirements,
+      /^ema-pytorch==0\.7\.7$/m
+    );
+
+    assert.match(
+      requirements,
+      /^mutagen==1\.47\.0$/m
+    );
+
+    /*
+     * Provider source calls Hugging Face with
+     * cache_dir="./pretrained".
+     *
+     * Redirect that exact upstream cache location
+     * to the registry-managed provider cache.
+     */
+    assert.match(
+      dockerfile,
+      /\/opt\/DiffRhythm\/pretrained/
+    );
+
+    assert.match(
+      dockerfile,
+      /\/workspace\/models\/diffrhythm\/huggingface/
+    );
+
+    /*
+     * Runtime image remains incapable of network
+     * model acquisition during qualification/use.
+     */
+    assert.match(
+      dockerfile,
+      /HF_HUB_OFFLINE=1/
+    );
+
+    assert.match(
+      dockerfile,
+      /TRANSFORMERS_OFFLINE=1/
+    );
+
+    /*
+     * D1 probe validates dependencies + CUDA +
+     * local cache metadata only.
+     *
+     * It must NOT instantiate the DiffRhythm model
+     * or VAE yet; weight residency belongs to D2.
+     */
+    assert.match(
+      probe,
+      /import torch/
+    );
+
+    assert.match(
+      probe,
+      /import torchaudio/
+    );
+
+    assert.match(
+      probe,
+      /import transformers/
+    );
+
+    assert.match(
+      probe,
+      /from muq import MuQMuLan/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.is_available/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.get_device_name/
+    );
+
+    assert.match(
+      probe,
+      /torch\.cuda\.get_device_properties/
+    );
+
+    assert.match(
+      probe,
+      /memory_allocated/
+    );
+
+    assert.match(
+      probe,
+      /memory_reserved/
+    );
+
+    /*
+     * All five pinned repositories must be resolved
+     * from the qualified local cache only.
+     */
+    for (
+      const repoId of [
+        'ASLP-lab/DiffRhythm-1_2',
+        'ASLP-lab/DiffRhythm-vae',
+        'OpenMuQ/MuQ-MuLan-large',
+        'OpenMuQ/MuQ-large-msd-iter',
+        'FacebookAI/xlm-roberta-base',
+      ]
+    ) {
+      assert.ok(
+        probe.includes(repoId),
+        'runtime probe must resolve pinned local repo ' +
+          repoId
+      );
+    }
+
+    assert.match(
+      probe,
+      /local_files_only\s*=\s*True/
+    );
+
+    assert.doesNotMatch(
+      probe,
+      /prepare_model\s*\(/
+    );
+
+    assert.doesNotMatch(
+      probe,
+      /torch\.jit\.load\s*\(/
+    );
+
+    assert.doesNotMatch(
+      probe,
+      /MuQMuLan\.from_pretrained\s*\(/
+    );
+
+    /*
+     * Probe is baked into the image but model
+     * readiness remains false until D2 load proof.
+     */
+    assert.match(
+      dockerfile,
+      /diffrhythm_runtime_probe\.py/
+    );
+
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    const providerDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      providerDefinition
+    );
+
+    assert.match(
+      providerDefinition,
+      /runtimeInstalled:\s*false/
+    );
+
+    const modelDefinition =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      modelDefinition
+    );
+
+    assert.match(
+      modelDefinition,
+      /availability:\s*'planned'/
+    );
+  }
+);
+
+
+test(
+  'DiffRhythm runtime exposes pinned upstream source on Python import path',
+  () => {
+    const dockerfile =
+      read(
+        'Dockerfile.diffrhythm'
+      );
+
+    assert.match(
+      dockerfile,
+      /ENV PYTHONPATH=\/opt\/DiffRhythm/
+    );
+
+    assert.match(
+      dockerfile,
+      /ARG DIFFRHYTHM_REF=28ad63c0f096fe2ee258bcabbcf081d5d9366afd/
+    );
+
+    assert.match(
+      dockerfile,
+      /git checkout --detach "\$\{DIFFRHYTHM_REF\}"/
+    );
+  }
+);
