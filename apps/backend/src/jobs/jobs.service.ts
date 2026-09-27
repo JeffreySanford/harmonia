@@ -343,6 +343,18 @@ export class JobsService implements OnModuleInit {
       );
     }
 
+    if (
+      job.jobType === 'generate' &&
+      job.status === 'queued'
+    ) {
+      const queuedGeneration =
+        await this.generationQueue.getJob(id);
+
+      if (queuedGeneration) {
+        await queuedGeneration.remove();
+      }
+    }
+
     job.status = 'cancelled';
     job.completedAt = new Date();
     job.progress = {

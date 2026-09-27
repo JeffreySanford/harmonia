@@ -628,3 +628,341 @@ describe('JobsService durable restart reconciliation', () => {
     ]);
   });
 });
+
+describe('JobsService durable queued cancellation', () => {
+  const jobId =
+    '507f1f77bcf86cd799439021';
+
+  const userId =
+    '507f191e810c19729de860f1';
+
+  interface CancellationProbe {
+    findOwnedDocument(
+      id: string,
+      userId: string
+    ): Promise<JobRecordDocument>;
+  }
+
+  function cancellationProbe(
+    service: JobsService
+  ): CancellationProbe {
+    return service as unknown as CancellationProbe;
+  }
+
+  function makeJob(
+    status:
+      | 'queued'
+      | 'processing'
+      | 'completed',
+    jobType:
+      | 'generate'
+      | 'export' =
+        'generate'
+  ) {
+    return {
+      _id: {
+        toString:
+          () => jobId,
+      },
+
+      userId: {
+        toString:
+          () => userId,
+      },
+
+      jobType,
+      status,
+      priority: 0,
+      modelId:
+        jobType === 'generate'
+          ? 'musicgen-small'
+          : undefined,
+      datasetId:
+        undefined,
+      parameters: {},
+      progress: {
+        current: 0,
+        total: 100,
+        percentage: 0,
+        message:
+          status === 'processing'
+            ? 'Processing'
+            : 'Queued',
+      },
+      result: null,
+      createdAt:
+        new Date(
+          '2026-09-27T22:00:00.000Z'
+        ),
+      startedAt:
+        status === 'processing'
+          ? new Date(
+              '2026-09-27T22:01:00.000Z'
+            )
+          : null,
+      completedAt:
+        status === 'completed'
+          ? new Date(
+              '2026-09-27T22:02:00.000Z'
+            )
+          : null,
+      estimatedDuration:
+        null,
+      save:
+        jest
+          .fn()
+          .mockResolvedValue(
+            undefined
+          ),
+    };
+  }
+
+  function makeHarness(
+    job:
+      ReturnType<typeof makeJob>,
+    bullJob:
+      unknown = null
+  ) {
+    const generationQueue = {
+      getJob:
+        jest
+          .fn()
+          .mockResolvedValue(
+            bullJob
+          ),
+    };
+
+    const gateway = {
+      emitJobStatus:
+        jest.fn(),
+      emitJobStatusToUser:
+        jest.fn(),
+    };
+
+    const service =
+      new JobsService(
+        {} as unknown as Model<JobRecordDocument>,
+        gateway as unknown as JobsGateway,
+        {} as unknown as MusicRuntimeService,
+        generationQueue as unknown as Queue
+      );
+
+    jest
+      .spyOn(
+        cancellationProbe(
+          service
+        ),
+        'findOwnedDocument'
+      )
+      .mockResolvedValue(
+        job as unknown as JobRecordDocument
+      );
+
+    return {
+      service,
+      generationQueue,
+      gateway,
+    };
+  }
+
+  it('removes queued Bull generation work before saving Mongo cancellation', async () => {
+    const job =
+      makeJob(
+        'queued'
+      );
+
+    const callOrder:
+      string[] = [];
+
+    const bullJob = {
+      remove:
+        jest
+          .fn()
+          .mockImplementation(
+            async () => {
+              callOrder.push(
+                'bull-remove'
+              );
+            }
+          ),
+    };
+
+    job.save
+      .mockImplementation(
+        async () => {
+          callOrder.push(
+            'mongo-save'
+          );
+        }
+      );
+
+    const harness =
+      makeHarness(
+        job,
+        bullJob
+      );
+
+    const result =
+      await harness.service.cancel(
+        jobId,
+        userId
+      );
+
+    expect(
+      harness.generationQueue.getJob
+    ).toHaveBeenCalledWith(
+      jobId
+    );
+
+    expect(
+      bullJob.remove
+    ).toHaveBeenCalledTimes(
+      1
+    );
+
+    expect(
+      callOrder
+    ).toEqual([
+      'bull-remove',
+      'mongo-save',
+    ]);
+
+    expect(
+      job.status
+    ).toBe(
+      'cancelled'
+    );
+
+    expect(
+      result.status
+    ).toBe(
+      'cancelled'
+    );
+
+    expect(
+      harness.gateway.emitJobStatus
+    ).toHaveBeenCalledWith(
+      jobId,
+      'cancelled'
+    );
+
+    expect(
+      harness.gateway.emitJobStatusToUser
+    ).toHaveBeenCalledWith(
+      userId,
+      jobId,
+      'cancelled'
+    );
+  });
+
+  it('still cancels queued Mongo generation when Bull no longer has the job', async () => {
+    const job =
+      makeJob(
+        'queued'
+      );
+
+    const harness =
+      makeHarness(
+        job,
+        null
+      );
+
+    const result =
+      await harness.service.cancel(
+        jobId,
+        userId
+      );
+
+    expect(
+      harness.generationQueue.getJob
+    ).toHaveBeenCalledWith(
+      jobId
+    );
+
+    expect(
+      job.save
+    ).toHaveBeenCalledTimes(
+      1
+    );
+
+    expect(
+      job.status
+    ).toBe(
+      'cancelled'
+    );
+
+    expect(
+      result.status
+    ).toBe(
+      'cancelled'
+    );
+  });
+
+  it('does not touch Bull for a queued non-generation job', async () => {
+    const job =
+      makeJob(
+        'queued',
+        'export'
+      );
+
+    const harness =
+      makeHarness(
+        job,
+        null
+      );
+
+    await harness.service.cancel(
+      jobId,
+      userId
+    );
+
+    expect(
+      harness.generationQueue.getJob
+    ).not.toHaveBeenCalled();
+
+    expect(
+      job.status
+    ).toBe(
+      'cancelled'
+    );
+  });
+
+  it('rejects processing generation before any Bull mutation', async () => {
+    const job =
+      makeJob(
+        'processing'
+      );
+
+    const bullJob = {
+      remove:
+        jest.fn(),
+    };
+
+    const harness =
+      makeHarness(
+        job,
+        bullJob
+      );
+
+    await expect(
+      harness.service.cancel(
+        jobId,
+        userId
+      )
+    ).rejects.toThrow(
+      'Active generation cancellation is not implemented yet.'
+    );
+
+    expect(
+      harness.generationQueue.getJob
+    ).not.toHaveBeenCalled();
+
+    expect(
+      bullJob.remove
+    ).not.toHaveBeenCalled();
+
+    expect(
+      job.save
+    ).not.toHaveBeenCalled();
+  });
+});
