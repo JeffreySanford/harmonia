@@ -136,9 +136,7 @@ Order:
 4. Stable Audio
 5. ACE-Step
 
-After all five individual cases are green, run the formal deep matrix:
-
-`corepack pnpm@12.6.0 qualify:model-matrix -- --profile deep`
+After all five individual deep cases are green, consolidate the,existing retained smoke and deep evidence instead of running the,full `--profile deep` command again.,,The current deep profile includes both smoke and deep cases, so,rerunning it would regenerate all ten standard samples unnecessarily.,,The final consolidation therefore verifies:,,- all 10 retained result manifests,- all 10 retained WAV artifacts,- SHA-256 integrity,- backend artifact success,- frontend proxy artifact success,- byte identity of the latest listening copies,- exactly 5 smoke and 5 deep cases across 5 models
 
 ## Completion target
 
