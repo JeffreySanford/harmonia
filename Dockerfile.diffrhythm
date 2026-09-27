@@ -133,6 +133,9 @@ COPY scripts/diffrhythm_runtime.py \
 COPY scripts/diffrhythm_provider_server.py \
      /workspace/scripts/diffrhythm_provider_server.py
 
+COPY scripts/diffrhythm_provider_client.py \
+     /workspace/scripts/diffrhythm_provider_client.py
+
 COPY scripts/diffrhythm_runtime_probe.py \
      /workspace/scripts/diffrhythm_runtime_probe.py
 
@@ -145,6 +148,7 @@ COPY scripts/diffrhythm_generate.py \
 RUN chmod +x \
       /workspace/scripts/diffrhythm_runtime.py \
       /workspace/scripts/diffrhythm_provider_server.py \
+      /workspace/scripts/diffrhythm_provider_client.py \
       /workspace/scripts/diffrhythm_runtime_probe.py \
       /workspace/scripts/diffrhythm_residency_probe.py \
       /workspace/scripts/diffrhythm_generate.py

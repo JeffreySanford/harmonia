@@ -6202,3 +6202,329 @@ test(
     );
   }
 );
+
+test(
+  'DiffRhythm E3 backend jobs use the resident provider with lyric-conditioned 95-second generation',
+  () => {
+    const jobs =
+      read(
+        'apps/backend/src/jobs/jobs.service.ts'
+      );
+
+    const dockerfile =
+      read(
+        'Dockerfile.diffrhythm'
+      );
+
+    const catalog =
+      read(
+        'apps/backend/src/music-runtime/music-model.catalog.ts'
+      );
+
+    const clientPath =
+      path.join(
+        root,
+        'scripts/diffrhythm_provider_client.py'
+      );
+
+    /*
+     * Limit assertions to the actual persistent job
+     * execution method so E2 recovery references do
+     * not accidentally satisfy this contract.
+     */
+    const processStart =
+      jobs.indexOf(
+        'private async processGenerationJob'
+      );
+
+    const validationStart =
+      jobs.indexOf(
+        'private validateGenerationRequest',
+        processStart
+      );
+
+    assert.ok(
+      processStart >= 0,
+      'processGenerationJob must exist'
+    );
+
+    assert.ok(
+      validationStart > processStart,
+      'generation validation must follow job execution'
+    );
+
+    const processBlock =
+      jobs.slice(
+        processStart,
+        validationStart
+      );
+
+    /*
+     * DiffRhythm becomes an implemented backend job
+     * provider, but still participates in the existing
+     * queued/persistent generation lifecycle.
+     */
+    assert.match(
+      processBlock,
+      /'diffrhythm'/
+    );
+
+    assert.match(
+      processBlock,
+      /musicRuntime\.selectModel\s*\(\s*model\.id\s*\)/
+    );
+
+    assert.match(
+      processBlock,
+      /musicRuntime\.beginGeneration\s*\(\s*model\.providerId\s*\)/
+    );
+
+    assert.match(
+      processBlock,
+      /musicRuntime\.finishGeneration\s*\(\s*model\.providerId\s*\)/
+    );
+
+    /*
+     * DiffRhythm writes the same durable per-job WAV
+     * location used by the other providers.
+     */
+    assert.match(
+      processBlock,
+      /exports['"],\s*['"]jobs['"],\s*jobId/
+    );
+
+    assert.match(
+      processBlock,
+      /\/workspace\/exports\/jobs\/\$\{jobId\}\/music\.wav/
+    );
+
+    /*
+     * DiffRhythm generation must preserve the two
+     * conditioning inputs qualified in E1:
+     *
+     *   prompt/style
+     *   timestamped lyrics
+     */
+    assert.match(
+      processBlock,
+      /model\.providerId\s*===\s*'diffrhythm'/
+    );
+
+    assert.match(
+      processBlock,
+      /parameters\[['"]lyrics['"]\]/
+    );
+
+    assert.match(
+      processBlock,
+      /runDiffRhythmClient\s*\(/
+    );
+
+    assert.match(
+      processBlock,
+      /runtimeModelId:\s*runtime\.runtimeModelId/
+    );
+
+    assert.match(
+      processBlock,
+      /prompt/
+    );
+
+    assert.match(
+      processBlock,
+      /lyrics/
+    );
+
+    assert.match(
+      processBlock,
+      /duration/
+    );
+
+    assert.match(
+      processBlock,
+      /outputPath:\s*containerPath/
+    );
+
+    /*
+     * Durable job metadata must retain the actual
+     * provider request/result context.
+     */
+    assert.match(
+      processBlock,
+      /diffrhythm/i
+    );
+
+    assert.match(
+      processBlock,
+      /requestedDurationSeconds/
+    );
+
+    /*
+     * Request validation:
+     * Base is the fixed 95-second / 2048-frame model.
+     */
+    const validationEnd =
+      jobs.indexOf(
+        'private parseDiffSingerScore',
+        validationStart
+      );
+
+    assert.ok(
+      validationEnd > validationStart,
+      'validation block end not found'
+    );
+
+    const validation =
+      jobs.slice(
+        validationStart,
+        validationEnd
+      );
+
+    assert.match(
+      validation,
+      /'diffrhythm'/
+    );
+
+    assert.match(
+      validation,
+      /model\.providerId\s*===\s*'diffrhythm'/
+    );
+
+    assert.match(
+      validation,
+      /95/
+    );
+
+    assert.match(
+      validation,
+      /lyrics/
+    );
+
+    assert.match(
+      validation,
+      /DiffRhythm/
+    );
+
+    /*
+     * The job layer must reject arbitrary Base
+     * durations rather than silently coercing them.
+     */
+    assert.match(
+      validation,
+      /duration[\s\S]*?!==\s*95|duration[\s\S]*?!=\s*95/
+    );
+
+    /*
+     * A small container-side HTTP client keeps HTTP
+     * details out of JobsService and talks only to
+     * the resident provider's loopback endpoint.
+     */
+    assert.equal(
+      existsSync(clientPath),
+      true,
+      'E3 must provide a DiffRhythm provider client'
+    );
+
+    const client =
+      read(
+        'scripts/diffrhythm_provider_client.py'
+      );
+
+    assert.match(
+      client,
+      /127\.0\.0\.1:8767\/generate/
+    );
+
+    assert.match(
+      client,
+      /urllib\.request/
+    );
+
+    assert.match(
+      client,
+      /"model"/
+    );
+
+    assert.match(
+      client,
+      /"prompt"/
+    );
+
+    assert.match(
+      client,
+      /"lyrics"/
+    );
+
+    assert.match(
+      client,
+      /"duration"/
+    );
+
+    assert.match(
+      client,
+      /"output"/
+    );
+
+    assert.match(
+      client,
+      /"seed"/
+    );
+
+    assert.match(
+      client,
+      /json\.loads|json\.load/
+    );
+
+    /*
+     * JobsService invokes the client inside the
+     * already-running provider container.
+     */
+    assert.match(
+      jobs,
+      /harmonia-diffrhythm/
+    );
+
+    assert.match(
+      jobs,
+      /\/workspace\/scripts\/diffrhythm_provider_client\.py/
+    );
+
+    /*
+     * The image must contain that client.
+     */
+    assert.match(
+      dockerfile,
+      /COPY\s+scripts\/diffrhythm_provider_client\.py[\s\S]*?\/workspace\/scripts\/diffrhythm_provider_client\.py/
+    );
+
+    assert.match(
+      dockerfile,
+      /chmod\s+\+x[\s\S]*?diffrhythm_provider_client\.py/
+    );
+
+    /*
+     * E3 code integration still does not expose Base.
+     * Live end-to-end qualification precedes catalog
+     * availability promotion.
+     */
+    const baseModel =
+      catalog.match(
+        /\{\s*id:\s*'diffrhythm-v12-base',[\s\S]*?\n\s*\},/
+      )?.[0];
+
+    assert.ok(
+      baseModel,
+      'DiffRhythm Base catalog entry must exist'
+    );
+
+    assert.match(
+      baseModel,
+      /runtimeModelId:\s*'diffrhythm-v12-base'/
+    );
+
+    assert.match(
+      baseModel,
+      /availability:\s*'planned'/
+    );
+  }
+);
