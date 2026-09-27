@@ -13,6 +13,7 @@ import {
 } from '../schemas/user.schema';
 import { JobsController } from './jobs.controller';
 import { JobsService } from './jobs.service';
+import { GenerationProcessor } from './generation.processor';
 import { MusicRuntimeModule } from '../music-runtime/music-runtime.module';
 
 @Module({
@@ -34,7 +35,7 @@ import { MusicRuntimeModule } from '../music-runtime/music-runtime.module';
     ]),
   ],
   controllers: [JobsController],
-  providers: [JobsGateway, JobsService],
+  providers: [JobsGateway, JobsService, GenerationProcessor],
   exports: [JobsService, JobsGateway],
 })
 export class JobsModule {}

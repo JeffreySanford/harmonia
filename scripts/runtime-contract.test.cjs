@@ -6236,7 +6236,7 @@ test(
      */
     const processStart =
       jobs.indexOf(
-        'private async processGenerationJob'
+        'async processGenerationJob('
       );
 
     const validationStart =

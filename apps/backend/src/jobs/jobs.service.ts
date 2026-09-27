@@ -4,10 +4,12 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
 import { InjectModel } from '@nestjs/mongoose';
 import { spawn } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
+import type { Queue } from 'bull';
 import { Model, Types } from 'mongoose';
 import { JobsGateway } from '../app/gateways/jobs.gateway';
 import { MUSIC_MODELS } from '../music-runtime/music-model.catalog';
@@ -37,13 +39,14 @@ export interface ResolvedJobArtifact {
 @Injectable()
 export class JobsService {
   private readonly logger = new Logger(JobsService.name);
-  private generationTail: Promise<void> = Promise.resolve();
 
   constructor(
     @InjectModel(JobRecord.name)
     private readonly jobModel: Model<JobRecordDocument>,
     private readonly gateway: JobsGateway,
-    private readonly musicRuntime: MusicRuntimeService
+    private readonly musicRuntime: MusicRuntimeService,
+    @InjectQueue('generation')
+    private readonly generationQueue: Queue
   ) {}
 
   async findAll(userId: string, filters: JobFiltersDto) {
@@ -101,10 +104,21 @@ export class JobsService {
     this.gateway.emitJobStatusToUser(userId, result.id, result.status);
 
     if (dto.jobType === 'generate') {
-      // Return the durable queued record before inference begins. The promise
-      // chain serializes GPU generation while allowing the HTTP request to
-      // complete immediately.
-      setTimeout(() => this.enqueueGeneration(result.id, userId), 0);
+      // Mongo owns the durable application record; Bull owns durable
+      // dispatch. Reusing the Mongo id as the Bull job id gives the two
+      // persistence layers one stable generation identity.
+      await this.generationQueue.add(
+        'generate',
+        {
+          jobId: result.id,
+          userId,
+        },
+        {
+          jobId: result.id,
+          removeOnComplete: false,
+          removeOnFail: false,
+        }
+      );
     }
 
     return result;
@@ -289,13 +303,7 @@ export class JobsService {
     return this.toDto(job);
   }
 
-  private enqueueGeneration(jobId: string, userId: string): void {
-    this.generationTail = this.generationTail
-      .catch(() => undefined)
-      .then(() => this.processGenerationJob(jobId, userId));
-  }
-
-  private async processGenerationJob(
+  async processGenerationJob(
     jobId: string,
     userId: string
   ): Promise<void> {

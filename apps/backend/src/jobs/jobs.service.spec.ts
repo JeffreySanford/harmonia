@@ -8,6 +8,7 @@ describe('JobsService generation contract', () => {
   const service = new JobsService(
     {} as any,
     {} as any,
+    {} as any,
     {} as any
   );
 
