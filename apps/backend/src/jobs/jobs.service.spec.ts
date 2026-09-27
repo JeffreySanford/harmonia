@@ -245,3 +245,182 @@ describe('JobsService generation contract', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 });
+
+describe('JobsService durable restart reconciliation', () => {
+  const jobId =
+    '507f1f77bcf86cd799439011';
+
+  const userId =
+    '507f191e810c19729de860ea';
+
+  function makeJob(
+    status: 'queued' | 'processing'
+  ) {
+    return {
+      _id: {
+        toString: () => jobId,
+      },
+      userId: {
+        toString: () => userId,
+      },
+      status,
+      startedAt:
+        status === 'processing'
+          ? new Date()
+          : null,
+      progress: null,
+      save: jest.fn().mockResolvedValue(undefined),
+    };
+  }
+
+  function makeHarness(
+    jobs: ReturnType<typeof makeJob>[],
+    existingBullJob: unknown = null
+  ) {
+    const exec =
+      jest.fn().mockResolvedValue(jobs);
+
+    const find =
+      jest.fn().mockReturnValue({
+        exec,
+      });
+
+    const generationQueue = {
+      isReady:
+        jest.fn().mockResolvedValue(undefined),
+      getJob:
+        jest.fn().mockResolvedValue(existingBullJob),
+      add:
+        jest.fn().mockResolvedValue({}),
+    };
+
+    const service = new JobsService(
+      { find } as any,
+      {} as any,
+      {} as any,
+      generationQueue as any
+    );
+
+    return {
+      service,
+      find,
+      exec,
+      generationQueue,
+    };
+  }
+
+  it('waits for Bull before startup reconciliation', async () => {
+    const harness = makeHarness([]);
+
+    const reconcile = jest
+      .spyOn(harness.service as any,
+        'reconcileGenerationQueue'
+      )
+      .mockResolvedValue(undefined);
+
+    await harness.service.onModuleInit();
+
+    expect(
+      harness.generationQueue.isReady
+    ).toHaveBeenCalledTimes(1);
+
+    expect(reconcile).toHaveBeenCalledTimes(1);
+
+    expect(
+      harness.generationQueue.isReady.mock.invocationCallOrder[0]!
+    ).toBeLessThan(
+      reconcile.mock.invocationCallOrder[0]!
+    );
+  });
+
+  it('scans only queued and processing generation records', async () => {
+    const harness = makeHarness([]);
+
+    await (harness.service as any)
+      .reconcileGenerationQueue();
+
+    expect(harness.find).toHaveBeenCalledWith({
+      jobType: 'generate',
+      status: {
+        $in: ['queued', 'processing'],
+      },
+    });
+
+    expect(harness.exec).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not enqueue a duplicate when Bull already owns the Mongo job id', async () => {
+    const job = makeJob('queued');
+
+    const harness = makeHarness(
+      [job],
+      { id: jobId }
+    );
+
+    await (harness.service as any)
+      .reconcileGenerationQueue();
+
+    expect(
+      harness.generationQueue.getJob
+    ).toHaveBeenCalledWith(jobId);
+
+    expect(
+      harness.generationQueue.add
+    ).not.toHaveBeenCalled();
+
+    expect(job.save).not.toHaveBeenCalled();
+  });
+
+  it('re-enqueues an orphaned queued Mongo generation record with the same identity', async () => {
+    const job = makeJob('queued');
+    const harness = makeHarness([job]);
+
+    await (harness.service as any)
+      .reconcileGenerationQueue();
+
+    expect(
+      harness.generationQueue.add
+    ).toHaveBeenCalledWith(
+      'generate',
+      {
+        jobId,
+        userId,
+      },
+      {
+        jobId,
+        removeOnComplete: false,
+        removeOnFail: false,
+      }
+    );
+
+    expect(job.save).not.toHaveBeenCalled();
+  });
+
+  it('resets orphaned processing state before durable replay', async () => {
+    const job = makeJob('processing');
+    const harness = makeHarness([job]);
+
+    await (harness.service as any)
+      .reconcileGenerationQueue();
+
+    expect(job.status).toBe('queued');
+    expect(job.startedAt).toBeNull();
+    expect(job.progress).toEqual({
+      current: 0,
+      total: 100,
+      percentage: 0,
+      message: 'Recovered after backend restart; queued for durable replay',
+    });
+
+    expect(job.save).toHaveBeenCalledTimes(1);
+    expect(
+      harness.generationQueue.add
+    ).toHaveBeenCalledTimes(1);
+
+    expect(
+      job.save.mock.invocationCallOrder[0]!
+    ).toBeLessThan(
+      harness.generationQueue.add.mock.invocationCallOrder[0]!
+    );
+  });
+});

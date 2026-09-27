@@ -3,6 +3,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { InjectModel } from '@nestjs/mongoose';
@@ -37,7 +38,7 @@ export interface ResolvedJobArtifact {
 }
 
 @Injectable()
-export class JobsService {
+export class JobsService implements OnModuleInit {
   private readonly logger = new Logger(JobsService.name);
 
   constructor(
@@ -48,6 +49,64 @@ export class JobsService {
     @InjectQueue('generation')
     private readonly generationQueue: Queue
   ) {}
+
+  async onModuleInit(): Promise<void> {
+    await this.generationQueue.isReady();
+    await this.reconcileGenerationQueue();
+  }
+
+  private async reconcileGenerationQueue(): Promise<void> {
+    const pendingJobs = await this.jobModel
+      .find({
+        jobType: 'generate',
+        status: {
+          $in: ['queued', 'processing'],
+        },
+      })
+      .exec();
+
+    for (const job of pendingJobs) {
+      const jobId = job._id.toString();
+      const userId = job.userId.toString();
+
+      const existing =
+        await this.generationQueue.getJob(jobId);
+
+      if (existing) {
+        continue;
+      }
+
+      if (job.status === 'processing') {
+        job.status = 'queued';
+        job.startedAt = null;
+        job.progress = {
+          current: 0,
+          total: 100,
+          percentage: 0,
+          message: 'Recovered after backend restart; queued for durable replay',
+        };
+
+        await job.save();
+      }
+
+      await this.generationQueue.add(
+        'generate',
+        {
+          jobId,
+          userId,
+        },
+        {
+          jobId,
+          removeOnComplete: false,
+          removeOnFail: false,
+        }
+      );
+
+      this.logger.warn(
+        `Recovered generation job ${jobId} after backend restart`
+      );
+    }
+  }
 
   async findAll(userId: string, filters: JobFiltersDto) {
     const query: Record<string, unknown> = {
