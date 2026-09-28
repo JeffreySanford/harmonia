@@ -568,6 +568,10 @@ test('Mongo jobs validator matches the persistent JobRecord contract', () => {
       source,
       /'pending'.*'queued'.*'processing'.*'completed'.*'failed'.*'cancelled'/s
     );
+    assert.match(
+      source,
+      /generationAttempt.*generationMaxAttempts.*generationLastError/s
+    );
 
     assert.doesNotMatch(source, /required: \['type', 'status'\]/);
 
@@ -576,6 +580,9 @@ test('Mongo jobs validator matches the persistent JobRecord contract', () => {
 
   assert.match(schema, /jobType!?: JobRecordType/);
   assert.match(schema, /status!?: JobRecordStatus/);
+  assert.match(schema, /generationAttempt!?: number/);
+  assert.match(schema, /generationMaxAttempts!?: number \| null/);
+  assert.match(schema, /generationLastError!?: string \| null/);
   assert.match(repair, /collMod: "jobs"/);
   assert.match(repair, /JOBS_SCHEMA_SYNC_OK/);
   assert.match(repair, /status_1_worker_id_1/);

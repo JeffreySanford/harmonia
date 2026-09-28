@@ -69,6 +69,15 @@ export class JobRecord {
   @Prop({ type: Number, default: null })
   estimatedDuration!: number | null;
 
+  @Prop({ type: Number, default: 0 })
+  generationAttempt!: number;
+
+  @Prop({ type: Number, default: null })
+  generationMaxAttempts!: number | null;
+
+  @Prop({ type: String, default: null })
+  generationLastError!: string | null;
+
   @Prop()
   createdAt!: Date;
 

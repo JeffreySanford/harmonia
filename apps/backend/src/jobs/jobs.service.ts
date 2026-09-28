@@ -10,7 +10,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { spawn } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
-import type { Queue } from 'bull';
+import type { JobOptions, Queue } from 'bull';
 import { Model, Types } from 'mongoose';
 import { JobsGateway } from '../app/gateways/jobs.gateway';
 import { MUSIC_MODELS } from '../music-runtime/music-model.catalog';
@@ -21,6 +21,14 @@ import {
   JobRecordStatus,
 } from '../schemas/job-record.schema';
 import { CreateJobDto, JobFiltersDto } from './dto/jobs.dto';
+
+const GENERATION_MAX_ATTEMPTS = 3;
+const GENERATION_RETRY_BASE_DELAY_MS = 10_000;
+
+export interface GenerationAttemptContext {
+  attempt: number;
+  maxAttempts: number;
+}
 
 interface WavMetadata {
   channels: number;
@@ -52,6 +60,21 @@ export class JobsService implements OnModuleInit {
     @InjectQueue('generation')
     private readonly generationQueue: Queue
   ) {}
+
+  private generationQueueOptions(
+    jobId: string
+  ): JobOptions {
+    return {
+      jobId,
+      attempts: GENERATION_MAX_ATTEMPTS,
+      backoff: {
+        type: 'exponential',
+        delay: GENERATION_RETRY_BASE_DELAY_MS,
+      },
+      removeOnComplete: false,
+      removeOnFail: false,
+    };
+  }
 
   private consumeActiveGenerationCancellation(
     jobId: string
@@ -122,11 +145,7 @@ export class JobsService implements OnModuleInit {
           jobId,
           userId,
         },
-        {
-          jobId,
-          removeOnComplete: false,
-          removeOnFail: false,
-        }
+        this.generationQueueOptions(jobId)
       );
 
       this.logger.warn(
@@ -323,6 +342,15 @@ export class JobsService implements OnModuleInit {
       startedAt: null,
       completedAt: null,
       estimatedDuration: null,
+      generationAttempt:
+        dto.jobType === 'generate'
+          ? 0
+          : undefined,
+      generationMaxAttempts:
+        dto.jobType === 'generate'
+          ? GENERATION_MAX_ATTEMPTS
+          : null,
+      generationLastError: null,
     });
 
     const result = this.toDto(job);
@@ -338,11 +366,7 @@ export class JobsService implements OnModuleInit {
           jobId: result.id,
           userId,
         },
-        {
-          jobId: result.id,
-          removeOnComplete: false,
-          removeOnFail: false,
-        }
+        this.generationQueueOptions(result.id)
       );
     }
 
@@ -574,7 +598,11 @@ export class JobsService implements OnModuleInit {
 
   async processGenerationJob(
     jobId: string,
-    userId: string
+    userId: string,
+    attemptContext: GenerationAttemptContext = {
+      attempt: 1,
+      maxAttempts: GENERATION_MAX_ATTEMPTS,
+    }
   ): Promise<void> {
     const job = await this.findOwnedDocument(jobId, userId);
 
@@ -618,6 +646,9 @@ export class JobsService implements OnModuleInit {
     try {
       await this.updateStatus(jobId, userId, 'processing', {
         startedAt: new Date(),
+        generationAttempt: attemptContext.attempt,
+        generationMaxAttempts: attemptContext.maxAttempts,
+        generationLastError: null,
       });
       await this.updateProgress(jobId, userId, {
         current: 10,

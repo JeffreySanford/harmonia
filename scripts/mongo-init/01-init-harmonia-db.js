@@ -103,6 +103,9 @@ db.createCollection('jobs', {
         startedAt: { bsonType: ['date', 'null'] },
         completedAt: { bsonType: ['date', 'null'] },
         estimatedDuration: { bsonType: ['number', 'null'] },
+        generationAttempt: { bsonType: 'number', minimum: 0 },
+        generationMaxAttempts: { bsonType: ['number', 'null'], minimum: 1 },
+        generationLastError: { bsonType: ['string', 'null'] },
         createdAt: { bsonType: 'date' },
         updatedAt: { bsonType: 'date' }
       }

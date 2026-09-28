@@ -451,6 +451,11 @@ describe('JobsService durable restart reconciliation', () => {
       },
       {
         jobId,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 10000,
+        },
         removeOnComplete: false,
         removeOnFail: false,
       }

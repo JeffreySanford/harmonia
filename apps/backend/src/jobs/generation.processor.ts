@@ -20,9 +20,16 @@ export class GenerationProcessor {
   async generate(
     job: Job<GenerationJobData>
   ): Promise<void> {
+    const maxAttempts =
+      job.opts.attempts || 1;
+
     await this.jobsService.processGenerationJob(
       job.data.jobId,
-      job.data.userId
+      job.data.userId,
+      {
+        attempt: job.attemptsMade + 1,
+        maxAttempts,
+      }
     );
   }
 }
