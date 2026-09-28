@@ -341,7 +341,24 @@ export class MusicRuntimeService {
         operationId
       );
 
-      await this.compose(provider, ['up', '--detach', '--no-build', provider.dockerService!]);
+      const dockerService =
+        provider.dockerService;
+
+      if (!dockerService) {
+        throw new Error(
+          `${provider.name} has no Docker runtime configured.`
+        );
+      }
+
+      await this.compose(
+        provider,
+        [
+          'up',
+          '--detach',
+          '--no-build',
+          dockerService,
+        ]
+      );
 
       await this.transition(
         provider,
@@ -559,12 +576,25 @@ export class MusicRuntimeService {
     hardware: HardwareProfile,
     operationId: string | null = null
   ): Promise<void> {
-    const args = this.composeArgs(provider, [
-      'build',
-      '--provenance=false',
-      '--progress=plain',
-      provider.dockerService!,
-    ]);
+    const dockerService =
+      provider.dockerService;
+
+    if (!dockerService) {
+      throw new Error(
+        `${provider.name} has no Docker runtime configured.`
+      );
+    }
+
+    const args =
+      this.composeArgs(
+        provider,
+        [
+          'build',
+          '--provenance=false',
+          '--progress=plain',
+          dockerService,
+        ]
+      );
 
     this.logger.log(`docker ${args.join(' ')}`);
 
@@ -928,18 +958,36 @@ export class MusicRuntimeService {
     );
 
     const running: Array<{
-      provider: MusicProviderDefinition;
-      healthy: boolean;
+      provider:
+        MusicProviderDefinition;
+      containerName:
+        string;
+      healthy:
+        boolean;
     }> = [];
 
-    for (const provider of runtimeProviders) {
+    for (
+      const provider of
+      runtimeProviders
+    ) {
+      const containerName =
+        provider.containerName;
+
+      if (!containerName) {
+        continue;
+      }
+
       try {
-        const { stdout } = await execFileAsync('docker', [
-          'inspect',
-          '--format',
-          '{{json .State}}',
-          provider.containerName!,
-        ]);
+        const { stdout } =
+          await execFileAsync(
+            'docker',
+            [
+              'inspect',
+              '--format',
+              '{{json .State}}',
+              containerName,
+            ]
+          );
         const state = JSON.parse(String(stdout).trim()) as {
           Running?: boolean;
           Health?: { Status?: string };
@@ -948,7 +996,10 @@ export class MusicRuntimeService {
         if (state.Running) {
           running.push({
             provider,
-            healthy: state.Health?.Status === 'healthy',
+            containerName,
+            healthy:
+              state.Health?.Status ===
+              'healthy',
           });
         }
       } catch {
@@ -966,11 +1017,26 @@ export class MusicRuntimeService {
       );
 
       await Promise.all(
-        running.map(({ provider }) =>
-          execFileAsync('docker', ['stop', provider.containerName!], {
-            cwd: process.cwd(),
-            windowsHide: true,
-          }).catch(() => undefined)
+        running.map(
+          ({
+            containerName,
+          }) =>
+            execFileAsync(
+              'docker',
+              [
+                'stop',
+                containerName,
+              ],
+              {
+                cwd:
+                  process.cwd(),
+                windowsHide:
+                  true,
+              }
+            ).catch(
+              () =>
+                undefined
+            )
         )
       );
 
@@ -994,8 +1060,16 @@ export class MusicRuntimeService {
     }
 
     if (running.length === 1) {
-      const recovered = running[0]!;
-      const sameProvider = this.status.providerId === recovered.provider.id;
+      const recovered =
+        running[0];
+
+      if (!recovered) {
+        return;
+      }
+
+      const sameProvider =
+        this.status.providerId ===
+        recovered.provider.id;
       const shouldRecoverSnapshot =
         !sameProvider ||
         !this.status.modelId ||
@@ -1234,7 +1308,21 @@ export class MusicRuntimeService {
       args.push('-f', 'docker-compose.gpu.yml');
     }
 
-    args.push('--profile', provider.composeProfile!, ...operation);
+    const composeProfile =
+      provider.composeProfile;
+
+    if (!composeProfile) {
+      throw new Error(
+        `${provider.name} has no Compose profile configured.`
+      );
+    }
+
+    args.push(
+      '--profile',
+      composeProfile,
+      ...operation
+    );
+
     return args;
   }
 

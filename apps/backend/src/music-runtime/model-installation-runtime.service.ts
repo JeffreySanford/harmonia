@@ -102,14 +102,23 @@ export class ModelInstallationRuntimeService {
 
       for (const row of rows) {
         for (const modelId of row.modelIds || []) {
-          if (!grouped.has(modelId)) {
+          const modelRows =
+            grouped.get(
+              modelId
+            );
+
+          if (!modelRows) {
             continue;
           }
 
-          grouped.get(modelId)!.push({
-            status: String(row.status),
+          modelRows.push({
+            status:
+              String(
+                row.status
+              ),
             verifiedAt:
-              row.verifiedAt || null,
+              row.verifiedAt ||
+              null,
           });
         }
       }

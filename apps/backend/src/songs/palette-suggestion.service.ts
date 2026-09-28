@@ -95,7 +95,9 @@ export class PaletteSuggestionService {
         }
 
         return {
-          primary: genres[0]!,
+          primary:
+            genres[0] ??
+            'Pop',
           secondary: genres.slice(1, 3),
           confidence: 0.8, // SuggestGenres doesn't provide confidence, assume reasonable confidence
           reasoning: 'Based on genre suggestion analysis',
@@ -210,10 +212,27 @@ export class PaletteSuggestionService {
       .forEach((id: string) => addInstrument(id, 'secondary'));
 
     // Add one accent instrument (optional)
-    if (template.accent.length > 0) {
+    if (
+      template.accent.length >
+      0
+    ) {
       const accentId =
-        template.accent[Math.floor(Math.random() * template.accent.length)]!;
-      addInstrument(accentId, 'accent');
+        template.accent[
+          Math.floor(
+            Math.random() *
+              template.accent.length
+          )
+        ];
+
+      if (
+        accentId !==
+        undefined
+      ) {
+        addInstrument(
+          accentId,
+          'accent'
+        );
+      }
     }
 
     // Ensure we have at least 3 instruments
