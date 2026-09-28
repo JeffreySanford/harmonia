@@ -76,6 +76,79 @@ export class JobsService implements OnModuleInit {
     };
   }
 
+  private async clearGenerationArtifact(
+    jobId: string
+  ): Promise<void> {
+    const artifactPath =
+      path.join(
+        process.cwd(),
+        'exports',
+        'jobs',
+        jobId,
+        'music.wav'
+      );
+
+    await fs.rm(
+      artifactPath,
+      {
+        force: true,
+      }
+    );
+  }
+
+  private async prepareGenerationRetry(
+    jobId: string,
+    userId: string,
+    error: string,
+    attemptContext: GenerationAttemptContext
+  ): Promise<void> {
+    const job =
+      await this.findOwnedDocument(
+        jobId,
+        userId
+      );
+
+    job.status = 'queued';
+    job.startedAt = null;
+    job.completedAt = null;
+    job.result = null;
+    job.generationAttempt =
+      attemptContext.attempt;
+    job.generationMaxAttempts =
+      attemptContext.maxAttempts;
+    job.generationLastError =
+      error;
+    job.progress = {
+      current: 0,
+      total: 100,
+      percentage: 0,
+      message:
+        `Retrying generation attempt ${
+          attemptContext.attempt + 1
+        } of ${
+          attemptContext.maxAttempts
+        }`,
+    };
+
+    await job.save();
+
+    this.gateway.emitJobStatus(
+      jobId,
+      'queued'
+    );
+
+    this.gateway.emitJobStatusToUser(
+      userId,
+      jobId,
+      'queued'
+    );
+
+    this.gateway.emitJobProgress(
+      jobId,
+      job.progress
+    );
+  }
+
   private consumeActiveGenerationCancellation(
     jobId: string
   ): boolean {
@@ -590,6 +663,12 @@ export class JobsService implements OnModuleInit {
     job.status = 'failed';
     job.result = { error };
     job.completedAt = new Date();
+
+    if (job.jobType === 'generate') {
+      job.generationLastError =
+        error;
+    }
+
     await job.save();
 
     this.gateway.emitJobFailed(id, userId, error);
@@ -656,6 +735,10 @@ export class JobsService implements OnModuleInit {
         percentage: 10,
         message: `Preparing ${model.name}`,
       });
+
+      await this.clearGenerationArtifact(
+        jobId
+      );
 
       await this.musicRuntime.selectModel(model.id);
 
@@ -912,9 +995,44 @@ export class JobsService implements OnModuleInit {
       }
 
       const message =
-        error instanceof Error ? error.message : 'Unknown generation error';
-      this.logger.error(`Generation job ${jobId} failed: ${message}`);
-      await this.fail(jobId, userId, message).catch(() => undefined);
+        error instanceof Error
+          ? error.message
+          : 'Unknown generation error';
+
+      if (
+        attemptContext.attempt < attemptContext.maxAttempts
+      ) {
+        this.logger.warn(
+          `Generation job ${jobId} attempt ${
+            attemptContext.attempt
+          } of ${
+            attemptContext.maxAttempts
+          } failed and will retry: ${message}`
+        );
+
+        await this.prepareGenerationRetry(
+          jobId,
+          userId,
+          message,
+          attemptContext
+        );
+
+        throw error;
+      }
+
+      this.logger.error(
+        `Generation job ${jobId} exhausted ${
+          attemptContext.maxAttempts
+        } attempts: ${message}`
+      );
+
+      await this.fail(
+        jobId,
+        userId,
+        message
+      );
+
+      throw error;
     }
   }
 

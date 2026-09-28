@@ -1207,6 +1207,12 @@ describe('JobsService active generation worker cancellation', () => {
             ),
       estimatedDuration:
         null,
+      generationAttempt:
+        0,
+      generationMaxAttempts:
+        3,
+      generationLastError:
+        null,
       save:
         jest
           .fn()
@@ -1466,6 +1472,262 @@ describe('JobsService active generation worker cancellation', () => {
             true,
           force:
             true,
+        }
+      );
+    }
+  });
+
+  it('removes a stale WAV and persists queued retry state after a transient provider failure', async () => {
+    const tempRoot =
+      await fs.mkdtemp(
+        path.join(
+          os.tmpdir(),
+          'harmonia-m18-retry-'
+        )
+      );
+
+    const cwdSpy =
+      jest
+        .spyOn(
+          process,
+          'cwd'
+        )
+        .mockReturnValue(
+          tempRoot
+        );
+
+    try {
+      const harness =
+        makeHarness();
+
+      const hostDir =
+        path.join(
+          tempRoot,
+          'exports',
+          'jobs',
+          jobId
+        );
+
+      const stalePath =
+        path.join(
+          hostDir,
+          'music.wav'
+        );
+
+      await fs.mkdir(
+        hostDir,
+        {
+          recursive: true,
+        }
+      );
+
+      await fs.writeFile(
+        stalePath,
+        Buffer.from('stale-partial-audio')
+      );
+
+      jest
+        .spyOn(
+          harness.probe,
+          'runMusicGenClient'
+        )
+        .mockImplementation(
+          async () => {
+            await expect(
+              fs.stat(
+                stalePath
+              )
+            ).rejects.toMatchObject({
+              code: 'ENOENT',
+            });
+
+            throw new Error(
+              'transient provider failure'
+            );
+          }
+        );
+
+      await expect(
+        harness.service.processGenerationJob(
+          jobId,
+          userId,
+          {
+            attempt: 1,
+            maxAttempts: 3,
+          }
+        )
+      ).rejects.toThrow(
+        'transient provider failure'
+      );
+
+      expect(
+        harness.job.status
+      ).toBe(
+        'queued'
+      );
+
+      expect(
+        harness.job.startedAt
+      ).toBeNull();
+
+      expect(
+        harness.job.completedAt
+      ).toBeNull();
+
+      expect(
+        harness.job.result
+      ).toBeNull();
+
+      expect(
+        harness.job.generationAttempt
+      ).toBe(1);
+
+      expect(
+        harness.job.generationMaxAttempts
+      ).toBe(3);
+
+      expect(
+        harness.job.generationLastError
+      ).toBe(
+        'transient provider failure'
+      );
+
+      expect(
+        harness.job.progress
+      ).toEqual({
+        current: 0,
+        total: 100,
+        percentage: 0,
+        message:
+          'Retrying generation attempt 2 of 3',
+      });
+
+      expect(
+        harness.gateway.emitJobFailed
+      ).not.toHaveBeenCalled();
+
+      expect(
+        harness.gateway.emitJobStatus
+      ).toHaveBeenLastCalledWith(
+        jobId,
+        'queued'
+      );
+
+      expect(
+        harness.musicRuntime.finishGeneration
+      ).toHaveBeenCalledTimes(1);
+    } finally {
+      cwdSpy.mockRestore();
+
+      await fs.rm(
+        tempRoot,
+        {
+          recursive: true,
+          force: true,
+        }
+      );
+    }
+  });
+
+  it('persists terminal failure and rethrows when the final generation attempt is exhausted', async () => {
+    const tempRoot =
+      await fs.mkdtemp(
+        path.join(
+          os.tmpdir(),
+          'harmonia-m18-exhausted-'
+        )
+      );
+
+    const cwdSpy =
+      jest
+        .spyOn(
+          process,
+          'cwd'
+        )
+        .mockReturnValue(
+          tempRoot
+        );
+
+    try {
+      const harness =
+        makeHarness();
+
+      jest
+        .spyOn(
+          harness.probe,
+          'runMusicGenClient'
+        )
+        .mockRejectedValue(
+          new Error(
+            'final provider failure'
+          )
+        );
+
+      await expect(
+        harness.service.processGenerationJob(
+          jobId,
+          userId,
+          {
+            attempt: 3,
+            maxAttempts: 3,
+          }
+        )
+      ).rejects.toThrow(
+        'final provider failure'
+      );
+
+      expect(
+        harness.job.status
+      ).toBe(
+        'failed'
+      );
+
+      expect(
+        harness.job.result
+      ).toEqual({
+        error:
+          'final provider failure',
+      });
+
+      expect(
+        harness.job.completedAt
+      ).toBeInstanceOf(
+        Date
+      );
+
+      expect(
+        harness.job.generationAttempt
+      ).toBe(3);
+
+      expect(
+        harness.job.generationMaxAttempts
+      ).toBe(3);
+
+      expect(
+        harness.job.generationLastError
+      ).toBe(
+        'final provider failure'
+      );
+
+      expect(
+        harness.gateway.emitJobFailed
+      ).toHaveBeenCalledWith(
+        jobId,
+        userId,
+        'final provider failure'
+      );
+
+      expect(
+        harness.musicRuntime.finishGeneration
+      ).toHaveBeenCalledTimes(1);
+    } finally {
+      cwdSpy.mockRestore();
+
+      await fs.rm(
+        tempRoot,
+        {
+          recursive: true,
+          force: true,
         }
       );
     }
