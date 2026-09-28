@@ -41,6 +41,9 @@ export interface ResolvedJobArtifact {
 export class JobsService implements OnModuleInit {
   private readonly logger = new Logger(JobsService.name);
 
+  private readonly activeGenerationCancellations =
+    new Set<string>();
+
   constructor(
     @InjectModel(JobRecord.name)
     private readonly jobModel: Model<JobRecordDocument>,
@@ -49,6 +52,24 @@ export class JobsService implements OnModuleInit {
     @InjectQueue('generation')
     private readonly generationQueue: Queue
   ) {}
+
+  private consumeActiveGenerationCancellation(
+    jobId: string
+  ): boolean {
+    if (
+      !this.activeGenerationCancellations.has(
+        jobId
+      )
+    ) {
+      return false;
+    }
+
+    this.activeGenerationCancellations.delete(
+      jobId
+    );
+
+    return true;
+  }
 
   async onModuleInit(): Promise<void> {
     await this.generationQueue.isReady();
@@ -338,9 +359,41 @@ export class JobsService implements OnModuleInit {
     }
 
     if (job.status === 'processing') {
-      throw new BadRequestException(
-        'Active generation cancellation is not implemented yet.'
+      if (job.jobType !== 'generate') {
+        throw new BadRequestException(
+          'Only active generation jobs can be cancelled.'
+        );
+      }
+
+      const model =
+        job.modelId
+          ? MUSIC_MODELS.find(
+              (candidate) =>
+                candidate.id === job.modelId
+            )
+          : null;
+
+      if (!model) {
+        throw new BadRequestException(
+          'Processing generation job has no valid model.'
+        );
+      }
+
+      this.activeGenerationCancellations.add(
+        id
       );
+
+      try {
+        await this.musicRuntime.cancelGeneration(
+          model.providerId
+        );
+      } catch (error) {
+        this.activeGenerationCancellations.delete(
+          id
+        );
+
+        throw error;
+      }
     }
 
     if (
@@ -525,7 +578,11 @@ export class JobsService implements OnModuleInit {
   ): Promise<void> {
     const job = await this.findOwnedDocument(jobId, userId);
 
-    if (job.status === 'cancelled') {
+    if (
+      ['completed', 'failed', 'cancelled'].includes(
+        job.status
+      )
+    ) {
       return;
     }
 
@@ -753,6 +810,16 @@ export class JobsService implements OnModuleInit {
         await this.musicRuntime.finishGeneration(model.providerId);
       }
 
+      if (
+        this.consumeActiveGenerationCancellation(jobId)
+      ) {
+        this.logger.log(
+          'Generation cancellation consumed after provider execution.'
+        );
+
+        return;
+      }
+
       await this.updateProgress(jobId, userId, {
         current: 90,
         total: 100,
@@ -760,11 +827,31 @@ export class JobsService implements OnModuleInit {
         message: 'Validating generated audio',
       });
 
+      if (
+        this.consumeActiveGenerationCancellation(jobId)
+      ) {
+        this.logger.log(
+          'Generation cancellation consumed before WAV validation.'
+        );
+
+        return;
+      }
+
       const wav = await this.validateWav(
         hostPath,
         requestedDurationSeconds
       );
       const downloadUrl = `/api/jobs/${jobId}/artifact`;
+
+      if (
+        this.consumeActiveGenerationCancellation(jobId)
+      ) {
+        this.logger.log(
+          'Generation cancellation consumed before completion.'
+        );
+
+        return;
+      }
 
       await this.complete(jobId, userId, {
         outputPath: downloadUrl,
@@ -783,6 +870,16 @@ export class JobsService implements OnModuleInit {
         },
       });
     } catch (error) {
+      if (
+        this.consumeActiveGenerationCancellation(jobId)
+      ) {
+        this.logger.log(
+          'Generation provider interruption consumed as cancellation.'
+        );
+
+        return;
+      }
+
       const message =
         error instanceof Error ? error.message : 'Unknown generation error';
       this.logger.error(`Generation job ${jobId} failed: ${message}`);

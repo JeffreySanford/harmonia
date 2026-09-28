@@ -185,7 +185,7 @@ test(
 );
 
 test(
-  'processing generation cancellation remains explicitly deferred',
+  'processing generation cancellation remains isolated from queued Bull removal',
   () => {
     const cancel =
       methodBlock(
@@ -200,6 +200,21 @@ test(
 
     assert.match(
       cancel,
+      /job\.jobType\s*!==\s*['"]generate['"]/
+    );
+
+    assert.match(
+      cancel,
+      /activeGenerationCancellations\.add\s*\(\s*id\s*\)/
+    );
+
+    assert.match(
+      cancel,
+      /musicRuntime\.cancelGeneration/
+    );
+
+    assert.doesNotMatch(
+      cancel,
       /Active generation cancellation is not implemented yet\./
     );
 
@@ -208,17 +223,50 @@ test(
         /job\.status\s*===\s*['"]processing['"]/
       );
 
+    const activeCancel =
+      cancel.search(
+        /musicRuntime\.cancelGeneration/
+      );
+
+    const queuedGuard =
+      cancel.search(
+        /job\.jobType\s*===\s*['"]generate['"]\s*&&\s*job\.status\s*===\s*['"]queued['"]/
+      );
+
     const bullLookup =
       cancel.search(
         /generationQueue\.getJob/
       );
 
-    if (bullLookup >= 0) {
-      assert.ok(
-        processingGuard < bullLookup,
-        'processing cancellation must reject before queued Bull mutation'
+    const mongoCancelled =
+      cancel.search(
+        /job\.status\s*=\s*['"]cancelled['"]/
       );
-    }
+
+    assert.ok(
+      processingGuard >= 0,
+      'processing generation branch must remain explicit'
+    );
+
+    assert.ok(
+      activeCancel > processingGuard,
+      'active provider cancellation must remain in the processing path'
+    );
+
+    assert.ok(
+      queuedGuard > activeCancel,
+      'queued durable cancellation must remain a separate later branch'
+    );
+
+    assert.ok(
+      bullLookup > queuedGuard,
+      'Bull lookup must remain confined to queued generation cancellation'
+    );
+
+    assert.ok(
+      mongoCancelled > activeCancel,
+      'provider termination must precede Mongo cancellation'
+    );
   }
 );
 

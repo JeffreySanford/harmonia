@@ -144,6 +144,14 @@ export class MusicRuntimeService {
   }
 
   async finishGeneration(providerId: string): Promise<MusicRuntimeStatus> {
+    if (
+      ['stopping', 'stopped'].includes(
+        this.status.state
+      )
+    ) {
+      return this.status;
+    }
+
     const hardware = await this.detectHardware();
 
     if (this.status.providerId !== providerId) {
@@ -417,6 +425,23 @@ export class MusicRuntimeService {
       );
       throw error;
     }
+  }
+
+  async cancelGeneration(
+    providerId: string
+  ): Promise<MusicRuntimeStatus> {
+    await this.reconcileRuntimeOwnership();
+
+    if (
+      this.status.providerId !==
+      providerId
+    ) {
+      throw new BadRequestException(
+        'Requested provider does not own the active music runtime.'
+      );
+    }
+
+    return this.stopCurrentRuntime();
   }
 
   async stopCurrentRuntime(

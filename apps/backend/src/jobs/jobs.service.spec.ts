@@ -739,11 +739,20 @@ describe('JobsService durable queued cancellation', () => {
         jest.fn(),
     };
 
+    const musicRuntime = {
+      cancelGeneration:
+        jest
+          .fn()
+          .mockResolvedValue(
+            {}
+          ),
+    };
+
     const service =
       new JobsService(
         {} as unknown as Model<JobRecordDocument>,
         gateway as unknown as JobsGateway,
-        {} as unknown as MusicRuntimeService,
+        musicRuntime as unknown as MusicRuntimeService,
         generationQueue as unknown as Queue
       );
 
@@ -762,6 +771,7 @@ describe('JobsService durable queued cancellation', () => {
       service,
       generationQueue,
       gateway,
+      musicRuntime,
     };
   }
 
@@ -927,21 +937,108 @@ describe('JobsService durable queued cancellation', () => {
     );
   });
 
-  it('rejects processing generation before any Bull mutation', async () => {
+  it('stops a processing generation provider before saving Mongo cancellation', async () => {
     const job =
       makeJob(
         'processing'
       );
 
-    const bullJob = {
-      remove:
-        jest.fn(),
-    };
+    const harness =
+      makeHarness(
+        job
+      );
+
+    const callOrder:
+      string[] = [];
+
+    harness.musicRuntime.cancelGeneration
+      .mockImplementation(
+        async (
+          providerId: string
+        ) => {
+          callOrder.push(
+            'runtime-cancel:' +
+              providerId
+          );
+
+          const probe =
+            harness.service as unknown as {
+              activeGenerationCancellations:
+                Set<string>;
+            };
+
+          expect(
+            probe
+              .activeGenerationCancellations
+              .has(jobId)
+          ).toBe(true);
+
+          return {};
+        }
+      );
+
+    job.save
+      .mockImplementation(
+        async () => {
+          callOrder.push(
+            'mongo-save'
+          );
+        }
+      );
+
+    const result =
+      await harness.service.cancel(
+        jobId,
+        userId
+      );
+
+    expect(
+      harness.musicRuntime
+        .cancelGeneration
+    ).toHaveBeenCalledWith(
+      'musicgen'
+    );
+
+    expect(
+      harness.generationQueue.getJob
+    ).not.toHaveBeenCalled();
+
+    expect(
+      callOrder
+    ).toEqual([
+      'runtime-cancel:musicgen',
+      'mongo-save',
+    ]);
+
+    expect(
+      job.status
+    ).toBe(
+      'cancelled'
+    );
+
+    expect(
+      result.status
+    ).toBe(
+      'cancelled'
+    );
+  });
+
+  it('keeps Mongo processing and clears intent when provider termination fails', async () => {
+    const job =
+      makeJob(
+        'processing'
+      );
 
     const harness =
       makeHarness(
-        job,
-        bullJob
+        job
+      );
+
+    harness.musicRuntime.cancelGeneration
+      .mockRejectedValue(
+        new Error(
+          'provider stop failed'
+        )
       );
 
     await expect(
@@ -950,19 +1047,459 @@ describe('JobsService durable queued cancellation', () => {
         userId
       )
     ).rejects.toThrow(
-      'Active generation cancellation is not implemented yet.'
+      'provider stop failed'
     );
+
+    expect(
+      job.status
+    ).toBe(
+      'processing'
+    );
+
+    expect(
+      job.save
+    ).not.toHaveBeenCalled();
+
+    const probe =
+      harness.service as unknown as {
+        activeGenerationCancellations:
+          Set<string>;
+      };
+
+    expect(
+      probe
+        .activeGenerationCancellations
+        .has(jobId)
+    ).toBe(false);
+  });
+
+  it('still rejects active cancellation for processing non-generation work', async () => {
+    const job =
+      makeJob(
+        'processing',
+        'export'
+      );
+
+    const harness =
+      makeHarness(
+        job
+      );
+
+    await expect(
+      harness.service.cancel(
+        jobId,
+        userId
+      )
+    ).rejects.toThrow(
+      'Only active generation jobs can be cancelled.'
+    );
+
+    expect(
+      harness.musicRuntime
+        .cancelGeneration
+    ).not.toHaveBeenCalled();
 
     expect(
       harness.generationQueue.getJob
     ).not.toHaveBeenCalled();
 
     expect(
-      bullJob.remove
-    ).not.toHaveBeenCalled();
-
-    expect(
       job.save
     ).not.toHaveBeenCalled();
   });
+});
+
+describe('JobsService active generation worker cancellation', () => {
+  const jobId =
+    '507f1f77bcf86cd799439031';
+
+  const userId =
+    '507f191e810c19729de860f2';
+
+  interface GenerationProbe {
+    findOwnedDocument(
+      id: string,
+      userId: string
+    ): Promise<JobRecordDocument>;
+
+    runMusicGenClient(
+      options:
+        Record<string, unknown>
+    ): Promise<void>;
+
+    validateWav(
+      filePath: string,
+      requestedDurationSeconds: number
+    ): Promise<{
+      channels: number;
+      sampleRate: number;
+      bitsPerSample: number;
+      durationSeconds: number;
+      size: number;
+    }>;
+
+    activeGenerationCancellations:
+      Set<string>;
+  }
+
+  function makeJob(
+    status:
+      | 'queued'
+      | 'completed'
+      | 'failed'
+      | 'cancelled' =
+        'queued'
+  ) {
+    return {
+      _id: {
+        toString:
+          () => jobId,
+      },
+      userId: {
+        toString:
+          () => userId,
+      },
+      jobType:
+        'generate',
+      status,
+      priority:
+        0,
+      modelId:
+        'musicgen-small',
+      datasetId:
+        undefined,
+      parameters: {
+        title:
+          'D5 synthetic generation',
+        prompt:
+          'short synthetic unit test',
+        duration:
+          5,
+      },
+      progress: {
+        current:
+          0,
+        total:
+          100,
+        percentage:
+          0,
+        message:
+          'Queued',
+      },
+      result:
+        null,
+      createdAt:
+        new Date(
+          '2026-09-27T23:00:00.000Z'
+        ),
+      startedAt:
+        null,
+      completedAt:
+        status === 'queued'
+          ? null
+          : new Date(
+              '2026-09-27T23:01:00.000Z'
+            ),
+      estimatedDuration:
+        null,
+      save:
+        jest
+          .fn()
+          .mockResolvedValue(
+            undefined
+          ),
+    };
+  }
+
+  function makeHarness(
+    status:
+      | 'queued'
+      | 'completed'
+      | 'failed'
+      | 'cancelled' =
+        'queued'
+  ) {
+    const job =
+      makeJob(
+        status
+      );
+
+    const gateway = {
+      emitJobStatus:
+        jest.fn(),
+      emitJobStatusToUser:
+        jest.fn(),
+      emitJobProgress:
+        jest.fn(),
+      emitJobCompleted:
+        jest.fn(),
+      emitJobFailed:
+        jest.fn(),
+    };
+
+    const musicRuntime = {
+      selectModel:
+        jest
+          .fn()
+          .mockResolvedValue(
+            {}
+          ),
+      beginGeneration:
+        jest
+          .fn()
+          .mockResolvedValue({
+            modelId:
+              'musicgen-small',
+            modelName:
+              'MusicGen Small',
+            runtimeModelId:
+              'facebook/musicgen-small',
+          }),
+      finishGeneration:
+        jest
+          .fn()
+          .mockResolvedValue(
+            {}
+          ),
+    };
+
+    const service =
+      new JobsService(
+        {} as unknown as Model<JobRecordDocument>,
+        gateway as unknown as JobsGateway,
+        musicRuntime as unknown as MusicRuntimeService,
+        {} as unknown as Queue
+      );
+
+    const probe =
+      service as unknown as GenerationProbe;
+
+    jest
+      .spyOn(
+        probe,
+        'findOwnedDocument'
+      )
+      .mockResolvedValue(
+        job as unknown as JobRecordDocument
+      );
+
+    return {
+      job,
+      gateway,
+      musicRuntime,
+      service,
+      probe,
+    };
+  }
+
+  it('suppresses fail and complete when provider interruption is intentional cancellation', async () => {
+    const tempRoot =
+      await fs.mkdtemp(
+        path.join(
+          os.tmpdir(),
+          'harmonia-d5-error-'
+        )
+      );
+
+    const cwdSpy =
+      jest
+        .spyOn(
+          process,
+          'cwd'
+        )
+        .mockReturnValue(
+          tempRoot
+        );
+
+    try {
+      const harness =
+        makeHarness();
+
+      const failSpy =
+        jest.spyOn(
+          harness.service,
+          'fail'
+        );
+
+      const completeSpy =
+        jest.spyOn(
+          harness.service,
+          'complete'
+        );
+
+      jest
+        .spyOn(
+          harness.probe,
+          'runMusicGenClient'
+        )
+        .mockImplementation(
+          async () => {
+            harness.probe
+              .activeGenerationCancellations
+              .add(jobId);
+
+            throw new Error(
+              'docker exec interrupted by provider stop'
+            );
+          }
+        );
+
+      await harness.service
+        .processGenerationJob(
+          jobId,
+          userId
+        );
+
+      expect(
+        failSpy
+      ).not.toHaveBeenCalled();
+
+      expect(
+        completeSpy
+      ).not.toHaveBeenCalled();
+
+      expect(
+        harness.probe
+          .activeGenerationCancellations
+          .has(jobId)
+      ).toBe(false);
+    } finally {
+      cwdSpy.mockRestore();
+
+      await fs.rm(
+        tempRoot,
+        {
+          recursive:
+            true,
+          force:
+            true,
+        }
+      );
+    }
+  });
+
+  it('does not validate or complete when provider returns during a cancellation race', async () => {
+    const tempRoot =
+      await fs.mkdtemp(
+        path.join(
+          os.tmpdir(),
+          'harmonia-d5-return-'
+        )
+      );
+
+    const cwdSpy =
+      jest
+        .spyOn(
+          process,
+          'cwd'
+        )
+        .mockReturnValue(
+          tempRoot
+        );
+
+    try {
+      const harness =
+        makeHarness();
+
+      const completeSpy =
+        jest.spyOn(
+          harness.service,
+          'complete'
+        );
+
+      const validateSpy =
+        jest
+          .spyOn(
+            harness.probe,
+            'validateWav'
+          )
+          .mockRejectedValue(
+            new Error(
+              'validation must not run after cancellation'
+            )
+          );
+
+      jest
+        .spyOn(
+          harness.probe,
+          'runMusicGenClient'
+        )
+        .mockImplementation(
+          async () => {
+            harness.probe
+              .activeGenerationCancellations
+              .add(jobId);
+          }
+        );
+
+      await harness.service
+        .processGenerationJob(
+          jobId,
+          userId
+        );
+
+      expect(
+        validateSpy
+      ).not.toHaveBeenCalled();
+
+      expect(
+        completeSpy
+      ).not.toHaveBeenCalled();
+
+      expect(
+        harness.probe
+          .activeGenerationCancellations
+          .has(jobId)
+      ).toBe(false);
+    } finally {
+      cwdSpy.mockRestore();
+
+      await fs.rm(
+        tempRoot,
+        {
+          recursive:
+            true,
+          force:
+            true,
+        }
+      );
+    }
+  });
+
+  it.each([
+    'completed',
+    'failed',
+    'cancelled',
+  ] as const)(
+    'returns before provider work for terminal generation redelivery: %s',
+    async (
+      status
+    ) => {
+      const harness =
+        makeHarness(
+          status
+        );
+
+      await harness.service
+        .processGenerationJob(
+          jobId,
+          userId
+        );
+
+      expect(
+        harness.musicRuntime
+          .selectModel
+      ).not.toHaveBeenCalled();
+
+      expect(
+        harness.musicRuntime
+          .beginGeneration
+      ).not.toHaveBeenCalled();
+
+      expect(
+        harness.musicRuntime
+          .finishGeneration
+      ).not.toHaveBeenCalled();
+    }
+  );
 });

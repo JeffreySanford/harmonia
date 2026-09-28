@@ -689,3 +689,252 @@ describe('Phase 13C asynchronous selection behavior', () => {
     }
   );
 });
+
+describe('MusicRuntimeService active generation cancellation', () => {
+  type CancellationState =
+    | 'busy'
+    | 'stopping'
+    | 'stopped';
+
+  function makeStatus(
+    state:
+      CancellationState
+  ): MusicRuntimeStatus {
+    const stopped =
+      state === 'stopped';
+
+    return {
+      operationId:
+        null,
+      providerId:
+        stopped
+          ? null
+          : 'musicgen',
+      providerName:
+        stopped
+          ? null
+          : 'MusicGen',
+      modelId:
+        stopped
+          ? null
+          : 'musicgen-small',
+      modelName:
+        stopped
+          ? null
+          : 'MusicGen Small',
+      state,
+      message:
+        state,
+      healthy:
+        state === 'busy',
+      progress:
+        stopped
+          ? 0
+          : 100,
+      hardware: {
+        gpuAvailable:
+          true,
+        gpuName:
+          'Test GPU',
+        vramTotalGb:
+          10,
+      },
+      updatedAt:
+        new Date().toISOString(),
+      error:
+        null,
+    };
+  }
+
+  function makeHarness(
+    state:
+      CancellationState
+  ) {
+    const gateway = {
+      emitRuntimeStatus:
+        jest.fn(),
+    };
+
+    const installations = {
+      assertModelReady:
+        jest.fn(),
+      markModelUsed:
+        jest.fn(),
+      getCatalogInstallationInfo:
+        jest.fn(),
+    };
+
+    const service =
+      new MusicRuntimeService(
+        gateway as never,
+        installations as never
+      );
+
+    const probe =
+      service as unknown as {
+        reconcileRuntimeOwnership():
+          Promise<void>;
+        detectHardware():
+          Promise<{
+            gpuAvailable:
+              boolean;
+            gpuName:
+              string | null;
+            vramTotalGb:
+              number | null;
+          }>;
+        status:
+          MusicRuntimeStatus;
+      };
+
+    probe.status =
+      makeStatus(
+        state
+      );
+
+    const reconcileSpy =
+      jest
+        .spyOn(
+          probe,
+          'reconcileRuntimeOwnership'
+        )
+        .mockResolvedValue();
+
+    const hardwareSpy =
+      jest
+        .spyOn(
+          probe,
+          'detectHardware'
+        )
+        .mockResolvedValue({
+          gpuAvailable:
+            true,
+          gpuName:
+            'Test GPU',
+          vramTotalGb:
+            10,
+        });
+
+    return {
+      gateway,
+      service,
+      probe,
+      reconcileSpy,
+      hardwareSpy,
+    };
+  }
+
+  it('cancels only the requested active provider through the real stop boundary', async () => {
+    const harness =
+      makeHarness(
+        'busy'
+      );
+
+    const stopped =
+      makeStatus(
+        'stopped'
+      );
+
+    const stopSpy =
+      jest
+        .spyOn(
+          harness.service,
+          'stopCurrentRuntime'
+        )
+        .mockResolvedValue(
+          stopped
+        );
+
+    await expect(
+      harness.service
+        .cancelGeneration(
+          'musicgen'
+        )
+    ).resolves.toBe(
+      stopped
+    );
+
+    expect(
+      harness.reconcileSpy
+    ).toHaveBeenCalledTimes(
+      1
+    );
+
+    expect(
+      stopSpy
+    ).toHaveBeenCalledTimes(
+      1
+    );
+  });
+
+  it('finishes normal generation back to ready', async () => {
+    const harness =
+      makeHarness(
+        'busy'
+      );
+
+    const result =
+      await harness.service
+        .finishGeneration(
+          'musicgen'
+        );
+
+    expect(
+      result.state
+    ).toBe(
+      'ready'
+    );
+
+    expect(
+      result.providerId
+    ).toBe(
+      'musicgen'
+    );
+
+    expect(
+      result.modelId
+    ).toBe(
+      'musicgen-small'
+    );
+  });
+
+  it.each([
+    'stopping',
+    'stopped',
+  ] as const)(
+    'never resurrects a %s runtime to ready',
+    async (
+      state
+    ) => {
+      const harness =
+        makeHarness(
+          state
+        );
+
+      const before =
+        harness.probe.status;
+
+      const result =
+        await harness.service
+          .finishGeneration(
+            'musicgen'
+          );
+
+      expect(
+        result
+      ).toBe(
+        before
+      );
+
+      expect(
+        result.state
+      ).toBe(
+        state
+      );
+
+      expect(
+        harness.hardwareSpy
+      ).not.toHaveBeenCalled();
+    }
+  );
+});
