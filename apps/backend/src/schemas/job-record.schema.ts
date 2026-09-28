@@ -3,6 +3,23 @@ import { Document, Types } from 'mongoose';
 
 export type JobRecordDocument = JobRecord & Document;
 
+export type JobPrimitive =
+  | string
+  | number
+  | boolean
+  | null;
+
+export type JobValue =
+  | JobPrimitive
+  | JobObject
+  | JobValue[];
+
+export interface JobObject {
+  [key: string]:
+    | JobValue
+    | undefined;
+}
+
 export type JobRecordStatus =
   | 'pending'
   | 'queued'
@@ -43,7 +60,7 @@ export class JobRecord {
   datasetId?: string;
 
   @Prop({ type: Object, default: {} })
-  parameters!: Record<string, unknown>;
+  parameters!: JobObject;
 
   @Prop({ type: Object, default: null })
   progress!: {
@@ -56,7 +73,7 @@ export class JobRecord {
   @Prop({ type: Object, default: null })
   result!: {
     outputPath?: string;
-    metadata?: Record<string, unknown>;
+    metadata?: JobObject;
     error?: string;
   } | null;
 

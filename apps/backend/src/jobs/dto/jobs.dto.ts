@@ -7,13 +7,16 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import type {
+  JobObject,
+} from '../../schemas/job-record.schema';
 
 export class CreateJobDto {
   @IsIn(['generate', 'convert', 'analyze', 'train'])
   jobType!: 'generate' | 'convert' | 'analyze' | 'train';
 
   @IsObject()
-  parameters!: Record<string, unknown>;
+  parameters!: JobObject;
 
   @IsOptional()
   @IsInt()

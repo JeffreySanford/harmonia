@@ -11,7 +11,11 @@ import { spawn } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import * as path from 'node:path';
 import type { JobOptions, Queue } from 'bull';
-import { Model, Types } from 'mongoose';
+import {
+  Model,
+  Types,
+  type FilterQuery,
+} from 'mongoose';
 import { JobsGateway } from '../app/gateways/jobs.gateway';
 import { MUSIC_MODELS } from '../music-runtime/music-model.catalog';
 import { MusicRuntimeService } from '../music-runtime/music-runtime.service';
@@ -19,6 +23,8 @@ import {
   JobRecord,
   JobRecordDocument,
   JobRecordStatus,
+  type JobObject,
+  type JobValue,
 } from '../schemas/job-record.schema';
 import { CreateJobDto, JobFiltersDto } from './dto/jobs.dto';
 
@@ -478,8 +484,11 @@ export class JobsService implements OnModuleInit {
   }
 
   async findAll(userId: string, filters: JobFiltersDto) {
-    const query: Record<string, unknown> = {
-      userId: new Types.ObjectId(userId),
+    const query: FilterQuery<JobRecordDocument> = {
+      userId:
+        new Types.ObjectId(
+          userId
+        ),
     };
 
     if (filters.status) {
@@ -755,7 +764,7 @@ export class JobsService implements OnModuleInit {
     userId: string,
     result: {
       outputPath?: string;
-      metadata?: Record<string, unknown>;
+      metadata?: JobObject;
     }
   ) {
     const job = await this.findOwnedDocument(id, userId);
@@ -883,7 +892,7 @@ export class JobsService implements OnModuleInit {
       await fs.mkdir(hostDir, { recursive: true });
 
       let requestedDurationSeconds: number;
-      let providerMetadata: Record<string, unknown>;
+      let providerMetadata: JobObject;
 
       try {
         if (
@@ -1260,7 +1269,9 @@ export class JobsService implements OnModuleInit {
     }
   }
 
-  private parseDiffSingerScore(parameters: Record<string, unknown>): {
+  private parseDiffSingerScore(
+    parameters: JobObject
+  ): {
     text: string;
     notes: string;
     notesDuration: string;
@@ -1338,7 +1349,7 @@ export class JobsService implements OnModuleInit {
   }
 
   private buildGenerationPrompt(
-    parameters: Record<string, unknown>
+    parameters: JobObject
   ): string {
     const explicit = String(parameters['prompt'] || '').trim();
     if (explicit) {
@@ -1497,6 +1508,32 @@ export class JobsService implements OnModuleInit {
     });
   }
 
+  private parseProviderResult(
+    serialized:
+      string
+  ): JobObject {
+    const parsed:
+      JobValue =
+        JSON.parse(
+          serialized
+        );
+
+    if (
+      parsed === null ||
+      typeof parsed !==
+        'object' ||
+      Array.isArray(
+        parsed
+      )
+    ) {
+      throw new Error(
+        'Provider result must be a JSON object.'
+      );
+    }
+
+    return parsed;
+  }
+
   private runAceStepClient(options: {
     runtimeModelId: string;
     prompt: string;
@@ -1506,7 +1543,7 @@ export class JobsService implements OnModuleInit {
     seed?: number;
     vocalLanguage: string;
     outputPath: string;
-  }): Promise<Record<string, unknown>> {
+  }): Promise<JobObject> {
     return new Promise((resolve, reject) => {
       const args = [
         'exec',
@@ -1612,9 +1649,9 @@ export class JobsService implements OnModuleInit {
 
         try {
           resolve(
-            JSON.parse(
+            this.parseProviderResult(
               resultLine
-            ) as Record<string, unknown>
+            )
           );
         } catch {
           reject(
@@ -1636,7 +1673,7 @@ export class JobsService implements OnModuleInit {
     duration: number;
     seed?: number;
     outputPath: string;
-  }): Promise<Record<string, unknown>> {
+  }): Promise<JobObject> {
     return new Promise((resolve, reject) => {
       const args = [
         'exec',
@@ -1743,9 +1780,9 @@ export class JobsService implements OnModuleInit {
 
           try {
             resolve(
-              JSON.parse(
+              this.parseProviderResult(
                 resultLine
-              ) as Record<string, unknown>
+              )
             );
 
           } catch {
