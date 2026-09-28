@@ -10,14 +10,29 @@ import type { JobRecordDocument } from '../schemas/job-record.schema';
 import { JobsService } from './jobs.service';
 
 describe('JobsService generation contract', () => {
-  const service = new JobsService(
-    {} as any,
-    {} as any,
-    {} as any,
-    {} as any
-  );
+  interface MusicGenGenerationParameters {
+    duration: number;
+    genre: string;
+    mood: string;
+    bpm: number;
+    instruments: string[];
+  }
 
-  function validGenerate(overrides: Record<string, unknown> = {}) {
+  /*
+   * These tests exercise pure validation/artifact helper methods.
+   * No constructor dependency is used by those helpers, so build
+   * the probe directly from the real JobsService prototype instead
+   * of fabricating four untyped collaborators.
+   */
+  const service =
+    Object.create(
+      JobsService.prototype
+    ) as JobsService;
+
+  function validGenerate(
+    overrides:
+      Partial<MusicGenGenerationParameters> = {}
+  ) {
     return {
       jobType: 'generate' as const,
       modelId: 'musicgen-small',
@@ -26,7 +41,10 @@ describe('JobsService generation contract', () => {
         genre: 'rock',
         mood: 'energetic',
         bpm: 120,
-        instruments: ['guitar_electric', 'drums'],
+        instruments: [
+          'guitar_electric',
+          'drums',
+        ],
         ...overrides,
       },
     };
@@ -34,13 +52,13 @@ describe('JobsService generation contract', () => {
 
   it('accepts a real MusicGen generation request', () => {
     expect(() =>
-      (service as any).validateGenerationRequest(validGenerate())
+      service['validateGenerationRequest'](validGenerate())
     ).not.toThrow();
   });
 
   it('accepts ACE-Step generation with supplied lyrics at 30 seconds', () => {
     expect(() =>
-      (service as any).validateGenerationRequest({
+      service['validateGenerationRequest']({
         jobType: 'generate',
         modelId: 'acestep-v15-turbo-06b',
         parameters: {
@@ -58,7 +76,7 @@ describe('JobsService generation contract', () => {
 
   it('rejects ACE-Step generation without supplied lyrics', () => {
     expect(() =>
-      (service as any).validateGenerationRequest({
+      service['validateGenerationRequest']({
         jobType: 'generate',
         modelId: 'acestep-v15-turbo-06b',
         parameters: {
@@ -74,7 +92,7 @@ describe('JobsService generation contract', () => {
 
   it('enforces the ACE-Step 10 second upstream minimum duration', () => {
     expect(() =>
-      (service as any).validateGenerationRequest({
+      service['validateGenerationRequest']({
         jobType: 'generate',
         modelId: 'acestep-v15-turbo-06b',
         parameters: {
@@ -90,7 +108,7 @@ describe('JobsService generation contract', () => {
 
   it('accepts DiffRhythm Base generation with prompt, lyrics, and exact 95-second duration', () => {
     expect(() =>
-      (service as any).validateGenerationRequest({
+      service['validateGenerationRequest']({
         jobType: 'generate',
         modelId: 'diffrhythm-v12-base',
         parameters: {
@@ -108,7 +126,7 @@ describe('JobsService generation contract', () => {
 
   it('accepts DiffRhythm Base generation without an explicit seed', () => {
     expect(() =>
-      (service as any).validateGenerationRequest({
+      service['validateGenerationRequest']({
         jobType: 'generate',
         modelId: 'diffrhythm-v12-base',
         parameters: {
@@ -123,7 +141,7 @@ describe('JobsService generation contract', () => {
 
   it('rejects DiffRhythm generation without supplied lyrics', () => {
     expect(() =>
-      (service as any).validateGenerationRequest({
+      service['validateGenerationRequest']({
         jobType: 'generate',
         modelId: 'diffrhythm-v12-base',
         parameters: {
@@ -138,7 +156,7 @@ describe('JobsService generation contract', () => {
 
   it('rejects DiffRhythm Base generation unless duration is exactly 95 seconds', () => {
     expect(() =>
-      (service as any).validateGenerationRequest({
+      service['validateGenerationRequest']({
         jobType: 'generate',
         modelId: 'diffrhythm-v12-base',
         parameters: {
@@ -155,7 +173,7 @@ describe('JobsService generation contract', () => {
 
   it('rejects an invalid DiffRhythm seed', () => {
     expect(() =>
-      (service as any).validateGenerationRequest({
+      service['validateGenerationRequest']({
         jobType: 'generate',
         modelId: 'diffrhythm-v12-base',
         parameters: {
@@ -173,7 +191,7 @@ describe('JobsService generation contract', () => {
 
   it('rejects generation without a model', () => {
     expect(() =>
-      (service as any).validateGenerationRequest({
+      service['validateGenerationRequest']({
         jobType: 'generate',
         parameters: { duration: 5, prompt: 'ambient piano' },
       })
@@ -182,7 +200,7 @@ describe('JobsService generation contract', () => {
 
   it('rejects generation beyond the selected model duration', () => {
     expect(() =>
-      (service as any).validateGenerationRequest(
+      service['validateGenerationRequest'](
         validGenerate({ duration: 121 })
       )
     ).toThrow('MusicGen Small supports at most 120 seconds.');
@@ -190,7 +208,7 @@ describe('JobsService generation contract', () => {
 
   it('builds a descriptive prompt from generation parameters', () => {
     expect(
-      (service as any).buildGenerationPrompt(
+      service['buildGenerationPrompt'](
         validGenerate().parameters
       )
     ).toBe(
@@ -206,7 +224,7 @@ describe('JobsService generation contract', () => {
     await fs.writeFile(filePath, Buffer.from('not audio'));
 
     await expect(
-      (service as any).validateWav(filePath, 5)
+      service['validateWav'](filePath, 5)
     ).rejects.toThrow('too small to be a valid WAV');
 
     await fs.rm(tempDir, { recursive: true, force: true });
@@ -238,7 +256,7 @@ describe('JobsService generation contract', () => {
     await fs.writeFile(filePath, wav);
 
     await expect(
-      (service as any).validateWav(filePath, 1)
+      service['validateWav'](filePath, 1)
     ).resolves.toMatchObject({
       channels: 1,
       sampleRate,
