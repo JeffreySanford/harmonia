@@ -1,0 +1,48 @@
+{
+  "date": "2026-09-27",
+  "preset": {
+    "modelId": "diffrhythm-v12-base",
+    "slug": "prairie-signal",
+    "title": "Prairie Signal",
+    "description": "Full-length 95-second supplied-lyrics sample for the qualified DiffRhythm v1.2 Base resident runtime.",
+    "parameters": {
+      "title": "Prairie Signal",
+      "prompt": "cinematic electronic rock, 110 BPM, warm bass, steady live drums, spacious electric guitar, luminous analog synthesizers, expressive clean vocal, broad nocturnal stereo production, patient opening building toward a memorable final section",
+      "lyrics": "[00:00.00] Prairie signal moving through the night\n[00:48.00] Open roads are carrying the light",
+      "duration": 95,
+      "genre": "Cinematic Electronic Rock",
+      "mood": "Nocturnal, expansive, hopeful",
+      "bpm": 110,
+      "instruments": [
+        "electric guitar",
+        "bass",
+        "drums",
+        "analog synthesizer"
+      ],
+      "vocalsStyle": "clean",
+      "seed": 1609
+    }
+  },
+  "createPayload": {
+    "jobType": "generate",
+    "modelId": "diffrhythm-v12-base",
+    "parameters": {
+      "title": "Prairie Signal",
+      "prompt": "cinematic electronic rock, 110 BPM, warm bass, steady live drums, spacious electric guitar, luminous analog synthesizers, expressive clean vocal, broad nocturnal stereo production, patient opening building toward a memorable final section",
+      "lyrics": "[00:00.00] Prairie signal moving through the night\n[00:48.00] Open roads are carrying the light",
+      "duration": 95,
+      "genre": "Cinematic Electronic Rock",
+      "mood": "Nocturnal, expansive, hopeful",
+      "bpm": 110,
+      "instruments": [
+        "electric guitar",
+        "bass",
+        "drums",
+        "analog synthesizer"
+      ],
+      "vocalsStyle": "clean",
+      "seed": 1609
+    }
+  },
+  "sourceJobId": "6ab9759fd780938e133757fe"
+}

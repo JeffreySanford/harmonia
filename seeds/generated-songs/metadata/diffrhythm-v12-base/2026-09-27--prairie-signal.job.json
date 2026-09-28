@@ -1,0 +1,89 @@
+{
+  "id": "6ab9759fd780938e133757fe",
+  "jobType": "generate",
+  "status": "completed",
+  "priority": 0,
+  "userId": "6ab41605619544efef4e8394",
+  "modelId": "diffrhythm-v12-base",
+  "parameters": {
+    "title": "Prairie Signal",
+    "prompt": "cinematic electronic rock, 110 BPM, warm bass, steady live drums, spacious electric guitar, luminous analog synthesizers, expressive clean vocal, broad nocturnal stereo production, patient opening building toward a memorable final section",
+    "lyrics": "[00:00.00] Prairie signal moving through the night\n[00:48.00] Open roads are carrying the light",
+    "duration": 95,
+    "genre": "Cinematic Electronic Rock",
+    "mood": "Nocturnal, expansive, hopeful",
+    "bpm": 110,
+    "instruments": [
+      "electric guitar",
+      "bass",
+      "drums",
+      "analog synthesizer"
+    ],
+    "vocalsStyle": "clean",
+    "seed": 1609
+  },
+  "progress": {
+    "current": 100,
+    "total": 100,
+    "percentage": 100,
+    "message": "Completed"
+  },
+  "result": {
+    "outputPath": "/api/jobs/6ab9759fd780938e133757fe/artifact",
+    "metadata": {
+      "title": "Prairie Signal",
+      "providerId": "diffrhythm",
+      "modelId": "diffrhythm-v12-base",
+      "runtimeModelId": "diffrhythm-v12-base",
+      "prompt": "cinematic electronic rock, 110 BPM, warm bass, steady live drums, spacious electric guitar, luminous analog synthesizers, expressive clean vocal, broad nocturnal stereo production, patient opening building toward a memorable final section",
+      "lyrics": "[00:00.00] Prairie signal moving through the night\n[00:48.00] Open roads are carrying the light",
+      "requestedDurationSeconds": 95,
+      "seed": 1609,
+      "diffRhythm": {
+        "ok": true,
+        "provider": "diffrhythm",
+        "model": "diffrhythm-v12-base",
+        "prompt": "cinematic electronic rock, 110 BPM, warm bass, steady live drums, spacious electric guitar, luminous analog synthesizers, expressive clean vocal, broad nocturnal stereo production, patient opening building toward a memorable final section",
+        "lyrics": "[00:00.00] Prairie signal moving through the night\n[00:48.00] Open roads are carrying the light",
+        "seed": 1609,
+        "duration": 95,
+        "steps": 32,
+        "cfgStrength": 4,
+        "sampleRate": 44100,
+        "channels": 2,
+        "output": "/workspace/exports/jobs/6ab9759fd780938e133757fe/music.wav",
+        "size": 16777294,
+        "durationSeconds": 95.10893424036281,
+        "timing": {
+          "diffusionSeconds": 7.806523017003201,
+          "decodeSeconds": 2.7596881770296022,
+          "totalSeconds": 16.218767100013793
+        },
+        "vram": {
+          "diffusion": {
+            "allocatedBytes": 2239492096,
+            "reservedBytes": 2524971008,
+            "maxAllocatedBytes": 2377951744,
+            "maxReservedBytes": 2524971008
+          },
+          "decode": {
+            "allocatedBytes": 668875264,
+            "reservedBytes": 1518338048,
+            "maxAllocatedBytes": 1208990720,
+            "maxReservedBytes": 1518338048
+          }
+        }
+      },
+      "actualDurationSeconds": 95.10893424036281,
+      "channels": 2,
+      "sampleRate": 44100,
+      "bitsPerSample": 16,
+      "size": 16777294,
+      "downloadUrl": "/api/jobs/6ab9759fd780938e133757fe/artifact"
+    }
+  },
+  "createdAt": "2026-09-27T19:59:27.812Z",
+  "startedAt": "2026-09-27T19:59:27.819Z",
+  "completedAt": "2026-09-27T19:59:44.900Z",
+  "estimatedDuration": null
+}

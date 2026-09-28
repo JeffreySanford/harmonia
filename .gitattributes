@@ -3,3 +3,9 @@
 *.ts text eol=lf
 *.cjs text eol=lf
 .gitattributes text eol=lf
+seeds/generated-songs/assets/*.wav filter=lfs diff=lfs merge=lfs -text
+seeds/generated-songs/assets/**/*.wav filter=lfs diff=lfs merge=lfs -text
+seeds/generated-songs/assets/*.mp3 filter=lfs diff=lfs merge=lfs -text
+seeds/generated-songs/assets/**/*.mp3 filter=lfs diff=lfs merge=lfs -text
+seeds/generated-songs/assets/*.flac filter=lfs diff=lfs merge=lfs -text
+seeds/generated-songs/assets/**/*.flac filter=lfs diff=lfs merge=lfs -text

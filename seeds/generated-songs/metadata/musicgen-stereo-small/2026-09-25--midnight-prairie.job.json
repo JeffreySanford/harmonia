@@ -1,0 +1,50 @@
+{
+  "id": "6ab61aadb63f78ee28254938",
+  "jobType": "generate",
+  "status": "completed",
+  "priority": 0,
+  "userId": "6ab41605619544efef4e8394",
+  "modelId": "musicgen-stereo-small",
+  "parameters": {
+    "title": "Midnight Prairie",
+    "prompt": "wide cinematic indie-electronic instrumental, 105 BPM, shimmering stereo electric guitars, analog synth pads, pulsing bass, restrained live drums, expansive prairie-at-night atmosphere, no vocals, spacious modern mix",
+    "duration": 12,
+    "genre": "Indie Electronic",
+    "mood": "Nocturnal, expansive, reflective",
+    "bpm": 105,
+    "instruments": [
+      "stereo electric guitars",
+      "analog synth pads",
+      "bass",
+      "drums"
+    ],
+    "vocalsStyle": "instrumental"
+  },
+  "progress": {
+    "current": 100,
+    "total": 100,
+    "percentage": 100,
+    "message": "Completed"
+  },
+  "result": {
+    "outputPath": "/downloads/jobs/6ab61aadb63f78ee28254938/music.wav",
+    "metadata": {
+      "title": "Midnight Prairie",
+      "providerId": "musicgen",
+      "modelId": "musicgen-stereo-small",
+      "runtimeModelId": "facebook/musicgen-stereo-small",
+      "prompt": "wide cinematic indie-electronic instrumental, 105 BPM, shimmering stereo electric guitars, analog synth pads, pulsing bass, restrained live drums, expansive prairie-at-night atmosphere, no vocals, spacious modern mix",
+      "requestedDurationSeconds": 12,
+      "actualDurationSeconds": 12,
+      "channels": 2,
+      "sampleRate": 32000,
+      "bitsPerSample": 16,
+      "size": 1536044,
+      "downloadUrl": "/downloads/jobs/6ab61aadb63f78ee28254938/music.wav"
+    }
+  },
+  "createdAt": "2026-09-25T06:54:37.636Z",
+  "startedAt": "2026-09-25T06:54:37.654Z",
+  "completedAt": "2026-09-25T06:55:15.360Z",
+  "estimatedDuration": null
+}

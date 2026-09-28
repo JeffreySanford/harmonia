@@ -1,0 +1,132 @@
+{
+  "schema": "harmonia-generated-song-seed-v1",
+  "count": 8,
+  "items": [
+    {
+      "seedKey": "e5a6847605798cbf",
+      "title": "True North Keeps Us Moving",
+      "type": "song",
+      "isDemo": true,
+      "model": "acestep-v15-turbo-06b",
+      "fileType": "wav",
+      "bytes": 5760078,
+      "sha256": "e77dd0e4d9c6df7410a738e417dada3e89037262cdae24bba02a11888c262a8b",
+      "assetPath": "assets/acestep-v15-turbo-06b/2026-09-25--true-north-keeps-us-moving.wav",
+      "sidecars": {
+        "request.json": "metadata/acestep-v15-turbo-06b/2026-09-25--true-north-keeps-us-moving.request.json",
+        "job.json": "metadata/acestep-v15-turbo-06b/2026-09-25--true-north-keeps-us-moving.job.json",
+        "prompt.txt": "metadata/acestep-v15-turbo-06b/2026-09-25--true-north-keeps-us-moving.prompt.txt",
+        "lyrics.txt": "metadata/acestep-v15-turbo-06b/2026-09-25--true-north-keeps-us-moving.lyrics.txt"
+      }
+    },
+    {
+      "seedKey": "af7c0e0cd1d9ab01",
+      "title": "Prairie Signal",
+      "type": "song",
+      "isDemo": true,
+      "model": "diffrhythm-v12-base",
+      "fileType": "wav",
+      "bytes": 16777294,
+      "sha256": "8ba990851255048bc4b530708f417c350614aef626c20e78f552454b8c51c701",
+      "assetPath": "assets/diffrhythm-v12-base/2026-09-27--prairie-signal.wav",
+      "sidecars": {
+        "request.json": "metadata/diffrhythm-v12-base/2026-09-27--prairie-signal.request.json",
+        "job.json": "metadata/diffrhythm-v12-base/2026-09-27--prairie-signal.job.json",
+        "prompt.txt": "metadata/diffrhythm-v12-base/2026-09-27--prairie-signal.prompt.txt",
+        "lyrics.txt": "metadata/diffrhythm-v12-base/2026-09-27--prairie-signal.lyrics.txt"
+      }
+    },
+    {
+      "seedKey": "a684beefd7385bf0",
+      "title": "Northbound Mandarin",
+      "type": "song",
+      "isDemo": true,
+      "model": "diffsinger-acoustic-hifigan",
+      "fileType": "wav",
+      "bytes": 420140,
+      "sha256": "c827e1ae956154ad48471c78d2de8d487b92a2dc8f2f744fb473e7716032990f",
+      "assetPath": "assets/diffsinger-acoustic-hifigan/2026-09-25--northbound-mandarin.wav",
+      "sidecars": {
+        "request.json": "metadata/diffsinger-acoustic-hifigan/2026-09-25--northbound-mandarin.request.json",
+        "job.json": "metadata/diffsinger-acoustic-hifigan/2026-09-25--northbound-mandarin.job.json",
+        "score.json": "metadata/diffsinger-acoustic-hifigan/2026-09-25--northbound-mandarin.score.json"
+      }
+    },
+    {
+      "seedKey": "27487a8ffd00321c",
+      "title": "Northern Transmission",
+      "type": "music",
+      "isDemo": true,
+      "model": "musicgen-small",
+      "fileType": "wav",
+      "bytes": 768044,
+      "sha256": "1ec8b7fd47832a58e78f3704a21a77aee62dd26a5ef514aad87bff50984f0ebd",
+      "assetPath": "assets/musicgen-small/2026-09-25--northern-transmission.wav",
+      "sidecars": {
+        "request.json": "metadata/musicgen-small/2026-09-25--northern-transmission.request.json",
+        "job.json": "metadata/musicgen-small/2026-09-25--northern-transmission.job.json",
+        "prompt.txt": "metadata/musicgen-small/2026-09-25--northern-transmission.prompt.txt"
+      }
+    },
+    {
+      "seedKey": "0561f0cba4f1800a",
+      "title": "Northern Transmission",
+      "type": "music",
+      "isDemo": true,
+      "model": "musicgen-small",
+      "fileType": "wav",
+      "bytes": 768044,
+      "sha256": "abd11e82a50053a3173c9dbb253a1aebd80e0b9c76600cb643412d8f0afbd15d",
+      "assetPath": "assets/musicgen-small/2026-09-26--northern-transmission.wav",
+      "sidecars": {
+        "request.json": "metadata/musicgen-small/2026-09-26--northern-transmission.request.json",
+        "job.json": "metadata/musicgen-small/2026-09-26--northern-transmission.job.json",
+        "prompt.txt": "metadata/musicgen-small/2026-09-26--northern-transmission.prompt.txt"
+      }
+    },
+    {
+      "seedKey": "9b9cad99dcfe2bc8",
+      "title": "Midnight Prairie",
+      "type": "music",
+      "isDemo": true,
+      "model": "musicgen-stereo-small",
+      "fileType": "wav",
+      "bytes": 1536044,
+      "sha256": "49709fb12d4dd2cfbd49684e89ff5fc43bdac7c66ba36007bd842a2f7826746c",
+      "assetPath": "assets/musicgen-stereo-small/2026-09-25--midnight-prairie.wav",
+      "sidecars": {
+        "request.json": "metadata/musicgen-stereo-small/2026-09-25--midnight-prairie.request.json",
+        "job.json": "metadata/musicgen-stereo-small/2026-09-25--midnight-prairie.job.json",
+        "prompt.txt": "metadata/musicgen-stereo-small/2026-09-25--midnight-prairie.prompt.txt"
+      }
+    },
+    {
+      "seedKey": "fcf23b51230a6f60",
+      "title": "Push It To Master",
+      "type": "song",
+      "isDemo": true,
+      "model": "acestep-v15-turbo-06b",
+      "fileType": "wav",
+      "bytes": 57600078,
+      "sha256": "cdd75e341c5d83509103ce40bbd22fb5b17b0f8d96ee23888ea5ed98de70db01",
+      "assetPath": "assets/push-it-to-master.wav",
+      "sidecars": {}
+    },
+    {
+      "seedKey": "dd5f64975be17898",
+      "title": "Aurora Circuit",
+      "type": "music",
+      "isDemo": true,
+      "model": "stable-audio-3-small-music",
+      "fileType": "wav",
+      "bytes": 5292088,
+      "sha256": "56fafc1854ff657d4d721b4ac3ae431ab4635456deb2f75951e130651a4540a5",
+      "assetPath": "assets/stable-audio-3-small-music/2026-09-25--aurora-circuit.wav",
+      "sidecars": {
+        "request.json": "metadata/stable-audio-3-small-music/2026-09-25--aurora-circuit.request.json",
+        "job.json": "metadata/stable-audio-3-small-music/2026-09-25--aurora-circuit.job.json",
+        "prompt.txt": "metadata/stable-audio-3-small-music/2026-09-25--aurora-circuit.prompt.txt"
+      }
+    }
+  ]
+}

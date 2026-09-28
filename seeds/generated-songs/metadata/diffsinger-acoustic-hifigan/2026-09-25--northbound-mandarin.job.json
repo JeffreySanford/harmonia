@@ -1,0 +1,45 @@
+{
+  "id": "6ab61e6f9fce53bc95b27ae1",
+  "jobType": "generate",
+  "status": "completed",
+  "priority": 0,
+  "userId": "6ab41605619544efef4e8394",
+  "modelId": "diffsinger-acoustic-hifigan",
+  "parameters": {
+    "title": "Northbound Mandarin",
+    "text": "SP向北走过长夜里SP晨光照亮前方路",
+    "notes": "rest|C4|C4|G4|G4|A4|A4|G4|rest|F4|F4|E4|E4|D4|D4|C4",
+    "notesDuration": "1|0.5|0.5|0.5|0.5|0.5|0.5|0.75|0.25|0.5|0.5|0.5|0.5|0.5|0.5|0.75",
+    "inputType": "word"
+  },
+  "progress": {
+    "current": 100,
+    "total": 100,
+    "percentage": 100,
+    "message": "Completed"
+  },
+  "result": {
+    "outputPath": "/downloads/jobs/6ab61e6f9fce53bc95b27ae1/music.wav",
+    "metadata": {
+      "title": "Northbound Mandarin",
+      "providerId": "diffsinger",
+      "modelId": "diffsinger-acoustic-hifigan",
+      "runtimeModelId": "0228_opencpop_ds100_rel",
+      "text": "SP向北走过长夜里SP晨光照亮前方路",
+      "notes": "rest|C4|C4|G4|G4|A4|A4|G4|rest|F4|F4|E4|E4|D4|D4|C4",
+      "notesDuration": "1|0.5|0.5|0.5|0.5|0.5|0.5|0.75|0.25|0.5|0.5|0.5|0.5|0.5|0.5|0.75",
+      "inputType": "word",
+      "requestedDurationSeconds": 8.75,
+      "actualDurationSeconds": 8.752,
+      "channels": 1,
+      "sampleRate": 24000,
+      "bitsPerSample": 16,
+      "size": 420140,
+      "downloadUrl": "/downloads/jobs/6ab61e6f9fce53bc95b27ae1/music.wav"
+    }
+  },
+  "createdAt": "2026-09-25T07:10:39.780Z",
+  "startedAt": "2026-09-25T07:10:39.793Z",
+  "completedAt": "2026-09-25T07:11:05.037Z",
+  "estimatedDuration": null
+}

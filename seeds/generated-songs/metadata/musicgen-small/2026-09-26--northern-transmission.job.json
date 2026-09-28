@@ -1,0 +1,50 @@
+{
+  "id": "6ab84fe11d13f8a470bfe1b1",
+  "jobType": "generate",
+  "status": "completed",
+  "priority": 0,
+  "userId": "6ab41605619544efef4e8394",
+  "modelId": "musicgen-small",
+  "parameters": {
+    "title": "Northern Transmission",
+    "prompt": "driving instrumental alternative rock with an Americana edge, 118 BPM, palm-muted electric guitar, warm bass, live drums, subtle synth texture, memorable rising hook, no vocals, clean punchy production",
+    "duration": 12,
+    "genre": "Alternative Rock",
+    "mood": "Determined, open-road, uplifting",
+    "bpm": 118,
+    "instruments": [
+      "electric guitar",
+      "bass",
+      "drums",
+      "subtle synth"
+    ],
+    "vocalsStyle": "instrumental"
+  },
+  "progress": {
+    "current": 100,
+    "total": 100,
+    "percentage": 100,
+    "message": "Completed"
+  },
+  "result": {
+    "outputPath": "/api/jobs/6ab84fe11d13f8a470bfe1b1/artifact",
+    "metadata": {
+      "title": "Northern Transmission",
+      "providerId": "musicgen",
+      "modelId": "musicgen-small",
+      "runtimeModelId": "facebook/musicgen-small",
+      "prompt": "driving instrumental alternative rock with an Americana edge, 118 BPM, palm-muted electric guitar, warm bass, live drums, subtle synth texture, memorable rising hook, no vocals, clean punchy production",
+      "requestedDurationSeconds": 12,
+      "actualDurationSeconds": 12,
+      "channels": 1,
+      "sampleRate": 32000,
+      "bitsPerSample": 16,
+      "size": 768044,
+      "downloadUrl": "/api/jobs/6ab84fe11d13f8a470bfe1b1/artifact"
+    }
+  },
+  "createdAt": "2026-09-26T23:06:09.840Z",
+  "startedAt": "2026-09-26T23:06:09.857Z",
+  "completedAt": "2026-09-26T23:06:45.347Z",
+  "estimatedDuration": null
+}

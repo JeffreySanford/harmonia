@@ -1,0 +1,50 @@
+{
+  "id": "6ab61e9a9fce53bc95b27b0b",
+  "jobType": "generate",
+  "status": "completed",
+  "priority": 0,
+  "userId": "6ab41605619544efef4e8394",
+  "modelId": "stable-audio-3-small-music",
+  "parameters": {
+    "title": "Aurora Circuit",
+    "prompt": "cinematic electronic post-rock instrumental, 110 BPM, warm analog arpeggio, deep bass, atmospheric electric guitar swells, crisp restrained drums, gradual uplifting build, no vocals, polished spacious stereo master",
+    "duration": 15,
+    "genre": "Cinematic Electronic Post-Rock",
+    "mood": "Luminous, patient, uplifting",
+    "bpm": 110,
+    "instruments": [
+      "analog arpeggiator",
+      "bass",
+      "electric guitar swells",
+      "drums"
+    ],
+    "vocalsStyle": "instrumental"
+  },
+  "progress": {
+    "current": 100,
+    "total": 100,
+    "percentage": 100,
+    "message": "Completed"
+  },
+  "result": {
+    "outputPath": "/downloads/jobs/6ab61e9a9fce53bc95b27b0b/music.wav",
+    "metadata": {
+      "title": "Aurora Circuit",
+      "providerId": "stable-audio-3",
+      "modelId": "stable-audio-3-small-music",
+      "runtimeModelId": "small-music",
+      "prompt": "cinematic electronic post-rock instrumental, 110 BPM, warm analog arpeggio, deep bass, atmospheric electric guitar swells, crisp restrained drums, gradual uplifting build, no vocals, polished spacious stereo master",
+      "requestedDurationSeconds": 15,
+      "actualDurationSeconds": 15,
+      "channels": 2,
+      "sampleRate": 44100,
+      "bitsPerSample": 32,
+      "size": 5292088,
+      "downloadUrl": "/downloads/jobs/6ab61e9a9fce53bc95b27b0b/music.wav"
+    }
+  },
+  "createdAt": "2026-09-25T07:11:22.551Z",
+  "startedAt": "2026-09-25T07:11:22.560Z",
+  "completedAt": "2026-09-25T07:12:47.717Z",
+  "estimatedDuration": null
+}

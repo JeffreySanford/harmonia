@@ -1,0 +1,65 @@
+{
+  "id": "6ab61f449fce53bc95b27b6f",
+  "jobType": "generate",
+  "status": "completed",
+  "priority": 0,
+  "userId": "6ab41605619544efef4e8394",
+  "modelId": "acestep-v15-turbo-06b",
+  "parameters": {
+    "title": "True North Keeps Us Moving",
+    "prompt": "uplifting alternative rock with a heartland Americana undertone, 118 BPM, electric guitar, warm bass, steady live drums, subtle synth atmosphere, warm clean vocal, anthemic chorus, wide modern production, emotionally resilient rather than overly triumphant",
+    "lyrics": "[Verse]\\nUnder northern skies we find our way\\nThrough the long blue dark before the day\\nEvery mile leaves another line\\nBut the road still points to true north signs\\n\\n[Chorus]\\nTrue north keeps us moving\\nWhen the road is hard to see\\nTrue north keeps us moving\\nToward the place we're meant to be",
+    "duration": 30,
+    "bpm": 118,
+    "vocalLanguage": "en",
+    "seed": 12012026
+  },
+  "progress": {
+    "current": 100,
+    "total": 100,
+    "percentage": 100,
+    "message": "Completed"
+  },
+  "result": {
+    "outputPath": "/downloads/jobs/6ab61f449fce53bc95b27b6f/music.wav",
+    "metadata": {
+      "title": "True North Keeps Us Moving",
+      "providerId": "ace-step-1.5",
+      "modelId": "acestep-v15-turbo-06b",
+      "runtimeModelId": "acestep-v15-turbo",
+      "prompt": "uplifting alternative rock with a heartland Americana undertone, 118 BPM, electric guitar, warm bass, steady live drums, subtle synth atmosphere, warm clean vocal, anthemic chorus, wide modern production, emotionally resilient rather than overly triumphant",
+      "lyrics": "[Verse]\\nUnder northern skies we find our way\\nThrough the long blue dark before the day\\nEvery mile leaves another line\\nBut the road still points to true north signs\\n\\n[Chorus]\\nTrue north keeps us moving\\nWhen the road is hard to see\\nTrue north keeps us moving\\nToward the place we're meant to be",
+      "requestedDurationSeconds": 30,
+      "aceStep": {
+        "taskId": "f36df538-61b2-4352-ac3d-5185900901c7",
+        "outputPath": "/workspace/exports/jobs/6ab61f449fce53bc95b27b6f/music.wav",
+        "prompt": "uplifting alternative rock with a heartland Americana undertone, 118 BPM, electric guitar, warm bass, steady live drums, subtle synth atmosphere, warm clean vocal, anthemic chorus, wide modern production, emotionally resilient rather than overly triumphant",
+        "lyrics": "[Verse]\\nUnder northern skies we find our way\\nThrough the long blue dark before the day\\nEvery mile leaves another line\\nBut the road still points to true north signs\\n\\n[Chorus]\\nTrue north keeps us moving\\nWhen the road is hard to see\\nTrue north keeps us moving\\nToward the place we're meant to be",
+        "metas": {
+          "bpm": 118,
+          "duration": 30,
+          "genres": "N/A",
+          "keyscale": "F# major",
+          "timesignature": "4",
+          "prompt": "uplifting alternative rock with a heartland Americana undertone, 118 BPM, electric guitar, warm bass, steady live drums, subtle synth atmosphere, warm clean vocal, anthemic chorus, wide modern production, emotionally resilient rather than overly triumphant",
+          "lyrics": "[Verse]\\nUnder northern skies we find our way\\nThrough the long blue dark before the day\\nEvery mile leaves another line\\nBut the road still points to true north signs\\n\\n[Chorus]\\nTrue north keeps us moving\\nWhen the road is hard to see\\nTrue north keeps us moving\\nToward the place we're meant to be"
+        },
+        "generationInfo": "**🎵 Total generation time (1 song): 4.61s**\n- 4.61s per song\n- LM phase (1 song): 1.94s\n- DiT phase (1 song): 2.67s",
+        "seedValue": "12012026",
+        "lmModel": "acestep-5Hz-lm-0.6B",
+        "ditModel": "acestep-v15-turbo",
+        "audioUrl": "/v1/audio?path=%2Fopt%2FACE-Step-1.5%2F.cache%2Facestep%2Ftmp%2Fapi_audio%2Fa99096c2-60ac-9708-4a26-b6168593435b.wav"
+      },
+      "actualDurationSeconds": 30,
+      "channels": 2,
+      "sampleRate": 48000,
+      "bitsPerSample": 16,
+      "size": 5760078,
+      "downloadUrl": "/downloads/jobs/6ab61f449fce53bc95b27b6f/music.wav"
+    }
+  },
+  "createdAt": "2026-09-25T07:14:12.243Z",
+  "startedAt": "2026-09-25T07:14:12.260Z",
+  "completedAt": "2026-09-25T07:15:15.583Z",
+  "estimatedDuration": null
+}
