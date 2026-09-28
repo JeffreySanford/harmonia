@@ -5,7 +5,12 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import {
+  Model,
+  Types,
+  type FilterQuery,
+  type SortOrder,
+} from 'mongoose';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { Observable, from } from 'rxjs';
@@ -14,6 +19,10 @@ import {
   LibraryItem,
   LibraryItemDocument,
 } from '../schemas/library-item.schema';
+import {
+  LibraryFiltersDto,
+  UpdateLibraryItemDto,
+} from './dto/library.dto';
 
 export interface LibraryUploadFile {
   fieldname: string;
@@ -33,6 +42,60 @@ export interface ResolvedPrivateFile {
   filename: string;
   contentType: string;
   size: number;
+}
+
+export type LibraryFileType =
+  | 'wav'
+  | 'mp3'
+  | 'flac'
+  | 'json';
+
+export interface LibraryItemResponse {
+  id: string;
+  userId: string;
+  songId?: string;
+  type: LibraryItem['type'];
+  title: string;
+  description?: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize?: number;
+  duration?: number;
+  thumbnailUrl?: string;
+  metadata: LibraryItem['metadata'];
+  isPublic: boolean;
+  playCount: number;
+  downloadCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface LibraryPage {
+  items: LibraryItemResponse[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface CreateLibraryItemInput {
+  songId?: Types.ObjectId;
+  type: LibraryItem['type'];
+  title: string;
+  description?: string;
+  fileUrl: string;
+  fileType?: LibraryFileType;
+  fileSize?: number;
+  duration?: number;
+  thumbnailUrl?: string;
+  metadata?: LibraryItem['metadata'];
+  isPublic?: boolean;
+}
+
+export interface LibraryUploadBody {
+  title: string;
+  description?: string;
+  type: LibraryItem['type'];
 }
 
 @Injectable()
@@ -57,20 +120,19 @@ export class LibraryService {
 
   findByUserId(
     userId: string,
-    filters: any,
+    filters: LibraryFiltersDto,
     page: number
-  ): Observable<{
-    items: any[];
-    total: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-  }> {
+  ): Observable<LibraryPage> {
     const pageSize = 20;
     const skip = (page - 1) * pageSize;
 
     // Build query
-    const query: any = { userId };
+    const query: FilterQuery<LibraryItemDocument> = {
+      userId:
+        new Types.ObjectId(
+          userId
+        ),
+    };
 
     if (filters.type && filters.type !== 'all') {
       query.type = filters.type;
@@ -81,7 +143,9 @@ export class LibraryService {
     }
 
     // Build sort
-    let sort: any = { createdAt: -1 }; // Default: newest first
+    let sort: Record<string, SortOrder> = {
+      createdAt: -1,
+    }; // Default: newest first
 
     if (filters.sortBy === 'oldest') {
       sort = { createdAt: 1 };
@@ -116,7 +180,10 @@ export class LibraryService {
     );
   }
 
-  findById(id: string, userId: string): Observable<any> {
+  findById(
+    id: string,
+    userId: string
+  ): Observable<LibraryItemResponse> {
     return from(this.libraryItemModel.findById(id)).pipe(
       map((item) => {
         if (!item) {
@@ -303,7 +370,10 @@ export class LibraryService {
     );
   }
 
-  create(createLibraryItemDto: any, userId: string): Observable<any> {
+  create(
+    createLibraryItemDto: CreateLibraryItemInput,
+    userId: string
+  ): Observable<LibraryItemResponse> {
     const libraryItem = new this.libraryItemModel({
       ...createLibraryItemDto,
       userId,
@@ -321,9 +391,9 @@ export class LibraryService {
 
   update(
     id: string,
-    updateLibraryItemDto: any,
+    updateLibraryItemDto: UpdateLibraryItemDto,
     userId: string
-  ): Observable<any> {
+  ): Observable<LibraryItemResponse> {
     // First check if item exists and belongs to user
     return this.findById(id, userId).pipe(
       switchMap(() =>
@@ -435,9 +505,9 @@ export class LibraryService {
 
   uploadFile(
     file: LibraryUploadFile,
-    body: any,
+    body: LibraryUploadBody,
     userId: string
-  ): Observable<any> {
+  ): Observable<LibraryItemResponse> {
     const {
       fileType,
       extension: fileExtension,
@@ -545,7 +615,9 @@ export class LibraryService {
     );
   }
 
-  private mapToDto(item: LibraryItemDocument) {
+  private mapToDto(
+    item: LibraryItemDocument
+  ): LibraryItemResponse {
     return {
       id: item._id.toString(),
       userId: item.userId.toString(),

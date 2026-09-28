@@ -26,6 +26,7 @@ import {
   LibraryService,
   LibraryUploadFile,
   MAX_LIBRARY_UPLOAD_BYTES,
+  type LibraryUploadBody,
 } from './library.service';
 
 interface AuthenticatedRequest {
@@ -94,11 +95,7 @@ export class LibraryController {
   uploadFile(
     @UploadedFile() file: LibraryUploadFile,
     @Body()
-    body: {
-      title: string;
-      description?: string;
-      type: string;
-    },
+    body: LibraryUploadBody,
     @Request() req: AuthenticatedRequest
   ) {
     return this.libraryService.uploadFile(
