@@ -3,7 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { Observable, from } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
-import { mapResponseForModel } from './mappers';
+import {
+  isJsonObject,
+  mapResponseForModel,
+  type JsonObject,
+  type JsonValue,
+} from './mappers';
 import { LyricAnalysisService } from '../songs/lyric-analysis.service';
 
 export interface GeneratedMetadata {
@@ -19,6 +24,24 @@ export interface StructuredSongSection {
   chords: string[];
 }
 
+interface OllamaModelSummary {
+  name: string;
+}
+
+interface OllamaTagsResponse {
+  models?: OllamaModelSummary[];
+}
+
+export type GeneratedSongValue =
+  | string
+  | number
+  | boolean
+  | null
+  | string[]
+  | StructuredSongSection
+  | JsonObject
+  | undefined;
+
 export interface GeneratedSong {
   title: string;
   artist?: string;
@@ -30,7 +53,7 @@ export interface GeneratedSong {
   instrumentation: string[];
   syllableCount?: number;
   wordCount?: number;
-  [key: string]: any; // Allow dynamic section properties
+  [key: string]: GeneratedSongValue;
 }
 
 @Injectable()
@@ -46,11 +69,22 @@ export class OllamaService implements OnModuleInit {
     // Force restart trigger
     try {
       this.logger.log(`Checking Ollama availability at ${this.ollamaUrl}...`);
-      const response = await axios.get(`${this.ollamaUrl}/api/tags`, {
-        timeout: 5000,
-      });
-      const models = response.data?.models || [];
-      const availableModels = models.map((m: any) => m.name);
+      const response =
+        await axios.get<OllamaTagsResponse>(
+          `${this.ollamaUrl}/api/tags`,
+          {
+            timeout: 5000,
+          }
+        );
+
+      const models =
+        response.data.models || [];
+
+      const availableModels =
+        models.map(
+          (model) =>
+            model.name
+        );
       this.logger.log(
         `Ollama is available with models: ${availableModels.join(', ')}`
       );
@@ -278,38 +312,140 @@ Important: Include chord progressions that fit the key and genre. Structure the 
           this.logger.error(`Failed to parse JSON from: ${text}`);
           throw new Error('Unable to parse JSON from model response');
         }
-        const normalized = mapResponseForModel(model, json);
+        const normalized =
+          mapResponseForModel(
+            model,
+            json
+          );
+
+        const artist =
+          typeof json.artist === 'string'
+            ? json.artist
+            : 'AI Composer';
+
+        const tempo =
+          typeof json.tempo === 'number' &&
+          Number.isFinite(json.tempo)
+            ? json.tempo
+            : this.getDefaultTempo(
+                normalized.genre || 'pop'
+              );
+
+        const timeSignature =
+          typeof json.time_signature === 'string'
+            ? json.time_signature
+            : '4/4';
+
+        const key =
+          typeof json.key === 'string'
+            ? json.key
+            : 'C major';
+
+        const mood =
+          typeof json.mood === 'string'
+            ? json.mood
+            : 'energetic';
+
+        const instrumentation =
+          Array.isArray(
+            json.instrumentation
+          )
+            ? json.instrumentation.filter(
+                (value): value is string =>
+                  typeof value === 'string'
+              )
+            : [
+                'piano',
+                'guitar',
+                'drums',
+                'male_voice',
+              ];
+
         // Convert structured song format to flat format for compatibility
         const song: GeneratedSong = {
-          title: normalized.title || 'Untitled',
-          artist: json.artist || 'AI Composer',
-          genre: normalized.genre || 'pop',
-          tempo: json.tempo || this.getDefaultTempo(normalized.genre || 'pop'),
-          time_signature: json.time_signature || '4/4',
-          key: json.key || 'C major',
-          mood: json.mood || 'energetic',
-          instrumentation: Array.isArray(json.instrumentation)
-            ? json.instrumentation
-            : ['piano', 'guitar', 'drums', 'male_voice'],
+          title:
+            normalized.title ||
+            'Untitled',
+          artist,
+          genre:
+            normalized.genre ||
+            'pop',
+          tempo,
+          time_signature:
+            timeSignature,
+          key,
+          mood,
+          instrumentation,
         };
 
         // Convert structured sections to flat lyrics
-        const sections = ['verse_1', 'verse_2', 'chorus', 'bridge', 'outro'];
+        const sections = [
+          'verse_1',
+          'verse_2',
+          'chorus',
+          'bridge',
+          'outro',
+        ];
+
         let allLyrics = '';
         let totalSyllables = 0;
 
-        sections.forEach((section) => {
-          if (json[section]) {
-            song[section] = json[section];
-            if (json[section].lyrics) {
-              const sectionLyrics = Array.isArray(json[section].lyrics)
-                ? json[section].lyrics.join('\n')
-                : json[section].lyrics;
-              allLyrics += `[${section.toUpperCase()}]\n${sectionLyrics}\n\n`;
-              totalSyllables += this.estimateSyllables(sectionLyrics);
+        sections.forEach(
+          (section) => {
+            const sectionValue =
+              json[section];
+
+            if (
+              !isJsonObject(
+                sectionValue
+              )
+            ) {
+              return;
             }
+
+            song[section] =
+              sectionValue;
+
+            const lyricsValue =
+              sectionValue.lyrics;
+
+            let sectionLyrics =
+              '';
+
+            if (
+              typeof lyricsValue ===
+              'string'
+            ) {
+              sectionLyrics =
+                lyricsValue;
+            } else if (
+              Array.isArray(
+                lyricsValue
+              )
+            ) {
+              sectionLyrics =
+                lyricsValue
+                  .filter(
+                    (value): value is string =>
+                      typeof value ===
+                      'string'
+                  )
+                  .join('\n');
+            }
+
+            if (!sectionLyrics) {
+              return;
+            }
+
+            allLyrics +=
+              `[${section.toUpperCase()}]\n${sectionLyrics}\n\n`;
+
+            totalSyllables +=
+              this.estimateSyllables(
+                sectionLyrics
+              );
           }
-        });
+        );
 
         song.syllableCount = totalSyllables;
         song.wordCount = allLyrics.split(/\s+/).length;
@@ -356,34 +492,83 @@ Important: Include chord progressions that fit the key and genre. Structure the 
 
   // Normalization handled by per-model mappers in `mappers.ts`
 
-  private extractJson(text: string): any | null {
-    // Clean the text first
-    const cleaned = text.trim();
-
-    // Try to parse the entire response as JSON first
+  private parseJsonObject(
+    candidate: string
+  ): JsonObject | null {
     try {
-      return JSON.parse(cleaned);
-    } catch (e) {
-      // If that fails, try to find JSON within the text
-      const start = cleaned.indexOf('{');
-      const end = cleaned.lastIndexOf('}');
-      if (start === -1 || end === -1 || end <= start) return null;
+      const parsed =
+        JSON.parse(
+          candidate
+        ) as JsonValue;
 
-      const candidate = cleaned.substring(start, end + 1);
-      try {
-        return JSON.parse(candidate);
-      } catch (e2) {
-        // Try to replace single quotes with double quotes for common mistakes
-        try {
-          const fixed = candidate
-            .replace(/'/g, '"') // Replace single quotes
-            .replace(/([{,]\s*)(\w+):/g, '$1"$2":'); // Add quotes around unquoted keys
-          return JSON.parse(fixed);
-        } catch (e3) {
-          return null;
-        }
-      }
+      return isJsonObject(
+        parsed
+      )
+        ? parsed
+        : null;
+    } catch {
+      return null;
     }
+  }
+
+  private extractJson(
+    text: string
+  ): JsonObject | null {
+    const cleaned =
+      text.trim();
+
+    const direct =
+      this.parseJsonObject(
+        cleaned
+      );
+
+    if (direct) {
+      return direct;
+    }
+
+    const start =
+      cleaned.indexOf('{');
+
+    const end =
+      cleaned.lastIndexOf('}');
+
+    if (
+      start === -1 ||
+      end === -1 ||
+      end <= start
+    ) {
+      return null;
+    }
+
+    const candidate =
+      cleaned.substring(
+        start,
+        end + 1
+      );
+
+    const extracted =
+      this.parseJsonObject(
+        candidate
+      );
+
+    if (extracted) {
+      return extracted;
+    }
+
+    const fixed =
+      candidate
+        .replace(
+          /'/g,
+          '"'
+        )
+        .replace(
+          /([{,]\s*)(\w+):/g,
+          '$1"$2":'
+        );
+
+    return this.parseJsonObject(
+      fixed
+    );
   }
 
   private estimateSyllables(text: string): number {

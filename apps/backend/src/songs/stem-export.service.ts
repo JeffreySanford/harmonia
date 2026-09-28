@@ -124,9 +124,13 @@ export class StemExportService {
           format: string;
           size: number;
         }>;
-        const errors = results
-          .filter((result) => 'error' in result)
-          .map((result) => (result as any).error);
+        const errors =
+          results.flatMap(
+            (result) =>
+              'error' in result
+                ? [result.error]
+                : []
+          );
 
         const result: StemExportResult = {
           success: errors.length === 0,

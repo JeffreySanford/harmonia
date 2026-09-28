@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { Observable } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
-import Ajv from 'ajv';
+import Ajv, { type AnySchema } from 'ajv';
 
 export interface InstrumentCatalog {
   version: string;
@@ -33,7 +33,7 @@ export interface ValidationResult {
 export class InstrumentCatalogService implements OnModuleInit {
   private readonly logger = new Logger(InstrumentCatalogService.name);
   private ajv: Ajv;
-  private schema: any;
+  private schema: AnySchema = {};
   private catalog: InstrumentCatalog | null = null;
 
   constructor() {
@@ -94,7 +94,7 @@ export class InstrumentCatalogService implements OnModuleInit {
         const valid = validate(catalogData);
 
         if (!valid) {
-          const errors = validate.errors?.map((err: any) => {
+          const errors = validate.errors?.map((err) => {
             const field = err.instancePath || 'root';
             return `${field}: ${err.message}`;
           }) || ['Unknown validation error'];
@@ -193,12 +193,12 @@ export class InstrumentCatalogService implements OnModuleInit {
   /**
    * Perform semantic validation beyond JSON schema
    */
-  private validateSemantics(catalog: any): string[] {
+  private validateSemantics(catalog: InstrumentCatalog): string[] {
     const errors: string[] = [];
 
     // Check that all fallback rules reference existing instruments
     const instrumentIds = new Set(
-      catalog.instruments.map((inst: any) => inst.id)
+      catalog.instruments.map((inst) => inst.id)
     );
 
     for (const instrument of catalog.instruments) {

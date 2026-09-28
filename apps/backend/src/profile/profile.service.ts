@@ -41,7 +41,7 @@ export class ProfileService {
     updateProfileDto: UpdateProfileDto
   ): Observable<ProfileResponseDto> {
     // Check for username uniqueness if being updated
-    let uniquenessCheck$: Observable<any>;
+    let uniquenessCheck$: Observable<null>;
     if (updateProfileDto.username) {
       uniquenessCheck$ = from(
         this.userModel.findOne({

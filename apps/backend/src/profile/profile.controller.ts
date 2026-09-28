@@ -12,28 +12,48 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProfileService } from './profile.service';
 import { UpdateProfileDto, ChangePasswordDto } from './dto/profile.dto';
 
+interface AuthenticatedProfileRequest {
+  user: {
+    userId: string;
+  };
+}
+
 @Controller('user/profile')
 @UseGuards(JwtAuthGuard)
 export class ProfileController {
-  constructor(private readonly profileService: ProfileService) {}
+  constructor(
+    private readonly profileService: ProfileService
+  ) {}
 
   @Get()
-  getProfile(@Request() req: any) {
-    return this.profileService.getProfile(req.user.userId);
+  getProfile(
+    @Request()
+    req: AuthenticatedProfileRequest
+  ) {
+    return this.profileService.getProfile(
+      req.user.userId
+    );
   }
 
   @Put()
   updateProfile(
-    @Body() updateProfileDto: UpdateProfileDto,
-    @Request() req: any
+    @Body()
+    updateProfileDto: UpdateProfileDto,
+    @Request()
+    req: AuthenticatedProfileRequest
   ) {
-    return this.profileService.updateProfile(req.user.userId, updateProfileDto);
+    return this.profileService.updateProfile(
+      req.user.userId,
+      updateProfileDto
+    );
   }
 
   @Post('change-password')
   changePassword(
-    @Body() changePasswordDto: ChangePasswordDto,
-    @Request() req: any
+    @Body()
+    changePasswordDto: ChangePasswordDto,
+    @Request()
+    req: AuthenticatedProfileRequest
   ) {
     return this.profileService.changePassword(
       req.user.userId,
@@ -42,7 +62,12 @@ export class ProfileController {
   }
 
   @Delete()
-  deleteProfile(@Request() req: any) {
-    return this.profileService.deleteProfile(req.user.userId);
+  deleteProfile(
+    @Request()
+    req: AuthenticatedProfileRequest
+  ) {
+    return this.profileService.deleteProfile(
+      req.user.userId
+    );
   }
 }
