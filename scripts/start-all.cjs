@@ -6,11 +6,14 @@ const net = require('node:net');
 const path = require('node:path');
 const { parseEnv } = require('node:util');
 const {
-  appProjectsToStart,
+  applicationSourceFingerprint,
+  applicationStartupDecision,
   probeHarmoniaApps,
+  readApplicationSourceFingerprint,
   readWorkerBuildFingerprint,
   workerBuildFingerprint,
   workerStartupDecision,
+  writeApplicationSourceFingerprint,
   writeWorkerBuildFingerprint,
 } = require('./start-all-state.cjs');
 
@@ -752,48 +755,211 @@ async function main(args = process.argv.slice(2)) {
   const appState =
     await probeHarmoniaApps();
 
-  if (appState.backend) {
-    console.log(
-      'Backend: existing Harmonia instance detected — REUSE'
+  const backendFingerprint =
+    applicationSourceFingerprint(
+      root,
+      'backend'
     );
-  } else {
-    await checkPort(
-      env.PORT,
-      'Backend'
+
+  const frontendFingerprint =
+    applicationSourceFingerprint(
+      root,
+      'frontend'
     );
-    console.log(
-      'Backend: not running — START'
-    );
+
+  const backendDecision =
+    applicationStartupDecision({
+      running:
+        appState.backend,
+
+      currentFingerprint:
+        backendFingerprint,
+
+      recordedFingerprint:
+        readApplicationSourceFingerprint(
+          root,
+          'backend'
+        ),
+    });
+
+  const frontendDecision =
+    applicationStartupDecision({
+      running:
+        appState.frontend,
+
+      currentFingerprint:
+        frontendFingerprint,
+
+      recordedFingerprint:
+        readApplicationSourceFingerprint(
+          root,
+          'frontend'
+        ),
+    });
+
+  const applicationPlans = [
+    {
+      project:
+        'frontend',
+
+      name:
+        'Frontend',
+
+      port:
+        4200,
+
+      fingerprint:
+        frontendFingerprint,
+
+      decision:
+        frontendDecision,
+    },
+    {
+      project:
+        'backend',
+
+      name:
+        'Backend',
+
+      port:
+        Number(
+          env.PORT
+        ),
+
+      fingerprint:
+        backendFingerprint,
+
+      decision:
+        backendDecision,
+    },
+  ];
+
+  for (
+    const plan of
+    applicationPlans
+  ) {
+    if (
+      plan.decision.action ===
+        'reuse'
+    ) {
+      console.log(
+        plan.name +
+        ': existing Harmonia instance detected — REUSE (' +
+        plan.decision.reason +
+        ')'
+      );
+
+      continue;
+    }
+
+    if (
+      plan.decision.action ===
+        'start'
+    ) {
+      await checkPort(
+        plan.port,
+        plan.name
+      );
+
+      console.log(
+        plan.name +
+        ': not running — START (' +
+        plan.decision.reason +
+        ')'
+      );
+
+      continue;
+    }
+
+    if (
+      plan.decision.action ===
+        'restart'
+    ) {
+      console.error(
+        plan.name +
+        ': existing Harmonia instance is stale — RESTART REQUIRED (' +
+        plan.decision.reason +
+        ')'
+      );
+    }
   }
 
-  if (appState.frontend) {
-    console.log(
-      'Frontend: existing Harmonia instance detected — REUSE'
+  const restartRequired =
+    applicationPlans.filter(
+      (plan) =>
+        plan.decision.action ===
+        'restart'
     );
-  } else {
-    await checkPort(
-      4200,
-      'Frontend'
-    );
-    console.log(
-      'Frontend: not running — START'
+
+  if (
+    restartRequired.length > 0
+  ) {
+    const names =
+      restartRequired
+        .map(
+          (plan) =>
+            plan.name
+        )
+        .join(', ');
+
+    throw new Error(
+      'RESTART REQUIRED: stop the stale Harmonia server(s) (' +
+      names +
+      ') and rerun pnpm start:all. ' +
+      'start:all will not terminate host processes automatically.'
     );
   }
 
   const projects =
-    appProjectsToStart(
-      appState
+    applicationPlans
+      .filter(
+        (plan) =>
+          plan.decision.action ===
+          'start'
+      )
+      .map(
+        (plan) =>
+          plan.project
+      );
+
+  if (
+    projects.length === 0
+  ) {
+    console.log(
+      'Harmonia already running with current application source fingerprints. ' +
+      'Docker services reconciled and application servers reused.'
     );
 
-  if (projects.length === 0) {
-    console.log(
-      'Harmonia already running. Docker services reconciled and application servers reused.'
-    );
     return;
   }
 
+  /*
+   * Record the exact source snapshot that the Nx serve processes
+   * below are about to execute.
+   *
+   * A failed launch is still safe: the next run sees the app as
+   * not running and START wins regardless of the stored baseline.
+   */
+  for (
+    const plan of
+    applicationPlans
+  ) {
+    if (
+      plan.decision.action !==
+        'start'
+    ) {
+      continue;
+    }
+
+    writeApplicationSourceFingerprint(
+      root,
+      plan.project,
+      plan.fingerprint
+    );
+  }
+
   console.log(
-    'Database ready. Starting missing application server(s): ' +
+    'Database ready. Starting current application server(s): ' +
     projects.join(', ') +
     '. Ctrl+C stops only the server(s) started by this command.'
   );
