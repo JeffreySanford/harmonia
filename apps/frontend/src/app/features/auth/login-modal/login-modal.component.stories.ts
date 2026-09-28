@@ -31,7 +31,10 @@ class LoginStoryStore {
     this.state$ = new BehaviorSubject<LoginStoryState>({ auth });
   }
 
-  select<T>(selector: (state: any) => T): Observable<T> {
+  select<T>(
+    selector:
+      (state: LoginStoryState) => T
+  ): Observable<T> {
     return this.state$.pipe(map((state) => selector(state)));
   }
 

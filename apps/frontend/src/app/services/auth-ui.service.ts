@@ -54,7 +54,7 @@ export class AuthUiService {
       dialogRef.componentInstance.mode = mode;
       try {
         console.log('AuthUiService: opened login modal', { mode });
-        (window as any).localStorage.setItem(
+        window.localStorage.setItem(
           'e2e_login_modal_open',
           Date.now().toString()
         );

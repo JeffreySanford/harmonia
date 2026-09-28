@@ -16,6 +16,10 @@ import {
   generateMetadata,
   clearError,
 } from '../../store/song-generation/song-generation.actions';
+import type {
+  InstrumentSelection,
+  PaletteSuggestion,
+} from './palette-suggestion.component';
 
 interface SongMetadata {
   title: string;
@@ -48,6 +52,38 @@ interface GenreSuggestion {
   genre: string;
   selected: boolean;
   feedback?: 'positive' | 'negative';
+}
+
+interface GenerationModeChange {
+  value: 'generate' | 'analyze';
+}
+
+interface AnalyzedSongItem {
+  type: string;
+  text?: string;
+}
+
+interface AnalyzedSongSection {
+  label: string;
+  items: AnalyzedSongItem[];
+}
+
+interface AnalyzedSong {
+  title?: string;
+  bpm?: number;
+  key?: string;
+  sections: AnalyzedSongSection[];
+}
+
+interface SongAnalysisIssue {
+  severity: string;
+  line: number;
+  message: string;
+}
+
+interface SongAnalysisResult {
+  song?: AnalyzedSong;
+  errors?: SongAnalysisIssue[];
 }
 
 /**
@@ -107,14 +143,18 @@ export class SongGenerationPageComponent implements OnInit, OnDestroy {
   generatedMetadata: SongMetadata | null = null;
 
   // Accepted palette from AI suggestions
-  acceptedPalette: any = null;
+  acceptedPalette:
+    PaletteSuggestion | null =
+    null;
 
   // Lyrics analysis mode
   generationMode: 'generate' | 'analyze' = 'generate';
   lyricsToAnalyze = '';
   readonly maxLyricsLength = 10000;
   isAnalyzing = false;
-  analysisResult: any = null;
+  analysisResult:
+    SongAnalysisResult | null =
+    null;
 
   // Reactive subjects for backward compatibility
   private isGeneratingSubject = new BehaviorSubject<boolean>(false);
@@ -423,7 +463,9 @@ export class SongGenerationPageComponent implements OnInit, OnDestroy {
   /**
    * Handle generation mode change
    */
-  onModeChange(event: any): void {
+  onModeChange(
+    event: GenerationModeChange
+  ): void {
     this.generationMode = event.value;
     // Reset analysis result when switching modes
     this.analysisResult = null;
@@ -456,8 +498,10 @@ export class SongGenerationPageComponent implements OnInit, OnDestroy {
     if (!this.analysisResult?.song) return false;
     if (!this.analysisResult.errors) return true;
     return (
-      this.analysisResult.errors.filter((e: any) => e.severity === 'error')
-        .length === 0
+      this.analysisResult.errors.filter(
+        (error) =>
+          error.severity === 'error'
+      ).length === 0
     );
   }
 
@@ -477,12 +521,22 @@ export class SongGenerationPageComponent implements OnInit, OnDestroy {
     if (song.key) narrative += `Key: ${song.key}. `;
 
     // Extract lyrics as narrative
-    const lyrics = song.sections
-      .flatMap((section: any) => section.items)
-      .filter((item: any) => item.type === 'lyric')
-      .map((item: any) => item.text)
-      .join(' ')
-      .trim();
+    const lyrics =
+      song.sections
+        .flatMap(
+          (section) =>
+            section.items
+        )
+        .filter(
+          (item) =>
+            item.type === 'lyric'
+        )
+        .map(
+          (item) =>
+            item.text
+        )
+        .join(' ')
+        .trim();
 
     if (lyrics) {
       narrative += `Lyrics content: ${lyrics}`;
@@ -499,7 +553,9 @@ export class SongGenerationPageComponent implements OnInit, OnDestroy {
   /**
    * Handle palette suggestion acceptance
    */
-  onPaletteAccepted(palette: any): void {
+  onPaletteAccepted(
+    palette: PaletteSuggestion
+  ): void {
     // Store the accepted palette for use in music generation
     this.acceptedPalette = palette;
     console.log('Palette accepted:', palette);
@@ -509,7 +565,9 @@ export class SongGenerationPageComponent implements OnInit, OnDestroy {
   /**
    * Handle palette modifications
    */
-  onPaletteModified(modifications: any[]): void {
+  onPaletteModified(
+    modifications: InstrumentSelection[]
+  ): void {
     console.log('Palette modified:', modifications);
     // TODO: Update local state or NGRX store with modifications
   }

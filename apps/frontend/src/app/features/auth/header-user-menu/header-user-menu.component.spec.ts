@@ -152,11 +152,13 @@ describe('HeaderUserMenuComponent', () => {
   });
 
   it('should call authUiService when opening login modal as guest', () => {
-    authUiService.openLoginModal.and.returnValue({
-      afterClosed: () => ({}),
-    } as any);
     component.openLoginModal();
-    expect(authUiService.openLoginModal).toHaveBeenCalledWith('login');
+
+    expect(
+      authUiService.openLoginModal
+    ).toHaveBeenCalledWith(
+      'login'
+    );
   });
 
   it('should render the menu trigger button', () => {

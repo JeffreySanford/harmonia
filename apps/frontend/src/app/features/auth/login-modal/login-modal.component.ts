@@ -81,7 +81,7 @@ export class LoginModalComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     try {
-      (window as any).localStorage.setItem(
+      window.localStorage.setItem(
         'e2e_login_modal_init',
         Date.now().toString()
       );
@@ -150,7 +150,7 @@ export class LoginModalComponent implements OnInit, AfterViewInit, OnDestroy {
       this.ngZone.run(() => {
         this.store.dispatch(AuthActions.login({ emailOrUsername, password }));
         try {
-          (window as any).localStorage.setItem(
+          window.localStorage.setItem(
             'e2e_login_attempt',
             Date.now().toString()
           );
@@ -175,7 +175,7 @@ export class LoginModalComponent implements OnInit, AfterViewInit, OnDestroy {
           AuthActions.register({ email, username, password })
         );
         try {
-          (window as any).localStorage.setItem(
+          window.localStorage.setItem(
             'e2e_register_attempt',
             Date.now().toString()
           );

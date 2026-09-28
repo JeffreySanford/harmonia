@@ -44,7 +44,10 @@ export class PaletteSuggestionComponent {
   private readonly http = inject(HttpClient);
 
   @Input() narrative = '';
-  @Input() generatedMetadata: any = null;
+  @Input()
+  generatedMetadata:
+    object | null =
+    null;
   @Input() isVisible = false;
 
   @Output() paletteAccepted = new EventEmitter<PaletteSuggestion>();

@@ -1,8 +1,10 @@
 import { createAction, createReducer, on, props } from '@ngrx/store';
 import {
+  CreateLibraryItemRequest,
   LibraryItem,
   LibraryFilters,
   LibraryResponse,
+  UpdateLibraryItemRequest,
 } from '../../services/library.service';
 
 // State
@@ -67,7 +69,9 @@ export const loadLibraryItemFailure = createAction(
 
 export const createLibraryItem = createAction(
   '[Library] Create Library Item',
-  props<{ item: any }>()
+  props<{
+    item: CreateLibraryItemRequest;
+  }>()
 );
 
 export const createLibraryItemSuccess = createAction(
@@ -82,7 +86,10 @@ export const createLibraryItemFailure = createAction(
 
 export const updateLibraryItem = createAction(
   '[Library] Update Library Item',
-  props<{ id: string; item: any }>()
+  props<{
+    id: string;
+    item: UpdateLibraryItemRequest;
+  }>()
 );
 
 export const updateLibraryItemSuccess = createAction(

@@ -33,6 +33,11 @@ interface MusicStoryState {
   jobs: JobsState;
 }
 
+type MusicStoryAction =
+  ReturnType<
+    typeof JobsActions.createJob
+  >;
+
 class MusicStoryStore {
   private readonly state$: BehaviorSubject<MusicStoryState>;
   readonly dispatchSpy = fn();
@@ -40,18 +45,23 @@ class MusicStoryStore {
   constructor(
     state: MusicStoryState,
     private readonly onDispatch?: (
-      action: any,
+      action: MusicStoryAction,
       store: MusicStoryStore
     ) => void
   ) {
     this.state$ = new BehaviorSubject<MusicStoryState>(state);
   }
 
-  select<T>(selector: (state: any) => T): Observable<T> {
+  select<T>(
+    selector:
+      (state: MusicStoryState) => T
+  ): Observable<T> {
     return this.state$.pipe(map((state) => selector(state)));
   }
 
-  dispatch(action: any): void {
+  dispatch(
+    action: MusicStoryAction
+  ): void {
     this.dispatchSpy(action);
     this.onDispatch?.(action, this);
   }

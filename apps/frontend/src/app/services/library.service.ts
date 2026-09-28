@@ -60,7 +60,7 @@ export interface UpdateLibraryItemRequest {
   title?: string;
   description?: string;
   isPublic?: boolean;
-  metadata?: any;
+  metadata?: LibraryItem['metadata'];
 }
 
 export interface UploadFileRequest {
