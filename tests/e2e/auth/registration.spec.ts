@@ -28,7 +28,9 @@ test.describe('Registration Flow (E2E)', () => {
     expect([201, 200]).toContain(reg.responseStatus);
     expect(reg.body).toBeTruthy();
     expect(
-      reg.body.accessToken || reg.body.access_token || reg.body.token
+      reg.body?.accessToken ||
+        reg.body?.access_token ||
+        reg.body?.token
     ).toBeTruthy();
   });
 });

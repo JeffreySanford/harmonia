@@ -6,6 +6,20 @@ export type SongGenerationData = {
   narrative: string;
 };
 
+export interface SongGenerationResponseBody {
+  title?: string;
+  lyrics?: string;
+  genre?: string;
+  mood?: string;
+  syllableCount?: number;
+  message?: string;
+}
+
+export interface SongGenerationResult {
+  responseStatus: number;
+  body: SongGenerationResponseBody | null;
+}
+
 /**
  * Fill the current Song Generation metadata form.
  *
@@ -30,10 +44,7 @@ export async function fillSongGenerationForm(
  */
 export async function submitSongGeneration(
   page: Page
-): Promise<{
-  responseStatus: number;
-  body?: any;
-}> {
+): Promise<SongGenerationResult> {
   const generateButton = page.getByRole(
     'button',
     {
@@ -55,7 +66,7 @@ export async function submitSongGeneration(
     generateButton.click(),
   ]);
 
-  let body: any = null;
+  let body: SongGenerationResponseBody | null = null;
 
   try {
     body = await response.json();

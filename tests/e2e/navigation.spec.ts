@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import authHelper from './helpers/auth';
+import { ADMIN_USER } from './auth/constants';
 
 const { loginViaModal, logoutIfNeeded } = authHelper;
 const FRONTEND_URL = 'http://localhost:4200';
@@ -39,13 +40,9 @@ test.describe('Navigation & Session E2E Tests', () => {
   }) => {
     // Login via modal
     await logoutIfNeeded(page);
-    const admin = {
-      email: process.env.E2E_ADMIN_EMAIL!,
-      password: process.env.E2E_ADMIN_PASSWORD!,
-    };
     const login = await loginViaModal(page, {
-      emailOrUsername: admin.email,
-      password: admin.password,
+      emailOrUsername: ADMIN_USER.email,
+      password: ADMIN_USER.password,
     });
     expect(login.responseStatus).toBe(200);
     await page.waitForURL('**/library');

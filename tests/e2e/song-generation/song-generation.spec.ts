@@ -69,10 +69,10 @@ test.describe('Song Generation Metadata Flow (E2E)', () => {
       expect(result.responseStatus).toBe(200);
 
       expect(result.body).toBeTruthy();
-      expect(result.body.title).toBeTruthy();
-      expect(result.body.lyrics).toBeTruthy();
-      expect(result.body.genre).toBeTruthy();
-      expect(result.body.mood).toBeTruthy();
+      expect(result.body?.title).toBeTruthy();
+      expect(result.body?.lyrics).toBeTruthy();
+      expect(result.body?.genre).toBeTruthy();
+      expect(result.body?.mood).toBeTruthy();
     }
   );
 

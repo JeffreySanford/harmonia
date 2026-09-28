@@ -1,6 +1,12 @@
 /// <reference lib="dom" />
 
-import { Page } from '@playwright/test';
+import type {
+  APIResponse,
+  ConsoleMessage,
+  Page,
+  Request,
+  Response,
+} from '@playwright/test';
 import { ReplaySubject, lastValueFrom, Observable } from 'rxjs';
 
 export type Credentials = {
@@ -8,6 +14,35 @@ export type Credentials = {
   email?: string;
   password: string;
 };
+
+export interface AuthUserResponse {
+  role?: string;
+}
+
+export interface AuthResponseBody {
+  accessToken?: string;
+  access_token?: string;
+  token?: string;
+  user?: AuthUserResponse;
+  message?: string;
+}
+
+export interface AuthFlowResult {
+  responseStatus: number;
+  authToken?: string | null;
+  body?: AuthResponseBody | null;
+}
+
+interface AuthResponseLike {
+  status(): number;
+  json(): Promise<AuthResponseBody | null>;
+}
+
+declare global {
+  interface Window {
+    __e2e_form_submitted?: boolean;
+  }
+}
 
 /**
  * Wait for tokens in localStorage
@@ -22,7 +57,7 @@ export function waitForToken$(page: Page, timeout = 5000): Observable<boolean> {
     try {
       // Global console listener to capture logs during modal init and submit
       const consoleMessages: Array<{ type: string; text: string }> = [];
-      const onConsole = (msg: any) => {
+      const onConsole = (msg: ConsoleMessage) => {
         try {
           consoleMessages.push({ type: msg.type(), text: msg.text() });
         } catch (e) {
@@ -31,7 +66,7 @@ export function waitForToken$(page: Page, timeout = 5000): Observable<boolean> {
       };
       page.on('console', onConsole);
       await page.waitForFunction(
-        () => !!(window as any).localStorage.getItem('auth_token'),
+        () => !!window.localStorage.getItem('auth_token'),
         null,
         { timeout }
       );
@@ -181,29 +216,22 @@ export function loginViaModal$(
   page: Page,
   creds: { emailOrUsername: string; password: string },
   options?: { waitForNavigation?: boolean; attempts?: number }
-): Observable<{
-  responseStatus: number;
-  authToken?: string | null;
-  body?: any;
-}> {
-  const subject = new ReplaySubject<{
-    responseStatus: number;
-    authToken?: string | null;
-    body?: any;
-  }>(1);
+): Observable<AuthFlowResult> {
+  const subject =
+    new ReplaySubject<AuthFlowResult>(1);
 
   (async () => {
     const waitForNavigation = options?.waitForNavigation ?? true;
     const maxAttempts = options?.attempts ?? 3;
     let attempt = 0;
-    let lastResponse: any = null;
+    let lastResponse: Response | null = null;
 
     try {
       // Ensure no lingering session state
       await page.evaluate(() => {
         try {
-          (window as any).localStorage.clear();
-          (window as any).sessionStorage.clear();
+          window.localStorage.clear();
+          window.sessionStorage.clear();
         } catch (err) {
           // ignore if clearing fails
         }
@@ -214,7 +242,7 @@ export function loginViaModal$(
       await page
         .waitForFunction(
           () =>
-            !!(window as any).localStorage.getItem(
+            !!window.localStorage.getItem(
               'e2e_login_modal_open'
             ),
           null,
@@ -225,7 +253,7 @@ export function loginViaModal$(
       await page
         .waitForFunction(
           () =>
-            !!(window as any).localStorage.getItem(
+            !!window.localStorage.getItem(
               'e2e_login_modal_init'
             ),
           null,
@@ -308,7 +336,7 @@ export function loginViaModal$(
         // When successful (200), ensure the access token is set
         await waitForToken(page, 5000);
         const authToken = await page.evaluate(() =>
-          (window as any).localStorage.getItem('auth_token')
+          window.localStorage.getItem('auth_token')
         );
         if (!authToken) {
           console.warn('Login reported 200 but access token missing in localStorage');
@@ -337,7 +365,7 @@ export function loginViaModal$(
           });
 
         // Parse body for further assertions by caller
-        let body: any = null;
+        let body: AuthResponseBody | null = null;
         try {
           body = await loginResponse.json();
         } catch (e) {
@@ -357,7 +385,7 @@ export function loginViaModal$(
       // do not bypass Angular/NgRx by injecting backend tokens.
 
       // If we exit loop without success, return last response info
-      let lastBody: any = null;
+      let lastBody: AuthResponseBody | null = null;
       try {
         lastBody = lastResponse ? await lastResponse.json() : null;
       } catch (e) {
@@ -453,29 +481,22 @@ export function registerViaModal$(
   page: Page,
   creds: { username: string; email: string; password: string },
   options?: { waitForNavigation?: boolean; attempts?: number }
-): Observable<{
-  responseStatus: number;
-  authToken?: string | null;
-  body?: any;
-}> {
-  const subject = new ReplaySubject<{
-    responseStatus: number;
-    authToken?: string | null;
-    body?: any;
-  }>(1);
+): Observable<AuthFlowResult> {
+  const subject =
+    new ReplaySubject<AuthFlowResult>(1);
 
   (async () => {
     const waitForNavigation = options?.waitForNavigation ?? true;
     const maxAttempts = options?.attempts ?? 3;
     let attempt = 0;
-    let lastResponse: any = null;
+    let lastResponse: AuthResponseLike | null = null;
 
     try {
       // Ensure no lingering session state
       await page.evaluate(() => {
         try {
-          (window as any).localStorage.clear();
-          (window as any).sessionStorage.clear();
+          window.localStorage.clear();
+          window.sessionStorage.clear();
         } catch (err) {
           // ignore if clearing fails
         }
@@ -486,7 +507,7 @@ export function registerViaModal$(
       await page
         .waitForFunction(
           () =>
-            !!(window as any).localStorage.getItem(
+            !!window.localStorage.getItem(
               'e2e_login_modal_open'
             ),
           null,
@@ -497,7 +518,7 @@ export function registerViaModal$(
       await page
         .waitForFunction(
           () =>
-            !!(window as any).localStorage.getItem(
+            !!window.localStorage.getItem(
               'e2e_login_modal_init'
             ),
           null,
@@ -554,7 +575,7 @@ export function registerViaModal$(
         // Attach a page-level flag to detect if the form submit event fired
         await page.evaluate(() => {
           try {
-            (window as any).__e2e_form_submitted = false;
+            window.__e2e_form_submitted = false;
             const registerForm =
               document.querySelector('form[ng-reflect-form-group]') ||
               document.querySelector('form');
@@ -562,7 +583,7 @@ export function registerViaModal$(
               registerForm.addEventListener(
                 'submit',
                 () => {
-                  (window as any).__e2e_form_submitted = true;
+                  window.__e2e_form_submitted = true;
                 },
                 { once: true }
               );
@@ -574,7 +595,7 @@ export function registerViaModal$(
         // Install a temporary request logger to capture any network activity
         const capturedRequests: Array<{ url: string; method: string }> = [];
         const consoleMessages: Array<{ type: string; text: string }> = [];
-        const onRequest = (req: any) => {
+        const onRequest = (req: Request) => {
           try {
             if (req.method && req.method() === 'POST') {
               capturedRequests.push({ url: req.url(), method: req.method() });
@@ -584,7 +605,7 @@ export function registerViaModal$(
           }
         };
         page.on('request', onRequest);
-        const onConsole = (msg: any) => {
+        const onConsole = (msg: ConsoleMessage) => {
           try {
             consoleMessages.push({ type: msg.type(), text: msg.text() });
           } catch (e) {
@@ -625,7 +646,7 @@ export function registerViaModal$(
         // The button click owns Angular form submission.
         // Do not dispatch a second synthetic submit event.
 
-        let registerResponse: any = null;
+        let registerResponse: Response | null = null;
         try {
           // Wait for response first, but if request appears without response we'll
           // continue waiting for a response afterwards.
@@ -669,10 +690,10 @@ export function registerViaModal$(
           console.warn('registerViaModal: console messages:', consoleMessages);
           try {
             const formSubmitted = await page.evaluate(
-              () => (window as any).__e2e_form_submitted
+              () => window.__e2e_form_submitted
             );
             const attempted = await page.evaluate(() =>
-              (window as any).localStorage.getItem('e2e_register_attempt')
+              window.localStorage.getItem('e2e_register_attempt')
             );
             console.warn('registerViaModal: form submit event?', formSubmitted);
             console.warn(
@@ -703,7 +724,7 @@ export function registerViaModal$(
           // POST to the backend as a fallback to ensure tests can continue.
           try {
             const formSubmitted = await page.evaluate(
-              () => (window as any).__e2e_form_submitted
+              () => window.__e2e_form_submitted
             );
             const captured = capturedRequests.length;
             const formValues = await page.evaluate(() => {
@@ -740,7 +761,7 @@ export function registerViaModal$(
               let fallbackUsername = creds.username;
               let fallbackEmail = creds.email;
               let fallbackSucceeded = false;
-              let fallbackResp: any = null;
+              let fallbackResp: APIResponse | null = null;
 
               while (attemptsFallback < 3 && !fallbackSucceeded) {
                 attemptsFallback += 1;
@@ -758,7 +779,7 @@ export function registerViaModal$(
                 }
 
                 const status = fallbackResp?.status?.() ?? 0;
-                let body: any = null;
+                let body: AuthResponseBody | null = null;
                 try {
                   body = fallbackResp ? await fallbackResp.json() : null;
                 } catch (e) {
@@ -842,11 +863,20 @@ export function registerViaModal$(
           page.off('console', onConsole);
           throw err;
         }
+        if (!registerResponse) {
+          page.off('request', onRequest);
+          page.off('console', onConsole);
+
+          throw new Error(
+            'Register response was not captured'
+          );
+        }
+
         page.off('request', onRequest);
         // Debug - did a submit event fire and what is the form HTML (trimmed)?
         try {
           const formSubmitted = await page.evaluate(
-            () => (window as any).__e2e_form_submitted
+            () => window.__e2e_form_submitted
           );
           const formHtml = await page.evaluate(() => {
             const form =
@@ -865,7 +895,7 @@ export function registerViaModal$(
         // Debug - check if UI handler fired
         try {
           const attempted = await page.evaluate(() =>
-            (window as any).localStorage.getItem('e2e_register_attempt')
+            window.localStorage.getItem('e2e_register_attempt')
           );
           console.log(
             'registerViaModal: client-side submit attempt in localStorage:',
@@ -901,7 +931,7 @@ export function registerViaModal$(
 
         await waitForToken(page, 5000);
         const authToken = await page.evaluate(() =>
-          (window as any).localStorage.getItem('auth_token')
+          window.localStorage.getItem('auth_token')
         );
         if (!authToken) {
           console.warn(
@@ -928,7 +958,7 @@ export function registerViaModal$(
             console.warn('User menu did not appear after register');
           });
 
-        let body: any = null;
+        let body: AuthResponseBody | null = null;
         try {
           body = await registerResponse.json();
         } catch (e) {
@@ -944,7 +974,7 @@ export function registerViaModal$(
         return;
       }
 
-      let lastBody: any = null;
+      let lastBody: AuthResponseBody | null = null;
       try {
         lastBody = lastResponse ? await lastResponse.json() : null;
       } catch (e) {

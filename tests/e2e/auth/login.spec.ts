@@ -18,7 +18,7 @@ test.describe('Login Flow (E2E)', () => {
     });
     expect(loginResult.responseStatus).toBe(200);
     expect(loginResult.body).toBeTruthy();
-    expect(loginResult.body.accessToken || loginResult.body.token).toBeTruthy();
+    expect(loginResult.body?.accessToken || loginResult.body?.token).toBeTruthy();
   });
 
   test('Scenario 2a: Test User Login Flow (Email)', async ({ page }) => {
@@ -29,7 +29,7 @@ test.describe('Login Flow (E2E)', () => {
     });
     expect(result.responseStatus).toBe(200);
     expect(result.body).toBeTruthy();
-    expect(result.body.accessToken || result.body.token).toBeTruthy();
+    expect(result.body?.accessToken || result.body?.token).toBeTruthy();
   });
 
   test('Scenario 3: User Login Flow (Username)', async ({ page }) => {
