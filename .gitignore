@@ -52,3 +52,6 @@ logs/
 # Local runtime outputs and qualification evidence
 /generated/
 /exports/
+
+# Generated demo-song runtime copies
+/uploads/library/*/demo-*.wav
