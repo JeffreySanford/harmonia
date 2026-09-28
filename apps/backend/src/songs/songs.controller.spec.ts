@@ -1,144 +1,333 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigModule } from '@nestjs/config';
-import { SongsController } from './songs.controller';
-import { OllamaService } from '../llm/ollama.service';
-import { MmslParserService } from './mmsl-parser.service';
-import { StemExportService } from './stem-export.service';
-import { SongDslParserService } from './song-dsl-parser.service';
-import { InstrumentCatalogService } from './instrument-catalog.service';
-import { LyricAnalysisService } from './lyric-analysis.service';
-import { PaletteSuggestionService } from './palette-suggestion.service';
-import { of } from 'rxjs';
-import { firstValueFrom } from 'rxjs';
+import {
+  Test,
+  TestingModule,
+} from '@nestjs/testing';
+import {
+  ConfigModule,
+} from '@nestjs/config';
+import {
+  firstValueFrom,
+  of,
+} from 'rxjs';
+
+import {
+  SongsController,
+} from './songs.controller';
+import {
+  OllamaService,
+} from '../llm/ollama.service';
+import {
+  MmslParserService,
+} from './mmsl-parser.service';
+import {
+  StemExportService,
+} from './stem-export.service';
+import {
+  SongDslParserService,
+} from './song-dsl-parser.service';
+import {
+  InstrumentCatalogService,
+} from './instrument-catalog.service';
+import {
+  LyricAnalysisService,
+} from './lyric-analysis.service';
+import {
+  PaletteSuggestionService,
+} from './palette-suggestion.service';
 
 describe('SongsController', () => {
-  let controller: SongsController;
-  const mockOllama = { generateMetadata: jest.fn() } as any;
-  const mockMmslParser = { parse: jest.fn(), validate: jest.fn() } as any;
+  let controller:
+    SongsController;
+
+  const mockOllama = {
+    generateMetadata:
+      jest.fn(),
+  };
+
+  const mockMmslParser = {
+    parse:
+      jest.fn(),
+    validate:
+      jest.fn(),
+  };
+
   const mockStemExport = {
-    validateOptions: jest.fn(),
-    exportStems: jest.fn(),
-  } as any;
-  const mockDslParser = { parse: jest.fn() } as any;
+    validateOptions:
+      jest.fn(),
+    exportStems:
+      jest.fn(),
+  };
+
+  const mockDslParser = {
+    parse:
+      jest.fn(),
+  };
+
   const mockInstrumentCatalog = {
-    loadCatalog: jest.fn(),
-    getCatalog: jest.fn(),
-  } as any;
+    loadCatalog:
+      jest.fn(),
+    getCatalog:
+      jest.fn(),
+  };
+
   const mockLyricAnalysis = {
-    analyzeLyrics: jest.fn(),
-  } as any;
+    analyzeLyrics:
+      jest.fn(),
+  };
+
   const mockPaletteSuggestion = {
-    suggestPalette: jest.fn(),
-  } as any;
+    suggestPalette:
+      jest.fn(),
+  };
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot({ isGlobal: true })],
-      controllers: [SongsController],
-      providers: [
-        { provide: OllamaService, useValue: mockOllama },
-        { provide: MmslParserService, useValue: mockMmslParser },
-        { provide: StemExportService, useValue: mockStemExport },
-        { provide: SongDslParserService, useValue: mockDslParser },
-        { provide: InstrumentCatalogService, useValue: mockInstrumentCatalog },
-        { provide: LyricAnalysisService, useValue: mockLyricAnalysis },
-        { provide: PaletteSuggestionService, useValue: mockPaletteSuggestion },
-      ],
-    }).compile();
+    jest.clearAllMocks();
 
-    controller = module.get<SongsController>(SongsController);
+    const module:
+      TestingModule =
+        await Test
+          .createTestingModule({
+            imports: [
+              ConfigModule.forRoot({
+                isGlobal:
+                  true,
+              }),
+            ],
+            controllers: [
+              SongsController,
+            ],
+            providers: [
+              {
+                provide:
+                  OllamaService,
+                useValue:
+                  mockOllama,
+              },
+              {
+                provide:
+                  MmslParserService,
+                useValue:
+                  mockMmslParser,
+              },
+              {
+                provide:
+                  StemExportService,
+                useValue:
+                  mockStemExport,
+              },
+              {
+                provide:
+                  SongDslParserService,
+                useValue:
+                  mockDslParser,
+              },
+              {
+                provide:
+                  InstrumentCatalogService,
+                useValue:
+                  mockInstrumentCatalog,
+              },
+              {
+                provide:
+                  LyricAnalysisService,
+                useValue:
+                  mockLyricAnalysis,
+              },
+              {
+                provide:
+                  PaletteSuggestionService,
+                useValue:
+                  mockPaletteSuggestion,
+              },
+            ],
+          })
+          .compile();
+
+    controller =
+      module.get<SongsController>(
+        SongsController
+      );
   });
 
   it('should be defined', () => {
-    expect(controller).toBeDefined();
+    expect(
+      controller
+    ).toBeDefined();
   });
 
   it('should call ollama service', async () => {
-    mockOllama.generateMetadata.mockReturnValueOnce(
-      of({
-        title: 'T',
-        lyrics: 'L',
-        genre: 'pop',
-        mood: 'calm',
-      })
-    );
-    const res = await firstValueFrom(
-      controller.generateMetadata({
-        narrative: 'x',
-        duration: 30,
-        model: 'minstral3',
-      } as any)
-    );
-    expect(mockOllama.generateMetadata).toHaveBeenCalledWith(
+    mockOllama
+      .generateMetadata
+      .mockReturnValueOnce(
+        of({
+          title: 'T',
+          lyrics: 'L',
+          genre: 'pop',
+          mood: 'calm',
+        })
+      );
+
+    const result =
+      await firstValueFrom(
+        controller.generateMetadata({
+          narrative: 'x',
+          duration: 30,
+          model: 'minstral3',
+        })
+      );
+
+    expect(
+      mockOllama.generateMetadata
+    ).toHaveBeenCalledWith(
       'x',
       30,
       'minstral3'
     );
-    expect(res.title).toBe('T');
+
+    expect(
+      result.title
+    ).toBe('T');
   });
-  it('returns no download URLs for generated-only stem artifacts', async () => {
-    mockStemExport.validateOptions.mockReturnValueOnce({
-      valid: true,
-      errors: [],
-    });
-    mockStemExport.exportStems.mockReturnValueOnce(
-      of({
-        success: true,
-        stems: [
-          {
-            instrument: 'piano',
-            filePath: 'generated/smoke/piano.wav',
+
+  it(
+    'returns no download URLs for generated-only stem artifacts',
+    async () => {
+      mockStemExport
+        .validateOptions
+        .mockReturnValueOnce({
+          valid: true,
+          errors: [],
+        });
+
+      mockStemExport
+        .exportStems
+        .mockReturnValueOnce(
+          of({
+            success: true,
+            stems: [
+              {
+                instrument:
+                  'piano',
+                filePath:
+                  'generated/smoke/piano.wav',
+                format:
+                  'wav',
+                size:
+                  320044,
+              },
+            ],
+            errors: [],
+          })
+        );
+
+      const result =
+        await firstValueFrom(
+          controller.exportStems({
             format: 'wav',
-            size: 320044,
-          },
-        ],
-        errors: [],
-      })
-    );
+            instruments: [
+              'piano',
+            ],
+            outputDir:
+              'generated/smoke',
+          })
+        );
 
-    const result = await firstValueFrom(
-      controller.exportStems({
-        format: 'wav',
-        instruments: ['piano'],
-        outputDir: 'generated/smoke',
-      })
-    );
+      expect(
+        result.success
+      ).toBe(true);
 
-    expect(result.success).toBe(true);
-    expect((result as any).files?.[0]?.url).toBeNull();
-    expect((result as any).zipUrl).toBeNull();
-  });
+      if (
+        !(
+          'files' in result
+        ) ||
+        !Array.isArray(
+          result.files
+        )
+      ) {
+        throw new Error(
+          'Successful stem export did not return files.'
+        );
+      }
 
-  it('returns download URLs only for files under exports/', async () => {
-    mockStemExport.validateOptions.mockReturnValueOnce({
-      valid: true,
-      errors: [],
-    });
-    mockStemExport.exportStems.mockReturnValueOnce(
-      of({
-        success: true,
-        stems: [
-          {
-            instrument: 'piano',
-            filePath: 'exports/smoke/piano.wav',
+      expect(
+        result.files[0]?.url
+      ).toBeNull();
+
+      expect(
+        result.zipUrl
+      ).toBeNull();
+    }
+  );
+
+  it(
+    'returns download URLs only for files under exports/',
+    async () => {
+      mockStemExport
+        .validateOptions
+        .mockReturnValueOnce({
+          valid: true,
+          errors: [],
+        });
+
+      mockStemExport
+        .exportStems
+        .mockReturnValueOnce(
+          of({
+            success: true,
+            stems: [
+              {
+                instrument:
+                  'piano',
+                filePath:
+                  'exports/smoke/piano.wav',
+                format:
+                  'wav',
+                size:
+                  320044,
+              },
+            ],
+            errors: [],
+          })
+        );
+
+      const result =
+        await firstValueFrom(
+          controller.exportStems({
             format: 'wav',
-            size: 320044,
-          },
-        ],
-        errors: [],
-      })
-    );
+            instruments: [
+              'piano',
+            ],
+            outputDir:
+              'exports/smoke',
+          })
+        );
 
-    const result = await firstValueFrom(
-      controller.exportStems({
-        format: 'wav',
-        instruments: ['piano'],
-        outputDir: 'exports/smoke',
-      })
-    );
+      expect(
+        result.success
+      ).toBe(true);
 
-    expect(result.success).toBe(true);
-    expect((result as any).files?.[0]?.url).toBe('/downloads/smoke/piano.wav');
-    expect((result as any).zipUrl).toBeNull();
-  });
+      if (
+        !(
+          'files' in result
+        ) ||
+        !Array.isArray(
+          result.files
+        )
+      ) {
+        throw new Error(
+          'Successful stem export did not return files.'
+        );
+      }
+
+      expect(
+        result.files[0]?.url
+      ).toBe(
+        '/downloads/smoke/piano.wav'
+      );
+
+      expect(
+        result.zipUrl
+      ).toBeNull();
+    }
+  );
 });
