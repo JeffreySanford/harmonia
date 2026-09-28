@@ -1,6 +1,24 @@
-import { BadRequestException } from '@nestjs/common';
-import { MusicRuntimeService } from './music-runtime.service';
-import type { MusicRuntimeStatus } from './music-runtime.types';
+import {
+  BadRequestException,
+} from '@nestjs/common';
+import type {
+  ModelInstallationRuntimeService,
+} from './model-installation-runtime.service';
+import type {
+  MusicRuntimeGateway,
+} from './music-runtime.gateway';
+import {
+  MusicRuntimeService,
+} from './music-runtime.service';
+import type {
+  MusicRuntimeStatus,
+} from './music-runtime.types';
+
+function testDouble<T extends object>(
+  value: object
+): T {
+  return value as T;
+}
 
 describe('MusicRuntimeService model readiness ordering', () => {
   function createService() {
@@ -17,39 +35,40 @@ describe('MusicRuntimeService model readiness ordering', () => {
 
     const service =
       new MusicRuntimeService(
-        gateway as never,
-        installations as never
+        testDouble<
+          MusicRuntimeGateway
+        >(gateway),
+        testDouble<
+          ModelInstallationRuntimeService
+        >(installations)
       );
 
     const internals =
-      service as unknown as {
-        reconcileRuntimeOwnership(): Promise<void>;
-        detectHardware(): Promise<{
-          gpuAvailable: boolean;
-          gpuName: string | null;
-          vramTotalGb: number | null;
-        }>;
-        ensureProviderImage(): Promise<void>;
-        status: MusicRuntimeStatus;
-      };
+      service;
 
-    const reconcileSpy = jest
-      .spyOn(
-        internals,
-        'reconcileRuntimeOwnership'
-      )
-      .mockResolvedValue();
+    const reconcileSpy =
+      jest
+        .fn()
+        .mockResolvedValue(
+          undefined
+        );
 
-    const hardwareSpy = jest
-      .spyOn(
-        internals,
-        'detectHardware'
-      )
-      .mockResolvedValue({
-        gpuAvailable: true,
-        gpuName: 'Test GPU',
-        vramTotalGb: 10,
-      });
+    internals[
+      'reconcileRuntimeOwnership'
+    ] = reconcileSpy;
+
+    const hardwareSpy =
+      jest
+        .fn()
+        .mockResolvedValue({
+          gpuAvailable: true,
+          gpuName: 'Test GPU',
+          vramTotalGb: 10,
+        });
+
+    internals[
+      'detectHardware'
+    ] = hardwareSpy;
 
     return {
       service,
@@ -280,7 +299,9 @@ describe('MusicRuntimeService model readiness ordering', () => {
       installations,
     } = createService();
 
-    internals.status = {
+    internals[
+      'status'
+    ] = {
       operationId: null,
       providerId: 'diffsinger',
       providerName: 'DiffSinger',
@@ -312,10 +333,16 @@ describe('MusicRuntimeService model readiness ordering', () => {
       'stopCurrentRuntime'
     );
 
-    const ensureImage = jest.spyOn(
-      internals,
+    const ensureImage =
+      jest
+        .fn()
+        .mockResolvedValue(
+          undefined
+        );
+
+    internals[
       'ensureProviderImage'
-    );
+    ] = ensureImage;
 
     await expect(
       service.selectModel(
@@ -346,7 +373,9 @@ describe('MusicRuntimeService model readiness ordering', () => {
       installations,
     } = createService();
 
-    internals.status = {
+    internals[
+      'status'
+    ] = {
       operationId: null,
       providerId: 'musicgen',
       providerName: 'MusicGen',
@@ -373,17 +402,25 @@ describe('MusicRuntimeService model readiness ordering', () => {
       'stopCurrentRuntime'
     );
 
-    const ensureImage = jest.spyOn(
-      internals,
+    const ensureImage =
+      jest
+        .fn()
+        .mockResolvedValue(
+          undefined
+        );
+
+    internals[
       'ensureProviderImage'
-    );
+    ] = ensureImage;
 
     await expect(
       service.selectModel(
         'musicgen-small'
       )
     ).resolves.toEqual(
-      internals.status
+      internals[
+      'status'
+    ]
     );
 
     expect(
@@ -414,7 +451,9 @@ describe('MusicRuntimeService model readiness ordering', () => {
       const originalUpdatedAt =
         '2026-09-25T20:30:00.000Z';
 
-      internals.status = {
+      internals[
+      'status'
+    ] = {
         operationId: null,
         providerId: 'musicgen',
         providerName: 'MusicGen',
@@ -442,10 +481,16 @@ describe('MusicRuntimeService model readiness ordering', () => {
         'stopCurrentRuntime'
       );
 
-      const ensureImage = jest.spyOn(
-        internals,
+      const ensureImage =
+        jest
+          .fn()
+          .mockResolvedValue(
+            undefined
+          );
+
+      internals[
         'ensureProviderImage'
-      );
+      ] = ensureImage;
 
       const correlated =
         await service.selectModel(
@@ -529,8 +574,12 @@ describe('Phase 13C asynchronous selection behavior', () => {
     };
 
     return new MusicRuntimeService(
-      gateway as never,
-      installations as never
+      testDouble<
+        MusicRuntimeGateway
+      >(gateway),
+      testDouble<
+        ModelInstallationRuntimeService
+      >(installations)
     );
   }
 
@@ -766,54 +815,47 @@ describe('MusicRuntimeService active generation cancellation', () => {
 
     const service =
       new MusicRuntimeService(
-        gateway as never,
-        installations as never
+        testDouble<
+          MusicRuntimeGateway
+        >(gateway),
+        testDouble<
+          ModelInstallationRuntimeService
+        >(installations)
       );
 
     const probe =
-      service as unknown as {
-        reconcileRuntimeOwnership():
-          Promise<void>;
-        detectHardware():
-          Promise<{
-            gpuAvailable:
-              boolean;
-            gpuName:
-              string | null;
-            vramTotalGb:
-              number | null;
-          }>;
-        status:
-          MusicRuntimeStatus;
-      };
+      service;
 
-    probe.status =
+    probe[
+      'status'
+    ] =
       makeStatus(
         state
       );
 
     const reconcileSpy =
       jest
-        .spyOn(
-          probe,
-          'reconcileRuntimeOwnership'
-        )
-        .mockResolvedValue();
+        .fn()
+        .mockResolvedValue(
+          undefined
+        );
+
+    probe[
+      'reconcileRuntimeOwnership'
+    ] = reconcileSpy;
 
     const hardwareSpy =
       jest
-        .spyOn(
-          probe,
-          'detectHardware'
-        )
+        .fn()
         .mockResolvedValue({
-          gpuAvailable:
-            true,
-          gpuName:
-            'Test GPU',
-          vramTotalGb:
-            10,
+          gpuAvailable: true,
+          gpuName: 'Test GPU',
+          vramTotalGb: 10,
         });
+
+    probe[
+      'detectHardware'
+    ] = hardwareSpy;
 
     return {
       gateway,
@@ -912,7 +954,9 @@ describe('MusicRuntimeService active generation cancellation', () => {
         );
 
       const before =
-        harness.probe.status;
+        harness.probe[
+          'status'
+        ];
 
       const result =
         await harness.service

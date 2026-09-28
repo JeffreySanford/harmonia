@@ -1,17 +1,20 @@
-import { BadRequestException } from '@nestjs/common';
-import { ModelInstallationRuntimeService } from './model-installation-runtime.service';
+import {
+  BadRequestException,
+} from '@nestjs/common';
+import type {
+  Model,
+} from 'mongoose';
+import type {
+  ModelInstallationDocument,
+} from '../schemas/model-installation.schema';
+import {
+  ModelInstallationRuntimeService,
+} from './model-installation-runtime.service';
 
-interface TestVerificationResult {
-  ok: boolean;
-  artifacts: Array<{
-    artifactId: string;
-    state: string;
-    requiredForSuccess?: boolean;
-  }>;
-}
-
-interface TestableRuntimeService {
-  verifyModel(modelId: string): Promise<TestVerificationResult>;
+function testDouble<T extends object>(
+  value: object
+): T {
+  return value as T;
 }
 
 describe('ModelInstallationRuntimeService', () => {
@@ -25,7 +28,9 @@ describe('ModelInstallationRuntimeService', () => {
 
     const service =
       new ModelInstallationRuntimeService(
-        model as never
+        testDouble<
+          Model<ModelInstallationDocument>
+        >(model)
       );
 
     return {
@@ -179,12 +184,12 @@ describe('ModelInstallationRuntimeService', () => {
   it('accepts a deeply verified logical model', async () => {
     const { service } = createService();
 
-    jest
-      .spyOn(
-        service as unknown as TestableRuntimeService,
-        'verifyModel'
-      )
-      .mockResolvedValue({
+    service[
+      'verifyModel'
+    ] =
+      jest
+        .fn()
+        .mockResolvedValue({
         ok: true,
         artifacts: [
           {
@@ -213,12 +218,12 @@ describe('ModelInstallationRuntimeService', () => {
   it('rejects missing required artifacts with an actionable message', async () => {
     const { service } = createService();
 
-    jest
-      .spyOn(
-        service as unknown as TestableRuntimeService,
-        'verifyModel'
-      )
-      .mockResolvedValue({
+    service[
+      'verifyModel'
+    ] =
+      jest
+        .fn()
+        .mockResolvedValue({
         ok: false,
         artifacts: [
           {
