@@ -16,10 +16,6 @@ import {
   MusicGenerationPageComponent,
 } from './music-generation-page.component';
 
-interface ArtifactTestComponent {
-  loadGeneratedArtifact(jobId: string): void;
-}
-
 describe(
   'MusicGenerationPageComponent protected artifact lifecycle',
   () => {
@@ -92,10 +88,9 @@ describe(
     function loadArtifact(
       jobId: string
     ): void {
-      (
-        component as unknown as
-          ArtifactTestComponent
-      ).loadGeneratedArtifact(jobId);
+      component[
+        'loadGeneratedArtifact'
+      ](jobId);
     }
 
     beforeEach(() => {

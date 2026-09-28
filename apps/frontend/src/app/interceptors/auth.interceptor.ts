@@ -51,10 +51,10 @@ export class AuthInterceptor implements HttpInterceptor {
   /**
    * Intercept HTTP requests and add authentication token
    */
-  intercept(
-    request: HttpRequest<unknown>,
+  intercept<T>(
+    request: HttpRequest<T>,
     next: HttpHandler
-  ): Observable<HttpEvent<unknown>> {
+  ): Observable<HttpEvent<T>> {
     // Skip auth header for login, register, and refresh endpoints
     if (this.isAuthEndpoint(request.url)) {
       return next.handle(request);

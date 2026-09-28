@@ -4,6 +4,9 @@
  */
 
 import { EntityState } from '@ngrx/entity';
+import type {
+  JsonObject,
+} from '../../types/json-value';
 
 export interface ModelArtifact {
   id: string;
@@ -16,7 +19,7 @@ export interface ModelArtifact {
   sha256?: string;
   license?: string;
   tags: string[];
-  metadata?: Record<string, unknown>;
+  metadata?: JsonObject;
   createdAt: string;
   updatedAt: string;
 }

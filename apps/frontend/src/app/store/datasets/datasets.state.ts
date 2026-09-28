@@ -4,6 +4,9 @@
  */
 
 import { EntityState } from '@ngrx/entity';
+import type {
+  JsonObject,
+} from '../../types/json-value';
 
 export interface AudioSample {
   id: string;
@@ -13,7 +16,7 @@ export interface AudioSample {
   durationSeconds?: number;
   sampleRate?: number;
   channels?: number;
-  metadata?: Record<string, unknown>;
+  metadata?: JsonObject;
 }
 
 export interface Dataset {
@@ -25,7 +28,7 @@ export interface Dataset {
   sampleCount?: number;
   sizeBytes?: number;
   license?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: JsonObject;
   createdAt: string;
   updatedAt: string;
 }

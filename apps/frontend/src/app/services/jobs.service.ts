@@ -6,7 +6,12 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Job, JobStatus, JobType } from '../store/jobs/jobs.state';
+import {
+  Job,
+  JobParameters,
+  JobStatus,
+  JobType,
+} from '../store/jobs/jobs.state';
 
 @Injectable({
   providedIn: 'root',
@@ -43,7 +48,7 @@ export class JobsService {
 
   createJob(request: {
     jobType: JobType;
-    parameters: Record<string, unknown>;
+    parameters: JobParameters;
     priority?: number;
     modelId?: string;
     datasetId?: string;

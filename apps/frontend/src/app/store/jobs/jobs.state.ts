@@ -4,6 +4,9 @@
  */
 
 import { EntityState } from '@ngrx/entity';
+import type {
+  JsonObject,
+} from '../../types/json-value';
 
 export type JobStatus =
   | 'pending'
@@ -15,6 +18,9 @@ export type JobStatus =
 
 export type JobType = 'generate' | 'convert' | 'analyze' | 'train';
 
+export type JobParameters =
+  JsonObject;
+
 export interface JobProgress {
   current: number;
   total: number;
@@ -24,7 +30,7 @@ export interface JobProgress {
 
 export interface JobResult {
   outputPath?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: JsonObject;
   error?: string;
 }
 
@@ -36,7 +42,7 @@ export interface Job {
   userId: string;
   modelId?: string;
   datasetId?: string;
-  parameters: Record<string, unknown>;
+  parameters: JobParameters;
   progress: JobProgress | null;
   result: JobResult | null;
   createdAt: string;

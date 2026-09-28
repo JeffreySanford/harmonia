@@ -4,15 +4,24 @@ import { of } from 'rxjs';
 import { AuthUiService } from './auth-ui.service';
 import { LoginModalComponent } from '../features/auth/login-modal/login-modal.component';
 
+function testDouble<T extends object>(
+  value: object
+): T {
+  return value as T;
+}
+
 describe('AuthUiService', () => {
   let service: AuthUiService;
   let dialog: jest.Mocked<MatDialog>;
 
   beforeEach(() => {
-    const dialogSpy = {
-      open: jest.fn(),
-      closeAll: jest.fn(),
-    } as unknown as jest.Mocked<MatDialog>;
+    const dialogSpy =
+      testDouble<
+        jest.Mocked<MatDialog>
+      >({
+        open: jest.fn(),
+        closeAll: jest.fn(),
+      });
 
     TestBed.configureTestingModule({
       providers: [AuthUiService, { provide: MatDialog, useValue: dialogSpy }],
@@ -32,7 +41,12 @@ describe('AuthUiService', () => {
       afterClosed: () => of({ success: true }),
     };
     dialog.open.mockReturnValue(
-      mockDialogRef as unknown as MatDialogRef<LoginModalComponent>
+      testDouble<
+        MatDialogRef<
+          LoginModalComponent,
+          { success: boolean }
+        >
+      >(mockDialogRef)
     );
 
     service.openLoginModal('login');
@@ -53,7 +67,12 @@ describe('AuthUiService', () => {
       afterClosed: () => of({ success: true }),
     };
     dialog.open.mockReturnValue(
-      mockDialogRef as unknown as MatDialogRef<LoginModalComponent>
+      testDouble<
+        MatDialogRef<
+          LoginModalComponent,
+          { success: boolean }
+        >
+      >(mockDialogRef)
     );
 
     service.openRegisterModal();

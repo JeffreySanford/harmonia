@@ -143,7 +143,7 @@ describe('HeaderUserMenuComponent', () => {
 
   it('should treat null user as guest and return avatar-guest class', () => {
     // Simulate guest state
-    store.overrideSelector(AuthSelectors.selectUser, null as unknown as User);
+    store.overrideSelector(AuthSelectors.selectUser, null);
     store.overrideSelector(AuthSelectors.selectIsAuthenticated, false);
     store.refreshState();
     fixture.detectChanges();

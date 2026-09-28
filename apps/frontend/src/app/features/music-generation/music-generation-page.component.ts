@@ -15,6 +15,7 @@ import { AppState } from '../../store/app.state';
 import { selectAuthToken } from '../../store/auth/auth.selectors';
 import * as MusicRuntimeActions from '../../store/music-runtime/music-runtime.actions';
 import * as JobsActions from '../../store/jobs/jobs.actions';
+import type { JobParameters } from '../../store/jobs/jobs.state';
 import {
   selectJobsError,
   selectSelectedJob,
@@ -567,8 +568,9 @@ export class MusicGenerationPageComponent implements OnInit, OnDestroy {
     this.progress = 0;
     this.isGenerating = true;
 
-    const parameters = this.isDiffSingerSelected
-      ? {
+    const parameters: JobParameters =
+      this.isDiffSingerSelected
+        ? {
           title: this.musicTitle.trim(),
           lyrics: this.lyrics.trim(),
           notes: this.diffsingerNotes.trim(),

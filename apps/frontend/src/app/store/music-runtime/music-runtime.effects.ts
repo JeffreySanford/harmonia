@@ -5,18 +5,41 @@ import { catchError, exhaustMap, map, mergeMap } from 'rxjs/operators';
 import { MusicRuntimeService } from '../../services/music-runtime.service';
 import * as MusicRuntimeActions from './music-runtime.actions';
 
-function errorMessage(error: unknown, fallback: string): string {
+interface RuntimeErrorPayload {
+  message?: string;
+}
+
+interface RuntimeErrorEnvelope {
+  error?: RuntimeErrorPayload;
+}
+
+type RuntimeFailure =
+  | Error
+  | RuntimeErrorEnvelope
+  | string
+  | null
+  | undefined;
+
+function errorMessage(
+  error: RuntimeFailure,
+  fallback: string
+): string {
   if (
     typeof error === 'object' &&
     error !== null &&
-    'error' in error
+    !(error instanceof Error)
   ) {
-    const payload = (error as { error?: { message?: string } }).error;
+    const payload =
+      error.error;
+
     if (payload?.message) {
       return payload.message;
     }
   }
-  return error instanceof Error ? error.message : fallback;
+
+  return error instanceof Error
+    ? error.message
+    : fallback;
 }
 
 @Injectable()

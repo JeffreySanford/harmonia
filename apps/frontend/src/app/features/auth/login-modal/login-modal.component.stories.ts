@@ -23,6 +23,14 @@ interface LoginStoryState {
   auth: AuthState;
 }
 
+type LoginStoryAction =
+  | ReturnType<
+      typeof AuthActions.login
+    >
+  | ReturnType<
+      typeof AuthActions.register
+    >;
+
 class LoginStoryStore {
   private readonly state$: BehaviorSubject<LoginStoryState>;
   readonly dispatchSpy = fn();
@@ -38,7 +46,9 @@ class LoginStoryStore {
     return this.state$.pipe(map((state) => selector(state)));
   }
 
-  dispatch(action: unknown): void {
+  dispatch(
+    action: LoginStoryAction
+  ): void {
     this.dispatchSpy(action);
   }
 }

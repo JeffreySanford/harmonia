@@ -35,8 +35,8 @@ describe('adminGuard', () => {
 
     TestBed.runInInjectionContext(() => {
       const result = adminGuard(
-        null as unknown as ActivatedRouteSnapshot,
-        null as unknown as RouterStateSnapshot
+        {} as ActivatedRouteSnapshot,
+        {} as RouterStateSnapshot
       );
 
       if (typeof result === 'boolean') {
@@ -45,7 +45,7 @@ describe('adminGuard', () => {
         done();
       } else {
         // Handle observable/promise case
-        (result as unknown as Observable<boolean>).subscribe((res: boolean) => {
+        (result as Observable<boolean>).subscribe((res: boolean) => {
           expect(res).toBe(true);
           expect(router.navigate).not.toHaveBeenCalled();
           done();
@@ -60,8 +60,8 @@ describe('adminGuard', () => {
 
     TestBed.runInInjectionContext(() => {
       const result = adminGuard(
-        null as unknown as ActivatedRouteSnapshot,
-        null as unknown as RouterStateSnapshot
+        {} as ActivatedRouteSnapshot,
+        {} as RouterStateSnapshot
       );
 
       if (typeof result === 'boolean') {
@@ -70,7 +70,7 @@ describe('adminGuard', () => {
         done();
       } else {
         // Handle observable/promise case
-        (result as unknown as Observable<boolean>).subscribe((res: boolean) => {
+        (result as Observable<boolean>).subscribe((res: boolean) => {
           expect(res).toBe(false);
           expect(router.navigate).toHaveBeenCalledWith(['/']);
           done();

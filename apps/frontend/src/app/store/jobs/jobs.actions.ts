@@ -4,7 +4,13 @@
  */
 
 import { createAction, props } from '@ngrx/store';
-import { Job, JobStatus, JobType, JobProgress } from './jobs.state';
+import {
+  Job,
+  JobParameters,
+  JobProgress,
+  JobStatus,
+  JobType,
+} from './jobs.state';
 
 // Load jobs
 export const loadJobs = createAction('[Jobs] Load Jobs');
@@ -48,7 +54,7 @@ export const createJob = createAction(
   '[Jobs] Create Job',
   props<{
     jobType: JobType;
-    parameters: Record<string, unknown>;
+    parameters: JobParameters;
     priority?: number;
     modelId?: string;
     datasetId?: string;
