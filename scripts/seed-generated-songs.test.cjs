@@ -38,6 +38,75 @@ function sha256(filename) {
     .digest('hex');
 }
 
+function readLfsPointer(filename) {
+  const stats =
+    statSync(filename);
+
+  /*
+   * GitHub Actions normally checks out LFS-managed files
+   * as small pointer files unless checkout enables LFS.
+   * Local development normally has the real WAV materialized.
+   */
+  if (stats.size > 1024) {
+    return null;
+  }
+
+  const source =
+    readFileSync(
+      filename,
+      'utf8'
+    );
+
+  const lines =
+    source.split(/\r?\n/);
+
+  if (
+    lines[0] !==
+    'version https://git-lfs.github.com/spec/v1'
+  ) {
+    return null;
+  }
+
+  const oidLine =
+    lines.find(
+      (line) =>
+        line.startsWith(
+          'oid sha256:'
+        )
+    );
+
+  const sizeLine =
+    lines.find(
+      (line) =>
+        line.startsWith(
+          'size '
+        )
+    );
+
+  assert.ok(
+    oidLine,
+    `missing LFS oid in ${filename}`
+  );
+
+  assert.ok(
+    sizeLine,
+    `missing LFS size in ${filename}`
+  );
+
+  return {
+    sha256:
+      oidLine.slice(
+        'oid sha256:'.length
+      ),
+    bytes:
+      Number(
+        sizeLine.slice(
+          'size '.length
+        )
+      ),
+  };
+}
+
 test(
   'generated-song manifest contains eight valid demo assets',
   () => {
@@ -96,15 +165,30 @@ test(
         `missing ${item.assetPath}`
       );
 
-      assert.equal(
-        statSync(asset).size,
-        item.bytes
-      );
+      const lfsPointer =
+        readLfsPointer(asset);
 
-      assert.equal(
-        sha256(asset),
-        item.sha256
-      );
+      if (lfsPointer) {
+        assert.equal(
+          lfsPointer.bytes,
+          item.bytes
+        );
+
+        assert.equal(
+          lfsPointer.sha256,
+          item.sha256
+        );
+      } else {
+        assert.equal(
+          statSync(asset).size,
+          item.bytes
+        );
+
+        assert.equal(
+          sha256(asset),
+          item.sha256
+        );
+      }
     }
   }
 );
