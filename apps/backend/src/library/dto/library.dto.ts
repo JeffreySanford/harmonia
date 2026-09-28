@@ -47,6 +47,10 @@ export class LibraryFiltersDto {
   sortBy?: 'newest' | 'oldest' | 'title' | 'mostPlayed';
 
   @IsOptional()
+  @IsEnum(['true'])
+  showDemo?: 'true';
+
+  @IsOptional()
   @IsNumber()
   page?: number;
 }

@@ -8,6 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialogModule } from '@angular/material/dialog';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { ReactiveFormsModule } from '@angular/forms';
 
 /**
@@ -26,6 +27,7 @@ import { ReactiveFormsModule } from '@angular/forms';
     MatPaginatorModule,
     MatProgressSpinnerModule,
     MatDialogModule,
+    MatCheckboxModule,
     ReactiveFormsModule,
   ],
 })

@@ -1,7 +1,12 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Observable, Subject } from 'rxjs';
-import { takeUntil, debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import {
+  take,
+  takeUntil,
+  debounceTime,
+  distinctUntilChanged,
+} from 'rxjs/operators';
 import { FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -48,6 +53,9 @@ export class LibraryComponent implements OnInit, OnDestroy {
 
   // Form controls
   searchControl = new FormControl('');
+  showDemoSongsControl = new FormControl(false, {
+    nonNullable: true,
+  });
   viewMode: 'grid' | 'list' = 'grid';
 
   // Filter options
@@ -75,6 +83,13 @@ export class LibraryComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$), debounceTime(300), distinctUntilChanged())
       .subscribe((search) => {
         this.updateFilters({ search: search || undefined });
+      });
+
+    // Demo songs are hidden by default and loaded only on explicit opt-in.
+    this.showDemoSongsControl.valueChanges
+      .pipe(takeUntil(this.destroy$), distinctUntilChanged())
+      .subscribe((showDemo) => {
+        this.updateFilters({ showDemo });
       });
 
     // Listen for errors
@@ -139,7 +154,7 @@ export class LibraryComponent implements OnInit, OnDestroy {
   }
 
   private updateFilters(newFilters: Partial<LibraryFilters>): void {
-    this.filters$.pipe(takeUntil(this.destroy$)).subscribe((currentFilters) => {
+    this.filters$.pipe(take(1)).subscribe((currentFilters) => {
       const updatedFilters = { ...currentFilters, ...newFilters };
       this.store.dispatch(
         LibraryActions.setFilters({ filters: updatedFilters })

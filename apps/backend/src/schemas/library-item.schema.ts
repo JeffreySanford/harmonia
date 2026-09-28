@@ -47,6 +47,9 @@ export class LibraryItem {
   };
 
   @Prop({ default: false })
+  isDemo!: boolean;
+
+  @Prop({ default: false })
   isPublic!: boolean;  // Future: Share with others
 
   @Prop({ default: 0 })
@@ -64,5 +67,6 @@ export const LibraryItemSchema = SchemaFactory.createForClass(LibraryItem);
 
 // Compound index for efficient queries
 LibraryItemSchema.index({ userId: 1, createdAt: -1 });
+LibraryItemSchema.index({ userId: 1, isDemo: 1, createdAt: -1 });
 LibraryItemSchema.index({ userId: 1, type: 1 });
 LibraryItemSchema.index({ userId: 1, title: 'text' });  // Text search

@@ -72,6 +72,12 @@ export class LibraryService {
     // Build query
     const query: any = { userId };
 
+    // Demo/seeded content is opt-in. Legacy user items without
+    // an isDemo field are treated as normal user content.
+    if (filters.showDemo !== 'true') {
+      query.isDemo = { $ne: true };
+    }
+
     if (filters.type && filters.type !== 'all') {
       query.type = filters.type;
     }
@@ -559,6 +565,7 @@ export class LibraryService {
       duration: item.duration,
       thumbnailUrl: item.thumbnailUrl,
       metadata: item.metadata,
+      isDemo: item.isDemo === true,
       isPublic: item.isPublic,
       playCount: item.playCount,
       downloadCount: item.downloadCount,

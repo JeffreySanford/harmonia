@@ -28,6 +28,7 @@ export interface LibraryItem {
     model?: string;
     generationTime?: number;
   };
+  isDemo?: boolean;
   isPublic: boolean;
   playCount: number;
   downloadCount: number;
@@ -39,6 +40,7 @@ export interface LibraryFilters {
   type?: 'all' | 'song' | 'music' | 'audio' | 'style';
   search?: string;
   sortBy?: 'newest' | 'oldest' | 'title' | 'mostPlayed';
+  showDemo?: boolean;
 }
 
 export interface LibraryResponse {
@@ -91,6 +93,9 @@ export class LibraryService {
     }
     if (filters.sortBy) {
       params = params.set('sortBy', filters.sortBy);
+    }
+    if (filters.showDemo) {
+      params = params.set('showDemo', 'true');
     }
 
     return this.http.get<LibraryResponse>(this.apiUrl, { params });
