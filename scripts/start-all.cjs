@@ -16,6 +16,9 @@ const {
   writeApplicationSourceFingerprint,
   writeWorkerBuildFingerprint,
 } = require('./start-all-state.cjs');
+const {
+  seedGeneratedSongs,
+} = require('./seed-generated-songs.cjs');
 
 const root = path.resolve(__dirname, '..');
 
@@ -749,6 +752,13 @@ async function main(args = process.argv.slice(2)) {
   } finally {
     await connection.close();
   }
+
+  await seedGeneratedSongs({
+    root,
+    env,
+    mongoUri:
+      env.MONGODB_URI,
+  });
 
   await checkOllama(env);
 

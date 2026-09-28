@@ -1,10 +1,66 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { existsSync } = require('node:fs');
+const {
+  existsSync,
+  readFileSync,
+} = require('node:fs');
 const path = require('node:path');
 
 const script = path.join(__dirname, 'start-all.cjs');
 test('startup orchestrator exists', () => assert.ok(existsSync(script)));
+
+test('startup seeds generated demo songs after database readiness', () => {
+  const source =
+    readFileSync(
+      script,
+      'utf8'
+    );
+
+  const importPosition =
+    source.indexOf(
+      "require('./seed-generated-songs.cjs')"
+    );
+
+  const databasePingPosition =
+    source.indexOf(
+      'await connection.db.admin().ping()'
+    );
+
+  const seedPosition =
+    source.indexOf(
+      'await seedGeneratedSongs({'
+    );
+
+  const ollamaPosition =
+    source.indexOf(
+      'await checkOllama(env)'
+    );
+
+  assert.ok(
+    importPosition >= 0,
+    'generated-song seeder must be imported'
+  );
+
+  assert.ok(
+    databasePingPosition >= 0,
+    'database readiness probe must exist'
+  );
+
+  assert.ok(
+    seedPosition > databasePingPosition,
+    'demo seed must happen after database readiness'
+  );
+
+  assert.ok(
+    ollamaPosition > seedPosition,
+    'demo seed must happen before optional Ollama validation'
+  );
+
+  assert.match(
+    source,
+    /mongoUri:\s*env\.MONGODB_URI/
+  );
+});
 
 test('resolves Nx CLI from package metadata', () => {
   const { resolvePackageBin } = require(script);
