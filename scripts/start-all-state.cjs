@@ -122,6 +122,378 @@ function writeWorkerBuildFingerprint(
   );
 }
 
+
+const APPLICATION_PROJECTS =
+  new Set([
+    'backend',
+    'frontend',
+  ]);
+
+const APPLICATION_SHARED_SOURCE_INPUTS = [
+  'package.json',
+  'pnpm-lock.yaml',
+  'pnpm-workspace.yaml',
+  'nx.json',
+  'tsconfig.base.json',
+  'tsconfig.json',
+];
+
+const APPLICATION_SOURCE_IGNORED_DIRECTORIES =
+  new Set([
+    'node_modules',
+    'dist',
+    '.angular',
+    'generated',
+    'coverage',
+    '.nx',
+    '.cache',
+  ]);
+
+function assertApplicationProject(
+  project
+) {
+  if (
+    !APPLICATION_PROJECTS.has(
+      project
+    )
+  ) {
+    throw new Error(
+      'Unknown Harmonia application project: ' +
+      project
+    );
+  }
+}
+
+function normalizeRelativePath(
+  relativePath
+) {
+  return relativePath
+    .split(path.sep)
+    .join('/');
+}
+
+function collectApplicationProjectFiles(
+  root,
+  directory,
+  output
+) {
+  if (
+    !existsSync(
+      directory
+    )
+  ) {
+    return;
+  }
+
+  const entries =
+    readdirSync(
+      directory,
+      {
+        withFileTypes:
+          true,
+      }
+    )
+      .sort(
+        (
+          left,
+          right
+        ) =>
+          left.name.localeCompare(
+            right.name
+          )
+      );
+
+  for (
+    const entry of
+    entries
+  ) {
+    if (
+      entry.isDirectory() &&
+      APPLICATION_SOURCE_IGNORED_DIRECTORIES.has(
+        entry.name
+      )
+    ) {
+      continue;
+    }
+
+    const absolutePath =
+      path.join(
+        directory,
+        entry.name
+      );
+
+    if (
+      entry.isDirectory()
+    ) {
+      collectApplicationProjectFiles(
+        root,
+        absolutePath,
+        output
+      );
+
+      continue;
+    }
+
+    if (
+      !entry.isFile()
+    ) {
+      continue;
+    }
+
+    output.push(
+      normalizeRelativePath(
+        path.relative(
+          root,
+          absolutePath
+        )
+      )
+    );
+  }
+}
+
+function applicationSourceInputs(
+  root,
+  project
+) {
+  assertApplicationProject(
+    project
+  );
+
+  const inputs =
+    [];
+
+  for (
+    const relativePath of
+    APPLICATION_SHARED_SOURCE_INPUTS
+  ) {
+    const absolutePath =
+      path.join(
+        root,
+        relativePath
+      );
+
+    if (
+      existsSync(
+        absolutePath
+      )
+    ) {
+      inputs.push(
+        normalizeRelativePath(
+          relativePath
+        )
+      );
+    }
+  }
+
+  collectApplicationProjectFiles(
+    root,
+    path.join(
+      root,
+      'apps',
+      project
+    ),
+    inputs
+  );
+
+  return [
+    ...new Set(
+      inputs
+    ),
+  ].sort();
+}
+
+function applicationSourceFingerprint(
+  root,
+  project
+) {
+  assertApplicationProject(
+    project
+  );
+
+  const hash =
+    createHash(
+      'sha256'
+    );
+
+  hash.update(
+    'harmonia-application-source-v1'
+  );
+
+  hash.update(
+    '\0'
+  );
+
+  hash.update(
+    project
+  );
+
+  hash.update(
+    '\0'
+  );
+
+  for (
+    const relativePath of
+    applicationSourceInputs(
+      root,
+      project
+    )
+  ) {
+    const absolutePath =
+      path.join(
+        root,
+        ...relativePath.split('/')
+      );
+
+    hash.update(
+      relativePath
+    );
+
+    hash.update(
+      '\0'
+    );
+
+    hash.update(
+      readFileSync(
+        absolutePath
+      )
+    );
+
+    hash.update(
+      '\0'
+    );
+  }
+
+  return hash.digest(
+    'hex'
+  );
+}
+
+function applicationFingerprintPath(
+  root,
+  project
+) {
+  assertApplicationProject(
+    project
+  );
+
+  return path.join(
+    root,
+    'generated',
+    'evidence',
+    'start-all',
+    project +
+      '-source-fingerprint.txt'
+  );
+}
+
+function readApplicationSourceFingerprint(
+  root,
+  project
+) {
+  const file =
+    applicationFingerprintPath(
+      root,
+      project
+    );
+
+  if (
+    !existsSync(
+      file
+    )
+  ) {
+    return null;
+  }
+
+  return (
+    readFileSync(
+      file,
+      'utf8'
+    ).trim() ||
+    null
+  );
+}
+
+function writeApplicationSourceFingerprint(
+  root,
+  project,
+  fingerprint
+) {
+  const file =
+    applicationFingerprintPath(
+      root,
+      project
+    );
+
+  mkdirSync(
+    path.dirname(
+      file
+    ),
+    {
+      recursive:
+        true,
+    }
+  );
+
+  writeFileSync(
+    file,
+    String(
+      fingerprint
+    ) + '\n',
+    'utf8'
+  );
+}
+
+function applicationStartupDecision({
+  running,
+  currentFingerprint,
+  recordedFingerprint,
+}) {
+  if (
+    !running
+  ) {
+    return {
+      action:
+        'start',
+
+      reason:
+        'not-running',
+    };
+  }
+
+  if (
+    !recordedFingerprint
+  ) {
+    return {
+      action:
+        'restart',
+
+      reason:
+        'fingerprint-baseline-missing',
+    };
+  }
+
+  if (
+    recordedFingerprint !==
+    currentFingerprint
+  ) {
+    return {
+      action:
+        'restart',
+
+      reason:
+        'source-fingerprint-changed',
+    };
+  }
+
+  return {
+    action:
+      'reuse',
+
+    reason:
+      'running-current',
+  };
+}
+
 function capture(
   docker,
   args
@@ -446,7 +818,11 @@ function appProjectsToStart(
 }
 
 module.exports = {
+  applicationSourceFingerprint,
+  applicationSourceInputs,
+  applicationStartupDecision,
   appProjectsToStart,
+  readApplicationSourceFingerprint,
   isHarmoniaBackendHealth,
   isHarmoniaFrontendHtml,
   probeHarmoniaApps,
@@ -454,5 +830,6 @@ module.exports = {
   workerBuildFingerprint,
   workerBuildInputs,
   workerStartupDecision,
+  writeApplicationSourceFingerprint,
   writeWorkerBuildFingerprint,
 };
