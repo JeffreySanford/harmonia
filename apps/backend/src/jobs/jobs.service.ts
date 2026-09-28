@@ -62,17 +62,69 @@ export class JobsService implements OnModuleInit {
   ) {}
 
   private generationQueueOptions(
-    jobId: string
+    jobId: string,
+    attempts: number = GENERATION_MAX_ATTEMPTS
   ): JobOptions {
     return {
       jobId,
-      attempts: GENERATION_MAX_ATTEMPTS,
+      attempts,
       backoff: {
         type: 'exponential',
         delay: GENERATION_RETRY_BASE_DELAY_MS,
       },
       removeOnComplete: false,
       removeOnFail: false,
+    };
+  }
+
+  private generationRecoveryPlan(
+    job: JobRecordDocument
+  ): {
+    attemptOffset: number;
+    maxAttempts: number;
+    remainingAttempts: number;
+  } {
+    const persistedMaxAttempts =
+      Number(
+        job.generationMaxAttempts ??
+          GENERATION_MAX_ATTEMPTS
+      );
+
+    const maxAttempts =
+      Number.isInteger(
+        persistedMaxAttempts
+      ) &&
+      persistedMaxAttempts > 0
+        ? Math.min(
+            persistedMaxAttempts,
+            GENERATION_MAX_ATTEMPTS
+          )
+        : GENERATION_MAX_ATTEMPTS;
+
+    const persistedAttempt =
+      Number(
+        job.generationAttempt ?? 0
+      );
+
+    const attemptOffset =
+      Number.isInteger(
+        persistedAttempt
+      ) &&
+      persistedAttempt > 0
+        ? Math.min(
+            persistedAttempt,
+            maxAttempts
+          )
+        : 0;
+
+    return {
+      attemptOffset,
+      maxAttempts,
+      remainingAttempts:
+        Math.max(
+          0,
+          maxAttempts - attemptOffset
+        ),
     };
   }
 
@@ -199,14 +251,66 @@ export class JobsService implements OnModuleInit {
         continue;
       }
 
-      if (job.status === 'processing') {
-        job.status = 'queued';
+      const recovery =
+        this.generationRecoveryPlan(
+          job
+        );
+
+      if (
+        recovery.remainingAttempts <= 0
+      ) {
+        const message =
+          job.generationLastError ||
+          'Generation retry budget exhausted after backend restart.';
+
+        job.status = 'failed';
         job.startedAt = null;
+        job.completedAt = new Date();
+        job.result = {
+          error: message,
+        };
         job.progress = {
           current: 0,
           total: 100,
           percentage: 0,
-          message: 'Recovered after backend restart; queued for durable replay',
+          message:
+            'Generation retry budget exhausted after backend restart',
+        };
+        job.generationAttempt =
+          recovery.attemptOffset;
+        job.generationMaxAttempts =
+          recovery.maxAttempts;
+        job.generationLastError =
+          message;
+
+        await job.save();
+
+        this.logger.error(
+          `Generation job ${jobId} retry budget exhausted during backend restart recovery`
+        );
+
+        continue;
+      }
+
+      if (job.status === 'processing') {
+        job.status = 'queued';
+        job.startedAt = null;
+        job.completedAt = null;
+        job.result = null;
+        job.generationAttempt =
+          recovery.attemptOffset;
+        job.generationMaxAttempts =
+          recovery.maxAttempts;
+        job.progress = {
+          current: 0,
+          total: 100,
+          percentage: 0,
+          message:
+            `Recovered after backend restart; retrying generation attempt ${
+              recovery.attemptOffset + 1
+            } of ${
+              recovery.maxAttempts
+            }`,
         };
 
         await job.save();
@@ -217,8 +321,15 @@ export class JobsService implements OnModuleInit {
         {
           jobId,
           userId,
+          attemptOffset:
+            recovery.attemptOffset,
+          maxAttempts:
+            recovery.maxAttempts,
         },
-        this.generationQueueOptions(jobId)
+        this.generationQueueOptions(
+          jobId,
+          recovery.remainingAttempts
+        )
       );
 
       this.logger.warn(
@@ -438,8 +549,14 @@ export class JobsService implements OnModuleInit {
         {
           jobId: result.id,
           userId,
+          attemptOffset: 0,
+          maxAttempts:
+            GENERATION_MAX_ATTEMPTS,
         },
-        this.generationQueueOptions(result.id)
+        this.generationQueueOptions(
+          result.id,
+          GENERATION_MAX_ATTEMPTS
+        )
       );
     }
 

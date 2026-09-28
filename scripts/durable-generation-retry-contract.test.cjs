@@ -93,7 +93,12 @@ test(
 
     assert.match(
       jobsService,
-      /attempts:\s*GENERATION_MAX_ATTEMPTS/
+      /generationQueueOptions\s*\(\s*jobId:\s*string,\s*attempts:\s*number\s*=\s*GENERATION_MAX_ATTEMPTS/
+    );
+
+    assert.match(
+      jobsService,
+      /attempts,\s*backoff:\s*\{/
     );
 
     assert.match(
@@ -143,7 +148,7 @@ test(
 
     assert.match(
       generationProcessor,
-      /attempt:\s*job\.attemptsMade\s*\+\s*1/
+      /attempt:\s*job\.data\.attemptOffset\s*\+\s*job\.attemptsMade\s*\+\s*1/
     );
 
     assert.match(

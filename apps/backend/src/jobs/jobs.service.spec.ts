@@ -314,6 +314,14 @@ describe('JobsService durable restart reconciliation', () => {
       },
       result: null,
       completedAt: null,
+      generationAttempt:
+        status === 'processing'
+          ? 1
+          : 0,
+      generationMaxAttempts:
+        3,
+      generationLastError:
+        null as string | null,
       save: jest.fn().mockResolvedValue(undefined),
     };
   }
@@ -448,6 +456,8 @@ describe('JobsService durable restart reconciliation', () => {
       {
         jobId,
         userId,
+        attemptOffset: 0,
+        maxAttempts: 3,
       },
       {
         jobId,
@@ -462,6 +472,95 @@ describe('JobsService durable restart reconciliation', () => {
     );
 
     expect(job.save).not.toHaveBeenCalled();
+  });
+
+  it('preserves a persisted retry offset and recreates only the remaining Bull budget', async () => {
+    const job = makeJob('queued');
+    job.generationAttempt = 1;
+    job.generationLastError =
+      'first provider attempt failed';
+
+    const harness =
+      makeHarness([job]);
+
+    await reconciliationProbe(
+      harness.service
+    ).reconcileGenerationQueue();
+
+    expect(
+      harness.generationQueue.add
+    ).toHaveBeenCalledWith(
+      'generate',
+      {
+        jobId,
+        userId,
+        attemptOffset: 1,
+        maxAttempts: 3,
+      },
+      {
+        jobId,
+        attempts: 2,
+        backoff: {
+          type: 'exponential',
+          delay: 10000,
+        },
+        removeOnComplete: false,
+        removeOnFail: false,
+      }
+    );
+
+    expect(job.save).not.toHaveBeenCalled();
+  });
+
+  it('fails an orphan instead of replaying after its persisted retry budget is exhausted', async () => {
+    const job = makeJob('queued');
+    job.generationAttempt = 3;
+    job.generationLastError =
+      'third provider attempt failed';
+
+    const harness =
+      makeHarness([job]);
+
+    await reconciliationProbe(
+      harness.service
+    ).reconcileGenerationQueue();
+
+    expect(job.status).toBe(
+      'failed'
+    );
+
+    expect(job.startedAt).toBeNull();
+
+    expect(
+      job.completedAt
+    ).toBeInstanceOf(Date);
+
+    expect(job.result).toEqual({
+      error:
+        'third provider attempt failed',
+    });
+
+    expect(job.progress).toEqual({
+      current: 0,
+      total: 100,
+      percentage: 0,
+      message:
+        'Generation retry budget exhausted after backend restart',
+    });
+
+    expect(
+      job.generationAttempt
+    ).toBe(3);
+
+    expect(
+      job.generationMaxAttempts
+    ).toBe(3);
+
+    expect(job.save).toHaveBeenCalledTimes(1);
+
+    expect(
+      harness.generationQueue.add
+    ).not.toHaveBeenCalled();
   });
 
   it('finalizes a valid orphaned artifact without Bull replay', async () => {
@@ -618,7 +717,7 @@ describe('JobsService durable restart reconciliation', () => {
       total: 100,
       percentage: 0,
       message:
-        'Recovered after backend restart; queued for durable replay',
+        'Recovered after backend restart; retrying generation attempt 2 of 3',
     });
 
     expect(job.save).toHaveBeenCalledTimes(1);
@@ -626,6 +725,28 @@ describe('JobsService durable restart reconciliation', () => {
     expect(
       harness.generationQueue.add
     ).toHaveBeenCalledTimes(1);
+
+    expect(
+      harness.generationQueue.add
+    ).toHaveBeenCalledWith(
+      'generate',
+      {
+        jobId,
+        userId,
+        attemptOffset: 1,
+        maxAttempts: 3,
+      },
+      {
+        jobId,
+        attempts: 2,
+        backoff: {
+          type: 'exponential',
+          delay: 10000,
+        },
+        removeOnComplete: false,
+        removeOnFail: false,
+      }
+    );
 
     expect(callOrder).toEqual([
       'mongo-save',

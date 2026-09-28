@@ -76,7 +76,7 @@ test(
 
     assert.match(
       jobs,
-      /Recovered after backend restart; queued for durable replay/
+      /Recovered after backend restart; retrying generation attempt/
     );
   }
 );

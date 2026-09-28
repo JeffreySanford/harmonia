@@ -5,6 +5,8 @@ import { JobsService } from './jobs.service';
 interface GenerationJobData {
   jobId: string;
   userId: string;
+  attemptOffset: number;
+  maxAttempts: number;
 }
 
 @Processor('generation')
@@ -20,15 +22,35 @@ export class GenerationProcessor {
   async generate(
     job: Job<GenerationJobData>
   ): Promise<void> {
-    const maxAttempts =
-      job.opts.attempts || 1;
+    if (
+      !Number.isInteger(
+        job.data.attemptOffset
+      ) ||
+      job.data.attemptOffset < 0
+    ) {
+      job.data.attemptOffset = 0;
+    }
+
+    if (
+      !Number.isInteger(
+        job.data.maxAttempts
+      ) ||
+      job.data.maxAttempts < 1
+    ) {
+      job.data.maxAttempts =
+        job.opts.attempts || 1;
+    }
 
     await this.jobsService.processGenerationJob(
       job.data.jobId,
       job.data.userId,
       {
-        attempt: job.attemptsMade + 1,
-        maxAttempts,
+        attempt:
+          job.data.attemptOffset +
+          job.attemptsMade +
+          1,
+        maxAttempts:
+          job.data.maxAttempts,
       }
     );
   }
