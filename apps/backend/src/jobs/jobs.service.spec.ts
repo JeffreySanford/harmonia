@@ -9,6 +9,12 @@ import type { MusicRuntimeService } from '../music-runtime/music-runtime.service
 import type { JobRecordDocument } from '../schemas/job-record.schema';
 import { JobsService } from './jobs.service';
 
+function testDouble<T extends object>(
+  value: object
+): T {
+  return value as T;
+}
+
 describe('JobsService generation contract', () => {
   interface MusicGenGenerationParameters {
     duration: number;
@@ -276,33 +282,8 @@ describe('JobsService durable restart reconciliation', () => {
   const userId =
     '507f191e810c19729de860ea';
 
-  interface ReconciliationProbe {
-    reconcileGenerationQueue(): Promise<void>;
-  }
-
-  interface ArtifactRecoveryProbe {
-    validateWav(
-      filePath: string,
-      requestedDurationSeconds: number
-    ): Promise<{
-      channels: number;
-      sampleRate: number;
-      bitsPerSample: number;
-      durationSeconds: number;
-      size: number;
-    }>;
-  }
-
-  function reconciliationProbe(
-    service: JobsService
-  ): ReconciliationProbe {
-    return service as unknown as ReconciliationProbe;
-  }
-
-  function artifactRecoveryProbe(
-    service: JobsService
-  ): ArtifactRecoveryProbe {
-    return service as unknown as ArtifactRecoveryProbe;
+  interface ReconciliationBullJob {
+    id: string;
   }
 
   function makeJob(
@@ -346,7 +327,9 @@ describe('JobsService durable restart reconciliation', () => {
 
   function makeHarness(
     jobs: ReturnType<typeof makeJob>[],
-    existingBullJob: unknown = null
+    existingBullJob:
+      ReconciliationBullJob | null =
+        null
   ) {
     const exec =
       jest.fn().mockResolvedValue(jobs);
@@ -371,12 +354,23 @@ describe('JobsService durable restart reconciliation', () => {
         jest.fn(),
     };
 
-    const service = new JobsService(
-      { find } as unknown as Model<JobRecordDocument>,
-      gateway as unknown as JobsGateway,
-      {} as unknown as MusicRuntimeService,
-      generationQueue as unknown as Queue
-    );
+    const service =
+      new JobsService(
+        testDouble<
+          Model<JobRecordDocument>
+        >({
+          find,
+        }),
+        testDouble<JobsGateway>(
+          gateway
+        ),
+        testDouble<MusicRuntimeService>(
+          {}
+        ),
+        testDouble<Queue>(
+          generationQueue
+        )
+      );
 
     return {
       service,
@@ -396,14 +390,20 @@ describe('JobsService durable restart reconciliation', () => {
         callOrder.push('bull-ready');
       });
 
-    const reconcile = jest
-      .spyOn(
-        reconciliationProbe(harness.service),
-        'reconcileGenerationQueue'
-      )
-      .mockImplementation(async () => {
-        callOrder.push('reconcile');
-      });
+    const reconcile =
+      jest
+        .fn()
+        .mockImplementation(
+          async () => {
+            callOrder.push(
+              'reconcile'
+            );
+          }
+        );
+
+    harness.service[
+      'reconcileGenerationQueue'
+    ] = reconcile;
 
     await harness.service.onModuleInit();
 
@@ -422,9 +422,9 @@ describe('JobsService durable restart reconciliation', () => {
   it('scans only queued and processing generation records', async () => {
     const harness = makeHarness([]);
 
-    await reconciliationProbe(
-      harness.service
-    ).reconcileGenerationQueue();
+    await harness.service[
+      'reconcileGenerationQueue'
+    ]();
 
     expect(harness.find).toHaveBeenCalledWith({
       jobType: 'generate',
@@ -444,9 +444,9 @@ describe('JobsService durable restart reconciliation', () => {
       { id: jobId }
     );
 
-    await reconciliationProbe(
-      harness.service
-    ).reconcileGenerationQueue();
+    await harness.service[
+      'reconcileGenerationQueue'
+    ]();
 
     expect(
       harness.generationQueue.getJob
@@ -463,9 +463,9 @@ describe('JobsService durable restart reconciliation', () => {
     const job = makeJob('queued');
     const harness = makeHarness([job]);
 
-    await reconciliationProbe(
-      harness.service
-    ).reconcileGenerationQueue();
+    await harness.service[
+      'reconcileGenerationQueue'
+    ]();
 
     expect(
       harness.generationQueue.add
@@ -501,9 +501,9 @@ describe('JobsService durable restart reconciliation', () => {
     const harness =
       makeHarness([job]);
 
-    await reconciliationProbe(
-      harness.service
-    ).reconcileGenerationQueue();
+    await harness.service[
+      'reconcileGenerationQueue'
+    ]();
 
     expect(
       harness.generationQueue.add
@@ -539,9 +539,9 @@ describe('JobsService durable restart reconciliation', () => {
     const harness =
       makeHarness([job]);
 
-    await reconciliationProbe(
-      harness.service
-    ).reconcileGenerationQueue();
+    await harness.service[
+      'reconcileGenerationQueue'
+    ]();
 
     expect(job.status).toBe(
       'failed'
@@ -594,12 +594,7 @@ describe('JobsService durable restart reconciliation', () => {
 
     const validateWav =
       jest
-        .spyOn(
-          artifactRecoveryProbe(
-            harness.service
-          ),
-          'validateWav'
-        )
+        .fn()
         .mockResolvedValue({
           channels: 2,
           sampleRate: 44100,
@@ -608,9 +603,13 @@ describe('JobsService durable restart reconciliation', () => {
           size: 5292088,
         });
 
-    await reconciliationProbe(
-      harness.service
-    ).reconcileGenerationQueue();
+    harness.service[
+      'validateWav'
+    ] = validateWav;
+
+    await harness.service[
+      'reconcileGenerationQueue'
+    ]();
 
     const downloadUrl =
       `/api/jobs/${jobId}/artifact`;
@@ -698,18 +697,16 @@ describe('JobsService durable restart reconciliation', () => {
     const job = makeJob('processing');
     const harness = makeHarness([job]);
 
-    jest
-      .spyOn(
-        artifactRecoveryProbe(
-          harness.service
-        ),
-        'validateWav'
-      )
-      .mockRejectedValue(
-        new Error(
-          'No complete recovered artifact'
-        )
-      );
+    harness.service[
+      'validateWav'
+    ] =
+      jest
+        .fn()
+        .mockRejectedValue(
+          new Error(
+            'No complete recovered artifact'
+          )
+        );
 
     const callOrder: string[] = [];
 
@@ -723,9 +720,9 @@ describe('JobsService durable restart reconciliation', () => {
         return {};
       });
 
-    await reconciliationProbe(
-      harness.service
-    ).reconcileGenerationQueue();
+    await harness.service[
+      'reconcileGenerationQueue'
+    ]();
 
     expect(job.status).toBe('queued');
     expect(job.startedAt).toBeNull();
@@ -780,17 +777,8 @@ describe('JobsService durable queued cancellation', () => {
   const userId =
     '507f191e810c19729de860f1';
 
-  interface CancellationProbe {
-    findOwnedDocument(
-      id: string,
-      userId: string
-    ): Promise<JobRecordDocument>;
-  }
-
-  function cancellationProbe(
-    service: JobsService
-  ): CancellationProbe {
-    return service as unknown as CancellationProbe;
+  interface CancellationBullJob {
+    remove(): Promise<void>;
   }
 
   function makeJob(
@@ -800,7 +788,7 @@ describe('JobsService durable queued cancellation', () => {
       | 'completed',
     jobType:
       | 'generate'
-      | 'export' =
+      | 'convert' =
         'generate'
   ) {
     return {
@@ -865,7 +853,8 @@ describe('JobsService durable queued cancellation', () => {
     job:
       ReturnType<typeof makeJob>,
     bullJob:
-      unknown = null
+      CancellationBullJob | null =
+        null
   ) {
     const generationQueue = {
       getJob:
@@ -894,22 +883,30 @@ describe('JobsService durable queued cancellation', () => {
 
     const service =
       new JobsService(
-        {} as unknown as Model<JobRecordDocument>,
-        gateway as unknown as JobsGateway,
-        musicRuntime as unknown as MusicRuntimeService,
-        generationQueue as unknown as Queue
+        testDouble<
+          Model<JobRecordDocument>
+        >({}),
+        testDouble<JobsGateway>(
+          gateway
+        ),
+        testDouble<MusicRuntimeService>(
+          musicRuntime
+        ),
+        testDouble<Queue>(
+          generationQueue
+        )
       );
 
-    jest
-      .spyOn(
-        cancellationProbe(
-          service
-        ),
-        'findOwnedDocument'
-      )
-      .mockResolvedValue(
-        job as unknown as JobRecordDocument
-      );
+    service[
+      'findOwnedDocument'
+    ] =
+      jest
+        .fn()
+        .mockResolvedValue(
+          testDouble<
+            JobRecordDocument
+          >(job)
+        );
 
     return {
       service,
@@ -1056,7 +1053,7 @@ describe('JobsService durable queued cancellation', () => {
     const job =
       makeJob(
         'queued',
-        'export'
+        'convert'
       );
 
     const harness =
@@ -1105,15 +1102,10 @@ describe('JobsService durable queued cancellation', () => {
               providerId
           );
 
-          const probe =
-            harness.service as unknown as {
-              activeGenerationCancellations:
-                Set<string>;
-            };
-
-          expect(
-            probe
-              .activeGenerationCancellations
+                expect(
+            harness.service[
+        'activeGenerationCancellations'
+      ]
               .has(jobId)
           ).toBe(true);
 
@@ -1204,15 +1196,10 @@ describe('JobsService durable queued cancellation', () => {
       job.save
     ).not.toHaveBeenCalled();
 
-    const probe =
-      harness.service as unknown as {
-        activeGenerationCancellations:
-          Set<string>;
-      };
-
     expect(
-      probe
-        .activeGenerationCancellations
+      harness.service[
+        'activeGenerationCancellations'
+      ]
         .has(jobId)
     ).toBe(false);
   });
@@ -1221,7 +1208,7 @@ describe('JobsService durable queued cancellation', () => {
     const job =
       makeJob(
         'processing',
-        'export'
+        'convert'
       );
 
     const harness =
@@ -1259,32 +1246,6 @@ describe('JobsService active generation worker cancellation', () => {
 
   const userId =
     '507f191e810c19729de860f2';
-
-  interface GenerationProbe {
-    findOwnedDocument(
-      id: string,
-      userId: string
-    ): Promise<JobRecordDocument>;
-
-    runMusicGenClient(
-      options:
-        Record<string, unknown>
-    ): Promise<void>;
-
-    validateWav(
-      filePath: string,
-      requestedDurationSeconds: number
-    ): Promise<{
-      channels: number;
-      sampleRate: number;
-      bitsPerSample: number;
-      durationSeconds: number;
-      size: number;
-    }>;
-
-    activeGenerationCancellations:
-      Set<string>;
-  }
 
   function makeJob(
     status:
@@ -1415,30 +1376,36 @@ describe('JobsService active generation worker cancellation', () => {
 
     const service =
       new JobsService(
-        {} as unknown as Model<JobRecordDocument>,
-        gateway as unknown as JobsGateway,
-        musicRuntime as unknown as MusicRuntimeService,
-        {} as unknown as Queue
+        testDouble<
+          Model<JobRecordDocument>
+        >({}),
+        testDouble<JobsGateway>(
+          gateway
+        ),
+        testDouble<MusicRuntimeService>(
+          musicRuntime
+        ),
+        testDouble<Queue>(
+          {}
+        )
       );
 
-    const probe =
-      service as unknown as GenerationProbe;
-
-    jest
-      .spyOn(
-        probe,
-        'findOwnedDocument'
-      )
-      .mockResolvedValue(
-        job as unknown as JobRecordDocument
-      );
+    service[
+      'findOwnedDocument'
+    ] =
+      jest
+        .fn()
+        .mockResolvedValue(
+          testDouble<
+            JobRecordDocument
+          >(job)
+        );
 
     return {
       job,
       gateway,
       musicRuntime,
       service,
-      probe,
     };
   }
 
@@ -1477,15 +1444,16 @@ describe('JobsService active generation worker cancellation', () => {
           'complete'
         );
 
-      jest
-        .spyOn(
-          harness.probe,
-          'runMusicGenClient'
-        )
-        .mockImplementation(
+      harness.service[
+        'runMusicGenClient'
+      ] =
+        jest
+          .fn()
+          .mockImplementation(
           async () => {
-            harness.probe
-              .activeGenerationCancellations
+            harness.service[
+          'activeGenerationCancellations'
+        ]
               .add(jobId);
 
             throw new Error(
@@ -1509,8 +1477,9 @@ describe('JobsService active generation worker cancellation', () => {
       ).not.toHaveBeenCalled();
 
       expect(
-        harness.probe
-          .activeGenerationCancellations
+        harness.service[
+          'activeGenerationCancellations'
+        ]
           .has(jobId)
       ).toBe(false);
     } finally {
@@ -1559,25 +1528,27 @@ describe('JobsService active generation worker cancellation', () => {
 
       const validateSpy =
         jest
-          .spyOn(
-            harness.probe,
-            'validateWav'
-          )
+          .fn()
           .mockRejectedValue(
             new Error(
               'validation must not run after cancellation'
             )
           );
 
-      jest
-        .spyOn(
-          harness.probe,
-          'runMusicGenClient'
-        )
-        .mockImplementation(
+      harness.service[
+        'validateWav'
+      ] = validateSpy;
+
+      harness.service[
+        'runMusicGenClient'
+      ] =
+        jest
+          .fn()
+          .mockImplementation(
           async () => {
-            harness.probe
-              .activeGenerationCancellations
+            harness.service[
+          'activeGenerationCancellations'
+        ]
               .add(jobId);
           }
         );
@@ -1597,8 +1568,9 @@ describe('JobsService active generation worker cancellation', () => {
       ).not.toHaveBeenCalled();
 
       expect(
-        harness.probe
-          .activeGenerationCancellations
+        harness.service[
+          'activeGenerationCancellations'
+        ]
           .has(jobId)
       ).toBe(false);
     } finally {
@@ -1665,12 +1637,12 @@ describe('JobsService active generation worker cancellation', () => {
         Buffer.from('stale-partial-audio')
       );
 
-      jest
-        .spyOn(
-          harness.probe,
-          'runMusicGenClient'
-        )
-        .mockImplementation(
+      harness.service[
+        'runMusicGenClient'
+      ] =
+        jest
+          .fn()
+          .mockImplementation(
           async () => {
             await expect(
               fs.stat(
@@ -1791,12 +1763,12 @@ describe('JobsService active generation worker cancellation', () => {
       const harness =
         makeHarness();
 
-      jest
-        .spyOn(
-          harness.probe,
-          'runMusicGenClient'
-        )
-        .mockRejectedValue(
+      harness.service[
+        'runMusicGenClient'
+      ] =
+        jest
+          .fn()
+          .mockRejectedValue(
           new Error(
             'final provider failure'
           )
