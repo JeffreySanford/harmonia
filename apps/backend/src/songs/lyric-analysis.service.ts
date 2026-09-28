@@ -173,9 +173,17 @@ Return only the lyrics as plain text, no explanations.`;
     }
 
     // Return phrases that appear more than once
-    return Object.entries(phrases)
-      .filter(([_, count]) => count > 1)
-      .map(([phrase, _]) => phrase)
+    return Object.entries(
+      phrases
+    )
+      .filter(
+        ([, count]) =>
+          count > 1
+      )
+      .map(
+        ([phrase]) =>
+          phrase
+      )
       .slice(0, 5); // Limit to top 5 most repetitive
   }
 

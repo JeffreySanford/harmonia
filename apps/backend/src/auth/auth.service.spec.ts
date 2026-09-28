@@ -192,9 +192,13 @@ describe(
 
         comparePassword:
           async (
-            _candidate
-          ) =>
-            passwordValid,
+            candidate:
+              string
+          ) => {
+            void candidate;
+
+            return passwordValid;
+          },
       };
     }
 

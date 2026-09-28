@@ -216,13 +216,13 @@ export class StemExportService {
         { stdio: 'pipe' }
       );
 
-      let stdout = '';
       let stderr = '';
 
       dockerCmd.stdout.on('data', (data: Buffer) => {
         const dataStr = data.toString();
-        stdout += dataStr;
-        console.log(`MusicGen stdout: ${dataStr.trim()}`);
+        console.log(
+          `MusicGen stdout: ${dataStr.trim()}`
+        );
 
         // Write to debug log file
         fs.appendFileSync(

@@ -52,36 +52,55 @@ describe(
     const verifyAsync =
       jest.fn(
         async (
-          _token: string
-        ): Promise<SocketJwtPayload> => ({
-          sub: userId,
-          username: 'security-user',
-          role: 'user',
-        })
+          token: string
+        ): Promise<SocketJwtPayload> => {
+          void token;
+
+          return {
+            sub: userId,
+            username:
+              'security-user',
+            role: 'user',
+          };
+        }
       );
 
     const jobExists =
       jest.fn(
         async (
-          _filter: JobOwnershipFilter
-        ): Promise<ExistenceResult | null> => ({
-          _id:
-            new Types.ObjectId(
-              jobId
-            ),
-        })
+          filter:
+            JobOwnershipFilter
+        ): Promise<
+          ExistenceResult | null
+        > => {
+          void filter;
+
+          return {
+            _id:
+              new Types.ObjectId(
+                jobId
+              ),
+          };
+        }
       );
 
     const userExists =
       jest.fn(
         async (
-          _filter: UserExistenceFilter
-        ): Promise<ExistenceResult | null> => ({
-          _id:
-            new Types.ObjectId(
-              userId
-            ),
-        })
+          filter:
+            UserExistenceFilter
+        ): Promise<
+          ExistenceResult | null
+        > => {
+          void filter;
+
+          return {
+            _id:
+              new Types.ObjectId(
+                userId
+              ),
+          };
+        }
       );
 
     let gateway:
@@ -143,37 +162,42 @@ describe(
       const disconnect =
         jest.fn(
           (
-            _close?: boolean
+            close?: boolean
           ): void => {
-            return;
+            void close;
           }
         );
 
       const join =
         jest.fn(
           async (
-            _room: string
+            room: string
           ): Promise<void> => {
-            return;
+            void room;
           }
         );
 
       const leave =
         jest.fn(
           async (
-            _room: string
+            room: string
           ): Promise<void> => {
-            return;
+            void room;
           }
         );
 
       const emit =
         jest.fn(
           (
-            _event: string,
-            _payload:
+            event: string,
+            payload:
               JobSubscriptionErrorPayload
-          ): boolean => true
+          ): boolean => {
+            void event;
+            void payload;
+
+            return true;
+          }
         );
 
       return {
