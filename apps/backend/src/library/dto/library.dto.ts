@@ -1,7 +1,7 @@
 import {
   IsString,
   IsOptional,
-  IsEnum,
+  IsIn,
   IsNumber,
   IsBoolean,
   IsObject,
@@ -35,7 +35,7 @@ export class UpdateLibraryItemDto {
 
 export class LibraryFiltersDto {
   @IsOptional()
-  @IsEnum(['all', 'song', 'music', 'audio', 'style'])
+  @IsIn(['all', 'song', 'music', 'audio', 'style'])
   type?: 'all' | 'song' | 'music' | 'audio' | 'style';
 
   @IsOptional()
@@ -43,11 +43,11 @@ export class LibraryFiltersDto {
   search?: string;
 
   @IsOptional()
-  @IsEnum(['newest', 'oldest', 'title', 'mostPlayed'])
+  @IsIn(['newest', 'oldest', 'title', 'mostPlayed'])
   sortBy?: 'newest' | 'oldest' | 'title' | 'mostPlayed';
 
   @IsOptional()
-  @IsEnum(['true'])
+  @IsIn(['true'])
   showDemo?: 'true';
 
   @IsOptional()

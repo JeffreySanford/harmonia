@@ -7,7 +7,7 @@
       </div>
       <div class="header-actions">
         <button
-          mat-icon-button
+mat-icon-button
           (click)="toggleViewMode()"
           [attr.aria-label]="
             viewMode === 'grid' ? 'Switch to list view' : 'Switch to grid view'
@@ -141,6 +141,7 @@
             <mat-icon>download</mat-icon>
           </button>
           <button
+            *ngIf="!item.isDemo"
             mat-icon-button
             color="warn"
             (click)="onDeleteItem(item); $event.stopPropagation()"

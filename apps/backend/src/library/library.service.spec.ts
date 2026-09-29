@@ -577,3 +577,120 @@ describe('LibraryService private upload security', () => {
     ).not.toHaveBeenCalled();
   });
 });
+
+
+describe('LibraryService demo visibility', () => {
+  const userId =
+    '507f1f77bcf86cd799439011';
+
+  function createQueryService() {
+    const chain = {
+      sort: jest.fn(),
+      skip: jest.fn(),
+      limit: jest.fn(),
+      exec: jest.fn(),
+    };
+
+    chain.sort.mockReturnValue(chain);
+    chain.skip.mockReturnValue(chain);
+    chain.limit.mockReturnValue(chain);
+    chain.exec.mockResolvedValue([]);
+
+    const model: any = jest.fn();
+
+    model.find =
+      jest.fn(
+        () => chain
+      );
+
+    model.countDocuments =
+      jest.fn(
+        async () => 0
+      );
+
+    return {
+      service:
+        new LibraryService(model),
+      model,
+    };
+  }
+
+  it('shows only the users non-demo content by default', async () => {
+    const {
+      service,
+      model,
+    } =
+      createQueryService();
+
+    await firstValueFrom(
+      service.findByUserId(
+        userId,
+        {},
+        1
+      )
+    );
+
+    const expectedQuery = {
+      userId,
+      isDemo: {
+        $ne: true,
+      },
+    };
+
+    expect(
+      model.find
+    ).toHaveBeenCalledWith(
+      expectedQuery
+    );
+
+    expect(
+      model.countDocuments
+    ).toHaveBeenCalledWith(
+      expectedQuery
+    );
+  });
+
+  it('adds global demo content when showDemo is true', async () => {
+    const {
+      service,
+      model,
+    } =
+      createQueryService();
+
+    await firstValueFrom(
+      service.findByUserId(
+        userId,
+        {
+          showDemo: 'true',
+        },
+        1
+      )
+    );
+
+    const expectedQuery = {
+      $or: [
+        {
+          userId,
+          isDemo: {
+            $ne: true,
+          },
+        },
+        {
+          isDemo: true,
+        },
+      ],
+    };
+
+    expect(
+      model.find
+    ).toHaveBeenCalledWith(
+      expectedQuery
+    );
+
+    expect(
+      model.countDocuments
+    ).toHaveBeenCalledWith(
+      expectedQuery
+    );
+  });
+});

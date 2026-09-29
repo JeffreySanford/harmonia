@@ -69,14 +69,25 @@ export class LibraryService {
     const pageSize = 20;
     const skip = (page - 1) * pageSize;
 
-    // Build query
-    const query: any = { userId };
-
-    // Demo/seeded content is opt-in. Legacy user items without
-    // an isDemo field are treated as normal user content.
-    if (filters.showDemo !== 'true') {
-      query.isDemo = { $ne: true };
-    }
+    // User content remains private. Seeded demo content is
+    // globally readable only when explicitly requested.
+    const query: any =
+      filters.showDemo === 'true'
+        ? {
+            $or: [
+              {
+                userId,
+                isDemo: { $ne: true },
+              },
+              {
+                isDemo: true,
+              },
+            ],
+          }
+        : {
+            userId,
+            isDemo: { $ne: true },
+          };
 
     if (filters.type && filters.type !== 'all') {
       query.type = filters.type;
